@@ -113,7 +113,7 @@ jobs:
           inline = [body for attrs, body in scripts if "src=" not in attrs.lower() and body.strip()]
           if not inline:
               raise SystemExit("No inline game JavaScript found")
-          Path("/tmp/adam-world-inline.js").write_text("\\n".join(inline), encoding="utf-8")
+          Path("/tmp/adam-world-inline.js").write_text("\n".join(inline), encoding="utf-8")
           PY
           node --check /tmp/adam-world-inline.js
 
