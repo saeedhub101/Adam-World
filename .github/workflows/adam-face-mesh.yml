@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install CPU dependencies
-        run: python -m pip install mediapipe==0.10.21 pillow numpy trimesh
+        run: python -m pip install mediapipe==0.10.21 pillow numpy scipy trimesh
       - name: Build face mesh
         run: python tools/build_adam_face_mesh.py --references app/src/main/assets/characters/adam/child-reference-01.png app/src/main/assets/characters/adam/child-reference-02.png --output app/src/main/assets/characters/adam/generated
       - name: Validate outputs
