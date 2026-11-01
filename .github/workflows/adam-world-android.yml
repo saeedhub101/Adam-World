@@ -25,6 +25,7 @@ permissions:
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -81,6 +82,13 @@ jobs:
         run: |
           test -s app/build/outputs/apk/release/app-release.apk
           test -s app/build/outputs/bundle/release/app-release.aab
+          unzip -l app/build/outputs/apk/release/app-release.apk > /tmp/adam-world-apk-files.txt
+          grep -q 'assets/vendor/three.min.js' /tmp/adam-world-apk-files.txt
+          grep -q 'assets/cities/catalog.json' /tmp/adam-world-apk-files.txt
+          for city in amman manila bangkok new-york paris dubai tokyo london riyadh cairo; do
+            grep -q "assets/cities/$city/manifest.json" /tmp/adam-world-apk-files.txt
+            grep -q "assets/cities/$city/tile_" /tmp/adam-world-apk-files.txt
+          done
           ls -lh app/build/outputs/apk/release/app-release.apk app/build/outputs/bundle/release/app-release.aab
 
       - name: Publish GitHub Release
