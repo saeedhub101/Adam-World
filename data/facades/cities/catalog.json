@@ -15,10 +15,10 @@
       "slug": "manila",
       "name": "Manila",
       "center": {
-        "lat": 14.5547,
-        "lon": 121.0244
+        "lat": 14.57655,
+        "lon": 120.98105
       },
-      "discovery_radius_m": 650
+      "discovery_radius_m": 900
     },
     {
       "slug": "bangkok",
