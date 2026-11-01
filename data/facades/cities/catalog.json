@@ -6,8 +6,8 @@
       "slug": "amman",
       "name": "Amman",
       "center": {
-        "lat": 31.997579,
-        "lon": 35.940358
+        "lat": 31.9516,
+        "lon": 35.9394
       },
       "discovery_radius_m": 1800
     },
@@ -15,8 +15,8 @@
       "slug": "manila",
       "name": "Manila",
       "center": {
-        "lat": 14.5896,
-        "lon": 120.9758
+        "lat": 14.5547,
+        "lon": 121.0244
       },
       "discovery_radius_m": 650
     },
@@ -42,8 +42,8 @@
       "slug": "paris",
       "name": "Paris",
       "center": {
-        "lat": 48.8584,
-        "lon": 2.2945
+        "lat": 48.8606,
+        "lon": 2.3376
       },
       "discovery_radius_m": 650
     },
