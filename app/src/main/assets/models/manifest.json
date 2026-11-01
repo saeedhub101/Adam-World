@@ -55,89 +55,34 @@
       "sha256": "3bd968dfb8a8dbcb84aefa80ab806a582b935566917a561bd423633e271aa046"
     },
     {
-      "id": "dog",
-      "file": "animals/dog.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/standing-dog-bf156da2",
+      "id": "adult_man_walk",
+      "file": "people/adult-man-walk.glb",
+      "page": "https://www.innerscene.com/tools/library/3d-parts/locomotion-collection-jordan-3d-person-animated-911f1584",
       "license": "CC0-1.0",
-      "pose": "standing",
-      "animated": false,
-      "height_m": 0.92,
-      "description": "Medium companion dog; static mesh.",
-      "status": "kept",
-      "bytes": 4471976,
-      "sha256": "6b0c04a2a95b7c47c50e87462ac984683bc992fc792338792f2b22cfb14597f2"
+      "pose": "rigged",
+      "animated": true,
+      "height_m": 1.79,
+      "description": "Adult man with rig and seven looping locomotion clips.",
+      "status": "downloaded",
+      "bytes": 24422140,
+      "sha256": "26aec78ad4f9596b497114e674fd329d125f5cc9764be4ad727e11eab797edee",
+      "animation_count": 7,
+      "skin_count": 1
     },
     {
-      "id": "sedan",
-      "file": "vehicles/sedan.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/sedan-car-42109739",
+      "id": "adult_woman_walk",
+      "file": "people/adult-woman-walk.glb",
+      "page": "https://www.innerscene.com/tools/library/3d-parts/locomotion-collection-maya-3d-person-animated-1499b2fd",
       "license": "CC0-1.0",
-      "length_m": 4.7,
-      "animated": false,
-      "description": "Unbranded passenger sedan with glazing, lamps, wheels and trim.",
-      "status": "kept",
-      "bytes": 641908,
-      "sha256": "187c9935c40f952837fe2d98200b390415e695196d7b1280c9ec3ebb1bf4961b"
-    },
-    {
-      "id": "pickup",
-      "file": "vehicles/pickup.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/pickup-truck-da45aa3f",
-      "license": "CC0-1.0",
-      "length_m": 5.5,
-      "animated": false,
-      "description": "Unbranded pickup with coachwork, glazing, lamps, wheels and trim.",
-      "status": "kept",
-      "bytes": 806552,
-      "sha256": "7b308573a285f95935cff99577c74d2640caa9c481a36cf0a7092d391375f226"
-    },
-    {
-      "id": "bus",
-      "file": "vehicles/city-bus.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/low-floor-city-bus-9e7ce899",
-      "license": "CC0-1.0",
-      "length_m": 12.0,
-      "animated": false,
-      "description": "Low-floor urban bus exterior with doors, glazing and wheel assemblies.",
-      "status": "kept",
-      "bytes": 803376,
-      "sha256": "955ba087aa04e8138eeb2ef2f20a0d5596a08175ce1483d3f47b1786216cdf9b"
-    },
-    {
-      "id": "metro_car",
-      "file": "vehicles/metro-car.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/metro-car-22a0c19c",
-      "license": "CC0-1.0",
-      "length_m": 19.0,
-      "animated": false,
-      "description": "Metro passenger rail car; requires mapped railway route and track.",
-      "status": "kept",
-      "bytes": 6273784,
-      "sha256": "80e848932447715556aa713c286fc0ba89c7f45f161dd6a26b40ec3eab199093"
-    },
-    {
-      "id": "motorcycle",
-      "file": "vehicles/motorcycle.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/race-replica-superbike-fully-faired-badbd83b",
-      "license": "CC0-1.0",
-      "length_m": 2.05,
-      "animated": false,
-      "description": "Detailed sport motorcycle with fairing, wheels, brakes and chain.",
-      "status": "kept",
-      "bytes": 21033196,
-      "sha256": "f87fa1c62de724335239b0c20329a6b6102ba70c8a009eea8eae88b16751a7b3"
-    },
-    {
-      "id": "water_taxi",
-      "file": "vehicles/water-taxi.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/water-taxi-boat-925a8345",
-      "license": "CC0-1.0",
-      "length_m": 9.9,
-      "animated": false,
-      "description": "Water taxi boat; requires mapped navigable water and dock.",
-      "status": "kept",
-      "bytes": 16471880,
-      "sha256": "6f4f74e8f0e4a2dc4434fd01dcbe5721fbeceb240d6d2385720b581157f82b5d"
+      "pose": "rigged",
+      "animated": true,
+      "height_m": 1.7,
+      "description": "Adult woman with rig and seven looping locomotion clips.",
+      "status": "downloaded",
+      "bytes": 21333012,
+      "sha256": "fabac991096e806f87ac71013865d4e4fac38d041dd64337c0173859b8249b15",
+      "animation_count": 7,
+      "skin_count": 1
     }
   ],
   "city_profiles": {
@@ -270,9 +215,9 @@
       "reason": "Search results found paid/editorial or game-workshop assets; no verified free redistributable GLB was accepted."
     },
     {
-      "id": "walking_animations",
+      "id": "children_walking_animations",
       "status": "not_imported",
-      "reason": "The imported human figures are static meshes without armatures; do not fake walking animation."
+      "reason": "Verified animated adult man and woman are imported; no suitable licensed animated child models have been verified."
     },
     {
       "id": "old_jordanian_cars",
