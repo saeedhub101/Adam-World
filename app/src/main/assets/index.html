@@ -1078,7 +1078,7 @@ function adamUpdateFace(dt,now){
 }
 window.AdamCharacter={setExpression:adamSetExpression,setViseme:adamSetViseme,setLook:adamSetLook,blink:adamBlink,setJaw:adamSetJaw,setFingerCurl:adamSetFingerCurl,expressions:Object.keys(ADAM_EXPRESSIONS),visemes:Object.keys(ADAM_VISEMES),morphTargets:adamMorphNames,bones:ped.userData.bones.map(b=>b.name)};
 
-const pcar=makeCar(0xc0392b);scene.add(pcar);
+const pcar=new THREE.Group();pcar.visible=false;scene.add(pcar);loadWorldModel('sedan').then(asset=>{pcar.add(asset);pcar.visible=true;}).catch(e=>console.warn('Player vehicle GLB unavailable',e));
 const S={px:0,pz:0,pyaw:0,cx:0,cz:0,cyaw:0,cv:0,mode:'walk',phase:0,camYaw:0,camPitch:0.38,camDistance:5.2,lastLook:0,sx:0,sy:0,sprint:false};
 
 /* ---------- صور جوية وصور شوارع ذات إسناد جغرافي ---------- */
