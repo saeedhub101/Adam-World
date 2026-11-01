@@ -6,6 +6,9 @@ on:
     paths:
       - ".github/workflows/facade-evidence-harvest.yml"
       - "tools/facades/fetch_catalogue_metadata.py"
+      - "tools/facades/build_review_queue.py"
+      - "tools/facades/prepare_facade_review.py"
+      - "tools/facades/tests/**"
       - "data/facades/cities/**/city.json"
   workflow_dispatch:
     inputs:
