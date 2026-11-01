@@ -22,6 +22,9 @@ android {
 
     buildTypes {
         release {
+            // Produces an installable sideload-test APK/AAB. Google Play production
+            // publishing still requires the owner's private upload/release key.
+            signingConfig signingConfigs.debug
             minifyEnabled false
         }
     }
