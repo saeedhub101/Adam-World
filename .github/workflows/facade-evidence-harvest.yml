@@ -89,11 +89,24 @@ jobs:
             python3 tools/facades/fetch_catalogue_metadata.py --git-checkpoint
           fi
 
-      # KartaView metadata must be present before review queues are built.
-      - name: Discover public KartaView street photos around the selected Amman district
+      # Harvest KartaView street-photo metadata for every in-game city before building any review queues.
+      # Each city checkpoints its progress to main; a failed city does not block the remaining cities.
+      - name: Discover public KartaView street photos across all ten cities
         id: kartaview
         continue-on-error: true
-        run: python3 tools/facades/fetch_kartaview_metadata.py --city amman --git-checkpoint
+        run: |
+          cities=(amman bangkok cairo dubai london manila new-york paris riyadh tokyo)
+          failed=0
+          for city in "${cities[@]}"; do
+            echo "KARTAVIEW_CITY_START city=$city"
+            if python3 tools/facades/fetch_kartaview_metadata.py --city "$city" --git-checkpoint; then
+              echo "KARTAVIEW_CITY_SUCCESS city=$city"
+            else
+              echo "KARTAVIEW_CITY_FAILED city=$city"
+              failed=1
+            fi
+          done
+          exit "$failed"
 
       - name: Build per-city facade review queues with strict geometry and licensing gates
         id: queue
