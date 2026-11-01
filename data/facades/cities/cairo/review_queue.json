@@ -36203,9 +36203,10 @@
     "maximum_discovery_distance_m": 100.0,
     "proximity_is_not_identity": true,
     "strict_visual_review_gate": {
+      "camera_fov_missing_is_manual_calibration_warning": true,
       "max_azimuth_delta_deg": 25,
       "max_facade_distance_m": 35,
-      "requires_camera_fov": true,
+      "requires_camera_azimuth": true,
       "requires_open_redistributable_license": true,
       "requires_real_preview_and_image_assets": true
     }
