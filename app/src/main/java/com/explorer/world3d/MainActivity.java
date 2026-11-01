@@ -101,8 +101,8 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(downloadReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(downloadReceiver, filter);
 
-        // Check silently on every app launch; only show a dialog when a newer release exists.
-        checkForUpdates(true);
+        // Offline-first startup: never contact GitHub during launch.
+        // Updates are checked only when the player taps the Update button.
     }
 
     private class Bridge {
