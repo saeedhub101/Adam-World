@@ -34,12 +34,14 @@ The current catalog coverage is an initial discovery window around each city's c
 
 ## Current ten-city checkpoint (2026-11-01)
 
-The ten registered destinations now have committed full OSM extracts under
-`data/offline-world/<city>/elements.json`, with per-city source metadata. The
-import workflow checkpoints each completed city directly to `main`, retries
-fetch/rebase/push when another workflow updates `main`, and resumes by validating
-the import profile and stored element count. A partial run reports failure only
-after attempting every city, so rerunning it skips already-complete city data.
+The ten registered destinations have committed full OSM extracts under
+`data/offline-world/<city>/elements.json`, with per-city source metadata. Import
+profile version 4 expands the stored land-cover and water tags to include farmland,
+orchards, vineyards, sand, beaches, desert, bare rock, scree, shingle, heath,
+wetlands, marshes, mud, grassland, reservoirs and mapped landcover values. The
+profile refresh is checkpointed city-by-city directly to `main`; subsequent
+reruns validate the profile and stored element count and skip completed cities.
+A partial run attempts every city and preserves each successful checkpoint.
 
 The import profile includes building and road ways, parks/land cover, water,
 mapped tree and street-lamp nodes, traffic signals, crossings, bus stops,
