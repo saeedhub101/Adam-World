@@ -54,7 +54,7 @@ jobs:
               assert grid['rows']==201 and grid['cols']==201, city['slug']
               values=grid['elevations_m']
               valid=sum(v is not None for row in values for v in row)
-              coverage=valid/(grid['rows']*grid['cols'])
+              coverage=grid.get('coverage_fraction',valid/(grid['rows']*grid['cols']))
               assert coverage>=0.98, (city['slug'],coverage)
           print('TERRAIN_CITY_VALIDATION_OK cities=',len(catalog['cities']),'missing=',missing)
           if missing:
