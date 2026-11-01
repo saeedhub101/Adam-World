@@ -556,7 +556,7 @@ async function loadArea(lat,lon,spawn){
   for(const el of data.elements){
     const t=el.tags||{};
     if(el.type==='node'){
-      if(t.natural==='tree'&&trees.length<1200){trees.push(proj(el.lat,el.lon));}
+      if(t.natural==='tree'&&trees.length<1200){trees.push({id:Number(el.id)||trees.length,p:proj(el.lat,el.lon),tags:t});}
       else if(t.highway==='street_lamp'&&lamps.length<500){lamps.push(proj(el.lat,el.lon));}
       else if(t.highway==='traffic_signals'&&signals.length<300){signals.push(proj(el.lat,el.lon));}
       else if(t.highway==='bus_stop'&&busStops.length<250){busStops.push({p:proj(el.lat,el.lon),tags:t});}
@@ -668,19 +668,43 @@ async function loadArea(lat,lon,spawn){
     mesh.renderOrder=4;mesh.userData.ownedTexture=texture;mesh.userData.ownedMaterial=true;cityGroup.add(mesh);
   }
 
-  /* أشجار */
+  /* OSM-mapped trees: deterministic placement/size, with crown form from leaf tags. */
   if(trees.length){
-    const trunkG=new THREE.CylinderGeometry(0.14,0.2,2.6,6),crownG=new THREE.IcosahedronGeometry(2.0,0);
-    const tm=new THREE.InstancedMesh(trunkG,new THREE.MeshLambertMaterial({color:0x5a3d28}),trees.length);
-    const cm=new THREE.InstancedMesh(crownG,new THREE.MeshLambertMaterial({color:0xffffff}),trees.length);
+    const trunkMat=new THREE.MeshLambertMaterial({color:0x66503a});
+    const crownMat=new THREE.MeshLambertMaterial({color:0xffffff});
+    const trunkG=new THREE.CylinderGeometry(0.12,0.18,1,7);
+    const broadG=new THREE.SphereGeometry(1,9,7);
+    const coniferG=new THREE.ConeGeometry(1,2,8);
+    const broad=trees.filter(t=>!/(needle|conifer)/i.test(String(t.tags.leaf_type||t.tags['tree:type']||'')));
+    const conifer=trees.filter(t=>/(needle|conifer)/i.test(String(t.tags.leaf_type||t.tags['tree:type']||'')));
+    const tm=new THREE.InstancedMesh(trunkG,trunkMat,trees.length);
+    const bm=broad.length?new THREE.InstancedMesh(broadG,crownMat,broad.length):null;
+    const cm=conifer.length?new THREE.InstancedMesh(coniferG,crownMat,conifer.length):null;
     const d=new THREE.Object3D(),c=new THREE.Color();
-    trees.forEach((p,i)=>{
-      const s=0.8+Math.random()*0.7;
-      d.position.set(p[0],1.3*s,p[1]);d.scale.set(s,s,s);d.rotation.y=Math.random()*6;d.updateMatrix();tm.setMatrixAt(i,d.matrix);
-      d.position.set(p[0],3.7*s,p[1]);d.updateMatrix();cm.setMatrixAt(i,d.matrix);
-      c.setHSL(0.25+Math.random()*0.08,0.45,0.28+Math.random()*0.12);cm.setColorAt(i,c);
+    trees.forEach((tree,i)=>{
+      const tags=tree.tags||{},p=tree.p;
+      const taggedHeight=parseFloat(tags.height);
+      const h=Number.isFinite(taggedHeight)&&taggedHeight>1?clamp(taggedHeight,2,35):6;
+      const taggedCrown=parseFloat(tags.diameter_crown);
+      const crown=Number.isFinite(taggedCrown)&&taggedCrown>0?clamp(taggedCrown/2,0.8,9):Math.max(1.4,h*0.28);
+      d.position.set(p[0],h/2,p[1]);d.scale.set(1,h,1);d.updateMatrix();tm.setMatrixAt(i,d.matrix);
     });
-    cityGroup.add(tm);cityGroup.add(cm);
+    let bi=0,ci=0;
+    for(const tree of trees){
+      const tags=tree.tags||{},p=tree.p;
+      const taggedHeight=parseFloat(tags.height),h=Number.isFinite(taggedHeight)&&taggedHeight>1?clamp(taggedHeight,2,35):6;
+      const taggedCrown=parseFloat(tags.diameter_crown),radius=Number.isFinite(taggedCrown)&&taggedCrown>0?clamp(taggedCrown/2,0.8,9):Math.max(1.4,h*0.28);
+      const needle=/(needle|conifer)/i.test(String(tags.leaf_type||tags['tree:type']||''));
+      const leafCycle=String(tags.leaf_cycle||'').toLowerCase();
+      c.setHex(needle?0x315c43:(leafCycle==='deciduous'?0x71834b:0x527b46));
+      d.position.set(p[0],h*0.88,p[1]);
+      if(needle){
+        d.scale.set(radius,h*0.55,radius);d.rotation.y=(Number(tree.id)%17)*0.37;d.updateMatrix();cm.setMatrixAt(ci,d.matrix);cm.setColorAt(ci,c);ci++;
+      }else{
+        d.scale.set(radius,radius*0.82,radius);d.rotation.y=(Number(tree.id)%17)*0.37;d.updateMatrix();bm.setMatrixAt(bi,d.matrix);bm.setColorAt(bi,c);bi++;
+      }
+    }
+    cityGroup.add(tm);if(bm)cityGroup.add(bm);if(cm)cityGroup.add(cm);
   }
   /* أعمدة إنارة */
   for(const cp of carPaths){
