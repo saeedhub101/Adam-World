@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "city": "tokyo",
+  "policy": "Image decode, minimum dimensions, camera geometry and licence are machine-filtered. Exact depicted-building identity remains unverified until visual inspection.",
+  "eligible_building_candidates": 0,
+  "downloaded_valid_images": 0,
+  "failed_or_rejected_images": 0,
+  "items": [],
+  "rejected": []
+}
