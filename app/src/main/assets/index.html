@@ -375,13 +375,14 @@ function newAcc(){return {pos:[],uv:[],col:[]};}
 // Buildings are rebuilt as combined Three.js solid meshes: window frames, glazing, sills, balcony slabs/rails and roof cornices are actual geometry, not facade decals.
 // Parametric architectural geometry: windows, reveals, sills, balconies and roof
 // parapets are real 3D meshes attached to the OSM building footprint (not textures).
-const archAcc={glass:[],frame:[],sill:[],balcony:[],trim:[]};
+const archAcc={glass:[],frame:[],sill:[],balcony:[],trim:[],roof:[]};
 const archMats={
   glass:new THREE.MeshStandardMaterial({color:0x557b94,metalness:0.28,roughness:0.24,side:DS}),
   frame:new THREE.MeshStandardMaterial({color:0xddd8ce,metalness:0.05,roughness:0.72}),
   sill:new THREE.MeshStandardMaterial({color:0xb8ad9b,roughness:0.88}),
   balcony:new THREE.MeshStandardMaterial({color:0xaaa69e,metalness:0.12,roughness:0.72}),
-  trim:new THREE.MeshStandardMaterial({color:0x9f9688,roughness:0.9})
+  trim:new THREE.MeshStandardMaterial({color:0x9f9688,roughness:0.9}),
+  roof:new THREE.MeshStandardMaterial({color:0x8b7766,roughness:0.92,side:DS})
 };
 function pushArchBox(target,c,ax,ay,az,w,h,d){
   const v=[];
@@ -438,6 +439,7 @@ function addBuildingArchitecture(P,t,height,id){
   const balconies=String(t.balcony||t['building:balcony']||'').toLowerCase();
   const allowBalconies=residential||balconies==='yes'||balconies==='true';
   const layouts=[];
+  let buildingWindowCount=0,buildingBalconyCount=0;
   for(let e=0;e<P.length;e++){
     const a=P[e],b=P[(e+1)%P.length],dx=b[0]-a[0],dz=b[1]-a[1];
     const len=Math.hypot(dx,dz);if(len<3.2){layouts.push({a,b,floors,floorH,windowsByFloor:[]});continue;}
@@ -453,7 +455,9 @@ function addBuildingArchitecture(P,t,height,id){
       const cy=base+Math.min(floorH*0.58,Math.max(1.15,floorH*0.56));
       if(cy+wh/2>height-0.12)continue;
       for(let wi=0;wi<count;wi++){
-        if(architecturalWindowCount>=7000)break;
+        // Fair per-building detail budget: later buildings must not become blank when
+        // an earlier block consumes a global geometry cap.
+        if(architecturalWindowCount>=24000||buildingWindowCount>=18)break;
         if(utilitarian&&kind!=='warehouse'&&kind!=='industrial'&&wi%4!==0)continue;
         if(utilitarian&&(kind==='warehouse'||kind==='industrial')&&wi%3!==0)continue;
         const along=-len/2+(wi+0.5)*spacing;
@@ -468,7 +472,7 @@ function addBuildingArchitecture(P,t,height,id){
           const q=[c[0],c[1]+side*(wh/2-fw/2),c[2]];
           pushArchBox(archAcc.frame,q,ax,ay,az,ww,fw,fd);
         }
-        architecturalWindowCount++;
+        architecturalWindowCount++;buildingWindowCount++;
         const left=along+len/2-ww/2,right=along+len/2+ww/2;
         windowsByFloor[fl].push({left,right,bottom:cy-wh/2,top:cy+wh/2});
         const pane=[c[0]+nx*0.035,c[1],c[2]+nz*0.035];
@@ -477,8 +481,8 @@ function addBuildingArchitecture(P,t,height,id){
         pushArchBox(archAcc.sill,sill,ax,ay,az,ww+0.22,0.10,0.22);
         const balconyEvery=(count>5?3:2);
         const hasBalcony=allowBalconies&&fl>0&&wi%balconyEvery===0&&ww>=0.95;
-        if(hasBalcony&&architecturalBalconyCount<1800){
-          architecturalBalconyCount++;
+        if(hasBalcony&&architecturalBalconyCount<9000&&buildingBalconyCount<5){
+          architecturalBalconyCount++;buildingBalconyCount++;
           const bc=[c[0]+nx*0.52,base+0.13,c[2]+nz*0.52];
           pushArchBox(archAcc.balcony,bc,ax,ay,az,Math.min(2.15,spacing*0.82),0.16,1.02);
           const bw=Math.min(2.05,spacing*0.78),railY=base+1.12,front=[c[0]+nx*1.00,railY,c[2]+nz*1.00];
@@ -496,9 +500,20 @@ function addBuildingArchitecture(P,t,height,id){
     layouts.push({a,b,floors,floorH,windowsByFloor});
     const plinth=[mid[0]+nx*0.025,0.22,mid[2]+nz*0.025];
     pushArchBox(archAcc.trim,plinth,ax,ay,az,len,0.34,0.12);
-    if(String(t['roof:shape']||'flat')==='flat'){
+    const roofShape=String(t['roof:shape']||'flat').toLowerCase();
+    if(roofShape==='flat'){
       const cornice=[mid[0]+nx*0.06,height+0.18,mid[2]+nz*0.06];
       pushArchBox(archAcc.trim,cornice,ax,ay,az,len,0.34,0.24);
+    } else if(roofShape==='hipped'||roofShape==='pyramidal') {
+      // OSM explicitly describes a pitched/hipped roof: create a real sloped
+      // triangular roof surface, not a flat colour patch.
+      const roofHRaw=parseFloat(t['roof:height']);
+      const roofH=clamp(Number.isFinite(roofHRaw)&&roofHRaw>0?roofHRaw:Math.min(2.8,floorH*0.8),0.8,8);
+      const cx=P.reduce((v,p)=>v+p[0],0)/P.length,cz=P.reduce((v,p)=>v+p[1],0)/P.length;
+      for(let ri=0;ri<P.length;ri++){
+        const ra=P[ri],rb=P[(ri+1)%P.length];
+        archAcc.roof.push(ra[0],height,ra[1],rb[0],height,rb[1],cx,height+roofH,cz);
+      }
     }
   }
   return layouts;
@@ -785,6 +800,7 @@ async function loadArea(lat,lon,spawn){
   addArchitecturalMesh(archAcc.sill,archMats.sill);
   addArchitecturalMesh(archAcc.balcony,archMats.balcony);
   addArchitecturalMesh(archAcc.trim,archMats.trim);
+  addArchitecturalMesh(archAcc.roof,archMats.roof);
 
   /* أسماء الشوارع: نصوص مرسومة مباشرة على سطح الطريق وباتجاه مساره */
   for(const item of roadLabels){
