@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "city": "Manila",
+  "slug": "manila",
+  "source": "OpenStreetMap Overpass",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL 1.0",
+  "center": {
+    "lat": 14.5896,
+    "lon": 120.9758
+  },
+  "radius_m": 650,
+  "element_count": 3590,
+  "geometry_layers": [
+    "buildings",
+    "roads",
+    "parks",
+    "landcover",
+    "water",
+    "trees",
+    "street_lamps"
+  ],
+  "stored_as": "data/offline-world/manila/elements.json"
+}
