@@ -92,3 +92,28 @@ python3 tools/facades/fetch_catalogue_metadata.py
 python3 tools/facades/build_review_queue.py
 python3 tools/facades/validate_manifest.py
 ```
+
+
+## Current Adam World destinations
+
+The city registry `data/facades/cities/catalog.json` covers all ten current in-game
+destinations: Amman, Manila, Bangkok, New York, Paris, Dubai, Tokyo, London, Riyadh
+and Cairo. Each has a `city.json` discovery centre/radius. These are the current
+game destination areas, not a claim that the entire municipal boundary has been
+covered. Additional cities/areas are added by adding registry entries and city
+folders; the pipeline remains the same.
+
+## Running phase 2
+
+The dedicated workflow `.github/workflows/facade-evidence-harvest.yml` runs on its
+initial main-branch setup commit and can also be started manually. It queries both
+public imagery metadata catalogues for each configured city area. Every returned
+page and its resume cursor is committed and pushed to `main` before moving on, so
+a timeout or interruption does not discard completed pages. A failed source does
+not prevent later sources or cities from being attempted. It downloads metadata,
+not original photo files.
+
+The city review-queue builder needs `buildings.geojson` for each city. Until those
+OSM footprints are present, imagery metadata can still be collected for all
+registered destination areas, but no building/photo candidate pairing or facade
+texture is produced.
