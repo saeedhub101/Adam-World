@@ -27,7 +27,7 @@
         "roll_deg": null
       },
       "metadata_url": "https://api.panoramax.xyz/api/collections/ac1777b2-0eaa-433b-9210-72d0a95b17d4/items/3c211ec5-64ff-4d9a-aa57-daacf4dd2549",
-      "full_image_url": "https://panoramax.ign.fr/api/pictures/3c211ec5-64ff-4d9a-aa57-daacf4dd2549/sd.jpg",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/3c211ec5-64ff-4d9a-aa57-daacf4dd2549/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     }
   ],
