@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "city": "Amman",
+  "slug": "amman",
+  "source": "OpenStreetMap Overpass",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL 1.0",
+  "center": {
+    "lat": 31.9516,
+    "lon": 35.9394
+  },
+  "radius_m": 650,
+  "element_count": 1901,
+  "geometry_layers": [
+    "buildings",
+    "roads",
+    "parks",
+    "landcover",
+    "water",
+    "trees",
+    "street_lamps"
+  ],
+  "stored_as": "data/offline-world/amman/elements.json"
+}
