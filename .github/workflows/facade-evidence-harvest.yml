@@ -53,6 +53,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install free local computer-vision test dependencies
+        run: python3 -m pip install --disable-pip-version-check numpy opencv-python-headless
+
       - name: Validate facade tooling and tests
         id: tests
         continue-on-error: true
