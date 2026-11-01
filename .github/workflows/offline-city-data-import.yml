@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: adam-world-offline-city-import
+  group: adam-world-offline-city-import-refresh
   cancel-in-progress: false
 
 jobs:
