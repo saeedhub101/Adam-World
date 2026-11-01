@@ -1,0 +1,10 @@
+{
+  "slug": "cairo",
+  "name": "Cairo",
+  "center": {
+    "lat": 30.0444,
+    "lon": 31.2357
+  },
+  "discovery_radius_m": 650,
+  "notes": "Initial discovery area follows the current in-game city destination radius. Expand the city coverage by adding further area footprints; this is not a claim of complete municipal coverage."
+}
