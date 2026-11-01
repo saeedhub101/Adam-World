@@ -82,3 +82,11 @@ evidence-gated production phase.
 - Named OSM road ways render their actual mapped name directly on the road surface, aligned to the road direction. Arabic `name:ar` is preferred, then `name:en`, `name`, `official_name`, `loc_name`, and finally the mapped `ref`; no street names are fabricated. The visible label limit is 240 placements per loaded area.
 - Release workflow publishes a small `adam-world-web-update.zip` containing the changed game HTML. When a release marks `Native-Required: false` and `Web-Content-Changed: true`, Android downloads and applies this bundle into app-private storage, then reloads the game without reinstalling the APK or removing user data. Native-code or packaged offline-data changes still require a normal APK update.
 - Facade photo candidates remain unverified until the exact building identity and visible facade are confirmed. The latest review harvest validated 78 preview images (33 HD source images) across the cities with available Panoramax coverage; this is not 78 verified facade assignments. No candidate is assigned to a building merely because it is nearby or camera-aligned.
+
+## Elevation and terrain conformance (2026-11-01)
+
+- Every registered city now has a committed `elevation-grid.json` generated from free Copernicus DEM GLO-30 COG data. Each grid is 201 × 201 samples over a 3 km radius, with at least 98% valid coverage.
+- `tools/build_offline_city_tiles.py` copies each city's elevation grid into `app/src/main/assets/cities/<city>/` and writes the `elevation_grid` manifest entry. The Android runtime reads this local asset; no elevation service is requested at runtime.
+- The terrain sampler uses the same triangle interpolation as the rendered DEM mesh. It clamps positions outside the raster bounds to the nearest edge height rather than returning zero, and roads, building geometry, the player, NPCs and cars sample the local terrain surface.
+- Rebuild and verify the APK after terrain import; the presence of source grids alone is not proof that an installed build contains them.
+- Importer: `tools/import_copernicus_terrain.py`; workflow: `.github/workflows/copernicus-terrain-import.yml`; status: `docs/REALISM_REBUILD_STATUS.md`.
