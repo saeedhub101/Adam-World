@@ -182,58 +182,7 @@ public class MainActivity extends Activity {
             });
         }
 
-        @JavascriptInterface public void requestOverpass(String query, String requestId) {
-            executor.execute(() -> {
-                String result = null;
-                String error = "تعذر الوصول إلى خوادم بيانات الخريطة";
-                String[] servers = {
-                        "https://overpass-api.de/api/interpreter",
-                        "https://overpass.kumi.systems/api/interpreter",
-                        "https://overpass.private.coffee/api/interpreter"
-                };
-                for (String endpoint : servers) {
-                    HttpURLConnection c = null;
-                    try {
-                        c = (HttpURLConnection) new URL(endpoint).openConnection();
-                        c.setRequestMethod("POST");
-                        c.setConnectTimeout(20000);
-                        c.setReadTimeout(50000);
-                        c.setDoOutput(true);
-                        c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-                        c.setRequestProperty("User-Agent", "AdamWorld/1.0 (Android)");
-                        byte[] body = ("data=" + java.net.URLEncoder.encode(query, "UTF-8")).getBytes("UTF-8");
-                        try (java.io.OutputStream os = c.getOutputStream()) { os.write(body); }
-                        int status = c.getResponseCode();
-                        if (status != HttpURLConnection.HTTP_OK) {
-                            error = "خادم الخريطة أعاد HTTP " + status;
-                            continue;
-                        }
-                        StringBuilder out = new StringBuilder();
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(c.getInputStream(), "UTF-8"))) {
-                            String line;
-                            while ((line = reader.readLine()) != null) out.append(line);
-                        }
-                        result = out.toString();
-                        break;
-                    } catch (Exception ex) {
-                        error = ex.getClass().getSimpleName() + ": " + (ex.getMessage() == null ? "network error" : ex.getMessage());
-                    } finally {
-                        if (c != null) c.disconnect();
-                    }
-                }
-                final String payload = result;
-                final String failure = result == null ? error : null;
-                runOnUiThread(() -> {
-                    if (webView != null) {
-                        String script = "window.onNativeOverpassResult("
-                                + JSONObject.quote(requestId) + ","
-                                + (payload == null ? "null" : JSONObject.quote(payload)) + ","
-                                + (failure == null ? "null" : JSONObject.quote(failure)) + ")";
-                        webView.evaluateJavascript(script, null);
-                    }
-                });
-            });
-        }
+
     }
 
     private void checkForUpdates(boolean automatic) {
