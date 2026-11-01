@@ -349,7 +349,9 @@ function hitPoint(x,z){
 function blocked(x,z,r){return hitPoint(x,z)||hitPoint(x+r,z)||hitPoint(x-r,z)||hitPoint(x,z+r)||hitPoint(x,z-r);}
 
 function bHeight(t,id){
-  const h=parseFloat(t.height||t['building:height']);
+  // OSM maxheight is the only populated metric for several landmark footprints
+  // (notably Burj Khalifa); honour it before falling back to storey estimates.
+  const h=parseFloat(t.height||t['building:height']||t.maxheight||t['building:maxheight']);
   if(Number.isFinite(h)&&h>0)return Math.max(2.5,h);
   const lv=parseFloat(t['building:levels']);
   if(Number.isFinite(lv)&&lv>0)return Math.max(2.5,lv*3.2);
