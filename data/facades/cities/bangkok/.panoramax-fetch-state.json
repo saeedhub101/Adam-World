@@ -1,14 +1,24 @@
 {
   "next_url": null,
-  "seen_ids": [],
+  "seen_ids": [
+    "042ec82e-4c89-48c6-91a1-aef4452b2e4d",
+    "1d57ec96-3462-4ea8-be8b-0dd61c49367e",
+    "5ac8350f-ff99-4b2f-be60-c3ab40be034e",
+    "65df8964-457e-4623-bb8c-9fbe8dcc1af0",
+    "7fb62ba9-055e-4633-91b3-2490801f7316",
+    "9996fb1a-e26a-4460-b334-b481ac730a4e",
+    "a5372e64-19a6-4bc5-b9c2-2d2087bd4825",
+    "c297cbc0-5e4b-46dd-96cf-ada659caf4a1",
+    "cf81e2b7-f411-42b6-8d41-4b72e881b269"
+  ],
   "pages": 1,
   "complete": true,
-  "last_page_added": 0,
+  "last_page_added": 9,
   "bbox": [
-    100.52868879339862,
-    13.740760977362559,
-    100.54071120660139,
-    13.752439022637443
+    100.51141167458681,
+    13.724169498850161,
+    100.55791682541319,
+    13.76923120114984
   ],
   "source": "https://api.panoramax.xyz/api/search"
 }
