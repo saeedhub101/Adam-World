@@ -422,7 +422,7 @@ const cityGroup=new THREE.Group();scene.add(cityGroup);
 const agentGroup=new THREE.Group();scene.add(agentGroup);
 let bldgs=[],grid=new Map(),CELL=40;
 
-let carPaths=[],pedPaths=[],agents=[];
+let carPaths=[],pedPaths=[],railPaths=[],agents=[];
 const WORLD_MODEL_FILES={
   adult_man:'models/people/adult-man.glb',
   adult_woman:'models/people/adult-woman.glb',
@@ -734,7 +734,7 @@ function resamplePolyline(pts,maxStep=4){
   }
   return out;
 }
-function ribbon(pts,w,y,acc,uw,vs){
+function ribbon(pts,w,y,acc,uw,vs,heightOffset=0){
   pts=resamplePolyline(pts,4);
   const n=pts.length;if(n<2)return;
   let cum=0;const L=[],R=[],V=[];
@@ -747,10 +747,81 @@ function ribbon(pts,w,y,acc,uw,vs){
   }
   for(let i=0;i<n-1;i++){
     const l0=L[i],r0=R[i],l1=L[i+1],r1=R[i+1];
-    acc.pos.push(l0[0],y+terrainHeight(l0[0],l0[1]),l0[1],r0[0],y+terrainHeight(r0[0],r0[1]),r0[1],l1[0],y+terrainHeight(l1[0],l1[1]),l1[1], r0[0],y+terrainHeight(r0[0],r0[1]),r0[1],r1[0],y+terrainHeight(r1[0],r1[1]),r1[1],l1[0],y+terrainHeight(l1[0],l1[1]),l1[1]);
+    acc.pos.push(l0[0],y+terrainHeight(l0[0],l0[1])+heightOffset,l0[1],r0[0],y+terrainHeight(r0[0],r0[1])+heightOffset,r0[1],l1[0],y+terrainHeight(l1[0],l1[1])+heightOffset,l1[1], r0[0],y+terrainHeight(r0[0],r0[1]),r0[1],r1[0],y+terrainHeight(r1[0],r1[1])+heightOffset,r1[1],l1[0],y+terrainHeight(l1[0],l1[1]),l1[1]);
     acc.uv.push(0,V[i],uw,V[i],0,V[i+1], uw,V[i],uw,V[i+1],0,V[i+1]);
   }
 }
+
+const railSleeperMaterial=new THREE.MeshStandardMaterial({color:0x514638,roughness:0.96});
+const railSteelMaterial=new THREE.MeshStandardMaterial({color:0x777d82,metalness:0.82,roughness:0.32});
+const bridgeConcreteMaterial=new THREE.MeshStandardMaterial({color:0x77766f,roughness:0.92});
+const tunnelDarkMaterial=new THREE.MeshBasicMaterial({color:0x101316,side:THREE.DoubleSide});
+const potholeMaterial=new THREE.MeshStandardMaterial({color:0x242729,roughness:1});
+const speedBumpMaterial=new THREE.MeshStandardMaterial({color:0xd5c9a2,roughness:0.95});
+function infrastructureHeight(tags){
+  if(tags&&tags.bridge&&tags.bridge!=='no'){
+    const raw=parseFloat(String(tags['bridge:height']||tags.height||'').replace(/[^0-9.]/g,''));
+    return Number.isFinite(raw)&&raw>1?clamp(raw,2,18):3.6;
+  }
+  if(tags&&tags.tunnel&&tags.tunnel!=='no')return -2.8;
+  return 0;
+}
+function addBridgeSupports(points,width,heightOffset){
+  if(heightOffset<=0)return;
+  const path=makePath(points),count=Math.min(120,Math.max(1,Math.floor(path.total/14)));
+  const geo=new THREE.BoxGeometry(0.7,1,0.7),mesh=new THREE.InstancedMesh(geo,bridgeConcreteMaterial,count),dummy=new THREE.Object3D();
+  for(let i=0;i<count;i++){
+    const p=posAt(path,(i+0.5)*path.total/count,0),groundY=terrainHeight(p.x,p.z);
+    dummy.position.set(p.x,groundY+heightOffset/2,p.z);dummy.scale.set(1,heightOffset,1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+  }
+  mesh.instanceMatrix.needsUpdate=true;cityGroup.add(mesh);
+}
+function addTunnelPortals(points,width){
+  if(!points||points.length<2)return;
+  const ends=[points[0],points[points.length-1]],portalWidth=Math.max(4,Math.min(14,width+1.8));
+  for(let i=0;i<2;i++){
+    const p=ends[i],next=points[i===0?1:points.length-2],dx=(i===0?next[0]-p[0]:p[0]-next[0]),dz=(i===0?next[1]-p[1]:p[1]-next[1]),yaw=Math.atan2(dx,dz),y=terrainHeight(p[0],p[1]);
+    const g=new THREE.Group();
+    const left=new THREE.Mesh(new THREE.BoxGeometry(0.65,4.2,0.9),bridgeConcreteMaterial);left.position.set(-portalWidth/2+0.32,2.1,0);g.add(left);
+    const right=new THREE.Mesh(new THREE.BoxGeometry(0.65,4.2,0.9),bridgeConcreteMaterial);right.position.set(portalWidth/2-0.32,2.1,0);g.add(right);
+    const top=new THREE.Mesh(new THREE.BoxGeometry(portalWidth,0.72,0.95),bridgeConcreteMaterial);top.position.set(0,4.05,0);g.add(top);
+    const opening=new THREE.Mesh(new THREE.PlaneGeometry(portalWidth-0.8,3.7),tunnelDarkMaterial);opening.position.set(0,1.9,-0.04);g.add(opening);
+    g.position.set(p[0],y,p[1]);g.rotation.y=yaw;cityGroup.add(g);
+  }
+}
+function addRailwayTrack(points,tags){
+  const path=makePath(points);if(path.total<18)return;
+  const offset=infrastructureHeight(tags),spacing=0.82,sleeperCount=Math.max(2,Math.min(1800,Math.floor(path.total/spacing)));
+  const sleepers=new THREE.InstancedMesh(new THREE.BoxGeometry(2.35,0.15,0.22),railSleeperMaterial,sleeperCount),dummy=new THREE.Object3D();
+  for(let i=0;i<sleeperCount;i++){
+    const p=posAt(path,(i+0.5)*path.total/sleeperCount,0);
+    dummy.position.set(p.x,terrainHeight(p.x,p.z)+offset+0.08,p.z);dummy.rotation.y=Math.atan2(p.dx,p.dz);dummy.updateMatrix();sleepers.setMatrixAt(i,dummy.matrix);
+  }
+  sleepers.instanceMatrix.needsUpdate=true;cityGroup.add(sleepers);
+  const segments=path.pts.length-1,rails=new THREE.InstancedMesh(new THREE.BoxGeometry(0.13,0.17,1),railSteelMaterial,Math.max(2,segments*2));
+  let idx=0;
+  for(let i=0;i<segments;i++){
+    const a=path.pts[i],b=path.pts[i+1],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz);if(len<0.05)continue;
+    const nx=-dz/len,nz=dx/len,yaw=Math.atan2(dx,dz),cx=(a[0]+b[0])/2,cz=(a[1]+b[1])/2;
+    for(const side of [-0.72,0.72]){
+      const x=cx+nx*side,z=cz+nz*side;
+      dummy.position.set(x,terrainHeight(x,z)+offset+0.22,z);dummy.rotation.set(0,yaw,0);dummy.scale.set(1,1,len);dummy.updateMatrix();rails.setMatrixAt(idx++,dummy.matrix);
+    }
+  }
+  rails.count=idx;rails.instanceMatrix.needsUpdate=true;cityGroup.add(rails);
+  if(offset>0)addBridgeSupports(points,2.4,offset);
+  if(offset<0)addTunnelPortals(points,2.4);
+  railPaths.push({path:path,heightOffset:offset,tags:tags});
+}
+function addPothole(p){
+  const g=new THREE.CircleGeometry(0.27,10);g.rotateX(-Math.PI/2);
+  const m=new THREE.Mesh(g,potholeMaterial);m.position.set(p[0],terrainHeight(p[0],p[1])+0.085,p[1]);m.scale.set(1,0.72,1);cityGroup.add(m);
+}
+function addSpeedBump(p){
+  const g=new THREE.Mesh(new THREE.BoxGeometry(5.5,0.13,0.42),speedBumpMaterial);
+  g.position.set(p[0],terrainHeight(p[0],p[1])+0.12,p[1]);g.rotation.y=p[2]||0;cityGroup.add(g);
+}
+
 function flatPoly(P,y,acc){
   const tr=triangulate(P);
   for(const t of tr){for(const k of t){acc.pos.push(P[k][0],y+terrainHeight(P[k][0],P[k][1]),P[k][1]);acc.uv.push(0,0);}}
@@ -1339,11 +1410,11 @@ async function loadArea(lat,lon,spawn){
   disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];
   if(terrainGrid)addTerrainSurface(terrainGrid);
   for(const key of Object.keys(archAcc))archAcc[key]=[];
-  bldgs=[];grid=new Map();carPaths=[];pedPaths=[];
+  bldgs=[];grid=new Map();carPaths=[];pedPaths=[];railPaths=[];
   const B=newAcc(),G=newAcc(),RWd=newAcc(),RNr=newAcc(),SW=newAcc();
   const LC={grass:newAcc(),forest:newAcc(),scrub:newAcc(),crops:newAcc(),bare:newAcc(),sand:newAcc(),wetland:newAcc()};
   const WT=newAcc(),WTLine=newAcc();
-  const trees=[],lamps=[],signals=[],busStops=[],stopSigns=[],crossings=[],waterfalls=[];const roadLabels=[],roadLabelKeys=new Set();let bcount=0;
+  const trees=[],lamps=[],signals=[],busStops=[],stopSigns=[],crossings=[],waterfalls=[],potholes=[],speedBumps=[];const roadLabels=[],roadLabelKeys=new Set();let bcount=0;
   const facadeAssignments=loadVerifiedFacadeAssignments();
   const wallV=3.4*4;
   for(const el of data.elements){
@@ -1356,6 +1427,8 @@ async function loadArea(lat,lon,spawn){
       else if(t.highway==='bus_stop'&&busStops.length<250){busStops.push({p:proj(el.lat,el.lon),tags:t});}
       else if(t.highway==='stop'&&stopSigns.length<250){stopSigns.push(proj(el.lat,el.lon));}
       else if(t.highway==='crossing'&&crossings.length<300){crossings.push(proj(el.lat,el.lon));}
+      else if(t.hazard==='pothole'&&potholes.length<500){potholes.push(proj(el.lat,el.lon));}
+      else if(t.traffic_calming&&speedBumps.length<500){speedBumps.push({p:proj(el.lat,el.lon),tags:t});}
       continue;
     }
     if(el.type!=='way'||!el.geometry||el.geometry.length<2)continue;
@@ -1406,6 +1479,40 @@ async function loadArea(lat,lon,spawn){
       }
       const ll=unproj(cx,cz);const bb={id:el.id,tags:t,height:h,baseY:baseY,lat:ll[0],lon:ll[1],name:t.name||t["addr:housenumber"]||("OSM building "+el.id),pts:P,minx:minx,maxx:maxx,minz:minz,maxz:maxz};bldgs.push(bb);gridAdd(bb);
     }else if(t.highway&&RW[t.highway]){
+      const baseWidth=RW[t.highway];
+      const taggedWidth=parseFloat(String(t.width||'').replace(/[^0-9.]/g,''));
+      const lanes=Math.max(0,parseInt(t.lanes||'0',10)||0);
+      const w=clamp(Number.isFinite(taggedWidth)&&taggedWidth>0?taggedWidth:(lanes>=1?lanes*3.1:baseWidth),2.2,28);
+      let P=[];for(const p of raw){const q=P[P.length-1];if(!q||Math.hypot(p[0]-q[0],p[1]-q[1])>0.3)P.push(p);}
+      if(P.length<2)continue;
+      P=resamplePolyline(P,4);
+      const veh=w>=4.5&&t.highway!=='pedestrian',heightOffset=infrastructureHeight(t),isTunnel=heightOffset<0;
+      if(w>=6||t.highway==='service'){
+        ribbon(P,w+4.2,0.05,SW,(w+4.2)/2,2,heightOffset);
+        ribbon(P,w,0.09,w>=7?RWd:RNr,1,w>=7?12:6,heightOffset);
+      }else{
+        ribbon(P,w,0.07,SW,w/2,2,heightOffset);
+      }
+      if(heightOffset>0)addBridgeSupports(P,w,heightOffset);
+      if(isTunnel)addTunnelPortals(P,w);
+      const path=makePath(P);path.heightOffset=heightOffset;
+      if(path.total>20&&!isTunnel){
+        if(veh)carPaths.push({path:path,w:w,heightOffset:heightOffset});
+        pedPaths.push({path:path,w:w,veh:veh});
+        const roadName=String(t['name:ar']||t['name:en']||t.name||t.official_name||t.loc_name||t.ref||'').trim();
+        if(roadName&&roadLabels.length<240){
+          const copies=Math.min(3,Math.max(1,Math.ceil(path.total/140)));
+          for(let li=0;li<copies;li++){
+            const distance=path.total*(li+1)/(copies+1),p=posAt(path,distance,0);
+            const key=roadName.toLocaleLowerCase()+'|'+Math.round(p.x/60)+','+Math.round(p.z/60);
+            if(!roadLabelKeys.has(key)){roadLabelKeys.add(key);roadLabels.push({name:roadName,path:path,distance:distance});}
+          }
+        }
+      }
+    }else if(t.railway&&['rail','light_rail','subway','tram','monorail','narrow_gauge','funicular','preserved'].includes(String(t.railway).toLowerCase())){
+      const P=raw.filter((p,i)=>!i||Math.hypot(p[0]-raw[i-1][0],p[1]-raw[i-1][1])>0.4);
+      if(P.length>=2)addRailwayTrack(P,t);
+    }
       const w=RW[t.highway];
       let P=[];for(const p of raw){const q=P[P.length-1];if(!q||Math.hypot(p[0]-q[0],p[1]-q[1])>0.3)P.push(p);}
       if(P.length<2)continue;
@@ -1466,6 +1573,8 @@ async function loadArea(lat,lon,spawn){
       if(target)flatPoly(P,0.03,target);
     }
   }
+  for(const p of potholes)addPothole(p);
+  for(const item of speedBumps){const p=proj(item.p[0],item.p[1]);addSpeedBump([p[0],p[1],0]);}
   if(data.city&&data.city.slug==='amman')addRomanTheatre();
   const adds=[[accMesh(B,matB)],[accMesh(G,matG)],[accMesh(RWd,matRoadW)],[accMesh(RNr,matRoadN)],[accMesh(SW,matSw)],
     [accMesh(LC.grass,matGrass)],[accMesh(LC.forest,matForest)],[accMesh(LC.scrub,matScrub)],
@@ -1636,6 +1745,16 @@ async function loadArea(lat,lon,spawn){
         }catch(e){console.warn('Could not create vehicle',key,e);}
       }
     }
+  }
+  if(railPaths.length){
+    try{
+      await loadWorldModel('metro_car');
+      const usableRails=railPaths.filter(r=>r.path.total>35);
+      for(const rail of usableRails.slice(0,2)){
+        const m=await loadWorldModel('metro_car');agentGroup.add(m);
+        agents.push({kind:'train',path:rail.path,heightOffset:rail.heightOffset||0,off:0,s:Math.random()*rail.path.total,dir:Math.random()<0.5?1:-1,sp:9,m:m,ph:0});
+      }
+    }catch(e){console.warn('Metro GLB or railway data unavailable',e);}
   }
   await addStaticPedestrians(citySlug);
 
@@ -1866,8 +1985,8 @@ function frame(now){
     if(a.s>a.path.total){a.s=a.path.total;a.dir=-1;}else if(a.s<0){a.s=0;a.dir=1;}
     const o=a.off*(a.kind==='car'?a.dir:1);
     const p=posAt(a.path,a.s,a.kind==='car'?o:(a.dir>0?a.off:a.off));
-    const rideHeight=a.kind==='car'?0.04:0;
-    a.m.position.set(p.x,terrainHeight(p.x,p.z)+rideHeight,p.z);a.m.rotation.y=Math.atan2(p.dx*a.dir,p.dz*a.dir)+(a.m.userData.headingOffset||0);if(a.m.userData.wheels)for(const w of a.m.userData.wheels)w.rotation.x+=a.dir*moveSpeed*dt/0.34;
+    const rideHeight=a.kind==='car'?0.04:a.kind==='train'?0.3:0;
+    a.m.position.set(p.x,terrainHeight(p.x,p.z)+rideHeight+(a.heightOffset||0),p.z);a.m.rotation.y=Math.atan2(p.dx*a.dir,p.dz*a.dir)+(a.m.userData.headingOffset||0);if(a.m.userData.wheels)for(const w of a.m.userData.wheels)w.rotation.x+=a.dir*moveSpeed*dt/0.34;
     if(a.kind==='ped'){a.ph+=a.sp*dt*2.2;swing(a.m,a.ph,0.6);}
   }
 
