@@ -136,3 +136,45 @@ but not as a building roof photograph. The review-queue processor now classifies
 DEM/DSM products separately and never allows them to become roof texture
 candidates. Even high-resolution optical imagery is only a roof-shape/colour
 candidate; it is not allowed to texture a facade.
+
+## Strict candidate filtering and local image review
+
+The candidate queue now measures camera distance to the nearest edge of each OSM
+footprint rather than to a rough building centroid. A photo is eligible for the
+visual-review gallery only when all of the following are present and pass:
+- capture point within 35 m of the footprint edge;
+- camera azimuth within 25 degrees of the nearest facade bearing;
+- usable horizontal field of view (25–120 degrees);
+- a real HTTPS image preview and a downloadable image asset;
+- an explicit redistributable CC0 / CC-BY / CC-BY-SA licence (NC and ND licences
+  are rejected); and
+- no invalid facade-level camera pitch when pitch metadata is supplied.
+
+The `prepare_facade_review.py` workflow downloads only the highest-ranked eligible
+preview per building (up to 50 unique photos per city), verifies that the response
+is an actual decodable image with minimum dimensions, and saves it locally with a
+review gallery and provenance fields. It rejects HTML placeholders, non-image
+responses, tiny images and oversized files. Each city review pack is checkpointed
+to `main` as it is completed.
+
+**Important:** this gate verifies file validity, source licence metadata and
+geometric camera suitability. It cannot determine from metadata alone whether the
+photo visibly depicts the exact OSM building rather than an adjacent facade. The
+gallery therefore remains `requires_visual_identity_review`; it never writes to
+`verified_facades.json` or applies a texture automatically. Only after the exact
+building and facade are visually confirmed can the full-resolution image be
+downloaded and projected onto that building's wall.
+
+## Lightweight Android game updates
+
+The Android client now supports a small signed-release web-content bundle. When
+only `app/src/main/assets/index.html` changes and no native Android code or offline
+city source data changes, the release includes `adam-world-web-update.zip`.
+The installed app downloads this small bundle, validates its contents, stores it
+inside its private application directory and reloads the game without reinstalling
+the APK. Existing app data is retained. Changes to Java/Kotlin, the manifest,
+Gradle configuration or packaged offline city source data still require a normal
+Android package update. Installing a same-package APK signed with the same release
+key is an in-place Android update and does not delete the app's private data;
+Google Play App Bundle delivery is the recommended route for store-managed
+split/incremental delivery.
