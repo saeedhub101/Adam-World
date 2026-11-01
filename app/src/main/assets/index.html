@@ -459,7 +459,7 @@ function loadWorldModel(key){
     let box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
     const isVehicle=Object.prototype.hasOwnProperty.call(WORLD_VEHICLE_LENGTH,key);
     let headingOffset=0;
-    if(isVehicle&&size.x>size.z){model.rotation.y=Math.PI/2;headingOffset=Math.PI/2;box=new THREE.Box3().setFromObject(model);size=box.getSize(new THREE.Vector3());}
+    if(isVehicle&&size.x>size.z){model.rotation.y=Math.PI/2;headingOffset=0;box=new THREE.Box3().setFromObject(model);size=box.getSize(new THREE.Vector3());}
     const target=isVehicle?(WORLD_VEHICLE_LENGTH[key]||4.5):(WORLD_MODEL_HEIGHT[key]||1.7);
     const scale=isVehicle?target/Math.max(size.x,size.z):target/Math.max(0.01,size.y);
     const center=box.getCenter(new THREE.Vector3());
@@ -1866,7 +1866,7 @@ function frame(now){
     if(a.s>a.path.total){a.s=a.path.total;a.dir=-1;}else if(a.s<0){a.s=0;a.dir=1;}
     const o=a.off*(a.kind==='car'?a.dir:1);
     const p=posAt(a.path,a.s,a.kind==='car'?o:(a.dir>0?a.off:a.off));
-    const rideHeight=a.kind==='car'?0.13:0;
+    const rideHeight=a.kind==='car'?0.04:0;
     a.m.position.set(p.x,terrainHeight(p.x,p.z)+rideHeight,p.z);a.m.rotation.y=Math.atan2(p.dx*a.dir,p.dz*a.dir)+(a.m.userData.headingOffset||0);if(a.m.userData.wheels)for(const w of a.m.userData.wheels)w.rotation.x+=a.dir*moveSpeed*dt/0.34;
     if(a.kind==='ped'){a.ph+=a.sp*dt*2.2;swing(a.m,a.ph,0.6);}
   }
