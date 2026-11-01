@@ -501,38 +501,52 @@ function cityRoadVehicleProfile(slug){
 }
 async function addStaticPedestrians(slug){
   if(!pedPaths.length)return;
-  const keys=['adult_man','adult_woman','child_boy','child_girl'];
+  const walkingKeys=['adult_man_walk','adult_woman_walk'];
+  const standingKeys=['adult_man','adult_woman','child_boy','child_girl'];
   const loaded={};
-  await Promise.all(keys.map(async key=>{try{loaded[key]=true;await loadWorldModel(key);}catch(e){loaded[key]=false;console.warn('Human GLB unavailable',key,e);}}));
-  const available=keys.filter(k=>loaded[k]);
-  for(let i=0;i<14&&available.length;i++){
+  await Promise.all([...walkingKeys,...standingKeys,'dog'].map(async key=>{try{await loadWorldModel(key);loaded[key]=true;}catch(e){loaded[key]=false;console.warn('Crowd GLB unavailable',key,e);}}));
+  const availableWalkers=walkingKeys.filter(k=>loaded[k]);
+  for(let i=0;i<10&&availableWalkers.length;i++){
     const pp=pedPaths[Math.floor(Math.random()*pedPaths.length)];
     const distance=Math.random()*Math.max(0.1,pp.path.total-0.5);
     const side=pp.veh?(pp.w/2+1.5)*(Math.random()<0.5?-1:1):(Math.random()-0.5)*0.8;
     const p=posAt(pp.path,distance,side);
     if(blocked(p.x,p.z,0.28))continue;
     try{
-      const key=available[Math.floor(Math.random()*available.length)];
+      const key=availableWalkers[Math.floor(Math.random()*availableWalkers.length)];
+      const m=await loadWorldModel(key);agentGroup.add(m);
+      agents.push({kind:'ped',path:pp.path,off:side,s:distance,dir:Math.random()<0.5?1:-1,sp:key==='adult_man_walk'?1.25:1.15,m:m,ph:0,heightOffset:pp.heightOffset||0});
+    }catch(e){console.warn('Could not create animated pedestrian',e);}
+  }
+  const availableStanding=standingKeys.filter(k=>loaded[k]);
+  for(let i=0;i<8&&availableStanding.length;i++){
+    const pp=pedPaths[Math.floor(Math.random()*pedPaths.length)];
+    const distance=Math.random()*Math.max(0.1,pp.path.total-0.5);
+    const side=pp.veh?(pp.w/2+1.5)*(Math.random()<0.5?-1:1):(Math.random()-0.5)*0.8;
+    const p=posAt(pp.path,distance,side);
+    if(blocked(p.x,p.z,0.28))continue;
+    try{
+      const key=availableStanding[Math.floor(Math.random()*availableStanding.length)];
       const m=await loadWorldModel(key);
       m.position.set(p.x,terrainHeight(p.x,p.z)+(pp.heightOffset||0),p.z);
       m.rotation.y=Math.atan2(p.dx,p.dz)+(m.userData.headingOffset||0);
       agentGroup.add(m);
-    }catch(e){console.warn('Could not place human asset',e);}
+    }catch(e){console.warn('Could not place standing person',e);}
   }
-  try{
-    await loadWorldModel('dog');
+  if(loaded.dog){
     for(let i=0;i<2;i++){
       const pp=pedPaths[Math.floor(Math.random()*pedPaths.length)];
       const p=posAt(pp.path,Math.random()*Math.max(0.1,pp.path.total-0.5),pp.veh?pp.w/2+2.2:1.1);
       if(blocked(p.x,p.z,0.3))continue;
-      const dog=await loadWorldModel('dog');
-      dog.position.set(p.x,terrainHeight(p.x,p.z)+(pp.heightOffset||0),p.z);
-      dog.rotation.y=Math.atan2(p.dx,p.dz);
-      agentGroup.add(dog);
+      try{
+        const dog=await loadWorldModel('dog');
+        dog.position.set(p.x,terrainHeight(p.x,p.z)+(pp.heightOffset||0),p.z);
+        dog.rotation.y=Math.atan2(p.dx,p.dz);
+        agentGroup.add(dog);
+      }catch(e){console.warn('Dog GLB placement failed',e);}
     }
-  }catch(e){console.warn('Dog GLB unavailable',e);}
+  }
 }
-
 
 function gridAdd(b){
   const x0=Math.floor(b.minx/CELL),x1=Math.floor(b.maxx/CELL),z0=Math.floor(b.minz/CELL),z1=Math.floor(b.maxz/CELL);
@@ -1984,7 +1998,7 @@ function frame(now){
     const p=posAt(a.path,a.s,a.kind==='car'?o:(a.dir>0?a.off:a.off));
     const rideHeight=a.kind==='car'?0.04:a.kind==='train'?0.3:0;
     a.m.position.set(p.x,terrainHeight(p.x,p.z)+rideHeight+(a.heightOffset||0),p.z);a.m.rotation.y=Math.atan2(p.dx*a.dir,p.dz*a.dir)+(a.m.userData.headingOffset||0);if(a.m.userData.wheels)for(const w of a.m.userData.wheels)w.rotation.x+=a.dir*moveSpeed*dt/0.34;
-    if(a.kind==='ped'){a.ph+=a.sp*dt*2.2;swing(a.m,a.ph,0.6);}
+    if(a.kind==='ped'){if(a.m.userData.mixer)a.m.userData.mixer.update(dt);else{a.ph+=a.sp*dt*2.2;swing(a.m,a.ph,0.6);}}
   }
 
   /* الكاميرا */
