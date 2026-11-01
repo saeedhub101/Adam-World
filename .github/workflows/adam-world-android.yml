@@ -1,5 +1,5 @@
 name: Adam World Android Build and Release
-# Rebuild on launcher icon and map streaming updates
+# Builds and publishes production-key-signed APK and AAB files.
 
 on:
   push:
@@ -17,11 +17,14 @@ on:
   workflow_run:
     workflows: ["Adam World Offline City Data Import"]
     types: [completed]
-
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: adam-world-android-release
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -41,6 +44,21 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.5"
+
+      - name: Prepare production signing keystore
+        env:
+          ADAM_WORLD_KEYSTORE_BASE64: ${{ secrets.ADAM_WORLD_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ADAM_WORLD_KEYSTORE_BASE64}" ]; then
+            echo "::error::Missing GitHub Secret: ADAM_WORLD_KEYSTORE_BASE64"
+            exit 1
+          fi
+          KEYSTORE_PATH="$RUNNER_TEMP/adam-world-release.jks"
+          printf '%s' "$ADAM_WORLD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          test -s "$KEYSTORE_PATH"
+          echo "ADAM_WORLD_KEYSTORE_FILE=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+          echo "Release keystore decoded successfully."
 
       - name: Vendor the pinned Three.js runtime for offline startup
         run: |
@@ -72,24 +90,41 @@ jobs:
           inline = [body for attrs, body in scripts if "src=" not in attrs.lower() and body.strip()]
           if not inline:
               raise SystemExit("No inline game JavaScript found")
-          Path("/tmp/adam-world-inline.js").write_text("\n".join(inline), encoding="utf-8")
+          Path("/tmp/adam-world-inline.js").write_text("\\n".join(inline), encoding="utf-8")
           PY
           node --check /tmp/adam-world-inline.js
-      - name: Build APK and AAB
-        run: gradle --no-daemon -PVERSION_CODE=${{ github.run_number }} assembleRelease bundleRelease
 
-      - name: Verify outputs
+      - name: Build signed APK and AAB
+        env:
+          ADAM_WORLD_KEYSTORE_PASSWORD: ${{ secrets.ADAM_WORLD_KEYSTORE_PASSWORD }}
+          ADAM_WORLD_KEY_ALIAS: ${{ secrets.ADAM_WORLD_KEY_ALIAS }}
+          ADAM_WORLD_KEY_PASSWORD: ${{ secrets.ADAM_WORLD_KEY_PASSWORD }}
         run: |
-          test -s app/build/outputs/apk/release/app-release.apk
-          test -s app/build/outputs/bundle/release/app-release.aab
-          unzip -l app/build/outputs/apk/release/app-release.apk > /tmp/adam-world-apk-files.txt
-          grep -q 'assets/vendor/three.min.js' /tmp/adam-world-apk-files.txt
-          grep -q 'assets/cities/catalog.json' /tmp/adam-world-apk-files.txt
-          for city in amman manila bangkok new-york paris dubai tokyo london riyadh cairo; do
-            grep -q "assets/cities/$city/manifest.json" /tmp/adam-world-apk-files.txt
-            grep -q "assets/cities/$city/tile_" /tmp/adam-world-apk-files.txt
+          set -euo pipefail
+          for secret_name in ADAM_WORLD_KEYSTORE_PASSWORD ADAM_WORLD_KEY_ALIAS ADAM_WORLD_KEY_PASSWORD; do
+            if [ -z "${!secret_name:-}" ]; then
+              echo "::error::Missing GitHub Secret: $secret_name"
+              exit 1
+            fi
           done
-          ls -lh app/build/outputs/apk/release/app-release.apk app/build/outputs/bundle/release/app-release.aab
+          gradle --no-daemon -PVERSION_CODE=${{ github.run_number }} assembleRelease bundleRelease
+
+      - name: Verify outputs and release signatures
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/app-release.apk"
+          AAB="app/build/outputs/bundle/release/app-release.aab"
+          test -s "$APK"
+          test -s "$AAB"
+          apksigner verify --verbose "$APK"
+          jarsigner -verify -verbose -certs "$AAB" >/tmp/adam-world-aab-signature.txt
+          grep -q 'assets/vendor/three.min.js' <(unzip -l "$APK")
+          grep -q 'assets/cities/catalog.json' <(unzip -l "$APK")
+          for city in amman manila bangkok new-york paris dubai tokyo london riyadh cairo; do
+            grep -q "assets/cities/$city/manifest.json" <(unzip -l "$APK")
+            grep -q "assets/cities/$city/tile_" <(unzip -l "$APK")
+          done
+          ls -lh "$APK" "$AAB"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -99,8 +134,9 @@ jobs:
           body: |
             **App:** Adam World
             **Publisher:** Saeed Mansour
-            **Build outputs:** release-variant APK and AAB (signed with the Android debug key for sideload testing; not a Google Play production signature).\n            **Version code:** ${{ github.run_number }}. The Android app checks this release automatically and can also check manually.
-            **Note:** The AAB is debug-signed and is not ready for Google Play production upload. A private production signing key is required for that.
+            **Build outputs:** APK and AAB signed with the configured release keystore.
+            **Version code:** ${{ github.run_number }}
+            **Signing:** Production release key supplied through GitHub Actions Secrets.
           files: |
             app/build/outputs/apk/release/app-release.apk
             app/build/outputs/bundle/release/app-release.aab
