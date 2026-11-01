@@ -506,7 +506,7 @@ async function addStaticPedestrians(slug){
     try{
       const key=available[Math.floor(Math.random()*available.length)];
       const m=await loadWorldModel(key);
-      m.position.set(p.x,terrainHeight(p.x,p.z),p.z);
+      m.position.set(p.x,terrainHeight(p.x,p.z)+(pp.heightOffset||0),p.z);
       m.rotation.y=Math.atan2(p.dx,p.dz)+(m.userData.headingOffset||0);
       agentGroup.add(m);
     }catch(e){console.warn('Could not place human asset',e);}
@@ -518,7 +518,7 @@ async function addStaticPedestrians(slug){
       const p=posAt(pp.path,Math.random()*Math.max(0.1,pp.path.total-0.5),pp.veh?pp.w/2+2.2:1.1);
       if(blocked(p.x,p.z,0.3))continue;
       const dog=await loadWorldModel('dog');
-      dog.position.set(p.x,terrainHeight(p.x,p.z),p.z);
+      dog.position.set(p.x,terrainHeight(p.x,p.z)+(pp.heightOffset||0),p.z);
       dog.rotation.y=Math.atan2(p.dx,p.dz);
       agentGroup.add(dog);
     }
@@ -1509,7 +1509,7 @@ async function loadArea(lat,lon,spawn){
       const path=makePath(P);path.heightOffset=heightOffset;
       if(path.total>20&&!isTunnel){
         if(veh)carPaths.push({path:path,w:w,heightOffset:heightOffset,surface:surface,smoothness:smoothness});
-        pedPaths.push({path:path,w:w,veh:veh});
+        pedPaths.push({path:path,w:w,veh:veh,heightOffset:heightOffset});
         const roadName=String(t['name:ar']||t['name:en']||t.name||t.official_name||t.loc_name||t.ref||'').trim();
         if(roadName&&roadLabels.length<240){
           const copies=Math.min(3,Math.max(1,Math.ceil(path.total/140)));
@@ -1728,7 +1728,7 @@ async function loadArea(lat,lon,spawn){
         const key=usable[Math.floor(Math.random()*usable.length)];
         try{
           const m=await loadWorldModel(key);agentGroup.add(m);
-          agents.push({kind:'car',assetKey:key,path:cp.path,roadWidth:cp.w,roadCondition:cp.smoothness||cp.surface,off:Math.min(cp.w/4,1.35),s:Math.random()*cp.path.total,dir:Math.random()<0.5?1:-1,sp:key==='motorcycle'?8+Math.random()*5:5+Math.random()*4,m:m,ph:0});
+          agents.push({kind:'car',assetKey:key,path:cp.path,roadWidth:cp.w,roadCondition:cp.smoothness||cp.surface,heightOffset:cp.heightOffset||0,off:Math.min(cp.w/4,1.35),s:Math.random()*cp.path.total,dir:Math.random()<0.5?1:-1,sp:key==='motorcycle'?8+Math.random()*5:5+Math.random()*4,m:m,ph:0});
         }catch(e){console.warn('Could not create vehicle',key,e);}
       }
     }
