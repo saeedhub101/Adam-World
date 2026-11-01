@@ -2,16 +2,17 @@
   "next_url": null,
   "seen_ids": [
     "6643bd989af9850001610aeb",
-    "Copernicus_DSM_COG_10_N40_00_W074_00_DEM"
+    "Copernicus_DSM_COG_10_N40_00_W074_00_DEM",
+    "Copernicus_DSM_COG_10_N40_00_W075_00_DEM"
   ],
   "pages": 1,
   "complete": true,
-  "last_page_added": 2,
+  "last_page_added": 1,
   "bbox": [
-    -73.99320854697702,
-    40.752160977362564,
-    -73.97779145302299,
-    40.76383902263744
+    -74.0156832628955,
+    40.73540089885016,
+    -73.95501503710452,
+    40.78070760114984
   ],
   "source": "https://api.imagery.hotosm.org/stac/search"
 }
