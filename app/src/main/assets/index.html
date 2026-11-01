@@ -229,17 +229,39 @@ function posAt(path,s,off){
 /* ---------- بيانات OSM ---------- */
 const RW={motorway:14,trunk:12,primary:11,secondary:9,tertiary:8,unclassified:6,residential:6,living_street:5,service:4.5,motorway_link:7,trunk_link:7,primary_link:7,secondary_link:6,tertiary_link:6,pedestrian:6,footway:2.5,path:2,steps:2,cycleway:2.5,track:3.5};
 const PALETTE=['#d9c9a8','#cfcfcf','#c4876b','#ece6d8','#c2a27a','#aeb8c2','#d8b98e','#e3dccb'];
+const nativeOverpassPending = new Map();
+let nativeOverpassSequence = 0;
+window.onNativeOverpassResult = function(id, payload, error) {
+  const pending = nativeOverpassPending.get(id);
+  if (!pending) return;
+  nativeOverpassPending.delete(id);
+  if (error) { pending.reject(new Error(error)); return; }
+  try { pending.resolve(JSON.parse(payload)); }
+  catch (e) { pending.reject(new Error('استجابة بيانات الخريطة غير صالحة')); }
+};
 async function overpass(q){
-  const servers=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
-  for(const s of servers){
-    try{
-      const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),15000);
-      const r=await fetch(s,{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'},signal:ac.signal});
-      clearTimeout(tm);
-      if(!r.ok)continue;return await r.json();
-    }catch(e){}
+  // In the Android app, use native HTTP instead of WebView fetch from file://.
+  if(window.Android && typeof Android.requestOverpass === 'function'){
+    return new Promise((resolve,reject)=>{
+      const id='osm-'+(++nativeOverpassSequence);
+      nativeOverpassPending.set(id,{resolve,reject});
+      try { Android.requestOverpass(q,id); }
+      catch(e) { nativeOverpassPending.delete(id); reject(e); }
+    });
   }
-  throw new Error('overpass');
+  const servers=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+  let lastError=null;
+  for(const s of servers){
+    let tm=null;
+    try{
+      const ac=new AbortController();tm=setTimeout(()=>ac.abort(),25000);
+      const r=await fetch(s,{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'},signal:ac.signal});
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return await r.json();
+    }catch(e){lastError=e;}
+    finally{if(tm)clearTimeout(tm);}
+  }
+  throw new Error(lastError&&lastError.message?lastError.message:'تعذر الاتصال بخوادم بيانات الخريطة');
 }
 function buildQuery(lat,lon,R){
   const a='(around:'+R+','+lat+','+lon+')';
@@ -503,10 +525,17 @@ async function loadArea(lat,lon,spawn){
 
 let loading=false;
 async function loadCity(lat,lon){
-  loading=true;$('loading').style.display='flex';$('loading').textContent='جاري تحميل المدينة…';
-  try{await loadArea(lat,lon,true);}
-  catch(e){$('loading').textContent='تعذر تحميل بيانات المدينة. تحقق من الإنترنت ثم أعد المحاولة.';setTimeout(()=>{$('loading').style.display='none';},3500);}
-  loading=false;
+  loading=true;$('loading').style.display='flex';$('loading').textContent='جاري تحميل بيانات المدينة من OpenStreetMap…';
+  try{
+    await loadArea(lat,lon,true);
+  }catch(e){
+    const detail=e&&e.message?e.message:'خطأ غير معروف';
+    $('loading').textContent='تعذر الوصول إلى خوادم بيانات المدينة. '+detail+' — اضغط هنا لإعادة المحاولة.';
+    $('loading').style.display='flex';
+    $('loading').onclick=()=>{ $('loading').onclick=null; loadCity(lat,lon); };
+  }finally{
+    loading=false;
+  }
 }
 async function reloadHere(){
   if(loading)return;loading=true;
