@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "import_profile_version": 3,
+  "import_profile_version": 4,
   "city": "Tokyo",
   "slug": "tokyo",
   "source": "OpenStreetMap Overpass",
