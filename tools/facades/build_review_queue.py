@@ -186,8 +186,9 @@ def photo_metadata(feature: dict[str, Any]) -> dict[str, Any]:
     if re.fullmatch(r"[0-9a-fA-F-]{36}", photo_id):
         if not preview_asset:
             preview_asset = {"href": f"https://api.panoramax.xyz/api/pictures/{photo_id}/thumb.jpg"}
-        if not full_image:
-            full_image = {"href": f"https://api.panoramax.xyz/api/pictures/{photo_id}/hd.jpg"}
+        # The federated API's HD endpoint is preferable to an SD "visual" derivative
+        # when the image is eventually baked into a facade texture.
+        full_image = {"href": f"https://api.panoramax.xyz/api/pictures/{photo_id}/hd.jpg"}
     links = feature.get("links") or []
     self_link = next((x.get("href") for x in links if x.get("rel") == "self"), None)
     return {
