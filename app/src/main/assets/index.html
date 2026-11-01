@@ -444,7 +444,7 @@ $("imageryToggle").onclick=()=>{const p=$("imageryPanel"),show=p.style.display!=
 /* ---------- بناء المدينة ---------- */
 async function loadArea(lat,lon,spawn){
   const data=(window.Android&&typeof Android.readAssetText==='function')
-    ? await loadOfflineArea(lat,lon,650)
+    ? await loadOfflineArea(lat,lon,450)
     : await overpass(buildQuery(lat,lon,650));
   if(!spawn){ // نقل الأصل مع الحفاظ على مواقع اللاعب
     const o=proj(lat,lon);
@@ -746,7 +746,7 @@ function frame(now){
   sky.position.copy(camera.position);
   ground.position.x=Math.round(camera.position.x/13.3333)*13.3333;ground.position.z=Math.round(camera.position.z/13.3333)*13.3333;
 
-  if(now-lastCheck>900){lastCheck=now;if(!loading&&Math.hypot(tx,tz)>280)reloadHere();}
+  if(now-lastCheck>900){lastCheck=now;if(!loading&&Math.hypot(tx,tz)>220)reloadHere();}
   renderer.render(scene,camera);
 }
 
