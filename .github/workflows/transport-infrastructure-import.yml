@@ -25,5 +25,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+      - name: Validate importer syntax
+        run: python3 -m py_compile tools/import_city_transport_infrastructure.py
       - name: Import railway, waterway, bridge, tunnel and road-condition features
         run: python3 tools/import_city_transport_infrastructure.py
