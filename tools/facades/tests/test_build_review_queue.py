@@ -62,6 +62,36 @@ class CandidateQueueTests(unittest.TestCase):
         target = (1.0, 0.0)
         self.assertGreater(mod.angle_delta(0, mod.bearing_deg(loc, target)), 25)
 
+    def test_strict_review_gate_requires_real_image_camera_and_open_license(self):
+        photo = {
+            "azimuth_deg": 90, "field_of_view_deg": 70, "pitch_deg": -5,
+            "license": "CC-BY-SA-4.0", "preview_url": "https://example.org/preview.jpg",
+            "image_url": "https://example.org/full.jpg", "capture_datetime": "2025-01-01T00:00:00Z",
+        }
+        eligible, reasons, score = mod.photo_quality_gate(photo, 8, 5)
+        self.assertTrue(eligible, reasons)
+        self.assertGreater(score, 70)
+        photo["license"] = "CC-BY-NC-SA-4.0"
+        eligible, reasons, _ = mod.photo_quality_gate(photo, 8, 5)
+        self.assertFalse(eligible)
+        self.assertIn("redistribution_license_not_confirmed", reasons)
+
+    def test_missing_full_photo_asset_is_rejected_from_visual_review(self):
+        photo = {
+            "azimuth_deg": 90, "field_of_view_deg": 70, "pitch_deg": 0,
+            "license": "CC-BY-4.0", "preview_url": "https://example.org/preview.jpg",
+            "image_url": None, "capture_datetime": "2025-01-01T00:00:00Z",
+        }
+        eligible, reasons, _ = mod.photo_quality_gate(photo, 5, 3)
+        self.assertFalse(eligible)
+        self.assertIn("no_downloadable_photo_asset", reasons)
+
+    def test_distance_uses_nearest_footprint_edge_not_centroid(self):
+        geom = {"type": "Polygon", "coordinates": [[[0.0, 0.0], [0.001, 0.0], [0.001, 0.001], [0.0, 0.001], [0.0, 0.0]]]}
+        distance, point = mod.nearest_footprint_point((-0.0001, 0.0005), geom)
+        self.assertAlmostEqual(distance, 11.13, delta=0.5)
+        self.assertAlmostEqual(point[0], 0.0, delta=1e-7)
+
 
 if __name__ == "__main__":
     unittest.main()
