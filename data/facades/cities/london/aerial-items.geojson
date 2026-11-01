@@ -131,6 +131,383 @@
         "https://stac-extensions.github.io/processing/v1.1.0/schema.json",
         "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
       ]
+    },
+    {
+      "id": "5f515554805b400005d7e598",
+      "bbox": [
+        -0.094008,
+        51.482062,
+        -0.084732,
+        51.4871
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap/items/5f515554805b400005d7e598"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/5f5154e2805b400005d7e596/0/5f5154e2805b400005d7e597.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "London - Walworth",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/5f5154e2805b400005d7e596/0/5f5154e2805b400005d7e597.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "file:size": 19853664,
+          "proj:bbox": [
+            701771.678972,
+            5707463.97907,
+            702395.322893,
+            5708000.19916
+          ],
+          "proj:code": "EPSG:32630",
+          "proj:shape": [
+            13406,
+            15592
+          ],
+          "proj:geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  701771.678972,
+                  5707463.97907
+                ],
+                [
+                  702395.322893,
+                  5707463.97907
+                ],
+                [
+                  702395.322893,
+                  5708000.19916
+                ],
+                [
+                  701771.678972,
+                  5708000.19916
+                ],
+                [
+                  701771.678972,
+                  5707463.97907
+                ]
+              ]
+            ]
+          },
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.039997686056949186,
+            0.0,
+            701771.678972,
+            0.0,
+            -0.03999851484409659,
+            5708000.19916,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "metadata": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/5f5154e2805b400005d7e596/0/5f5154e2805b400005d7e597_meta.json",
+          "type": "application/json",
+          "roles": [
+            "metadata"
+          ],
+          "title": "metadata",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/5f5154e2805b400005d7e596/0/5f5154e2805b400005d7e597_meta.json",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "thumbnail": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/5f5154e2805b400005d7e596/0/5f5154e2805b400005d7e597.png",
+          "type": "image/png",
+          "roles": [
+            "thumbnail"
+          ],
+          "title": "thumbnail",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/5f5154e2805b400005d7e596/0/5f5154e2805b400005d7e597.png",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                -0.093702,
+                51.4871
+              ],
+              [
+                -0.094008,
+                51.482284
+              ],
+              [
+                -0.085039,
+                51.482062
+              ],
+              [
+                -0.084732,
+                51.486877
+              ],
+              [
+                -0.093702,
+                51.4871
+              ]
+            ]
+          ]
+        ]
+      },
+      "collection": "openaerialmap",
+      "properties": {
+        "gsd": 0.0399985148441,
+        "title": "London - Walworth",
+        "created": "2020-09-03T20:43:00.040+00:00",
+        "license": "CC-BY-4.0",
+        "providers": [
+          {
+            "name": "shinji",
+            "roles": [
+              "producer",
+              "licensor"
+            ],
+            "description": "Mick R,mickrideout@gmail.com"
+          }
+        ],
+        "instruments": [
+          "Parrot Anafi"
+        ],
+        "end_datetime": "2020-08-19T00:00:00Z",
+        "start_datetime": "2020-08-18T23:00:00Z",
+        "oam:platform_type": "uav",
+        "oam:producer_name": "shinji"
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
+    },
+    {
+      "id": "5f5b370e0170f700067c3542",
+      "bbox": [
+        -0.09214,
+        51.484311,
+        -0.089393,
+        51.486137
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap/items/5f5b370e0170f700067c3542"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/5f5b36b90170f700067c3540/0/5f5b36b90170f700067c3541.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "London - Walworth",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/5f5b36b90170f700067c3540/0/5f5b36b90170f700067c3541.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "file:size": 9528738,
+          "proj:bbox": [
+            701892.145967,
+            5707701.68081,
+            702075.30285,
+            5707897.73438
+          ],
+          "proj:code": "EPSG:32630",
+          "proj:shape": [
+            9803,
+            9158
+          ],
+          "proj:geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  701892.145967,
+                  5707701.68081
+                ],
+                [
+                  702075.30285,
+                  5707701.68081
+                ],
+                [
+                  702075.30285,
+                  5707897.73438
+                ],
+                [
+                  701892.145967,
+                  5707897.73438
+                ],
+                [
+                  701892.145967,
+                  5707701.68081
+                ]
+              ]
+            ]
+          },
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.019999659641835612,
+            0.0,
+            701892.145967,
+            0.0,
+            -0.019999344078389755,
+            5707897.73438,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "metadata": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/5f5b36b90170f700067c3540/0/5f5b36b90170f700067c3541_meta.json",
+          "type": "application/json",
+          "roles": [
+            "metadata"
+          ],
+          "title": "metadata",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/5f5b36b90170f700067c3540/0/5f5b36b90170f700067c3541_meta.json",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "thumbnail": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/5f5b36b90170f700067c3540/0/5f5b36b90170f700067c3541.png",
+          "type": "image/png",
+          "roles": [
+            "thumbnail"
+          ],
+          "title": "thumbnail",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/5f5b36b90170f700067c3540/0/5f5b36b90170f700067c3541.png",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                -0.092028,
+                51.486137
+              ],
+              [
+                -0.09214,
+                51.484376
+              ],
+              [
+                -0.089506,
+                51.484311
+              ],
+              [
+                -0.089393,
+                51.486071
+              ],
+              [
+                -0.092028,
+                51.486137
+              ]
+            ]
+          ]
+        ]
+      },
+      "collection": "openaerialmap",
+      "properties": {
+        "gsd": 0.0199996596418,
+        "title": "London - Walworth",
+        "created": "2020-09-11T08:36:30.470+00:00",
+        "license": "CC-BY-4.0",
+        "datetime": "2020-08-05T00:00:00Z",
+        "providers": [
+          {
+            "name": "shinji",
+            "roles": [
+              "producer",
+              "licensor"
+            ],
+            "description": "Mick R,mickrideout@gmail.com"
+          }
+        ],
+        "instruments": [
+          "Parrot Anafi"
+        ],
+        "oam:platform_type": "uav",
+        "oam:producer_name": "shinji"
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
     }
   ]
 }
