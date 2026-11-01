@@ -754,6 +754,10 @@ function swing(g,ph,amp){
     u.legs[0].rotation.x=Math.sin(ph)*amp;u.legs[1].rotation.x=-Math.sin(ph)*amp;
     u.arms[0].rotation.x=-Math.sin(ph)*amp*0.8;u.arms[1].rotation.x=Math.sin(ph)*amp*0.8;
   }
+  if(u.photoBody){
+    u.photoBody.rotation.z=Math.sin(ph)*amp*0.035;
+    u.photoBody.position.y=0.94+Math.abs(Math.sin(ph))*amp*0.025;
+  }
 }
 
 /* اللاعب */
@@ -808,6 +812,24 @@ const ped=makeAdamCharacter();scene.add(ped);
   photoFace.morphTargetDictionary={};adamMorphNames.forEach((n,i)=>photoFace.morphTargetDictionary[n]=i);
   adamFace=photoFace;
  }catch(error){console.error('Adam photo face could not be loaded:',error);}
+})();
+
+// Adam's complete reference photo is the playable character's visible body.
+// The procedural placeholder meshes are hidden; the segmented photo follows
+// the same player root, heading, movement and camera as the articulated rig.
+(async()=>{
+ try{
+  const texture=await new THREE.TextureLoader().loadAsync('characters/adam/generated/adam_fullbody_cutout.png');
+  texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=aniso;texture.needsUpdate=true;
+  ped.traverse(o=>{if(o.isMesh)o.visible=false;});
+  const image=texture.image,aspect=(image&&image.width&&image.height)?image.width/image.height:0.58;
+  const height=1.88,width=Math.min(1.18,height*aspect);
+  const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,alphaTest:0.08,side:THREE.DoubleSide,depthWrite:false});
+  const photoBody=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);
+  photoBody.name='adam-fullbody-photo-cutout';photoBody.position.set(0,0.94,0.12);photoBody.renderOrder=4;
+  ped.add(photoBody);ped.userData.photoBody=photoBody;
+  console.info('Adam full-body reference photo loaded as playable character.');
+ }catch(error){console.error('Adam full-body photo could not be loaded:',error);}
 })();
 
 // Facial blendshapes and lip-sync controller for the playable character.
