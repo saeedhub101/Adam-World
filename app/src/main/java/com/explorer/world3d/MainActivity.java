@@ -106,7 +106,7 @@ public class MainActivity extends Activity {
 
     private class Bridge {
         @JavascriptInterface public void requestLocation() { runOnUiThread(() -> fetchLocation()); }
-        @JavascriptInterface public void checkForUpdates() { checkForUpdates(false); }
+        @JavascriptInterface public void checkForUpdates() { MainActivity.this.checkForUpdates(false); }
 
         // Native networking avoids WebView cross-origin restrictions for file:// pages.
         @JavascriptInterface public void requestOverpass(String query, String requestId) {
