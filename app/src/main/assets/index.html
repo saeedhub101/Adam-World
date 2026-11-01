@@ -433,7 +433,7 @@ const cityGroup=new THREE.Group();scene.add(cityGroup);
 const agentGroup=new THREE.Group();scene.add(agentGroup);
 let bldgs=[],grid=new Map(),CELL=40;
 
-let carPaths=[],pedPaths=[],railPaths=[],agents=[],railStations=[];
+let carPaths=[],pedPaths=[],railPaths=[],busRoutePaths=[],agents=[],railStations=[];
 const WORLD_MODEL_FILES={
   adult_man:'models/people/adult-man.glb',
   adult_woman:'models/people/adult-woman.glb',
@@ -1442,7 +1442,7 @@ async function loadArea(lat,lon,spawn){
   disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];
   if(terrainGrid)addTerrainSurface(terrainGrid);
   for(const key of Object.keys(archAcc))archAcc[key]=[];
-  bldgs=[];grid=new Map();carPaths=[];pedPaths=[];railPaths=[];railStations=[];
+  bldgs=[];grid=new Map();carPaths=[];pedPaths=[];railPaths=[];busRoutePaths=[];railStations=[];
   const B=newAcc(),G=newAcc(),RWd=newAcc(),RNr=newAcc(),SW=newAcc();
   const roadSurfaceAcc={concrete:newAcc(),pavers:newAcc(),gravel:newAcc(),dirt:newAcc()};
   const LC={grass:newAcc(),forest:newAcc(),scrub:newAcc(),crops:newAcc(),bare:newAcc(),sand:newAcc(),wetland:newAcc()};
@@ -1512,6 +1512,9 @@ async function loadArea(lat,lon,spawn){
         for(let i=archStarts[key];i<arr.length;i+=3)arr[i+1]+=terrainHeight(arr[i],arr[i+2]);
       }
       const ll=unproj(cx,cz);const bb={id:el.id,tags:t,height:h,baseY:baseY,lat:ll[0],lon:ll[1],name:t.name||t["addr:housenumber"]||("OSM building "+el.id),pts:P,minx:minx,maxx:maxx,minz:minz,maxz:maxz};bldgs.push(bb);gridAdd(bb);
+    }else if(t.public_transport_route==='bus'){
+      const P=raw.filter((p,i)=>!i||Math.hypot(p[0]-raw[i-1][0],p[1]-raw[i-1][1])>0.3);
+      if(P.length>=2){const path=makePath(P);if(path.total>25)busRoutePaths.push({path:path,tags:t});}
     }else if(t.highway&&RW[t.highway]){
       const baseWidth=RW[t.highway];
       const taggedWidth=parseFloat(String(t.width||'').replace(/[^0-9.]/g,''));
@@ -1782,18 +1785,22 @@ async function loadArea(lat,lon,spawn){
       }
     }catch(e){console.warn('Metro GLB or railway data unavailable',e);}
   }
-  /* GLB buses run along mapped streets and stop at nearby mapped OSM stops. */
-  if(carPaths.length&&busStops.length){
+  /* GLB buses follow imported OSM bus-route relation geometry; use mapped streets only as fallback. */
+  {
     try{
       await loadWorldModel('bus');
-      const roads=carPaths.filter(r=>r.path.total>90).sort((a,b)=>b.path.total-a.path.total);
-      for(const road of roads.slice(0,3)){
-        const stops=busStops.map(st=>nearestPathDistance(road.path,st.p,4)).filter(hit=>hit.distance<18).map(hit=>hit.s).sort((a,b)=>a-b);
-        if(!stops.length)continue;
+      const routeMode=busRoutePaths.length>0;
+      const candidates=(routeMode?busRoutePaths:carPaths).filter(r=>r.path.total>(routeMode?45:90)).sort((a,b)=>b.path.total-a.path.total);
+      let spawned=0;
+      for(const route of candidates){
+        if(spawned>=4)break;
+        const stops=busStops.map(st=>nearestPathDistance(route.path,st.p,4)).filter(hit=>hit.distance<18).map(hit=>hit.s).sort((a,b)=>a-b);
+        if(!stops.length)stops.push(Math.min(12,route.path.total*0.15),Math.max(route.path.total-12,route.path.total*0.85));
         const m=await loadWorldModel('bus');agentGroup.add(m);
-        agents.push({kind:'bus',path:road.path,heightOffset:road.heightOffset||0,roadWidth:road.w,off:Math.min(road.w/4,1.1),s:stops[0],dir:1,sp:6.5,m:m,stopDistances:stops,dwellUntil:0,stoppedAt:-1,ph:0});
+        agents.push({kind:'bus',path:route.path,heightOffset:route.heightOffset||0,roadWidth:route.w||7,off:routeMode?0:Math.min((route.w||7)/4,1.1),s:stops[0],dir:1,sp:6.5,m:m,stopDistances:stops,dwellUntil:0,stoppedAt:-1,ph:0,routeName:route.tags&&route.tags.route_name||''});
+        spawned++;
       }
-    }catch(e){console.warn('Bus GLB or mapped stops unavailable',e);}
+    }catch(e){console.warn('Bus GLB or mapped route unavailable',e);}
   }
   await addStaticPedestrians(citySlug);
 
