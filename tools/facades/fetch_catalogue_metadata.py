@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import tempfile
 import time
 from pathlib import Path
@@ -135,6 +136,13 @@ def fetch_source(city: Path, source: str, bbox: tuple[float, float, float, float
         # Persist source data and cursor after every page for interruption safety.
         atomic_write(output_path, fc)
         atomic_write(state_path, state)
+        if args.git_checkpoint:
+            paths = [str(output_path.relative_to(Path.cwd())), str(state_path.relative_to(Path.cwd()))]
+            subprocess.run(["git", "add", *paths], check=True)
+            changed = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout.strip()
+            if changed:
+                subprocess.run(["git", "commit", "-m", f"Checkpoint {city.name} {source} metadata page {state['pages']}"], check=True)
+                subprocess.run(["git", "push", "origin", "main"], check=True)
         print(f"SAVED {city.name}/{output_name}: page={state['pages']} added={added} total={len(fc['features'])}")
         if state["complete"]:
             break
@@ -152,6 +160,7 @@ def main() -> None:
     p.add_argument("--timeout", type=int, default=45)
     p.add_argument("--delay", type=float, default=0.25)
     p.add_argument("--refresh", action="store_true")
+    p.add_argument("--git-checkpoint", action="store_true", help="commit and push each saved page to main")
     args = p.parse_args()
     if args.max_pages < 1 or args.page_size < 1 or args.timeout < 1 or args.delay < 0:
         p.error("page, timeout and delay arguments must be positive (delay may be zero)")
