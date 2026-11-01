@@ -250,9 +250,11 @@ public class MainActivity extends Activity {
                 final long size = assetSize;
                 final String webUrl = webZipUrl;
                 final long webSize = webZipSize;
-                final boolean nativeRequired = release.optString("body", "").contains("Native-Required: true");
+                final String releaseBody = release.optString("body", "");
+                final boolean nativeRequired = releaseBody.contains("Native-Required: true");
+                final boolean webContentChanged = releaseBody.contains("Web-Content-Changed: true");
                 final boolean hasNativeUpdate = nativeRequired && latestCode > BuildConfig.VERSION_CODE && url != null;
-                final boolean hasWebUpdate = latestCode > readInstalledWebVersion() && webUrl != null;
+                final boolean hasWebUpdate = webContentChanged && latestCode > readInstalledWebVersion() && webUrl != null;
                 runOnUiThread(() -> {
                     updateCheckRunning = false;
                     if (hasNativeUpdate) showUpdateDialog(version, url, name, size);
