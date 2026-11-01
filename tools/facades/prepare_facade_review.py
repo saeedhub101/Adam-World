@@ -42,6 +42,7 @@ def process_city(city: Path, limit: int) -> dict:
             chosen.append({
                 "osm_way_id": building.get("osm_way_id"),
                 "building_name": building.get("name"),
+                "footprint_geometry": building.get("footprint_geometry"),
                 "distance_m": best.get("distance_m"),
                 "azimuth_delta_deg": best.get("azimuth_delta_deg"),
                 "quality_score": best.get("quality_score"),
@@ -81,7 +82,11 @@ def process_city(city: Path, limit: int) -> dict:
                 if not target.exists():
                     target.write_bytes(raw)
             reviewed.append({
-                "osm_way_id": item["osm_way_id"], "building_name": item["building_name"],
+                "osm_way_id": item["osm_way_id"],
+                "osm_url": "https://www.openstreetmap.org/way/" + str(item["osm_way_id"]),
+                "building_name": item["building_name"], "footprint_geometry": item["footprint_geometry"],
+                "capture_lonlat": photo.get("capture_lonlat"), "target_point_lonlat": photo.get("target_point_lonlat"),
+                "facade_edge_index": photo.get("facade_edge_index"), "target_bearing_deg": photo.get("target_bearing_deg"),
                 "photo_id": pid, "image": "images/" + filename, "width": width, "height": height,
                 "distance_m": item["distance_m"], "azimuth_delta_deg": item["azimuth_delta_deg"],
                 "quality_score": item["quality_score"], "license": photo.get("license"),
@@ -109,8 +114,9 @@ def process_city(city: Path, limit: int) -> dict:
             '<h3>OSM building ' + html.escape(str(item["osm_way_id"])) + ' — ' + html.escape(str(item["building_name"] or "Unnamed")) + '</h3>' +
             '<p>Photo ' + html.escape(item["photo_id"]) + ' · ' + str(item["distance_m"]) + ' m from footprint · camera delta ' + str(item["azimuth_delta_deg"]) + '°</p>' +
             '<p>License: ' + html.escape(str(item["license"])) + ' · ' + html.escape(str(item["capture_datetime"])) + '</p>' +
-            '<p><a href="' + html.escape(str(item["metadata_url"] or ""), quote=True) + '">Panoramax metadata</a> · ' +
-            '<a href="' + html.escape(str(item["full_image_url"] or ""), quote=True) + '">source image</a></p>' +
+            '<p><a href="' + html.escape(str(item["osm_url"]), quote=True) + '">OSM building</a> · ' +
+            '<a href="' + html.escape(str(item["metadata_url"] or ""), quote=True) + '">Panoramax metadata</a> · ' +
+            '<a href="' + html.escape(str(item["full_image_url"] or ""), quote=True) + '">HD source image</a></p>' +
             '<strong>Identity is not yet verified; do not apply this image to a building.</strong></article>'
         )
     page = '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Adam World facade review — ' + html.escape(city.name) + '</title><style>body{font:15px system-ui;background:#111820;color:#edf2f7;margin:20px}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}article{background:#202b36;padding:12px;border-radius:8px}img{width:100%;height:220px;object-fit:contain;background:#080c10}a{color:#82c7ff}</style><h1>Facade evidence review — ' + html.escape(city.name) + '</h1><p>Only machine-screened preview images. Verify the exact building and facade visually before assigning any texture.</p><main>' + ''.join(cards) + '</main></html>'
