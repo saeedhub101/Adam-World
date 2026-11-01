@@ -1,0 +1,29 @@
+name: Adam World Transport Infrastructure Import
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/import_city_transport_infrastructure.py"
+      - ".github/workflows/transport-infrastructure-import.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adam-world-transport-infrastructure
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Import railway, waterway, bridge, tunnel and road-condition features
+        run: python3 tools/import_city_transport_infrastructure.py
