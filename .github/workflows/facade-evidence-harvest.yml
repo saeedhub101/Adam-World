@@ -72,8 +72,13 @@ jobs:
             python3 tools/facades/fetch_catalogue_metadata.py --git-checkpoint
           fi
 
-      - name: Build per-city facade review queues where building footprints are available
+      - name: Build per-city facade review queues with strict geometry and licensing gates
         run: python3 tools/facades/build_review_queue.py
+
+      - name: Download and validate local review images
+        run: |
+          python3 -m pip install --disable-pip-version-check Pillow
+          python3 tools/facades/prepare_facade_review.py --limit-per-city 50 --git-checkpoint
 
       - name: Commit generated review queues
         run: |
