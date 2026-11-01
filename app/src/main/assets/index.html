@@ -812,8 +812,8 @@ function addBurjKhalifa(P,baseY){
   wings.count=wi;bands.count=bi;group.add(wings);group.add(bands);
   const central=new THREE.Mesh(new THREE.CylinderGeometry(2.1,13.5,690,12),core);central.position.y=345;group.add(central);
   const upper=new THREE.Mesh(new THREE.CylinderGeometry(0.45,3.2,108,10),glass);upper.position.y=744;group.add(upper);
-  const spire=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.52,72,8),band);spire.position.y=818;group.add(spire);
-  const tip=new THREE.Mesh(new THREE.ConeGeometry(0.18,12,8),band);tip.position.y=860;group.add(tip);
+  const spire=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.52,52,8),band);spire.position.y=799;group.add(spire);
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(0.18,6,8),band);tip.position.y=825;group.add(tip);
   // Three projecting wing tips and a continuous crown make the distinctive Y plan legible.
   for(let i=0;i<3;i++){
     const angle=i*Math.PI*2/3;
