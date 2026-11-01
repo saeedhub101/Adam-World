@@ -87,6 +87,60 @@ def bearing_deg(a: tuple[float, float], b: tuple[float, float]) -> float:
     x = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(lon2 - lon1)
     return (math.degrees(math.atan2(y, x)) + 360) % 360
 
+def exterior_rings(geom: dict[str, Any] | None) -> list[list[tuple[float, float]]]:
+    if not geom: return []
+    typ, coords = geom.get("type"), geom.get("coordinates") or []
+    if typ == "Polygon":
+        return [[(float(p[0]), float(p[1])) for p in (coords[0] if coords else []) if len(p) >= 2]]
+    if typ == "MultiPolygon":
+        return [[(float(p[0]), float(p[1])) for p in (poly[0] if poly else []) if len(p) >= 2] for poly in coords]
+    return []
+
+def nearest_footprint_point(capture: tuple[float, float], geom: dict[str, Any]) -> tuple[float, tuple[float, float]]:
+    """Distance and nearest exterior point in local metres, not centroid distance."""
+    sx = 111320.0 * math.cos(math.radians(capture[1]))
+    sy = 111132.0
+    best_d, best_point = float("inf"), capture
+    for ring in exterior_rings(geom):
+        if len(ring) < 2: continue
+        for i, a in enumerate(ring):
+            b = ring[(i + 1) % len(ring)]
+            ax, ay = (a[0] - capture[0]) * sx, (a[1] - capture[1]) * sy
+            bx, by = (b[0] - capture[0]) * sx, (b[1] - capture[1]) * sy
+            dx, dy = bx - ax, by - ay
+            t = max(0.0, min(1.0, -(ax * dx + ay * dy) / (dx * dx + dy * dy or 1.0)))
+            x, y = ax + t * dx, ay + t * dy
+            dist = math.hypot(x, y)
+            if dist < best_d:
+                best_d, best_point = dist, (capture[0] + x / sx, capture[1] + y / sy)
+    return best_d, best_point
+
+def reusable_photo_license(value: Any) -> bool:
+    if isinstance(value, dict): value = value.get("id") or value.get("name") or value.get("license")
+    text = str(value or "").strip().lower().replace("_", "-").replace(" ", "-")
+    if any(token in text for token in ("noncommercial", "non-commercial", "-nc", "no-derivatives", "-nd", "all-rights-reserved", "proprietary")):
+        return False
+    return any(token in text for token in ("cc0", "public-domain", "cc-by", "cc-by-sa"))
+
+def photo_quality_gate(photo: dict[str, Any], distance_m: float, delta: float | None) -> tuple[bool, list[str], int]:
+    reasons = []
+    if distance_m > 35: reasons.append("capture_too_far_from_facade")
+    if photo.get("azimuth_deg") is None: reasons.append("camera_azimuth_missing")
+    elif delta is None or delta > 25: reasons.append("camera_not_facing_facade")
+    fov = photo.get("field_of_view_deg")
+    if fov is None or not 25 <= fov <= 120: reasons.append("usable_field_of_view_missing_or_invalid")
+    pitch = photo.get("pitch_deg")
+    if pitch is not None and not -45 <= pitch <= 45: reasons.append("camera_pitch_not_facade_level")
+    if not reusable_photo_license(photo.get("license")): reasons.append("redistribution_license_not_confirmed")
+    if not photo.get("preview_url"): reasons.append("no_real_image_preview_asset")
+    if not photo.get("image_url"): reasons.append("no_downloadable_photo_asset")
+    score = 100 - min(55, int(distance_m * 1.5)) - min(35, int((delta or 0) * 1.2))
+    if fov is None: score -= 20
+    if pitch is None: score -= 5
+    if not photo.get("capture_datetime"): score -= 5
+    if not reusable_photo_license(photo.get("license")): score -= 30
+    return not reasons, reasons, max(0, score)
+
 
 def angle_delta(a: float, b: float) -> float:
     return abs((a - b + 180) % 360 - 180)
@@ -109,7 +163,8 @@ def photo_metadata(feature: dict[str, Any]) -> dict[str, Any]:
         fov = number(p.get("pers:field_of_view"))
     license_value = p.get("license") or p.get("licence")
     assets = feature.get("assets") or {}
-    visual = assets.get("visual") or assets.get("thumbnail") or assets.get("small") or {}
+    visual = assets.get("thumbnail") or assets.get("small") or assets.get("visual") or {}
+    full_image = next((assets.get(k) for k in ("original", "hd", "visual", "sd", "photo", "image") if isinstance(assets.get(k), dict) and assets[k].get("href")), {})
     links = feature.get("links") or []
     self_link = next((x.get("href") for x in links if x.get("rel") == "self"), None)
     return {
@@ -124,6 +179,7 @@ def photo_metadata(feature: dict[str, Any]) -> dict[str, Any]:
         "instance": p.get("instance"),
         "metadata_url": self_link,
         "preview_url": visual.get("href") if isinstance(visual, dict) else None,
+        "image_url": full_image.get("href") if isinstance(full_image, dict) else None,
     }
 
 
@@ -201,21 +257,19 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
             loc = photo.get("capture_lonlat") or []
             if len(loc) != 2:
                 continue
-            dist = haversine_m((loc[0], loc[1]), center)
+            dist, target_point = nearest_footprint_point((loc[0], loc[1]), b.get("geometry") or {})
             if dist > max_distance:
                 continue
             az = photo.get("azimuth_deg")
-            target_bearing = bearing_deg((loc[0], loc[1]), center)
+            target_bearing = bearing_deg((loc[0], loc[1]), target_point)
             if az is None:
-                direction = "unknown"
-                delta = None
+                direction, delta = "unknown", None
             else:
                 delta = angle_delta(az, target_bearing)
-                fov = photo.get("field_of_view_deg")
-                tolerance = min(90.0, max(25.0, (fov or 70.0) / 2 + 12.0))
-                direction = "within_camera_cone" if delta <= tolerance else "outside_camera_cone"
+                direction = "within_camera_cone" if delta <= 25.0 else "outside_camera_cone"
                 if direction == "outside_camera_cone":
                     continue
+            eligible, rejection_reasons, quality_score = photo_quality_gate(photo, dist, delta)
             candidates.append({
                 "photo_id": photo["photo_id"],
                 "distance_m": round(dist, 2),
@@ -228,10 +282,14 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
                 "instance": photo["instance"],
                 "metadata_url": photo["metadata_url"],
                 "preview_url": photo["preview_url"],
+                "image_url": photo["image_url"],
+                "quality_score": quality_score,
+                "eligible_for_visual_review": eligible,
+                "quality_rejection_reasons": rejection_reasons,
                 "identity_status": "unverified_candidate_only",
                 "must_human_verify": True,
             })
-        candidates.sort(key=lambda x: (x["distance_m"], x["azimuth_delta_deg"] if x["azimuth_delta_deg"] is not None else 999))
+        candidates.sort(key=lambda x: (not x["eligible_for_visual_review"], -x["quality_score"], x["distance_m"], x["azimuth_delta_deg"] if x["azimuth_delta_deg"] is not None else 999))
         queue.append({
             "osm_way_id": osm_id,
             "name": bp.get("name"),
@@ -258,6 +316,7 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
             "proximity_is_not_identity": True,
             "camera_cone_is_candidate_filter_only": True,
             "automatic_texture_assignment": False,
+            "strict_visual_review_gate": {"max_facade_distance_m": 35, "max_azimuth_delta_deg": 25, "requires_camera_fov": True, "requires_open_redistributable_license": True, "requires_real_preview_and_image_assets": True},
         },
         "building_count": len(queue),
         "buildings": queue,
@@ -303,7 +362,8 @@ def main() -> None:
         result = build_queue(city_dir, args.max_distance_m)
         atomic_json(city_dir / "review_queue.json", result)
         candidate_count = sum(len(b["facade_photo_candidates"]) for b in result["buildings"])
-        print(f"SUMMARY city={city_dir.name} buildings={result['building_count']} photo_candidates={candidate_count}")
+        eligible_count = sum(1 for b in result["buildings"] for p in b["facade_photo_candidates"] if p["eligible_for_visual_review"])
+        print(f"SUMMARY city={city_dir.name} buildings={result['building_count']} photo_candidates={candidate_count} strict_visual_review={eligible_count}")
 
 
 if __name__ == "__main__":
