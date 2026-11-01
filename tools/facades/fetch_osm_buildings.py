@@ -51,7 +51,7 @@ def overpass_query(bbox: tuple[float, float, float, float]) -> str:
     )
 
 
-def request_overpass(query: str, timeout: int = 75) -> dict:
+def request_overpass(query: str, timeout: int = 120) -> dict:
     payload = urlencode({"data": query}).encode("utf-8")
     errors = []
     for endpoint in ENDPOINTS:
