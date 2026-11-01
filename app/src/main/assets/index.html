@@ -624,6 +624,9 @@ async function loadArea(lat,lon,spawn){
     camera.position.set(S.px,3,S.pz);
   }
   $('loading').style.display='none';
+  currentImageryCenter={lat,lon};
+  renderImageryLinks(lat,lon);
+  $('imageryStatus').textContent='بيانات المدينة محلية. البحث عن الصور اختياري ويبدأ فقط عند فتح هذه اللوحة.';
   // Imagery catalogues are optional and are queried only when the user opens the imagery panel.
 }
 
