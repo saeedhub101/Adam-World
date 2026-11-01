@@ -184,6 +184,8 @@ def process_tile(url, city, existing_cells, seen_ids, lat0, lon0, radius):
                             pass
                         if conf>=0: tags["source:confidence"]=f"{conf:.3f}"
                         geometry=[{"lat":p[2],"lon":p[3]} for p in pts]
+                        cell=(math.floor(cx/25),math.floor(cy/25))
+                        existing_cells.setdefault(cell,[]).append((area,cx,cy,bbox))
                         yield {"type":"way","id":8000000000000000+source_id,"tags":tags,"geometry":geometry}
 
 def git(*args,check=True):
