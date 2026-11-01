@@ -181,3 +181,14 @@ Android package update. Installing a same-package APK signed with the same relea
 key is an in-place Android update and does not delete the app's private data;
 Google Play App Bundle delivery is the recommended route for store-managed
 split/incremental delivery.
+
+## Automatic sequencing and failure recovery
+
+The facade-evidence workflow is also triggered when the offline city-data import
+finishes. It shares the import concurrency lock, so its checkpoint commits cannot
+race the active city importer. KartaView metadata is fetched before review queues
+are built, allowing both Panoramax and KartaView records to enter candidate
+discovery. Source stages use continue-on-error and a final outcome summary: one
+failed catalogue or city does not prevent later sources, queues, image validation
+or repository checkpoint commits from being attempted. A failed run can be resumed
+without discarding already committed metadata or downloaded review images.
