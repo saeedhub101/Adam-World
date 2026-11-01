@@ -1,0 +1,136 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "Copernicus_DSM_COG_10_N35_00_E139_00_DEM",
+      "bbox": [
+        138.9998611111111,
+        35.00013888888889,
+        139.9998611111111,
+        36.00013888888889
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/cop-dem-glo-30"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/cop-dem-glo-30"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/cop-dem-glo-30/items/Copernicus_DSM_COG_10_N35_00_E139_00_DEM"
+        },
+        {
+          "rel": "derived_from",
+          "href": "https://earth-search.aws.element84.com/v1/collections/cop-dem-glo-30/items/Copernicus_DSM_COG_10_N35_00_E139_00_DEM",
+          "type": "application/geo+json"
+        }
+      ],
+      "assets": {
+        "data": {
+          "href": "https://copernicus-dem-30m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_10_N35_00_E139_00_DEM/Copernicus_DSM_COG_10_N35_00_E139_00_DEM.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "Data",
+          "alternate": {
+            "s3": {
+              "href": "s3://copernicus-dem-30m/Copernicus_DSM_COG_10_N35_00_E139_00_DEM/Copernicus_DSM_COG_10_N35_00_E139_00_DEM.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "raster:bands": [
+            {
+              "unit": "meter",
+              "sampling": "point",
+              "data_type": "float32",
+              "spatial_resolution": 30
+            }
+          ],
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              139.9998611111111,
+              35.00013888888889
+            ],
+            [
+              139.9998611111111,
+              36.00013888888889
+            ],
+            [
+              138.9998611111111,
+              36.00013888888889
+            ],
+            [
+              138.9998611111111,
+              35.00013888888889
+            ],
+            [
+              139.9998611111111,
+              35.00013888888889
+            ]
+          ]
+        ]
+      },
+      "collection": "cop-dem-glo-30",
+      "properties": {
+        "gsd": 30,
+        "created": "2023-03-28T15:21:06.711Z",
+        "updated": "2023-04-20T18:11:19.320Z",
+        "datetime": "2021-04-22T00:00:00Z",
+        "platform": "tandem-x",
+        "grid:code": "CDEM-N35E139",
+        "proj:code": "EPSG:4326",
+        "proj:shape": [
+          3600,
+          3600
+        ],
+        "proj:centroid": {
+          "lat": 35.5,
+          "lon": 139.5
+        },
+        "proj:transform": [
+          0.0002777777777777778,
+          0,
+          138.9998611111111,
+          0,
+          -0.0002777777777777778,
+          36.00013888888889
+        ],
+        "storage:region": "eu-central-1",
+        "storage:platform": "AWS",
+        "processing:software": {
+          "cop-dem-glo-to-stac": "2023.03.28"
+        },
+        "earthsearch:payload_id": "cop-dem-glo/workflow-cop-dem-glo-to-stac/76661269ee3d79f815e6be3c49d31604",
+        "storage:requester_pays": false
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/processing/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/storage/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/grid/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+      ]
+    }
+  ]
+}
