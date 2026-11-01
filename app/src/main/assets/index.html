@@ -658,10 +658,18 @@ function flatPoly(P,y,acc){
 
 function disposeGroup(g){
   for(let i=g.children.length-1;i>=0;i--){
-    const o=g.children[i];g.remove(o);
-    if(o.geometry)o.geometry.dispose();
-    if(o.userData&&o.userData.ownedTexture)o.userData.ownedTexture.dispose();
-    if(o.userData&&o.userData.ownedMaterial&&o.material)o.material.dispose();
+    const o=g.children[i];
+    // City landmarks are nested groups; dispose their child geometry and
+    // explicitly owned textures recursively when a streamed tile is replaced.
+    o.traverse(node=>{
+      if(node.geometry)node.geometry.dispose();
+      if(node.userData&&node.userData.ownedTexture)node.userData.ownedTexture.dispose();
+      if(node.userData&&node.userData.ownedMaterial&&node.material){
+        if(Array.isArray(node.material))node.material.forEach(m=>m.dispose());
+        else node.material.dispose();
+      }
+    });
+    g.remove(o);
   }
 }
 
@@ -1082,7 +1090,7 @@ function makeLimestoneTexture(){
 function addRomanTheatre(){
   const anchor=proj(31.951367,35.939400),base=terrainHeight(anchor[0],anchor[1]);
   const g=new THREE.Group();g.position.set(anchor[0],base,anchor[1]);cityGroup.add(g);
-  const limestone=makeLimestoneTexture();
+  const limestone=makeLimestoneTexture();g.userData.ownedTexture=limestone;
   const stone=new THREE.MeshLambertMaterial({color:0xffffff,map:limestone,side:THREE.DoubleSide});
   const cutStone=new THREE.MeshLambertMaterial({color:0xc5b08e,map:limestone,side:THREE.DoubleSide});
   const dark=new THREE.MeshLambertMaterial({color:0x30291f});
