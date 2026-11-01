@@ -153,6 +153,8 @@ jobs:
           for city in amman manila bangkok new-york paris dubai tokyo london riyadh cairo; do
             grep -q "assets/cities/$city/manifest.json" <(unzip -l "$APK")
             grep -q "assets/cities/$city/tile_" <(unzip -l "$APK")
+            grep -q "assets/cities/$city/elevation-grid.json" <(unzip -l "$APK")
+            unzip -p "$APK" "assets/cities/$city/manifest.json" | grep -q '"elevation_grid"'
           done
           ls -lh "$APK" "$AAB"
 
