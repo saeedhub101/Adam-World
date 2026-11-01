@@ -1,17 +1,17 @@
 {
   "schema_version": 2,
-  "import_profile_version": 3,
+  "import_profile_version": 4,
   "city": "Manila",
   "slug": "manila",
   "source": "OpenStreetMap Overpass",
   "attribution": "© OpenStreetMap contributors",
   "license": "ODbL 1.0",
   "center": {
-    "lat": 14.5896,
-    "lon": 120.9758
+    "lat": 14.5547,
+    "lon": 121.0244
   },
   "radius_m": 650,
-  "element_count": 3760,
+  "element_count": 1889,
   "geometry_layers": [
     "buildings",
     "roads",
