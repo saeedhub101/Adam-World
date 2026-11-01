@@ -235,49 +235,61 @@ function posAt(path,s,off){
 /* ---------- بيانات OSM ---------- */
 const RW={motorway:14,trunk:12,primary:11,secondary:9,tertiary:8,unclassified:6,residential:6,living_street:5,service:4.5,motorway_link:7,trunk_link:7,primary_link:7,secondary_link:6,tertiary_link:6,pedestrian:6,footway:2.5,path:2,steps:2,cycleway:2.5,track:3.5};
 const PALETTE=['#c9c4b8'];
-const nativeOverpassPending = new Map();
-let nativeOverpassSequence = 0;
-window.onNativeOverpassResult = function(id, payload, error) {
-  const pending = nativeOverpassPending.get(id);
-  if (!pending) return;
-  nativeOverpassPending.delete(id);
-  if (error) { pending.reject(new Error(error)); return; }
-  try { pending.resolve(JSON.parse(payload)); }
-  catch (e) { pending.reject(new Error('استجابة بيانات الخريطة غير صالحة')); }
-};
-async function overpass(q){
-  // In the Android app, use native HTTP instead of WebView fetch from file://.
-  if(window.Android && typeof Android.requestOverpass === 'function'){
-    return new Promise((resolve,reject)=>{
-      const id='osm-'+(++nativeOverpassSequence);
-      nativeOverpassPending.set(id,{resolve,reject});
-      try { Android.requestOverpass(q,id); }
-      catch(e) { nativeOverpassPending.delete(id); reject(e); }
-    });
+// Offline-first city data. The APK contains a compact spatial tile package
+// generated from the versioned GeoJSON under data/facades/cities.
+let offlineCatalogPromise = null;
+async function readOfflineJson(path) {
+  if (window.Android && typeof Android.readAssetText === 'function') {
+    const raw = Android.readAssetText(path);
+    if (!raw) throw new Error('الملف المحلي غير موجود: ' + path);
+    try { return JSON.parse(raw); }
+    catch (e) { throw new Error('ملف البيانات المحلية تالف: ' + path); }
   }
-  const servers=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
-  let lastError=null;
-  for(const s of servers){
-    let tm=null;
-    try{
-      const ac=new AbortController();tm=setTimeout(()=>ac.abort(),25000);
-      const r=await fetch(s,{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'},signal:ac.signal});
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      return await r.json();
-    }catch(e){lastError=e;}
-    finally{if(tm)clearTimeout(tm);}
-  }
-  throw new Error(lastError&&lastError.message?lastError.message:'تعذر الاتصال بخوادم بيانات الخريطة');
+  const response = await fetch(path);
+  if (!response.ok) throw new Error('تعذر قراءة البيانات المحلية: ' + response.status);
+  return await response.json();
 }
-function buildQuery(lat,lon,R){
-  const a='(around:'+R+','+lat+','+lon+')';
-  return '[out:json][timeout:40];('
-   +'way["building"]'+a+';way["highway"]'+a+';'
-   +'way["leisure"~"park|garden|pitch|playground"]'+a+';'
-   +'way["landuse"~"grass|forest|recreation_ground|village_green|meadow"]'+a+';'
-   +'way["natural"~"water|wood|scrub"]'+a+';way["waterway"="riverbank"]'+a+';'
-   +'node["natural"="tree"]'+a+';node["highway"="street_lamp"]'+a+';'
-   +');out geom;';
+async function getOfflineCatalog() {
+  if (!offlineCatalogPromise) offlineCatalogPromise = readOfflineJson('cities/catalog.json');
+  return await offlineCatalogPromise;
+}
+function localMetersBetween(lat1, lon1, lat2, lon2) {
+  const x = (lon1 - lon2) * 111320 * Math.cos(((lat1 + lat2) / 2) * Math.PI / 180);
+  const z = (lat1 - lat2) * 111132;
+  return Math.hypot(x, z);
+}
+async function loadOfflineArea(lat, lon, radiusMeters) {
+  const catalog = await getOfflineCatalog();
+  const cities = catalog.cities || [];
+  if (!cities.length) throw new Error('سجل المدن المحلي فارغ');
+  let selected = null, nearest = Infinity;
+  for (const city of cities) {
+    const d = localMetersBetween(lat, lon, city.center.lat, city.center.lon);
+    if (d < nearest) { nearest = d; selected = city; }
+  }
+  const coverage = Number(selected.discovery_radius_m || 650);
+  if (!selected || nearest > coverage + 180) {
+    throw new Error('لا توجد بيانات محلية لهذه المنطقة. اختر إحدى المدن العشر المتاحة.');
+  }
+  const manifest = await readOfflineJson('cities/' + selected.slug + '/manifest.json');
+  const kx = 111320 * Math.cos(manifest.center.lat * Math.PI / 180);
+  const px = (lon - manifest.center.lon) * kx;
+  const pz = -(lat - manifest.center.lat) * 111132;
+  const chosen = (manifest.tiles || []).filter(tile => {
+    const dx = px < tile.min_x ? tile.min_x - px : (px > tile.max_x ? px - tile.max_x : 0);
+    const dz = pz < tile.min_z ? tile.min_z - pz : (pz > tile.max_z ? pz - tile.max_z : 0);
+    return Math.hypot(dx, dz) <= radiusMeters;
+  });
+  if (!chosen.length) throw new Error('لا توجد قطاعات مبانٍ محلية ضمن نطاق التحميل الحالي');
+  const elements = [];
+  for (const tile of chosen) {
+    const data = await readOfflineJson('cities/' + selected.slug + '/' + tile.file);
+    if (Array.isArray(data.elements)) elements.push(...data.elements);
+  }
+  if (!elements.length) throw new Error('قطاعات المدينة المحلية لا تحتوي على مبانٍ');
+  console.info('Adam World offline stream:', selected.slug, 'tiles:', chosen.length,
+               'buildings:', elements.length, 'center distance:', Math.round(nearest) + 'm');
+  return { elements: elements, city: selected, tileCount: chosen.length };
 }
 
 /* ---------- نماذج ---------- */
@@ -413,7 +425,7 @@ async function loadImageryEvidence(lat,lon){currentImageryCenter={lat,lon};rende
 $("imageryToggle").onclick=()=>{const p=$("imageryPanel"),show=p.style.display!=="block";p.style.display=show?"block":"none";if(show&&$("imageryResults").children.length===0)loadImageryEvidence(currentImageryCenter.lat,currentImageryCenter.lon);};
 /* ---------- بناء المدينة ---------- */
 async function loadArea(lat,lon,spawn){
-  const data=await overpass(buildQuery(lat,lon,650));
+  const data=await loadOfflineArea(lat,lon,650);
   if(!spawn){ // نقل الأصل مع الحفاظ على مواقع اللاعب
     const o=proj(lat,lon);
     S.px-=o[0];S.pz-=o[1];S.cx-=o[0];S.cz-=o[1];camera.position.x-=o[0];camera.position.z-=o[1];
@@ -552,17 +564,17 @@ async function loadArea(lat,lon,spawn){
     camera.position.set(S.px,3,S.pz);
   }
   $('loading').style.display='none';
-  loadImageryEvidence(lat,lon);
+  // Imagery catalogues are optional and are queried only when the user opens the imagery panel.
 }
 
 let loading=false;
 async function loadCity(lat,lon){
-  loading=true;$('loading').style.display='flex';$('loading').textContent='جاري تحميل بيانات المدينة من OpenStreetMap…';
+  loading=true;$('loading').style.display='flex';$('loading').textContent='جاري تحميل بيانات المدينة من التخزين المحلي…';
   try{
     await loadArea(lat,lon,true);
   }catch(e){
     const detail=e&&e.message?e.message:'خطأ غير معروف';
-    $('loading').textContent='تعذر الوصول إلى خوادم بيانات المدينة. '+detail+' — اضغط هنا لإعادة المحاولة.';
+    $('loading').textContent='تعذر تحميل بيانات المدينة المحلية. '+detail+' — اضغط هنا لإعادة المحاولة.';
     $('loading').style.display='flex';
     $('loading').onclick=()=>{ $('loading').onclick=null; loadCity(lat,lon); };
   }finally{
@@ -579,19 +591,23 @@ async function reloadHere(){
     toast('تم تحميل المنطقة الجديدة');
   }catch(e){
     reloadRetryAfter=Date.now()+15000;
-    toast('تعذر تحميل المنطقة الجديدة: '+(e&&e.message?e.message:'خطأ اتصال')+' — ستتم إعادة المحاولة');
+    toast('تعذر تحميل القطاع المحلي: '+(e&&e.message?e.message:'خطأ في البيانات')+' — ستتم إعادة المحاولة');
   }finally{loading=false;}
 }
 
 /* ---------- واجهة ---------- */
 document.querySelectorAll('[data-c]').forEach(b=>b.addEventListener('click',()=>{const [la,lo]=b.dataset.c.split(',').map(Number);loadCity(la,lo);}));
 async function search(){
-  const q=$('q').value.trim();if(!q)return;
+  const q=$('q').value.trim().toLocaleLowerCase();if(!q)return;
   try{
-    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=ar&q='+encodeURIComponent(q));
-    const j=await r.json();if(!j.length){toast('لم يتم العثور على المكان');return;}
-    loadCity(parseFloat(j[0].lat),parseFloat(j[0].lon));
-  }catch(e){toast('تعذر البحث - تحقق من الإنترنت');}
+    const catalog=await getOfflineCatalog();
+    const matches=(catalog.cities||[]).filter(c=>
+      c.name.toLocaleLowerCase()===q || c.slug.toLocaleLowerCase()===q ||
+      c.name.toLocaleLowerCase().includes(q));
+    if(matches.length===1){loadCity(matches[0].center.lat,matches[0].center.lon);return;}
+    if(matches.length>1){toast('اكتب اسم المدينة كاملاً لتحديد الوجهة');return;}
+    toast('البحث المحلي متاح للمدن العشر الموجودة في بيانات التطبيق');
+  }catch(e){toast('تعذر قراءة فهرس المدن المحلي: '+e.message);}
 }
 $('go').onclick=search;
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search();});
