@@ -770,7 +770,7 @@ const ped=makeAdamCharacter();scene.add(ped);
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(data.uvs.flat(),2));
   geometry.setIndex(data.triangles.flat());
   geometry.computeVertexNormals();
-  texture.flipY=false;texture.anisotropy=aniso;texture.needsUpdate=true;
+  texture.flipY=true;texture.anisotropy=aniso;texture.needsUpdate=true;
   const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,transparent:false,depthWrite:true});
   const photoFace=new THREE.Mesh(geometry,material);
   photoFace.name='adam-photo-derived-face';
