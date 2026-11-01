@@ -357,7 +357,7 @@ function bHeight(t,id){
   return 7;
 }
 function parseColor(t,id){
-  const raw=t['building:colour']||t['building:color']||t['building:material'];
+  const raw=t['facade:colour']||t['facade:color']||t['building:facade:colour']||t['building:facade:color']||t['building:colour']||t['building:color']||t['facade:material']||t['building:material'];
   if(raw){
     const value=String(raw).toLowerCase();
     const known={limestone:'#c9b99b',stone:'#c9b99b',sandstone:'#c8ad86',brick:'#ad765d',concrete:'#bdbbb5',plaster:'#d4cbb9',stucco:'#d4cbb9',wood:'#98734f',glass:'#718b9b',metal:'#858b90'};
@@ -464,7 +464,7 @@ const facadeTextureLoader=new THREE.TextureLoader();
 function addFacadePhotoProjection(item, footprint, height) {
   try {
     const edge=Number(item.facade_edge_index),cam=item.camera||{};
-    if(!Number.isInteger(edge)||edge<0||edge>=footprint.length||!cam.capture_lat||!cam.capture_lon) return;
+    if(!Number.isInteger(edge)||edge<0||edge>=footprint.length||!Number.isFinite(Number(cam.capture_lat))||!Number.isFinite(Number(cam.capture_lon))) return;
     const next=(edge+1)%footprint.length,a=footprint[edge],b=footprint[next];
     const hFov=Number(cam.horizontal_fov_deg),pitch=Number(cam.pitch_deg||0),az=Number(cam.azimuth_deg);
     if(!(hFov>10&&hFov<150)||!Number.isFinite(az)) return;
@@ -501,7 +501,7 @@ function addFacadePhotoProjection(item, footprint, height) {
     const mid=[(a[0]+b[0])/2,0,(a[1]+b[1])/2],toward=[camera[0]-mid[0],0,camera[2]-mid[2]];
     if(nx*toward[0]+nz*toward[2]<0){nx=-nx;nz=-nz;}
     const positions=[],uvs=[],indices=[];
-    for(let i=0;i<poly.length;i++){positions.push(poly[i][0]+nx*0.045,poly[i][1],poly[i][2]+nz*0.045);uvs.push(texCoords[i][0],texCoords[i][1]);}
+    for(let i=0;i<poly.length;i++){positions.push(poly[i][0]+nx*0.008,poly[i][1],poly[i][2]+nz*0.008);uvs.push(texCoords[i][0],texCoords[i][1]);}
     for(let i=1;i<poly.length-1;i++)indices.push(0,i,i+1);
     const geometry=new THREE.BufferGeometry();
     geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
@@ -523,8 +523,8 @@ function loadVerifiedFacadeAssignments(){
       const parsed=JSON.parse(raw||'{}');
       for(const item of (parsed.buildings||[])){
         if(!item||!item.osm_way_id||!item.local_image)continue;
-        if(!['human_verified','ai_visual_verified'].includes(String(item.review&&item.review.status||'')))continue;
-        result.set(String(item.osm_way_id),item);
+        if(String(item.review&&item.review.status||'')!=='human_verified')continue;
+        const key=String(item.osm_way_id);if(!result.has(key))result.set(key,[]);result.get(key).push(item);
       }
     }
   }catch(e){console.warn('Verified facade manifest unavailable',e);}
@@ -567,8 +567,8 @@ async function loadArea(lat,lon,spawn){
       bcount++;
       const h=bHeight(t,el.id);
       const osmWayId=String(el.id).replace(/^way\//,'');
-      const facadeAssignment=facadeAssignments.get(osmWayId);
-      if(facadeAssignment)addFacadePhotoProjection(facadeAssignment,P,h);
+      const facadeItems=facadeAssignments.get(osmWayId)||[];
+      for(const facadeAssignment of facadeItems)addFacadePhotoProjection(facadeAssignment,P,h);
       const acc=B;
       const col=parseColor(t,el.id);
       const roofRaw=t['roof:colour']||t['roof:color'];
