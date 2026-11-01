@@ -45,6 +45,18 @@ class CandidateQueueTests(unittest.TestCase):
         self.assertFalse(item["texture_assignment_allowed"])
         self.assertEqual(item["identity_status"], "unverified")
 
+    def test_dem_is_not_classified_as_roof_imagery(self):
+        building = {"geometry": {"type": "Polygon", "coordinates": [[
+            [0, 0], [0.001, 0], [0.001, 0.001], [0, 0.001], [0, 0]
+        ]]}}
+        dem = {"id": "Copernicus_DSM_COG_DEM", "geometry": {"type": "Polygon", "coordinates": [[
+            [-0.001, -0.001], [0.002, -0.001], [0.002, 0.002], [-0.001, 0.002], [-0.001, -0.001]
+        ]]}, "properties": {"gsd": 30, "platform": "TanDEM-X"}}
+        candidate = mod.aerial_candidates(building, [dem])[0]
+        self.assertEqual(candidate["kind"], "digital_elevation_model")
+        self.assertFalse(candidate["roof_shape_colour_candidate_only"])
+        self.assertFalse(candidate["facade_texture_allowed"])
+
     def test_outside_camera_cone_is_not_candidate(self):
         loc = (0.0, 0.0)
         target = (1.0, 0.0)
