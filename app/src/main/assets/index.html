@@ -174,15 +174,11 @@ function sidewalkCanvas(){
   g.strokeStyle='#8f8c84';g.lineWidth=2;g.strokeRect(0,0,128,128);
   return c;
 }
-function groundCanvas(){
-  const c=cv(128,128),g=c.getContext('2d');
-  g.fillStyle='#8a8a7c';g.fillRect(0,0,128,128);noise(g,128,128,900,0.16);return c;
-}
 const facadeTex=mkTex(facadeCanvas()),facadeEm=mkTex(facadeEmissive());
 const glassTex=mkTex(glassCanvas()),glassEm=mkTex(glassEmissive());
 const roadTexW=mkTex(roadCanvas(true)),roadTexN=mkTex(roadCanvas(false));
 const swTex=mkTex(sidewalkCanvas());
-const groundTex=mkTex(groundCanvas(),600,600);
+
 
 const DS=THREE.DoubleSide;
 // Building surfaces use OSM colour/material tags; no procedurally invented
@@ -192,11 +188,20 @@ const matG=matB;
 const matRoadW=new THREE.MeshLambertMaterial({map:roadTexW,side:DS});
 const matRoadN=new THREE.MeshLambertMaterial({map:roadTexN,side:DS});
 const matSw=new THREE.MeshLambertMaterial({map:swTex,side:DS});
-const matPark=new THREE.MeshLambertMaterial({color:0x6f8f4e,side:DS});
-const matWater=new THREE.MeshLambertMaterial({color:0x4a7fa5,side:DS});
+// Separate mapped OSM land-cover classes; no generic park-green overlay.
+const matGrass=new THREE.MeshLambertMaterial({color:0x82945b,side:DS});
+const matForest=new THREE.MeshLambertMaterial({color:0x496b43,side:DS});
+const matScrub=new THREE.MeshLambertMaterial({color:0x777c4b,side:DS});
+const matCrops=new THREE.MeshLambertMaterial({color:0x9b9860,side:DS});
+const matBare=new THREE.MeshLambertMaterial({color:0x9a927f,side:DS});
+const matSand=new THREE.MeshLambertMaterial({color:0xc4ad7d,side:DS});
+const matWetland=new THREE.MeshLambertMaterial({color:0x687f69,side:DS});
+const matWater=new THREE.MeshLambertMaterial({color:0x477f9b,side:DS});
 const matLampHead=new THREE.MeshBasicMaterial({color:0x666666});
 const matStreetPole=new THREE.MeshLambertMaterial({color:0x555b62}),matBusSign=new THREE.MeshLambertMaterial({color:0x1675b9}),matBusMark=new THREE.MeshBasicMaterial({color:0xffffff}),matShelter=new THREE.MeshLambertMaterial({color:0x606a73}),matStopSign=new THREE.MeshLambertMaterial({color:0xc92828}),matStopCenter=new THREE.MeshLambertMaterial({color:0xffffff}),matCrosswalk=new THREE.MeshBasicMaterial({color:0xf3f2e9,side:THREE.DoubleSide,depthWrite:false});
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(8000,8000),new THREE.MeshLambertMaterial({map:groundTex}));
+// Neutral fallback only where no mapped OSM land-cover polygon exists.
+ // It is not presented as satellite/aerial ground truth.
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(8000,8000),new THREE.MeshLambertMaterial({color:0x928b7e}));
 ground.rotation.x=-Math.PI/2;ground.position.y=-0.02;scene.add(ground);
 
 /* ---------- السماء والوقت ---------- */
@@ -542,7 +547,9 @@ async function loadArea(lat,lon,spawn){
   LAT0=lat;LON0=lon;KX=111320*Math.cos(lat*Math.PI/180);
   disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];
   bldgs=[];grid=new Map();carPaths=[];pedPaths=[];
-  const B=newAcc(),G=newAcc(),RWd=newAcc(),RNr=newAcc(),SW=newAcc(),PK=newAcc(),WT=newAcc();
+  const B=newAcc(),G=newAcc(),RWd=newAcc(),RNr=newAcc(),SW=newAcc();
+  const LC={grass:newAcc(),forest:newAcc(),scrub:newAcc(),crops:newAcc(),bare:newAcc(),sand:newAcc(),wetland:newAcc()};
+  const WT=newAcc();
   const trees=[],lamps=[],signals=[],busStops=[],stopSigns=[],crossings=[];const roadLabels=[],roadLabelKeys=new Set();let bcount=0;
   const facadeAssignments=loadVerifiedFacadeAssignments();
   const wallV=3.4*4;
@@ -614,16 +621,33 @@ async function loadArea(lat,lon,spawn){
           }
         }
       }
-    }else if((t.leisure&&/park|garden|pitch|playground/.test(t.leisure))||(t.landuse&&/grass|forest|recreation_ground|village_green|meadow/.test(t.landuse))||(t.natural&&/wood|scrub/.test(t.natural))){
-      const P=raw.slice();if(P.length>2&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[P.length-1][1])<0.05)P.pop();
-      if(P.length<3)continue;flatPoly(P,0.03,PK);
-      // Do not invent park trees: only mapped OSM tree nodes are rendered.
-    }else if((t.natural==='water')||t.waterway==='riverbank'){
-      const P=raw.slice();if(P.length>2&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[P.length-1][1])<0.05)P.pop();
-      if(P.length>=3)flatPoly(P,0.04,WT);
+    }else{
+      const P=raw.slice();
+      if(P.length>2&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[P.length-1][1])<0.05)P.pop();
+      if(P.length<3)continue;
+      const landuse=String(t.landuse||'').toLowerCase();
+      const natural=String(t.natural||'').toLowerCase();
+      const leisure=String(t.leisure||'').toLowerCase();
+      const cover=String(t.landcover||'').toLowerCase();
+      const water=natural==='water'||['water','reservoir','basin'].includes(landuse)||t.waterway==='riverbank'||t.water==='lake';
+      if(water){flatPoly(P,0.04,WT);continue;}
+      let target=null;
+      if(['forest','wood'].includes(landuse)||['wood','tree_row'].includes(natural)||cover==='trees')target=LC.forest;
+      else if(['scrub','heath','moor'].includes(natural)||cover==='scrub')target=LC.scrub;
+      else if(['farmland','orchard','vineyard','plant_nursery'].includes(landuse)||['orchard','vineyard'].includes(natural))target=LC.crops;
+      else if(['sand','beach','desert'].includes(natural)||cover==='sand')target=LC.sand;
+      else if(['bare_rock','scree','shingle','rock'].includes(natural)||cover==='bare_ground')target=LC.bare;
+      else if(['wetland','marsh','mud'].includes(natural)||landuse==='salt_pond')target=LC.wetland;
+      else if((leisure&&/park|garden|pitch|playground/.test(leisure))||
+              ['grass','recreation_ground','village_green','meadow'].includes(landuse)||
+              ['grassland','meadow'].includes(natural)||cover==='grass')target=LC.grass;
+      if(target)flatPoly(P,0.03,target);
     }
   }
-  const adds=[[accMesh(B,matB)],[accMesh(G,matG)],[accMesh(RWd,matRoadW)],[accMesh(RNr,matRoadN)],[accMesh(SW,matSw)],[accMesh(PK,matPark)],[accMesh(WT,matWater)]];
+  const adds=[[accMesh(B,matB)],[accMesh(G,matG)],[accMesh(RWd,matRoadW)],[accMesh(RNr,matRoadN)],[accMesh(SW,matSw)],
+    [accMesh(LC.grass,matGrass)],[accMesh(LC.forest,matForest)],[accMesh(LC.scrub,matScrub)],
+    [accMesh(LC.crops,matCrops)],[accMesh(LC.bare,matBare)],[accMesh(LC.sand,matSand)],
+    [accMesh(LC.wetland,matWetland)],[accMesh(WT,matWater)]];
   for(const a of adds)if(a[0])cityGroup.add(a[0]);
 
   /* أسماء الشوارع: نصوص مرسومة مباشرة على سطح الطريق وباتجاه مساره */
