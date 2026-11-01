@@ -58,7 +58,7 @@ jobs:
 
       - name: Commit generated review queues
         run: |
-          git add data/facades/cities/**/review_queue.json
+          git add -A data/facades/cities
           if ! git diff --cached --quiet; then
             git commit -m "Build global city facade evidence review queues"
             git push origin main
