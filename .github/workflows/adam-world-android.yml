@@ -38,6 +38,9 @@ jobs:
       - name: Validate verified facade assignments
         run: python3 tools/facades/validate_manifest.py
 
+      - name: Test global facade candidate discovery
+        run: python3 -m unittest discover -s tools/facades/tests -v
+
       - name: Validate embedded game JavaScript
         run: |
           python3 - <<'PY'
