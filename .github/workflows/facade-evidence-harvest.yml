@@ -120,7 +120,7 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
-          git add -A data/facades/cities app/src/main/assets/facades/glb
+          git add -A data/facades/cities app/src/main/assets/facades
           if ! git diff --cached --quiet; then
             git commit -m "Build global city facade evidence review queues"
             git pull --rebase origin main
