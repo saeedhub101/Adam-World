@@ -144,8 +144,8 @@ footprint rather than to a rough building centroid. A photo is eligible for the
 visual-review gallery only when all of the following are present and pass:
 - capture point within 35 m of the footprint edge;
 - camera azimuth within 25 degrees of the nearest facade bearing;
-- usable horizontal field of view (25–120 degrees);
-- a real HTTPS image preview and a downloadable image asset;
+- camera azimuth aligned within 25 degrees; a missing field of view is flagged for manual camera calibration rather than silently guessed;
+- a real HTTPS image preview and a downloadable image asset (using Panoramax thumbnail/HD UUID endpoints when federated STAC results omit asset links);
 - an explicit redistributable CC0 / CC-BY / CC-BY-SA licence (NC and ND licences
   are rejected); and
 - no invalid facade-level camera pitch when pitch metadata is supplied.
