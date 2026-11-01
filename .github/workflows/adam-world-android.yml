@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths:
       - "app/**"
+      - "tools/facades/**"
+      - "docs/FACADE_RECONSTRUCTION_PIPELINE.md"
       - "build.gradle"
       - "settings.gradle"
       - "gradle.properties"
@@ -32,6 +34,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.5"
+
+      - name: Validate verified facade assignments
+        run: python3 tools/facades/validate_manifest.py
 
       - name: Validate embedded game JavaScript
         run: |
