@@ -142,7 +142,8 @@ def fetch_source(city: Path, source: str, bbox: tuple[float, float, float, float
             changed = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout.strip()
             if changed:
                 subprocess.run(["git", "commit", "-m", f"Checkpoint {city.name} {source} metadata page {state['pages']}"], check=True)
-                subprocess.run(["git", "push", "origin", "main"], check=True)
+                subprocess.run(["git", "pull", "--rebase", "origin", "main"], check=True)
+                subprocess.run(["git", "push", "origin", "HEAD:main"], check=True)
         print(f"SAVED {city.name}/{output_name}: page={state['pages']} added={added} total={len(fc['features'])}")
         if state["complete"]:
             break
