@@ -23,7 +23,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: adam-world-facade-evidence-harvest
+  group: adam-world-offline-city-import
   cancel-in-progress: false
 
 jobs:
@@ -84,66 +84,3 @@ jobs:
             git push origin HEAD:main
           fi
 
-  build_release:
-    name: Build and publish Adam World APK after city evidence import
-    needs: harvest
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout latest main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.5"
-
-      - name: Validate app and facade tools
-        run: |
-          python3 -m py_compile tools/facades/*.py tools/facades/tests/*.py
-          python3 -m unittest discover -s tools/facades/tests -v
-          python3 tools/facades/validate_manifest.py
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          html = Path("app/src/main/assets/index.html").read_text(encoding="utf-8")
-          scripts = re.findall(r'<script([^>]*)>(.*?)</script>', html, re.I | re.S)
-          inline = [body for attrs, body in scripts if "src=" not in attrs.lower() and body.strip()]
-          if not inline:
-              raise SystemExit("No inline game JavaScript found")
-          Path("/tmp/adam-world-inline.js").write_text("\n".join(inline), encoding="utf-8")
-          PY
-          node --check /tmp/adam-world-inline.js
-
-      - name: Build APK and AAB
-        run: gradle --no-daemon -PVERSION_CODE=1041 assembleDebug bundleDebug
-
-      - name: Verify outputs
-        run: |
-          test -s app/build/outputs/apk/debug/app-debug.apk
-          test -s app/build/outputs/bundle/debug/app-debug.aab
-          ls -lh app/build/outputs/apk/debug/app-debug.apk app/build/outputs/bundle/debug/app-debug.aab
-
-      - name: Publish post-import GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: adam-world-evidence-v${{ github.run_number }}
-          name: Adam World - Evidence Import Build ${{ github.run_number }}
-          body: |
-            **App:** Adam World
-            **Publisher:** Saeed Mansour
-            **Build outputs:** APK and AAB (debug-signed testing build).
-            **Version code:** 1041.
-            **Evidence status:** OSM building footprints and public imagery catalogues were processed by the preceding harvest job. Facade imagery remains candidate-only unless explicitly human-verified.
-            **Note:** A private production signing key is required for Google Play production upload.
-          files: |
-            app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/bundle/debug/app-debug.aab
-          fail_on_unmatched_files: true
