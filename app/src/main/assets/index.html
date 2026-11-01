@@ -400,6 +400,33 @@ function addArchitecturalMesh(target,material){
   g.computeVertexNormals();cityGroup.add(new THREE.Mesh(g,material));
 }
 let architecturalWindowCount=0,architecturalBalconyCount=0;
+function pushFacadeWallPanel(acc,a,b,u0,u1,y0,y1,col,len){
+  if(u1-u0<0.025||y1-y0<0.025)return;
+  const tx=(b[0]-a[0])/len,tz=(b[1]-a[1])/len;
+  const x0=a[0]+tx*u0,z0=a[1]+tz*u0,x1=a[0]+tx*u1,z1=a[1]+tz*u1;
+  const uv0=u0/4,uv1=u1/4,v0=y0/4,v1=y1/4,lo=0.78;
+  acc.pos.push(x0,y0,z0,x1,y0,z1,x1,y1,z1,x0,y0,z0,x1,y1,z1,x0,y1,z0);
+  acc.uv.push(uv0,v0,uv1,v0,uv1,v1,uv0,v0,uv1,v1,uv0,v1);
+  for(let k=0;k<6;k++){const top=(k===2||k===4||k===5);acc.col.push(col.r*(top?1:lo),col.g*(top?1:lo),col.b*(top?1:lo));}
+}
+function appendFacadeWall(acc,a,b,height,col,layout){
+  const len=Math.hypot(b[0]-a[0],b[1]-a[1]);
+  if(!layout){pushFacadeWallPanel(acc,a,b,0,len,0,height,col,len);return;}
+  for(let fl=0;fl<layout.floors;fl++){
+    const y0=fl*layout.floorH,y1=Math.min(height,(fl+1)*layout.floorH);
+    const windows=layout.windowsByFloor[fl]||[];
+    if(!windows.length){pushFacadeWallPanel(acc,a,b,0,len,y0,y1,col,len);continue;}
+    const bottom=windows[0].bottom,top=windows[0].top;
+    pushFacadeWallPanel(acc,a,b,0,len,y0,bottom,col,len);
+    pushFacadeWallPanel(acc,a,b,0,len,top,y1,col,len);
+    let cursor=0;
+    for(const win of windows){
+      pushFacadeWallPanel(acc,a,b,cursor,win.left,bottom,top,col,len);
+      cursor=win.right;
+    }
+    pushFacadeWallPanel(acc,a,b,cursor,len,bottom,top,col,len);
+  }
+}
 function addBuildingArchitecture(P,t,height,id){
   const area=polyArea(P),outwardSign=area>=0?1:-1;
   const levelsRaw=parseFloat(t['building:levels']);
@@ -465,7 +492,7 @@ function addBuildingArchitecture(P,t,height,id){
         }
       }
     }
-    // Continuous ground plinth and a modest parapet/cornice follow the true footprint edge.
+    layouts.push({a,b,floors,floorH,windowsByFloor});\n    // Continuous ground plinth and a modest parapet/cornice follow the true footprint edge.
     const plinth=[mid[0]+nx*0.025,0.22,mid[2]+nz*0.025];
     pushArchBox(archAcc.trim,plinth,ax,ay,az,len,0.34,0.12);
     if(String(t['roof:shape']||'flat')==='flat'){
@@ -680,7 +707,7 @@ async function loadArea(lat,lon,spawn){
       const osmWayId=String(el.id).replace(/^way\//,'');
       const facadeItems=facadeAssignments.get(osmWayId)||[];
       for(const facadeAssignment of facadeItems)addFacadePhotoProjection(facadeAssignment,P,h);
-      addBuildingArchitecture(P,t,h,el.id);
+      const facadeLayouts=addBuildingArchitecture(P,t,h,el.id);
       const acc=B;
       const col=parseColor(t,el.id);
       const roofRaw=t['roof:colour']||t['roof:color'];
@@ -693,10 +720,7 @@ async function loadArea(lat,lon,spawn){
         minx=Math.min(minx,a[0]);maxx=Math.max(maxx,a[0]);minz=Math.min(minz,a[1]);maxz=Math.max(maxz,a[1]);
         const len=Math.hypot(b[0]-a[0],b[1]-a[1]);if(len<0.05)continue;
         const u=Math.max(1,Math.round(len/4))/4,v=nF/4;
-        acc.pos.push(a[0],0,a[1],b[0],0,b[1],b[0],h,b[1], a[0],0,a[1],b[0],h,b[1],a[0],h,a[1]);
-        acc.uv.push(0,0,u,0,u,v, 0,0,u,v,0,v);
-        const lo=0.78;
-        acc.col.push(col.r*lo,col.g*lo,col.b*lo,col.r*lo,col.g*lo,col.b*lo,col.r,col.g,col.b, col.r*lo,col.g*lo,col.b*lo,col.r,col.g,col.b,col.r,col.g,col.b);
+        appendFacadeWall(acc,a,b,h,col,facadeLayouts[i]);
       }
       const tr=triangulate(P);
       for(const tri of tr)for(const k of tri){acc.pos.push(P[k][0],h,P[k][1]);acc.uv.push(0.01,0.99);acc.col.push(roofC.r,roofC.g,roofC.b);}
