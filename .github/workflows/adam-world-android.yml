@@ -32,7 +32,7 @@ jobs:
           gradle-version: "8.5"
 
       - name: Build APK and AAB
-        run: gradle --no-daemon assembleDebug bundleDebug
+        run: gradle --no-daemon -PVERSION_CODE=${{ github.run_number }} assembleDebug bundleDebug
 
       - name: Verify outputs
         run: |
@@ -48,7 +48,7 @@ jobs:
           body: |
             **App:** Adam World
             **Publisher:** Saeed Mansour
-            **Build outputs:** APK and AAB (debug-signed build for testing).
+            **Build outputs:** APK and AAB (debug-signed build for testing).\n            **Version code:** ${{ github.run_number }}. The Android app checks this release automatically and can also check manually.
             **Note:** The AAB is debug-signed and is not ready for Google Play production upload. A private production signing key is required for that.
           files: |
             app/build/outputs/apk/debug/app-debug.apk
