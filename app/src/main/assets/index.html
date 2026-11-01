@@ -644,6 +644,8 @@ function makeCar(color){
   }
   return g;
 }
+// NPCs keep the lightweight crowd model. The playable Adam character below
+// is a separate articulated, bone-driven model with facial features and fingers.
 const pGeo={torso:new THREE.BoxGeometry(0.5,0.7,0.3),head:new THREE.SphereGeometry(0.15,8,6),leg:new THREE.BoxGeometry(0.2,0.78,0.22),arm:new THREE.BoxGeometry(0.12,0.62,0.14)};
 const matSkin=new THREE.MeshLambertMaterial({color:0xd9a67f}),matPants=new THREE.MeshLambertMaterial({color:0x2c3e50});
 function makePerson(shirt){
@@ -657,10 +659,103 @@ function makePerson(shirt){
   }
   g.userData={legs:legs,arms:arms};return g;
 }
-function swing(g,ph,amp){const u=g.userData;u.legs[0].rotation.x=Math.sin(ph)*amp;u.legs[1].rotation.x=-Math.sin(ph)*amp;u.arms[0].rotation.x=-Math.sin(ph)*amp*0.8;u.arms[1].rotation.x=Math.sin(ph)*amp*0.8;}
+const adamMats={
+ skin:new THREE.MeshLambertMaterial({color:0xd8a17e}),
+ hoodie:new THREE.MeshLambertMaterial({color:0x1762b5}),
+ hood:new THREE.MeshLambertMaterial({color:0x104b91}),
+ jeans:new THREE.MeshLambertMaterial({color:0x263f67}),
+ shoe:new THREE.MeshLambertMaterial({color:0xf4f5f7}),
+ shoeBlue:new THREE.MeshLambertMaterial({color:0x174d91}),
+ hair:new THREE.MeshLambertMaterial({color:0x17191d}),
+ eyeWhite:new THREE.MeshLambertMaterial({color:0xfafafa}),
+ iris:new THREE.MeshLambertMaterial({color:0x38251d}),
+ pupil:new THREE.MeshBasicMaterial({color:0x090909}),
+ mouth:new THREE.MeshLambertMaterial({color:0x874c4a}),
+ seam:new THREE.MeshLambertMaterial({color:0x8bb8e8})
+};
+function adamMesh(parent,geo,mat,pos,scale){
+  const m=new THREE.Mesh(geo,mat);m.position.set(pos[0],pos[1],pos[2]);
+  if(scale)m.scale.set(scale[0],scale[1],scale[2]);parent.add(m);return m;
+}
+function adamLimb(parent,mat,length,radius){
+  const mesh=adamMesh(parent,new THREE.CylinderGeometry(radius*0.82,radius,length,10),mat,[0,-length/2,0]);
+  return mesh;
+}
+function makeAdamCharacter(){
+  const root=new THREE.Group(), bones=[];
+  const bone=(name,parent,pos)=>{
+    const b=new THREE.Bone();b.name=name;b.position.set(pos[0],pos[1],pos[2]);
+    if(parent)parent.add(b);else root.add(b);bones.push(b);return b;
+  };
+  const torso=bone('hips',null,[0,0.91,0]);
+  adamMesh(torso,new THREE.SphereGeometry(1,16,12),adamMats.hoodie,[0,0.17,0],[0.34,0.43,0.22]);
+  // Hoodie hem, hood and drawstrings are real geometry, not a flat character image.
+  adamMesh(torso,new THREE.CylinderGeometry(0.31,0.34,0.12,16),adamMats.hoodie,[0,-0.17,0]);
+  adamMesh(torso,new THREE.SphereGeometry(0.24,14,10),adamMats.hood,[0,0.39,-0.17],[1,1,0.62]);
+  for(const x of [-0.09,0.09]){
+    adamMesh(torso,new THREE.CylinderGeometry(0.008,0.008,0.23,6),adamMats.seam,[x,0.15,0.205]);
+  }
+  const neck=bone('neck',torso,[0,0.53,0]);
+  const head=bone('head',neck,[0,0.11,0]);
+  adamMesh(head,new THREE.SphereGeometry(0.255,20,16),adamMats.skin,[0,0.02,0],[0.88,1.08,0.84]);
+  // Ears, nose, smile, eyebrows, hair cap and separate eye assemblies.
+  for(const x of [-0.235,0.235])adamMesh(head,new THREE.SphereGeometry(0.065,12,8),adamMats.skin,[x,0.015,0]);
+  adamMesh(head,new THREE.SphereGeometry(0.045,10,8),adamMats.skin,[0,-0.005,0.205],[0.7,0.9,0.9]);
+  adamMesh(head,new THREE.TorusGeometry(0.055,0.009,6,14,Math.PI),adamMats.mouth,[0,-0.105,0.205],[1,0.55,1]);
+  const eyes=[];
+  for(const x of [-0.095,0.095]){
+    const eye=new THREE.Group();eye.position.set(x,0.075,0.202);head.add(eye);eyes.push(eye);
+    adamMesh(eye,new THREE.SphereGeometry(0.055,12,10),adamMats.eyeWhite,[0,0,0],[1,0.78,0.42]);
+    adamMesh(eye,new THREE.SphereGeometry(0.027,10,8),adamMats.iris,[0,0,-0.014],[1,1,0.5]);
+    adamMesh(eye,new THREE.SphereGeometry(0.014,8,8),adamMats.pupil,[0,0,-0.025],[1,1,0.5]);
+    adamMesh(head,new THREE.SphereGeometry(0.064,10,8),adamMats.hair,[x,0.145,0.185],[1.25,0.25,0.45]);
+  }
+  adamMesh(head,new THREE.SphereGeometry(0.25,16,10),adamMats.hair,[0,0.19,-0.015],[1.02,0.52,0.94]);
+  // Side-swept fringe gives the short, tidy dark hairstyle from the reference.
+  adamMesh(head,new THREE.SphereGeometry(0.19,14,8),adamMats.hair,[0,0.16,0.16],[1.12,0.35,0.52]);
+  const legs=[],arms=[],fingers=[];
+  for(const side of [-1,1]){
+    const upperArm=bone(side<0?'arm.L':'arm.R',torso,[side*0.34,0.37,0]);
+    adamLimb(upperArm,adamMats.hoodie,0.31,0.105);
+    const forearm=bone(side<0?'forearm.L':'forearm.R',upperArm,[0,-0.31,0]);
+    adamLimb(forearm,adamMats.hoodie,0.29,0.085);
+    const hand=bone(side<0?'hand.L':'hand.R',forearm,[0,-0.29,0]);
+    adamMesh(hand,new THREE.SphereGeometry(0.075,10,8),adamMats.skin,[0,-0.045,0],[0.8,1.05,0.55]);
+    const handFingers=[];
+    for(let f=0;f<5;f++){
+      const spread=(f-2)*0.026,baseY=f===1||f===2?-0.09:-0.065;
+      const digit=bone((side<0?'L':'R')+'_finger_'+f,hand,[spread,baseY,f===0?0.035:0]);
+      const len=f===0?0.085:0.105;
+      adamLimb(digit,adamMats.skin,len,0.019);
+      const tip=bone((side<0?'L':'R')+'_finger_tip_'+f,digit,[0,-len,0]);
+      adamMesh(tip,new THREE.SphereGeometry(0.018,7,6),adamMats.skin,[0,-0.018,0]);
+      handFingers.push(digit);
+    }
+    fingers.push(handFingers);arms.push(upperArm);
+    const thigh=bone(side<0?'thigh.L':'thigh.R',torso,[side*0.16,-0.12,0]);
+    adamLimb(thigh,adamMats.jeans,0.39,0.105);
+    const shin=bone(side<0?'shin.L':'shin.R',thigh,[0,-0.39,0]);
+    adamLimb(shin,adamMats.jeans,0.37,0.078);
+    const foot=bone(side<0?'foot.L':'foot.R',shin,[0,-0.37,0.025]);
+    adamMesh(foot,new THREE.BoxGeometry(0.17,0.12,0.31),adamMats.shoe,[0,-0.025,0.09]);
+    adamMesh(foot,new THREE.BoxGeometry(0.175,0.035,0.19),adamMats.shoeBlue,[0,-0.075,0.13]);
+    legs.push(thigh);
+  }
+  // Expose a named bone skeleton for future weapon sockets, gestures and animation clips.
+  const skeleton=new THREE.Skeleton(bones);
+  root.userData={legs:legs,arms:arms,fingers:fingers,eyes:eyes,head:head,skeleton:skeleton,bones:bones};
+  return root;
+}
+function swing(g,ph,amp){
+  const u=g.userData;
+  if(u.legs&&u.legs.length===2){
+    u.legs[0].rotation.x=Math.sin(ph)*amp;u.legs[1].rotation.x=-Math.sin(ph)*amp;
+    u.arms[0].rotation.x=-Math.sin(ph)*amp*0.8;u.arms[1].rotation.x=Math.sin(ph)*amp*0.8;
+  }
+}
 
 /* اللاعب */
-const ped=makePerson(0xe74c3c);scene.add(ped);
+const ped=makeAdamCharacter();scene.add(ped);
 const pcar=makeCar(0xc0392b);scene.add(pcar);
 const S={px:0,pz:0,pyaw:0,cx:0,cz:0,cyaw:0,cv:0,mode:'walk',phase:0,camYaw:0,camPitch:0.38,camDistance:5.2,lastLook:0,sx:0,sy:0,sprint:false};
 
@@ -1367,6 +1462,9 @@ function frame(now){
     if(performance.now()-S.lastLook>2500)S.camYaw+=angDiff(S.camYaw,S.cyaw)*Math.min(1,dt*2.5);
   }
   if(S.mode==='walk')$('hud').style.display='none';
+  // Natural idle eye blinking; eye meshes remain independently addressable for later facial animation.
+  const blink=Math.max(0,Math.sin(now*0.0017))>0.995?0.12:1;
+  if(ped.userData.eyes)ped.userData.eyes.forEach(eye=>eye.scale.y=blink);
   // Vehicle wheels sit slightly above the mapped road surface (+0.09 m).
   pcar.position.set(S.cx,terrainHeight(S.cx,S.cz)+0.13,S.cz);pcar.rotation.y=S.cyaw;
 
