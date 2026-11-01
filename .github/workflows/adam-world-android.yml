@@ -13,7 +13,6 @@ on:
       - "build.gradle"
       - "settings.gradle"
       - "gradle.properties"
-      - ".github/workflows/adam-world-android.yml"
   workflow_run:
     workflows: ["Adam World Offline City Data Import"]
     types: [completed]
@@ -28,7 +27,9 @@ concurrency:
 
 jobs:
   build:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    # A partial city import still has committed checkpoints and valid older city extracts.
+    # Build from the latest main state after any completed import, including partial failures.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
