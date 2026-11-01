@@ -57,11 +57,15 @@ these full extracts over the smaller building-only fallback GeoJSON.
 - During a city jump or local tile reload, movement is paused until the new
   offline tile neighborhood has loaded. Movement streaming recenters the local
   origin and loads nearby tiles from APK assets.
+- OSM road names (`name:ar`, `name`, `name:en`, then `ref`) are rendered as outlined text directly on the road surface, aligned with the road and repeated sparingly on long named streets. Unnamed roads receive no invented labels.
+- Mapped bus-stop, stop-sign and pedestrian-crossing nodes are rendered at their OSM coordinates. Detached facade-photo cards remain hidden.
 
 ## Real facade evidence boundary
 
 OpenAerialMap metadata is used for aerial/roof context only; Panoramax metadata
-is used to discover street-level facade-photo candidates. Candidate proximity or
+is used to discover street-level facade-photo candidates. Catalogue discovery bounds
+include an additional 1.8 km around mapped building extents to find nearby captures;
+this wider radius only expands candidate discovery and does not verify any match. Candidate proximity or
 camera direction is not proof of building identity. Detached photo cards are
 hidden in gameplay. A photo may appear on a building only after its exact
 building/facade, camera direction, image quality and redistribution licence are
