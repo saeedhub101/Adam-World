@@ -76,7 +76,8 @@ jobs:
           git add -A data/facades/cities
           if ! git diff --cached --quiet; then
             git commit -m "Build global city facade evidence review queues"
-            git push origin main
+            git pull --rebase origin main
+            git push origin HEAD:main
           fi
 
   build_release:
