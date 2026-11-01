@@ -6,7 +6,7 @@ on:
     paths:
       - "tools/facades/fetch_catalogue_metadata.py"
       - "tools/facades/fetch_osm_buildings.py"
-      - "tools/facades/build_review_queue.py"
+      - "tools/facades/build_review_queue.py"\n      - "tools/facades/visual_verify_facades.py"
       - "tools/facades/fetch_kartaview_metadata.py"
       - "tools/facades/prepare_facade_review.py"
       - "tools/facades/build_verified_glbs.py"
@@ -94,7 +94,7 @@ jobs:
         continue-on-error: true
         run: python3 tools/facades/build_review_queue.py
 
-      - name: Immediately rebuild GLBs from verified facade assignments
+      - name: Free local computer-vision screening (no API or paid service)\n        id: visual_cv\n        continue-on-error: true\n        run: |\n          python3 -m pip install --disable-pip-version-check numpy opencv-python-headless\n          python3 tools/facades/visual_verify_facades.py\n\n      - name: Immediately rebuild GLBs from verified facade assignments
         id: glb
         continue-on-error: true
         run: |
@@ -121,10 +121,10 @@ jobs:
           OSM: ${{ steps.osm.outcome }}
           CATALOG: ${{ steps.catalog.outcome }}
           QUEUE: ${{ steps.queue.outcome }}
-          GLB: ${{ steps.glb.outcome }}
+          VISUAL_CV: ${{ steps.visual_cv.outcome }}\n          GLB: ${{ steps.glb.outcome }}
           COMMIT: ${{ steps.commit.outcome }}
         run: |
           printf 'Facade harvest outcomes: tests=%s osm=%s catalogue=%s queues=%s verified_glb=%s commit=%s\n' "$TESTS" "$OSM" "$CATALOG" "$QUEUE" "$GLB" "$COMMIT"
-          for outcome in "$TESTS" "$OSM" "$CATALOG" "$QUEUE" "$GLB" "$COMMIT"; do
+          for outcome in "$TESTS" "$OSM" "$CATALOG" "$QUEUE" "$VISUAL_CV" "$GLB" "$COMMIT"; do
             if [ "$outcome" != "success" ]; then exit 1; fi
           done
