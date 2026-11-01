@@ -604,8 +604,8 @@ async function loadArea(lat,lon,spawn){
       if(path.total>20){
         if(veh)carPaths.push({path:path,w:w});
         pedPaths.push({path:path,w:w,veh:veh});
-        const roadName=String(t['name:ar']||t.name||t['name:en']||t.ref||'').trim();
-        if(roadName&&roadLabels.length<120){
+        const roadName=String(t['name:ar']||t['name:en']||t.name||t.official_name||t.loc_name||t.ref||'').trim();
+        if(roadName&&roadLabels.length<240){
           const copies=Math.min(3,Math.max(1,Math.ceil(path.total/140)));
           for(let li=0;li<copies;li++){
             const distance=path.total*(li+1)/(copies+1),p=posAt(path,distance,0);
