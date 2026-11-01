@@ -7,6 +7,8 @@ on:
     paths:
       - "app/**"
       - "tools/facades/**"
+      - "tools/build_offline_city_tiles.py"
+      - "data/facades/cities/**"
       - "docs/FACADE_RECONSTRUCTION_PIPELINE.md"
       - "build.gradle"
       - "settings.gradle"
@@ -34,6 +36,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.5"
+
+      - name: Package offline city tiles into the APK
+        run: python3 tools/build_offline_city_tiles.py
 
       - name: Validate verified facade assignments
         run: python3 tools/facades/validate_manifest.py
