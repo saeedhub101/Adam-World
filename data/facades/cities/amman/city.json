@@ -2,9 +2,9 @@
   "slug": "amman",
   "name": "Amman",
   "center": {
-    "lat": 31.9516,
-    "lon": 35.9394
+    "lat": 31.997579,
+    "lon": 35.940358
   },
-  "discovery_radius_m": 650,
-  "notes": "Initial discovery area follows the current in-game city destination radius. Expand the city coverage by adding further area footprints; this is not a claim of complete municipal coverage."
+  "discovery_radius_m": 1800,
+  "notes": "Priority discovery area centred on the Adam World start location in Tabarbour (31.997579, 35.940358). The 1.8 km radius is an evidence-discovery window, not a claim of complete Amman coverage."
 }
