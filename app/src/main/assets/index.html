@@ -777,7 +777,7 @@ function addRomanTheatre(){
   const seatDummy=new THREE.Object3D();let seatIndex=0;
   for(let row=0;row<rows;row++){
     const r=13.5+row*1.08+0.46,y=0.28+row*0.12+(row>=10?0.55:0)+(row>=21?0.55:0);
-    const count=Math.floor((a1-a0)*r/0.45);
+    const count=Math.floor((a1-a0)*r/0.42);
     for(let k=0;k<count;k++){
       const angle=a0+(k+0.5)*(a1-a0)/count;
       if(aisles.some(gap=>angle>gap[0]-0.018&&angle<gap[1]+0.018))continue;
