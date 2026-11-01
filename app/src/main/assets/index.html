@@ -431,6 +431,8 @@ let carPaths=[],pedPaths=[],railPaths=[],agents=[];
 const WORLD_MODEL_FILES={
   adult_man:'models/people/adult-man.glb',
   adult_woman:'models/people/adult-woman.glb',
+  adult_man_walk:'models/people/adult-man-walk.glb',
+  adult_woman_walk:'models/people/adult-woman-walk.glb',
   child_boy:'models/people/child-boy.glb',
   child_girl:'models/people/child-girl.glb',
   dog:'models/animals/dog.glb',
@@ -441,7 +443,7 @@ const WORLD_MODEL_FILES={
   motorcycle:'models/vehicles/motorcycle.glb',
   water_taxi:'models/vehicles/water-taxi.glb'
 };
-const WORLD_MODEL_HEIGHT={adult_man:1.85,adult_woman:1.68,child_boy:1.11,child_girl:1.16,dog:0.92};
+const WORLD_MODEL_HEIGHT={adult_man:1.85,adult_woman:1.68,adult_man_walk:1.79,adult_woman_walk:1.70,child_boy:1.11,child_girl:1.16,dog:0.92};
 const WORLD_VEHICLE_LENGTH={sedan:4.5,pickup:5.4,bus:12,motorcycle:2.05,metro_car:19,water_taxi:9.9};
 const worldModelCache=new Map();
 const worldGLTFLoader=THREE.GLTFLoader?new THREE.GLTFLoader():null;
@@ -449,11 +451,11 @@ function loadWorldModel(key){
   if(!WORLD_MODEL_FILES[key]||!worldGLTFLoader)return Promise.reject(new Error('3D asset unavailable: '+key));
   if(!worldModelCache.has(key)){
     worldModelCache.set(key,new Promise((resolve,reject)=>{
-      worldGLTFLoader.load(WORLD_MODEL_FILES[key],g=>resolve(g.scene),undefined,e=>{worldModelCache.delete(key);reject(e||new Error('GLB load failed: '+key));});
+      worldGLTFLoader.load(WORLD_MODEL_FILES[key],g=>resolve({scene:g.scene,animations:g.animations||[]}),undefined,e=>{worldModelCache.delete(key);reject(e||new Error('GLB load failed: '+key));});
     }));
   }
   return worldModelCache.get(key).then(template=>{
-    const model=template.clone(true);
+    const model=THREE.SkeletonUtils?THREE.SkeletonUtils.clone(template.scene):template.scene.clone(true);
     const wheelMeshes=[];
     model.traverse(n=>{
       if(n.isMesh){
@@ -464,7 +466,7 @@ function loadWorldModel(key){
     let box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
     const isVehicle=Object.prototype.hasOwnProperty.call(WORLD_VEHICLE_LENGTH,key);
     let headingOffset=0;
-    if(isVehicle&&size.x>size.z){model.rotation.y=Math.PI/2;headingOffset=0;box=new THREE.Box3().setFromObject(model);size=box.getSize(new THREE.Vector3());}
+    if(isVehicle&&size.x>size.z){model.rotation.y=Math.PI/2;box=new THREE.Box3().setFromObject(model);size=box.getSize(new THREE.Vector3());}
     const target=isVehicle?(WORLD_VEHICLE_LENGTH[key]||4.5):(WORLD_MODEL_HEIGHT[key]||1.7);
     const scale=isVehicle?target/Math.max(size.x,size.z):target/Math.max(0.01,size.y);
     const center=box.getCenter(new THREE.Vector3());
@@ -474,6 +476,11 @@ function loadWorldModel(key){
     wrapper.userData.headingOffset=headingOffset;
     wrapper.userData.wheels=wheelMeshes;
     wrapper.userData.assetKey=key;
+    if(template.animations&&template.animations.length){
+      const mixer=new THREE.AnimationMixer(model);
+      const clip=template.animations.find(c=>/relaxed.?walk|walk/i.test(c.name||''))||template.animations[0];
+      if(clip){mixer.clipAction(clip).play();wrapper.userData.mixer=mixer;wrapper.userData.walkClip=clip.name;}
+    }
     return wrapper;
   });
 }
