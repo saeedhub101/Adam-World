@@ -45,7 +45,7 @@ jobs:
         run: |
           mkdir -p app/src/main/assets/vendor
           curl --fail --location --retry 3 --retry-delay 2 \
-            https://cdnjs.cloudflare.com/ajax/libs/three.js/0.128.0/three.min.js \
+            https://raw.githubusercontent.com/mrdoob/three.js/r128/build/three.min.js \
             --output app/src/main/assets/vendor/three.min.js
           test -s app/src/main/assets/vendor/three.min.js
 
