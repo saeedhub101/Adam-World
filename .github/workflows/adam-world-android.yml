@@ -1,4 +1,5 @@
 name: Adam World Android Build and Release
+# Rebuild on launcher icon and map streaming updates
 
 on:
   push:
