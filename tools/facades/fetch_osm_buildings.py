@@ -152,7 +152,8 @@ def checkpoint(path: Path, city: Path) -> None:
             ["git", "commit", "-m", f"Save {city.name} OSM building footprints"],
             cwd=ROOT, check=True,
         )
-        subprocess.run(["git", "push", "origin", "main"], cwd=ROOT, check=True)
+        subprocess.run(["git", "pull", "--rebase", "origin", "main"], cwd=ROOT, check=True)
+        subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT, check=True)
 
 
 def valid_existing(path: Path) -> bool:
