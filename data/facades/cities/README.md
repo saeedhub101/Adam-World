@@ -66,3 +66,32 @@ approval or label a neutral footprint shell as a photo-real building.
 
 Keep compact metadata, source hashes, review decisions and final GLB provenance in
 the repository. Never check in a photo if its licence does not permit redistribution.
+
+
+## Free offline visual-verification stage
+
+The workflow includes `tools/facades/visual_verify_facades.py`, a local
+computer-vision screening stage built on **OpenCV (BSD-3-Clause), NumPy and Python**.
+It requires no API key, paid service, hosted model, or external AI endpoint. It
+downloads eligible Panoramax preview bytes to memory for analysis and does not
+store unverified photographs in the repository.
+
+For each candidate it checks image decoding and resolution, blur/sharpness,
+exposure, contrast, entropy, edge density and vertical facade-line cues. It also
+rechecks camera-to-footprint distance and bearing gates, then writes a per-city
+`visual_verification.json` report with metrics, image hash, license, camera
+metadata and explicit rejection reasons.
+
+**Identity boundary:** generic computer vision cannot prove from one street
+photograph plus an OSM footprint that the pictured object is exactly a specific
+building or exact floor. Even a passing candidate is labelled
+`candidate_for_human_identity_review`, retains
+`identity_status=unverified_requires_human_confirmation`, and has
+`texture_assignment_allowed=false`. It cannot enter the verified manifest or
+produce a photo-textured GLB automatically. Human confirmation of exact
+building, facade side, level and license remains the final identity gate.
+The GLB builder then projects the approved image onto the corresponding wall.
+
+The workflow installs only free open-source packages and runs this stage
+without any API key or paid endpoint. Install locally with
+`python -m pip install opencv-python-headless numpy`.
