@@ -20,11 +20,31 @@ android {
         versionName "1.0.${appVersionCode}"
     }
 
+    signingConfigs {
+        release {
+            def keystorePath = System.getenv("ADAM_WORLD_KEYSTORE_FILE")
+            def keystorePassword = System.getenv("ADAM_WORLD_KEYSTORE_PASSWORD")
+            def signingAlias = System.getenv("ADAM_WORLD_KEY_ALIAS")
+            def signingPassword = System.getenv("ADAM_WORLD_KEY_PASSWORD")
+
+            if (keystorePath) {
+                storeFile file(keystorePath)
+            }
+            if (keystorePassword) {
+                storePassword keystorePassword
+            }
+            if (signingAlias) {
+                keyAlias signingAlias
+            }
+            if (signingPassword) {
+                keyPassword signingPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Produces an installable sideload-test APK/AAB. Google Play production
-            // publishing still requires the owner's private upload/release key.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled false
         }
     }
