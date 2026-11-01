@@ -88,12 +88,16 @@ jobs:
               z.write('app/src/main/assets/index.html', 'index.html')
           print('WEB_UPDATE_BUNDLE_OK bytes=', Path('app/build/updates/adam-world-web-update.zip').stat().st_size)
           PY
+          git fetch --force --tags origin
+          PREVIOUS_RELEASE=$(git tag --list 'adam-world-v*' | sort -V | tail -n 1)
+          if [ -n "$PREVIOUS_RELEASE" ]; then CHANGED_FILES=$(git diff --name-only "$PREVIOUS_RELEASE"..HEAD); else CHANGED_FILES=$(git show --format= --name-only HEAD); fi
           NATIVE_REQUIRED=false
-          PREVIOUS_RELEASE=$(git tag --list 'adam-world-v*' --sort=-version:refname | head -n 1)
-          if [ -n "$PREVIOUS_RELEASE" ]; then CHANGED_FILES=$(git diff --name-only "$PREVIOUS_RELEASE"...HEAD); else CHANGED_FILES=$(git show --format= --name-only HEAD); fi
+          WEB_CONTENT_CHANGED=false
           if printf '%s\n' "$CHANGED_FILES" | grep -Eq '^(app/src/main/java/|app/src/main/AndroidManifest.xml|app/build.gradle|data/offline-world/|data/facades/cities/[^/]+/buildings[.]geojson$)'; then NATIVE_REQUIRED=true; fi
+          if printf '%s\n' "$CHANGED_FILES" | grep -Fxq 'app/src/main/assets/index.html'; then WEB_CONTENT_CHANGED=true; fi
           echo "NATIVE_REQUIRED=$NATIVE_REQUIRED" >> "$GITHUB_ENV"
-          echo "Native APK update required: $NATIVE_REQUIRED"
+          echo "WEB_CONTENT_CHANGED=$WEB_CONTENT_CHANGED" >> "$GITHUB_ENV"
+          echo "Native APK update required: $NATIVE_REQUIRED; web content changed: $WEB_CONTENT_CHANGED"
 
       - name: Validate verified facade assignments
         run: python3 tools/facades/validate_manifest.py
@@ -158,6 +162,7 @@ jobs:
             **Version code:** ${{ github.run_number }}
             **Signing:** Production release key supplied through GitHub Actions Secrets.
             **Native-Required:** ${{ env.NATIVE_REQUIRED }}
+            **Web-Content-Changed:** ${{ env.WEB_CONTENT_CHANGED }}
             **Fast update:** The small web bundle updates game logic/UI without reinstalling the APK when native code is unchanged.
           files: |
             app/build/outputs/apk/release/app-release.apk
