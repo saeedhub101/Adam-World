@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>مدينة 3D</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/three@0.128.0/build/three.min.js';"></script>
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
   canvas{display:block;position:absolute;inset:0;touch-action:none}
@@ -58,6 +58,21 @@
 
 <script>
 const $=id=>document.getElementById(id);
+function startupFailure(message){
+  const box=$('loading');
+  if(!box)return;
+  box.textContent='تعذر بدء Adam World: '+(message||'حدث خطأ غير متوقع')+' — تحقق من اتصال الإنترنت ثم أعد فتح التطبيق.';
+  box.style.display='flex';
+  box.style.pointerEvents='auto';
+  box.onclick=()=>location.reload();
+}
+window.addEventListener('error',e=>{
+  if(e&&e.message)startupFailure(e.message);
+});
+window.addEventListener('unhandledrejection',e=>{
+  const reason=e&&e.reason;
+  startupFailure(reason&&reason.message?reason.message:'تعذر تحميل بيانات المدينة');
+});
 function toast(t,ms){const m=$('msg');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',ms||2200);}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function angDiff(a,b){let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return d;}
@@ -214,7 +229,7 @@ async function overpass(q){
   const servers=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
   for(const s of servers){
     try{
-      const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),45000);
+      const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),15000);
       const r=await fetch(s,{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'},signal:ac.signal});
       clearTimeout(tm);
       if(!r.ok)continue;return await r.json();
