@@ -134,6 +134,8 @@ def photo_quality_gate(photo: dict[str, Any], distance_m: float, delta: float | 
     if fov is None or not 25 <= fov <= 120: reasons.append("usable_field_of_view_missing_or_invalid")
     pitch = photo.get("pitch_deg")
     if pitch is not None and not -45 <= pitch <= 45: reasons.append("camera_pitch_not_facade_level")
+    accuracy = photo.get("horizontal_accuracy_m")
+    if accuracy is not None and accuracy > 20: reasons.append("capture_position_accuracy_too_low")
     if not reusable_photo_license(photo.get("license")): reasons.append("redistribution_license_not_confirmed")
     if not photo.get("preview_url"): reasons.append("no_real_image_preview_asset")
     if not photo.get("image_url"): reasons.append("no_downloadable_photo_asset")
@@ -166,8 +168,17 @@ def photo_metadata(feature: dict[str, Any]) -> dict[str, Any]:
         fov = number(p.get("pers:field_of_view"))
     license_value = p.get("license") or p.get("licence")
     assets = feature.get("assets") or {}
-    visual = assets.get("thumbnail") or assets.get("small") or assets.get("visual") or {}
-    full_image = next((assets.get(k) for k in ("original", "hd", "visual", "sd", "photo", "image") if isinstance(assets.get(k), dict) and assets[k].get("href")), {})
+    def asset_with_role(role: str) -> dict[str, Any]:
+        for asset in assets.values():
+            if isinstance(asset, dict) and role in (asset.get("roles") or []) and asset.get("href"):
+                return asset
+        return {}
+    thumbnail = asset_with_role("thumbnail")
+    visual = asset_with_role("visual")
+    # Panoramax names assets by implementation; the STAC role, not the key name,
+    # identifies the actual display image. Do not mistake tiled "data" assets for photos.
+    preview_asset = thumbnail or visual
+    full_image = visual
     links = feature.get("links") or []
     self_link = next((x.get("href") for x in links if x.get("rel") == "self"), None)
     return {
@@ -181,7 +192,7 @@ def photo_metadata(feature: dict[str, Any]) -> dict[str, Any]:
         "license": license_value,
         "instance": p.get("instance"),
         "metadata_url": self_link,
-        "preview_url": visual.get("href") if isinstance(visual, dict) else None,
+        "preview_url": preview_asset.get("href") if isinstance(preview_asset, dict) else None,
         "image_url": full_image.get("href") if isinstance(full_image, dict) else None,
     }
 
@@ -280,7 +291,7 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
                 "azimuth_delta_deg": round(delta, 2) if delta is not None else None,
                 "direction_status": direction,
                 "capture_datetime": photo["capture_datetime"],
-                "camera": {k: photo[k] for k in ("azimuth_deg", "field_of_view_deg", "pitch_deg", "roll_deg")},
+                "camera": {k: photo[k] for k in ("azimuth_deg", "field_of_view_deg", "pitch_deg", "roll_deg", "horizontal_accuracy_m", "horizontal_pixel_density")},
                 "license": photo["license"],
                 "instance": photo["instance"],
                 "metadata_url": photo["metadata_url"],
