@@ -756,6 +756,66 @@ function swing(g,ph,amp){
 
 /* اللاعب */
 const ped=makeAdamCharacter();scene.add(ped);
+// Facial blendshapes and lip-sync controller for the playable character.
+const adamFace=ped.userData.head.children[0];
+adamFace.geometry=adamFace.geometry.clone();
+const adamBase=adamFace.geometry.attributes.position;
+const adamMorphNames=['smile','frown','mouthOpen','mouthWide','mouthRound','mouthPucker','browDownLeft','browDownRight','browInnerUp','browOuterUpLeft','browOuterUpRight','eyeWideLeft','eyeWideRight','eyeSquintLeft','eyeSquintRight','cheekRaise'];
+adamFace.geometry.morphAttributes.position=[];
+adamMorphNames.forEach(name=>{
+ const a=new Float32Array(adamBase.array.length);
+ for(let i=0;i<adamBase.count;i++){
+  const x=adamBase.getX(i),y=adamBase.getY(i),z=adamBase.getZ(i);let dx=0,dy=0,dz=0;
+  const mouth=z>0.15&&y<0.03&&y>-0.17&&Math.abs(x)<0.13;
+  if(name==='smile'&&mouth)dy+=0.04*Math.max(0,1-Math.abs(x)*5);
+  if(name==='frown'&&mouth)dy-=0.035*Math.max(0,1-Math.abs(x)*5);
+  if((name==='mouthOpen')&&mouth)dy-=0.045*Math.max(0,1-Math.abs(x)*6);
+  if(name==='mouthWide'&&mouth)dx+=Math.sign(x)*0.035;
+  if(name==='mouthRound'&&mouth)dx-=x*0.3;
+  if(name==='mouthPucker'&&mouth){dx-=x*0.4;dz+=0.04;}
+  if(name==='cheekRaise'&&z>0.12&&y<0.03&&y>-0.12&&Math.abs(x)>0.1)dy+=0.025;
+  if(name.indexOf('browDown')===0&&z>0.15&&y>0.1&&y<0.19&&Math.abs(x)<0.19)dy-=0.025;
+  if(name==='browInnerUp'&&z>0.15&&y>0.1&&y<0.19&&Math.abs(x)<0.09)dy+=0.03;
+  if(name.indexOf('browOuterUp')===0&&z>0.15&&y>0.1&&y<0.19&&Math.abs(x)>0.1)dy+=0.025;
+  if(name.indexOf('eyeWide')===0&&z>0.17&&y>0.035&&y<0.12&&Math.abs(x)>0.04&&Math.abs(x)<0.16)dy+=0.012;
+  if(name.indexOf('eyeSquint')===0&&z>0.17&&y>0.035&&y<0.12&&Math.abs(x)>0.04&&Math.abs(x)<0.16)dy-=0.012;
+  a[i*3]=x+dx;a[i*3+1]=y+dy;a[i*3+2]=z+dz;
+ }
+ adamFace.geometry.morphAttributes.position.push(new THREE.Float32BufferAttribute(a,3));
+});
+adamFace.geometry.morphTargetsRelative=false;adamFace.updateMorphTargets();
+adamFace.morphTargetDictionary={};adamMorphNames.forEach((n,i)=>adamFace.morphTargetDictionary[n]=i);
+const adamJaw=new THREE.Bone();adamJaw.name='jaw';adamJaw.position.set(0,-0.09,0.045);ped.userData.head.add(adamJaw);ped.userData.bones.push(adamJaw);
+const adamMouth=new THREE.Mesh(new THREE.SphereGeometry(0.052,16,10),adamMats.mouth);adamMouth.position.set(0,-0.105,0.205);adamMouth.scale.set(1,0.3,0.25);ped.userData.head.add(adamMouth);
+const adamTeeth=new THREE.Mesh(new THREE.BoxGeometry(0.075,0.018,0.018),adamMats.eyeWhite);adamTeeth.position.set(0,-0.095,0.222);ped.userData.head.add(adamTeeth);
+const ADAM_EXPRESSIONS={
+ neutral:{},happy:{smile:0.9,cheekRaise:0.65,browOuterUpLeft:0.1,browOuterUpRight:0.1},
+ joy:{smile:1,cheekRaise:0.9,eyeSquintLeft:0.35,eyeSquintRight:0.35,mouthOpen:0.18},
+ angry:{frown:0.55,browDownLeft:0.9,browDownRight:0.9,eyeSquintLeft:0.25,eyeSquintRight:0.25},
+ sad:{frown:0.75,browInnerUp:0.8,browOuterUpLeft:0.35,browOuterUpRight:0.35},
+ surprised:{browInnerUp:0.85,browOuterUpLeft:0.65,browOuterUpRight:0.65,eyeWideLeft:0.8,eyeWideRight:0.8,mouthOpen:0.8},
+ fear:{browInnerUp:0.8,eyeWideLeft:0.9,eyeWideRight:0.9,mouthWide:0.35,mouthOpen:0.45},
+ disgust:{frown:0.35,browDownLeft:0.25,browDownRight:0.25},confused:{browDownLeft:0.35,browOuterUpRight:0.65}
+};
+const ADAM_VISEMES={sil:{},PP:{mouthPucker:0.12},FF:{mouthPucker:0.2},TH:{mouthWide:0.18},DD:{mouthOpen:0.16},kk:{mouthOpen:0.12},CH:{mouthPucker:0.35,mouthWide:0.18},SS:{mouthWide:0.28},nn:{mouthOpen:0.08},RR:{mouthRound:0.3},aa:{mouthOpen:0.8},E:{mouthWide:0.5},I:{mouthWide:0.42},O:{mouthRound:0.75},U:{mouthPucker:0.65}};
+const adamFaceState={expression:'neutral',viseme:'sil',jaw:0,blink:0,lookX:0,lookY:0};
+function adamSetExpression(n){adamFaceState.expression=ADAM_EXPRESSIONS[n]?n:'neutral';}
+function adamSetViseme(n){adamFaceState.viseme=ADAM_VISEMES[n]?n:'sil';}
+function adamSetLook(x,y){adamFaceState.lookX=Math.max(-1,Math.min(1,x||0));adamFaceState.lookY=Math.max(-1,Math.min(1,y||0));}
+function adamBlink(v){adamFaceState.blink=Math.max(0,Math.min(1,v===undefined?1:v));}
+function adamSetJaw(v){adamFaceState.jaw=Math.max(0,Math.min(1,v||0));}
+function adamSetFingerCurl(hand,v){ped.userData.fingers[hand==='left'?0:1].forEach((b,i)=>b.rotation.x=(v||0)*(i===0?0.75:1.1));}
+function adamUpdateFace(dt,now){
+ const e=ADAM_EXPRESSIONS[adamFaceState.expression],v=ADAM_VISEMES[adamFaceState.viseme],w={};
+ adamMorphNames.forEach(n=>w[n]=(e[n]||0)+(v[n]||0));
+ for(let i=0;i<adamMorphNames.length;i++){const n=adamMorphNames[i];adamFace.morphTargetInfluences[i]+=((w[n]||0)-adamFace.morphTargetInfluences[i])*Math.min(1,dt*14);}
+ const blink=Math.max(adamFaceState.blink,Math.sin(now*0.0017)>0.995?1:0);
+ ped.userData.eyes.forEach((eye,i)=>{eye.scale.y=blink?0.12:1;eye.position.x=(i===0?-0.095:0.095)+adamFaceState.lookX*0.018;eye.position.y=0.075+adamFaceState.lookY*0.014;});
+ const open=Math.max(adamFaceState.jaw,w.mouthOpen||0);adamJaw.rotation.x=-open*0.42;adamMouth.scale.y=0.3+open*1.9;adamTeeth.visible=open<0.7;
+ adamFaceState.blink=Math.max(0,adamFaceState.blink-dt*5);
+}
+window.AdamCharacter={setExpression:adamSetExpression,setViseme:adamSetViseme,setLook:adamSetLook,blink:adamBlink,setJaw:adamSetJaw,setFingerCurl:adamSetFingerCurl,expressions:Object.keys(ADAM_EXPRESSIONS),visemes:Object.keys(ADAM_VISEMES),morphTargets:adamMorphNames,bones:ped.userData.bones.map(b=>b.name)};
+
 const pcar=makeCar(0xc0392b);scene.add(pcar);
 const S={px:0,pz:0,pyaw:0,cx:0,cz:0,cyaw:0,cv:0,mode:'walk',phase:0,camYaw:0,camPitch:0.38,camDistance:5.2,lastLook:0,sx:0,sy:0,sprint:false};
 
@@ -1464,7 +1524,7 @@ function frame(now){
   if(S.mode==='walk')$('hud').style.display='none';
   // Natural idle eye blinking; eye meshes remain independently addressable for later facial animation.
   const blink=Math.max(0,Math.sin(now*0.0017))>0.995?0.12:1;
-  if(ped.userData.eyes)ped.userData.eyes.forEach(eye=>eye.scale.y=blink);
+  adamUpdateFace(dt,now);
   // Vehicle wheels sit slightly above the mapped road surface (+0.09 m).
   pcar.position.set(S.cx,terrainHeight(S.cx,S.cz)+0.13,S.cz);pcar.rotation.y=S.cyaw;
 
