@@ -1257,7 +1257,7 @@ async function loadArea(lat,lon,spawn){
         continue;
       }
       const P=raw.slice();
-      if(P.length>2&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[0][1])<0.05)P.pop();
+      if(P.length>2&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[P.length-1][1])<0.05)P.pop();
       if(P.length<3)continue;
       const landuse=String(t.landuse||'').toLowerCase();
       const natural=String(t.natural||'').toLowerCase();
