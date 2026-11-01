@@ -372,6 +372,7 @@ function parseColor(t,id){
 }
 function newAcc(){return {pos:[],uv:[],col:[]};}
 
+// Buildings are rebuilt as combined Three.js solid meshes: window frames, glazing, sills, balcony slabs/rails and roof cornices are actual geometry, not facade decals.
 // Parametric architectural geometry: windows, reveals, sills, balconies and roof
 // parapets are real 3D meshes attached to the OSM building footprint (not textures).
 const archAcc={glass:[],frame:[],sill:[],balcony:[],trim:[]};
