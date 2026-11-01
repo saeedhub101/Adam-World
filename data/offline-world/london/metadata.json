@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "city": "London",
+  "slug": "london",
+  "source": "OpenStreetMap Overpass",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL 1.0",
+  "center": {
+    "lat": 51.5007,
+    "lon": -0.1246
+  },
+  "radius_m": 650,
+  "element_count": 3706,
+  "geometry_layers": [
+    "buildings",
+    "roads",
+    "parks",
+    "landcover",
+    "water",
+    "trees",
+    "street_lamps"
+  ],
+  "stored_as": "data/offline-world/london/elements.json"
+}
