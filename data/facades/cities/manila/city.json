@@ -2,9 +2,9 @@
   "slug": "manila",
   "name": "Manila",
   "center": {
-    "lat": 14.5896,
-    "lon": 120.9758
+    "lat": 14.5547,
+    "lon": 121.0244
   },
   "discovery_radius_m": 650,
-  "notes": "Initial discovery area follows the current in-game city destination radius. Expand the city coverage by adding further area footprints; this is not a claim of complete municipal coverage."
+  "notes": "Priority discovery area centred on Makati CBD / Ayala Triangle, selected for its dense real high-rise urban fabric. Discovery radius is a data-harvest window, not a claim of complete Metro Manila coverage."
 }
