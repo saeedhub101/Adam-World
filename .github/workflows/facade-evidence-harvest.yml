@@ -14,6 +14,10 @@ on:
         required: false
         type: boolean
         default: false
+      city:
+        description: "Optional single city slug to retry (for example manila)"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -51,12 +55,12 @@ jobs:
       - name: Fetch OSM building footprints with incremental city checkpoints
         env:
           REFRESH: ${{ inputs.refresh }}
+          CITY: ${{ inputs.city }}
         run: |
-          if [ "$REFRESH" = "true" ]; then
-            python3 tools/facades/fetch_osm_buildings.py --refresh --git-checkpoint
-          else
-            python3 tools/facades/fetch_osm_buildings.py --git-checkpoint
-          fi
+          args=(--git-checkpoint)
+          if [ "$REFRESH" = "true" ]; then args+=(--refresh); fi
+          if [ -n "$CITY" ]; then args+=(--city "$CITY"); fi
+          python3 tools/facades/fetch_osm_buildings.py "${args[@]}"
 
       - name: Harvest global city imagery metadata with incremental repository saves
         env:
