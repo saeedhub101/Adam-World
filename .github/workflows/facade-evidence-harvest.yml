@@ -1,0 +1,65 @@
+name: Adam World Global Facade Evidence Harvest
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/facade-evidence-harvest.yml"
+      - "tools/facades/fetch_catalogue_metadata.py"
+      - "data/facades/cities/**/city.json"
+  workflow_dispatch:
+    inputs:
+      refresh:
+        description: "Rescan catalogues from the first page (otherwise resume/skip completed scans)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adam-world-facade-evidence-harvest
+  cancel-in-progress: false
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure checkpoint commits
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Harvest global city imagery metadata with incremental repository saves
+        env:
+          REFRESH: ${{ inputs.refresh }}
+        run: |
+          if [ "$REFRESH" = "true" ]; then
+            python3 tools/facades/fetch_catalogue_metadata.py --refresh --git-checkpoint
+          else
+            python3 tools/facades/fetch_catalogue_metadata.py --git-checkpoint
+          fi
+
+      - name: Build per-city facade review queues where building footprints are available
+        run: python3 tools/facades/build_review_queue.py
+
+      - name: Commit generated review queues
+        run: |
+          git add data/facades/cities/**/review_queue.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Build global city facade evidence review queues"
+            git push origin main
+          fi
