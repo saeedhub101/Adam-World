@@ -146,7 +146,7 @@ visual-review gallery only when all of the following are present and pass:
 - camera azimuth within 25 degrees of the nearest facade bearing;
 - camera azimuth aligned within 25 degrees; a missing field of view is flagged for manual camera calibration rather than silently guessed;
 - a real HTTPS image preview and a downloadable image asset (using Panoramax thumbnail/HD UUID endpoints when federated STAC results omit asset links);
-- an explicit redistributable CC0 / CC-BY / CC-BY-SA licence (NC and ND licences
+- an explicit redistributable CC0 / CC-BY / CC-BY-SA / Etalab-2.0 licence (NC and ND licences
   are rejected); and
 - no invalid facade-level camera pitch when pitch metadata is supplied.
 
