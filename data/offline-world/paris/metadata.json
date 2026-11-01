@@ -1,5 +1,6 @@
 {
   "schema_version": 2,
+  "import_profile_version": 3,
   "city": "Paris",
   "slug": "paris",
   "source": "OpenStreetMap Overpass",
@@ -10,7 +11,7 @@
     "lon": 2.2945
   },
   "radius_m": 650,
-  "element_count": 7333,
+  "element_count": 8007,
   "geometry_layers": [
     "buildings",
     "roads",
@@ -18,7 +19,13 @@
     "landcover",
     "water",
     "trees",
-    "street_lamps"
+    "street_lamps",
+    "traffic_signals",
+    "crossings",
+    "bus_stops",
+    "level_crossings",
+    "barriers",
+    "bridges"
   ],
   "stored_as": "data/offline-world/paris/elements.json"
 }
