@@ -366,7 +366,13 @@ def main() -> None:
         atomic_json(city_dir / "review_queue.json", result)
         candidate_count = sum(len(b["facade_photo_candidates"]) for b in result["buildings"])
         eligible_count = sum(1 for b in result["buildings"] for p in b["facade_photo_candidates"] if p["eligible_for_visual_review"])
-        print(f"SUMMARY city={city_dir.name} buildings={result['building_count']} photo_candidates={candidate_count} strict_visual_review={eligible_count}")
+        reason_counts: dict[str, int] = {}
+        for building in result["buildings"]:
+            for photo in building["facade_photo_candidates"]:
+                for reason in photo["quality_rejection_reasons"]:
+                    reason_counts[reason] = reason_counts.get(reason, 0) + 1
+        top_reasons = sorted(reason_counts.items(), key=lambda item: (-item[1], item[0]))[:6]
+        print(f"SUMMARY city={city_dir.name} buildings={result['building_count']} photo_candidates={candidate_count} strict_visual_review={eligible_count} rejection_reasons={top_reasons}")
 
 
 if __name__ == "__main__":
