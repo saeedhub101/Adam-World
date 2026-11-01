@@ -81,3 +81,12 @@ matched. Never fill it automatically with the nearest OSM building.
 - The next implementation stage is to collect actual catalogue items for the
   start area, inspect their metadata/licences and thumbnails, and only then curate
   the first verified building assignment.
+
+
+## Phase 2 validation commands
+
+```sh
+python3 -m unittest discover -s tools/facades/tests -v
+python3 tools/facades/build_review_queue.py
+python3 tools/facades/validate_manifest.py
+```
