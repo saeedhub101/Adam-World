@@ -147,7 +147,7 @@ def main() -> None:
             az=math.radians(float(cam["azimuth_deg"])); pitch=math.radians(float(cam["pitch_deg"]))
             forward=np.array([math.sin(az)*math.cos(pitch),math.sin(pitch),-math.cos(az)*math.cos(pitch)])
             right=np.array([math.cos(az),0,math.sin(az)])
-            up=np.cross(forward,right)
+            up=np.cross(right,forward)
             hfov=math.radians(float(cam["horizontal_fov_deg"]))
             with Image.open(image_path) as im:
                 image=im.convert("RGB")
