@@ -8,6 +8,7 @@ city's full extract has been imported. No data is downloaded by this script.
 from __future__ import annotations
 import json
 import math
+import shutil
 from collections import defaultdict
 from pathlib import Path
 
@@ -170,6 +171,11 @@ def main():
             "element_count": sum(len(v) for v in buckets.values()),
             "tiles": tiles,
         }
+        elevation_source = SOURCE / slug / "elevation-grid.json"
+        if elevation_source.is_file():
+            shutil.copy2(elevation_source, city_out / "elevation-grid.json")
+            manifest["elevation_grid"] = "elevation-grid.json"
+            manifest["elevation_source"] = "Copernicus DEM GLO-30"
         (city_out / "manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, separators=(",", ":")),
             encoding="utf-8",
