@@ -36,21 +36,33 @@ def atomic_write(path: Path, value: dict) -> None:
             os.unlink(tmp)
 
 
-def bbox_from_buildings(path: Path) -> tuple[float, float, float, float]:
-    fc = json.loads(path.read_text(encoding="utf-8"))
-    coords = []
-    def walk(value):
-        if isinstance(value, list):
-            if len(value) >= 2 and isinstance(value[0], (int, float)) and isinstance(value[1], (int, float)):
-                coords.append((float(value[0]), float(value[1])))
-            else:
-                for child in value:
-                    walk(child)
-    for feature in fc.get("features", []):
-        walk((feature.get("geometry") or {}).get("coordinates", []))
-    if not coords:
-        raise ValueError(f"No footprint coordinates in {path}")
-    return min(x for x, _ in coords), min(y for _, y in coords), max(x for x, _ in coords), max(y for _, y in coords)
+def bbox_from_city(city: Path) -> tuple[float, float, float, float]:
+    buildings_path = city / "buildings.geojson"
+    if buildings_path.exists():
+        fc = json.loads(buildings_path.read_text(encoding="utf-8"))
+        coords = []
+        def walk(value):
+            if isinstance(value, list):
+                if len(value) >= 2 and isinstance(value[0], (int, float)) and isinstance(value[1], (int, float)):
+                    coords.append((float(value[0]), float(value[1])))
+                else:
+                    for child in value:
+                        walk(child)
+        for feature in fc.get("features", []):
+            walk((feature.get("geometry") or {}).get("coordinates", []))
+        if coords:
+            return min(x for x, _ in coords), min(y for _, y in coords), max(x for x, _ in coords), max(y for _, y in coords)
+    config_path = city / "city.json"
+    if not config_path.exists():
+        raise ValueError("neither buildings.geojson nor city.json is available")
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    center = config.get("center") or {}
+    lat, lon = float(center["lat"]), float(center["lon"])
+    radius = float(config.get("discovery_radius_m", 650))
+    import math
+    dlat = radius / 111320.0
+    dlon = radius / (111320.0 * max(0.01, math.cos(math.radians(lat))))
+    return lon - dlon, lat - dlat, lon + dlon, lat + dlat
 
 
 def request_json(url: str, timeout: int) -> dict:
@@ -148,12 +160,11 @@ def main() -> None:
         print("No city folders found. Add a city folder with buildings.geojson first.")
         return
     for city in dirs:
-        buildings = city / "buildings.geojson"
-        if not buildings.exists():
-            print(f"SKIP {city.name}: buildings.geojson missing")
+        if not (city / "buildings.geojson").exists() and not (city / "city.json").exists():
+            print(f"SKIP {city.name}: buildings.geojson and city.json are missing")
             continue
         try:
-            bbox = bbox_from_buildings(buildings)
+            bbox = bbox_from_city(city)
         except Exception as exc:
             print(f"SKIP {city.name}: cannot determine bbox: {exc}")
             continue
