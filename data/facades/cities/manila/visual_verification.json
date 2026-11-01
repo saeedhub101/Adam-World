@@ -4,7 +4,7 @@
   "engine": "OpenCV local computer vision; free/open-source; no external AI/API",
   "checked": 13,
   "quality_and_geometry_candidates": 0,
-  "failed": 13,
+  "failed": 0,
   "identity_policy": "Image-quality and camera/footprint geometry screening are not proof of exact depicted-building identity. Every passing item requires human confirmation before verified_facades.json and GLB texture assignment.",
   "texture_assignment_allowed": false,
   "items": [
@@ -36,8 +36,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "aa84db271f6cee7527995e22687f66b3a74f5f18a123afd9ef22a10288e622c4",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 859.61,
+        "mean_luminance": 0.3112,
+        "contrast_std": 0.2438,
+        "entropy_bits": 5.483,
+        "edge_density": 0.129,
+        "vertical_line_ratio": 0.267,
+        "vertical_line_length_px": 5065.7,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": true
+        },
+        "visual_quality_score": 86,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     },
     {
       "osm_way_id": "22788814",
@@ -67,8 +90,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "9f680cd15a0d97775b595e4c55fe282a3edcd8bafc8c905c9fec4a3ae7bf3edc",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 942.94,
+        "mean_luminance": 0.4401,
+        "contrast_std": 0.2435,
+        "entropy_bits": 5.571,
+        "edge_density": 0.1224,
+        "vertical_line_ratio": 0.2275,
+        "vertical_line_length_px": 3249.7,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": true
+        },
+        "visual_quality_score": 86,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     },
     {
       "osm_way_id": "27323722",
@@ -98,8 +144,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "6352e4c86d8dfa062f06225b26b3a8aaf3b1b8d55a611daba9e387d0d09f0ae8",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 1263.05,
+        "mean_luminance": 0.3801,
+        "contrast_std": 0.2592,
+        "entropy_bits": 5.67,
+        "edge_density": 0.132,
+        "vertical_line_ratio": 0.1992,
+        "vertical_line_length_px": 3505.4,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": true
+        },
+        "visual_quality_score": 86,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     },
     {
       "osm_way_id": "27323722",
@@ -129,8 +198,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "c7190bcf9009a2d7ac4326c87bc9d507a8dc3b9c3de0d58c27c427c8ccf39d45",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 1033.79,
+        "mean_luminance": 0.3634,
+        "contrast_std": 0.2338,
+        "entropy_bits": 5.514,
+        "edge_density": 0.117,
+        "vertical_line_ratio": 0.2071,
+        "vertical_line_length_px": 3244.0,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": true
+        },
+        "visual_quality_score": 86,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     },
     {
       "osm_way_id": "27323722",
@@ -160,8 +252,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "9a1ccbf1f96b61d7ab1226c1b622393651e06af3a368ff84b50f2d6359d4ee1f",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 1452.82,
+        "mean_luminance": 0.41,
+        "contrast_std": 0.2416,
+        "entropy_bits": 5.651,
+        "edge_density": 0.1559,
+        "vertical_line_ratio": 0.1882,
+        "vertical_line_length_px": 5286.1,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": true
+        },
+        "visual_quality_score": 86,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     },
     {
       "osm_way_id": "35893548",
@@ -191,8 +306,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "eab379707c68289a068018a1a75676d55848bac99417d91b095fdf569ac16454",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 1662.86,
+        "mean_luminance": 0.4875,
+        "contrast_std": 0.288,
+        "entropy_bits": 5.767,
+        "edge_density": 0.1556,
+        "vertical_line_ratio": 0.1516,
+        "vertical_line_length_px": 4304.1,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": false
+        },
+        "visual_quality_score": 71,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     },
     {
       "osm_way_id": "35893548",
@@ -222,8 +360,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "68a8a545771b47feb78692e7f6ef7404267b89d1ade06a80e62f9627cdf0ddbb",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 2331.4,
+        "mean_luminance": 0.4921,
+        "contrast_std": 0.2718,
+        "entropy_bits": 5.844,
+        "edge_density": 0.1961,
+        "vertical_line_ratio": 0.1846,
+        "vertical_line_length_px": 7589.0,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": true
+        },
+        "visual_quality_score": 86,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     },
     {
       "osm_way_id": "35893549",
@@ -253,8 +414,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "fe5475a4602ea1cd1ea97881e22a46136f3d5d6b7fee5d95ee32f41b3f61bdaf",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 756.05,
+        "mean_luminance": 0.4285,
+        "contrast_std": 0.2271,
+        "entropy_bits": 5.393,
+        "edge_density": 0.0972,
+        "vertical_line_ratio": 0.171,
+        "vertical_line_length_px": 2370.5,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": false
+        },
+        "visual_quality_score": 71,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     },
     {
       "osm_way_id": "35893550",
@@ -284,8 +468,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "47fb43daf9a726adce34c5583751a64da7de06b40a48d2aaaabf5ddc173868f8",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 1236.39,
+        "mean_luminance": 0.2207,
+        "contrast_std": 0.1687,
+        "entropy_bits": 4.886,
+        "edge_density": 0.122,
+        "vertical_line_ratio": 0.0293,
+        "vertical_line_length_px": 749.9,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": false
+        },
+        "visual_quality_score": 71,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     },
     {
       "osm_way_id": "35893550",
@@ -315,8 +522,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "dc06c37160407d4e28ad7a5d8529c064835bc6ddb0f2cd9548cf36a0f4330d68",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 701.88,
+        "mean_luminance": 0.3789,
+        "contrast_std": 0.2386,
+        "entropy_bits": 5.418,
+        "edge_density": 0.1015,
+        "vertical_line_ratio": 0.1559,
+        "vertical_line_length_px": 1918.0,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": false
+        },
+        "visual_quality_score": 71,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     },
     {
       "osm_way_id": "1512317837",
@@ -346,8 +576,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "81df3f949ac0358339eeba43f0aff95d0fa0c97852d1a5c0b0312090d4137b44",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 1043.16,
+        "mean_luminance": 0.3688,
+        "contrast_std": 0.2027,
+        "entropy_bits": 5.361,
+        "edge_density": 0.142,
+        "vertical_line_ratio": 0.1057,
+        "vertical_line_length_px": 3408.7,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": false
+        },
+        "visual_quality_score": 71,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     },
     {
       "osm_way_id": "1512317837",
@@ -377,8 +630,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "bb3f427376ef2461fe62cdf9248653908b99ac049a830bb8484c136392ce3510",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 926.56,
+        "mean_luminance": 0.4103,
+        "contrast_std": 0.2035,
+        "entropy_bits": 5.356,
+        "edge_density": 0.1216,
+        "vertical_line_ratio": 0.1827,
+        "vertical_line_length_px": 3478.9,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": true
+        },
+        "visual_quality_score": 86,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     },
     {
       "osm_way_id": "1512317837",
@@ -408,8 +684,31 @@
       "source": "panoramax",
       "identity_status": "unverified_requires_human_confirmation",
       "texture_assignment_allowed": false,
-      "screening_status": "download_or_decode_failed",
-      "error": "'numpy.int32' object is not iterable"
+      "image_sha256": "16ebaf3b8a4e032681d76a229f45678ec274c957a5fdf9d191d9a87a7d11da90",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 1125.28,
+        "mean_luminance": 0.4353,
+        "contrast_std": 0.2047,
+        "entropy_bits": 5.425,
+        "edge_density": 0.1417,
+        "vertical_line_ratio": 0.088,
+        "vertical_line_length_px": 2847.9,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": false
+        },
+        "visual_quality_score": 71,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
     }
   ]
 }
