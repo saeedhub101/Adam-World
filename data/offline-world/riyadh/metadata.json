@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "city": "Riyadh",
+  "slug": "riyadh",
+  "source": "OpenStreetMap Overpass",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL 1.0",
+  "center": {
+    "lat": 24.7136,
+    "lon": 46.6753
+  },
+  "radius_m": 650,
+  "element_count": 912,
+  "geometry_layers": [
+    "buildings",
+    "roads",
+    "parks",
+    "landcover",
+    "water",
+    "trees",
+    "street_lamps"
+  ],
+  "stored_as": "data/offline-world/riyadh/elements.json"
+}
