@@ -71,6 +71,7 @@ def git(*args, check=True):
 
 
 def commit_city(slug, element_count):
+    """Commit each completed city and safely rebase over concurrent main updates."""
     rel = f"data/offline-world/{slug}"
     git("add", rel)
     staged = git("diff", "--cached", "--quiet", check=False)
@@ -80,9 +81,29 @@ def commit_city(slug, element_count):
     git("config", "user.name", "github-actions[bot]")
     git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
     git("commit", "-m", f"Store offline OSM city data: {slug} ({element_count} elements)")
-    pushed = git("push", "origin", "HEAD:main", check=False)
-    if pushed.returncode != 0:
-        raise RuntimeError("Could not push incremental city data to main: " + pushed.stdout)
+
+    # Other workflows may also commit to main while this import is running.
+    # Rebase our unpushed city checkpoints instead of abandoning every later city.
+    last_error = ""
+    for attempt in range(1, 6):
+        fetched = git("fetch", "origin", "main", check=False)
+        if fetched.returncode != 0:
+            last_error = fetched.stdout
+            time.sleep(attempt * 3)
+            continue
+        rebased = git("rebase", "origin/main", check=False)
+        if rebased.returncode != 0:
+            git("rebase", "--abort", check=False)
+            last_error = rebased.stdout
+            raise RuntimeError("Could not rebase city checkpoint onto main: " + last_error)
+        pushed = git("push", "origin", "HEAD:main", check=False)
+        if pushed.returncode == 0:
+            print(f"{slug}: checkpoint pushed to main (attempt {attempt})")
+            return
+        last_error = pushed.stdout
+        print(f"{slug}: main changed during push; retrying after fetch/rebase ({attempt}/5)")
+        time.sleep(attempt * 3)
+    raise RuntimeError("Could not push incremental city data after 5 fetch/rebase attempts: " + last_error)
 
 
 def main():
@@ -143,6 +164,11 @@ def main():
     print(f"OFFLINE_OSM_IMPORT_RESULT success={succeeded} failed={len(failed)}")
     for slug, reason in failed:
         print(f"FAILED_CITY {slug}: {reason}")
+    if failed:
+        raise SystemExit(
+            f"{len(failed)} city/cities remain incomplete. Completed city checkpoints "
+            "were already pushed to main; re-run this workflow to resume without re-importing them."
+        )
     if succeeded == 0:
         raise SystemExit("No city data could be imported; existing repository data was left intact")
 
