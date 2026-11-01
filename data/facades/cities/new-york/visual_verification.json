@@ -1,0 +1,1221 @@
+{
+  "schema_version": 1,
+  "city": "new-york",
+  "engine": "OpenCV local computer vision; free/open-source; no external AI/API",
+  "checked": 39,
+  "quality_and_geometry_candidates": 0,
+  "failed": 39,
+  "identity_policy": "Image-quality and camera/footprint geometry screening are not proof of exact depicted-building identity. Every passing item requires human confirmation before verified_facades.json and GLB texture assignment.",
+  "texture_assignment_allowed": false,
+  "items": [
+    {
+      "osm_way_id": "108160358",
+      "building_name": "Port Authority Bus Terminal",
+      "photo_id": "db39b5eb-88f4-41de-85f9-c2b9c2d8636a",
+      "distance_m": 1.33,
+      "azimuth_delta_deg": 5.0,
+      "facade_edge_index": 31,
+      "capture_lonlat": [
+        -73.9907952,
+        40.7561077
+      ],
+      "target_point_lonlat": [
+        -73.990809,
+        40.7561135
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/db39b5eb-88f4-41de-85f9-c2b9c2d8636a",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 304.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "108160358",
+      "building_name": "Port Authority Bus Terminal",
+      "photo_id": "2438be5c-8a50-42ba-a461-719e940aa2a1",
+      "distance_m": 2.59,
+      "azimuth_delta_deg": 6.0,
+      "facade_edge_index": 31,
+      "capture_lonlat": [
+        -73.9907798,
+        40.7561053
+      ],
+      "target_point_lonlat": [
+        -73.9908067,
+        40.7561166
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/2438be5c-8a50-42ba-a461-719e940aa2a1",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 293.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "108160358",
+      "building_name": "Port Authority Bus Terminal",
+      "photo_id": "53552139-03cc-4e45-990e-be62b9a21c43",
+      "distance_m": 3.37,
+      "azimuth_delta_deg": 4.84,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        -73.9912191,
+        40.7562166
+      ],
+      "target_point_lonlat": [
+        -73.9911998,
+        40.7562432
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/53552139-03cc-4e45-990e-be62b9a21c43",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 24.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "146028962",
+      "building_name": "Calyon Building",
+      "photo_id": "c8e72649-3f65-41c1-ae97-db21306c201d",
+      "distance_m": 14.42,
+      "azimuth_delta_deg": 14.3,
+      "facade_edge_index": 11,
+      "capture_lonlat": [
+        -73.9796646,
+        40.7613146
+      ],
+      "target_point_lonlat": [
+        -73.9796223,
+        40.7614403
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/df85fa40-4d39-4354-8061-b6c69019a294/items/c8e72649-3f65-41c1-ae97-db21306c201d",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 0.0,
+        "field_of_view_deg": 74.0,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": 35.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "146028962",
+      "building_name": "Calyon Building",
+      "photo_id": "8eccc9ef-00a3-49e2-948a-87070a39dd16",
+      "distance_m": 14.42,
+      "azimuth_delta_deg": 14.3,
+      "facade_edge_index": 11,
+      "capture_lonlat": [
+        -73.9796646,
+        40.7613146
+      ],
+      "target_point_lonlat": [
+        -73.9796223,
+        40.7614403
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/1d15033c-4bf1-420a-970a-44a3c9162336/items/8eccc9ef-00a3-49e2-948a-87070a39dd16",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 0.0,
+        "field_of_view_deg": 74.0,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": 35.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "146028962",
+      "building_name": "Calyon Building",
+      "photo_id": "94407d26-ce0a-4adb-8255-f114b00a5f84",
+      "distance_m": 14.42,
+      "azimuth_delta_deg": 14.3,
+      "facade_edge_index": 11,
+      "capture_lonlat": [
+        -73.9796646,
+        40.7613146
+      ],
+      "target_point_lonlat": [
+        -73.9796223,
+        40.7614403
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/4b46a6ae-1475-4137-9dad-cf07e11f268c/items/94407d26-ce0a-4adb-8255-f114b00a5f84",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 0.0,
+        "field_of_view_deg": 74.0,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": 35.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296130",
+      "building_name": null,
+      "photo_id": "35592497-722a-4ded-903e-59ae411895b6",
+      "distance_m": 18.62,
+      "azimuth_delta_deg": 5.73,
+      "facade_edge_index": 4,
+      "capture_lonlat": [
+        -73.9911316,
+        40.7561794
+      ],
+      "target_point_lonlat": [
+        -73.9913322,
+        40.7561094
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/35592497-722a-4ded-903e-59ae411895b6",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 251.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296132",
+      "building_name": null,
+      "photo_id": "35592497-722a-4ded-903e-59ae411895b6",
+      "distance_m": 23.93,
+      "azimuth_delta_deg": 9.23,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        -73.9911316,
+        40.7561794
+      ],
+      "target_point_lonlat": [
+        -73.9914113,
+        40.7561429
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/35592497-722a-4ded-903e-59ae411895b6",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 251.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296139",
+      "building_name": null,
+      "photo_id": "879d9242-77c6-4b70-a2d1-fe641319b7d0",
+      "distance_m": 8.04,
+      "azimuth_delta_deg": 8.95,
+      "facade_edge_index": 5,
+      "capture_lonlat": [
+        -73.992006,
+        40.7563098
+      ],
+      "target_point_lonlat": [
+        -73.9919598,
+        40.7563731
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/879d9242-77c6-4b70-a2d1-fe641319b7d0",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 20.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296139",
+      "building_name": null,
+      "photo_id": "b9827f42-8e19-4fca-9be8-3add1d51338a",
+      "distance_m": 3.95,
+      "azimuth_delta_deg": 16.96,
+      "facade_edge_index": 1,
+      "capture_lonlat": [
+        -73.9922598,
+        40.7563142
+      ],
+      "target_point_lonlat": [
+        -73.9923008,
+        40.7563314
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/b9827f42-8e19-4fca-9be8-3add1d51338a",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 316.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296139",
+      "building_name": null,
+      "photo_id": "8867cccf-b4ee-4512-9280-e005f635994d",
+      "distance_m": 11.56,
+      "azimuth_delta_deg": 6.95,
+      "facade_edge_index": 5,
+      "capture_lonlat": [
+        -73.9920799,
+        40.7563046
+      ],
+      "target_point_lonlat": [
+        -73.9920134,
+        40.7563956
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/8867cccf-b4ee-4512-9280-e005f635994d",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 22.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296155",
+      "building_name": "Delta Hotels by Marriott",
+      "photo_id": "30621aeb-4671-4784-9605-af74a9c6cf6f",
+      "distance_m": 6.13,
+      "azimuth_delta_deg": 6.12,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        -73.9927059,
+        40.7566073
+      ],
+      "target_point_lonlat": [
+        -73.9927694,
+        40.7566341
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/30621aeb-4671-4784-9605-af74a9c6cf6f",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 293.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296155",
+      "building_name": "Delta Hotels by Marriott",
+      "photo_id": "68f1bf49-ea70-4209-b60a-7519bb4261aa",
+      "distance_m": 8.38,
+      "azimuth_delta_deg": 6.97,
+      "facade_edge_index": 6,
+      "capture_lonlat": [
+        -73.9926527,
+        40.7565781
+      ],
+      "target_point_lonlat": [
+        -73.9926045,
+        40.756644
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/68f1bf49-ea70-4209-b60a-7519bb4261aa",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 22.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296155",
+      "building_name": "Delta Hotels by Marriott",
+      "photo_id": "200d6655-fa0c-4e87-9841-d2ed787da73f",
+      "distance_m": 27.1,
+      "azimuth_delta_deg": 20.88,
+      "facade_edge_index": 8,
+      "capture_lonlat": [
+        -73.9923274,
+        40.7563625
+      ],
+      "target_point_lonlat": [
+        -73.9926083,
+        40.756481
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/200d6655-fa0c-4e87-9841-d2ed787da73f",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 320.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296157",
+      "building_name": null,
+      "photo_id": "ca203feb-d2c7-4820-8636-b4e3264caf1e",
+      "distance_m": 28.5,
+      "azimuth_delta_deg": 18.98,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        -73.9922714,
+        40.7563192
+      ],
+      "target_point_lonlat": [
+        -73.9926089,
+        40.7563325
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/ca203feb-d2c7-4820-8636-b4e3264caf1e",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 254.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296161",
+      "building_name": "Distrikt Hotel",
+      "photo_id": "30621aeb-4671-4784-9605-af74a9c6cf6f",
+      "distance_m": 6.13,
+      "azimuth_delta_deg": 6.12,
+      "facade_edge_index": 7,
+      "capture_lonlat": [
+        -73.9927059,
+        40.7566073
+      ],
+      "target_point_lonlat": [
+        -73.9927694,
+        40.7566341
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/30621aeb-4671-4784-9605-af74a9c6cf6f",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 293.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296161",
+      "building_name": "Distrikt Hotel",
+      "photo_id": "11bcbfef-bf9b-4e85-b145-7f3391e16b92",
+      "distance_m": 16.63,
+      "azimuth_delta_deg": 4.88,
+      "facade_edge_index": 7,
+      "capture_lonlat": [
+        -73.9926023,
+        40.7565542
+      ],
+      "target_point_lonlat": [
+        -73.9927747,
+        40.7566269
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/11bcbfef-bf9b-4e85-b145-7f3391e16b92",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 304.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296161",
+      "building_name": "Distrikt Hotel",
+      "photo_id": "644efc81-3644-495b-9653-e5e0644f5991",
+      "distance_m": 9.28,
+      "azimuth_delta_deg": 23.88,
+      "facade_edge_index": 7,
+      "capture_lonlat": [
+        -73.9926744,
+        40.7565919
+      ],
+      "target_point_lonlat": [
+        -73.9927706,
+        40.7566325
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/644efc81-3644-495b-9653-e5e0644f5991",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 323.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296163",
+      "building_name": "DoubleTree by Hilton Hotel",
+      "photo_id": "2090cc93-0604-43e8-87dd-3434a26aa6e1",
+      "distance_m": 9.81,
+      "azimuth_delta_deg": 7.9,
+      "facade_edge_index": 7,
+      "capture_lonlat": [
+        -73.9927719,
+        40.7566396
+      ],
+      "target_point_lonlat": [
+        -73.9928736,
+        40.7566825
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/2090cc93-0604-43e8-87dd-3434a26aa6e1",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 307.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296163",
+      "building_name": "DoubleTree by Hilton Hotel",
+      "photo_id": "83182c4e-9774-4b73-ba09-148f2719746c",
+      "distance_m": 4.63,
+      "azimuth_delta_deg": 20.9,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        -73.9932271,
+        40.7566747
+      ],
+      "target_point_lonlat": [
+        -73.9932751,
+        40.756695
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/83182c4e-9774-4b73-ba09-148f2719746c",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 320.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296163",
+      "building_name": "DoubleTree by Hilton Hotel",
+      "photo_id": "30621aeb-4671-4784-9605-af74a9c6cf6f",
+      "distance_m": 16.42,
+      "azimuth_delta_deg": 6.1,
+      "facade_edge_index": 7,
+      "capture_lonlat": [
+        -73.9927059,
+        40.7566073
+      ],
+      "target_point_lonlat": [
+        -73.9928761,
+        40.7566791
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/30621aeb-4671-4784-9605-af74a9c6cf6f",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 293.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296167",
+      "building_name": null,
+      "photo_id": "8d87e316-2bfc-413d-9eb7-688cb7b11d1d",
+      "distance_m": 10.65,
+      "azimuth_delta_deg": 22.05,
+      "facade_edge_index": 7,
+      "capture_lonlat": [
+        -73.993142,
+        40.7566724
+      ],
+      "target_point_lonlat": [
+        -73.9932032,
+        40.7565885
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/8d87e316-2bfc-413d-9eb7-688cb7b11d1d",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 231.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296167",
+      "building_name": null,
+      "photo_id": "2ddb8d16-7eeb-4b81-b5fc-82d6f18e1299",
+      "distance_m": 32.0,
+      "azimuth_delta_deg": 19.07,
+      "facade_edge_index": 7,
+      "capture_lonlat": [
+        -73.9927346,
+        40.7566204
+      ],
+      "target_point_lonlat": [
+        -73.9931011,
+        40.7565456
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/2ddb8d16-7eeb-4b81-b5fc-82d6f18e1299",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 274.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296172",
+      "building_name": null,
+      "photo_id": "dd1fddba-396a-46b1-92a5-6a9027079637",
+      "distance_m": 10.17,
+      "azimuth_delta_deg": 1.5,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        -73.9931907,
+        40.7566757
+      ],
+      "target_point_lonlat": [
+        -73.993225,
+        40.7567634
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/dd1fddba-396a-46b1-92a5-6a9027079637",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 345.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296172",
+      "building_name": null,
+      "photo_id": "efe8f0d8-7d96-4ddf-bf70-c8c77648b277",
+      "distance_m": 10.49,
+      "azimuth_delta_deg": 1.36,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        -73.9932586,
+        40.7566725
+      ],
+      "target_point_lonlat": [
+        -73.993225,
+        40.7567634
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/efe8f0d8-7d96-4ddf-bf70-c8c77648b277",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 17.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296172",
+      "building_name": null,
+      "photo_id": "7f2ec65b-e2eb-4380-9049-b2d7041e0d20",
+      "distance_m": 11.04,
+      "azimuth_delta_deg": 0.3,
+      "facade_edge_index": 1,
+      "capture_lonlat": [
+        -73.9932852,
+        40.7566734
+      ],
+      "target_point_lonlat": [
+        -73.9932699,
+        40.7567721
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/7f2ec65b-e2eb-4380-9049-b2d7041e0d20",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 7.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296268",
+      "building_name": "Holiday Inn Express New York City Times Square",
+      "photo_id": "0a91a619-f008-48cc-b2f4-bfd9cb4c6ad3",
+      "distance_m": 30.33,
+      "azimuth_delta_deg": 12.11,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        -73.9926896,
+        40.7565993
+      ],
+      "target_point_lonlat": [
+        -73.9929689,
+        40.7564273
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/0a91a619-f008-48cc-b2f4-bfd9cb4c6ad3",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 243.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "265296275",
+      "building_name": "Candlewood Suites",
+      "photo_id": "1c71b21b-3c7c-4319-ba89-7ee8bbde3a78",
+      "distance_m": 34.24,
+      "azimuth_delta_deg": 10.4,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        -73.9924413,
+        40.756443
+      ],
+      "target_point_lonlat": [
+        -73.9928363,
+        40.7563717
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/1c71b21b-3c7c-4319-ba89-7ee8bbde3a78",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 267.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "266084216",
+      "building_name": "Fairfield Inn & Suites",
+      "photo_id": "200d6655-fa0c-4e87-9841-d2ed787da73f",
+      "distance_m": 12.19,
+      "azimuth_delta_deg": 20.98,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        -73.9923274,
+        40.7563625
+      ],
+      "target_point_lonlat": [
+        -73.9924539,
+        40.7564156
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/200d6655-fa0c-4e87-9841-d2ed787da73f",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 320.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "266084216",
+      "building_name": "Fairfield Inn & Suites",
+      "photo_id": "8923b496-00c5-4793-b776-1582f0fb3d08",
+      "distance_m": 13.47,
+      "azimuth_delta_deg": 20.98,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        -73.9923166,
+        40.7563536
+      ],
+      "target_point_lonlat": [
+        -73.9924563,
+        40.7564123
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/8923b496-00c5-4793-b776-1582f0fb3d08",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 320.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "266084216",
+      "building_name": "Fairfield Inn & Suites",
+      "photo_id": "b9827f42-8e19-4fca-9be8-3add1d51338a",
+      "distance_m": 19.78,
+      "azimuth_delta_deg": 16.98,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        -73.9922598,
+        40.7563142
+      ],
+      "target_point_lonlat": [
+        -73.992465,
+        40.7564004
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/b9827f42-8e19-4fca-9be8-3add1d51338a",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 316.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "266084217",
+      "building_name": "Four Points by Sheraton",
+      "photo_id": "b9827f42-8e19-4fca-9be8-3add1d51338a",
+      "distance_m": 3.95,
+      "azimuth_delta_deg": 16.96,
+      "facade_edge_index": 6,
+      "capture_lonlat": [
+        -73.9922598,
+        40.7563142
+      ],
+      "target_point_lonlat": [
+        -73.9923008,
+        40.7563314
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/b9827f42-8e19-4fca-9be8-3add1d51338a",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 316.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "266084217",
+      "building_name": "Four Points by Sheraton",
+      "photo_id": "b70d281e-2f62-40dc-9adf-770ffb1a1c2f",
+      "distance_m": 11.6,
+      "azimuth_delta_deg": 9.96,
+      "facade_edge_index": 6,
+      "capture_lonlat": [
+        -73.9921591,
+        40.7563101
+      ],
+      "target_point_lonlat": [
+        -73.9922794,
+        40.7563607
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/b70d281e-2f62-40dc-9adf-770ffb1a1c2f",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 309.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "266084217",
+      "building_name": "Four Points by Sheraton",
+      "photo_id": "b71446cd-014e-42f2-8138-4a806805cde1",
+      "distance_m": 14.29,
+      "azimuth_delta_deg": 7.96,
+      "facade_edge_index": 6,
+      "capture_lonlat": [
+        -73.9921239,
+        40.7563084
+      ],
+      "target_point_lonlat": [
+        -73.9922721,
+        40.7563707
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/b71446cd-014e-42f2-8138-4a806805cde1",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 307.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "266097831",
+      "building_name": "Aliz Hotel",
+      "photo_id": "76f9d890-27ef-4593-b9a1-7375872a4090",
+      "distance_m": 17.88,
+      "azimuth_delta_deg": 6.85,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        -73.9913069,
+        40.7562598
+      ],
+      "target_point_lonlat": [
+        -73.9914871,
+        40.756175
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/76f9d890-27ef-4593-b9a1-7375872a4090",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 245.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "266097831",
+      "building_name": "Aliz Hotel",
+      "photo_id": "c10530ea-6335-4430-bf25-699209468db3",
+      "distance_m": 19.73,
+      "azimuth_delta_deg": 14.1,
+      "facade_edge_index": 5,
+      "capture_lonlat": [
+        -73.9919566,
+        40.7563293
+      ],
+      "target_point_lonlat": [
+        -73.9917521,
+        40.7562431
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/c10530ea-6335-4430-bf25-699209468db3",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 105.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "266097831",
+      "building_name": "Aliz Hotel",
+      "photo_id": "35592497-722a-4ded-903e-59ae411895b6",
+      "distance_m": 29.98,
+      "azimuth_delta_deg": 18.06,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        -73.9911316,
+        40.7561794
+      ],
+      "target_point_lonlat": [
+        -73.9914871,
+        40.756175
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/35592497-722a-4ded-903e-59ae411895b6",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 251.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "266143317",
+      "building_name": null,
+      "photo_id": "5dc571cb-a073-47d5-8692-9477f793ece8",
+      "distance_m": 26.11,
+      "azimuth_delta_deg": 22.92,
+      "facade_edge_index": 6,
+      "capture_lonlat": [
+        -73.9901163,
+        40.7558603
+      ],
+      "target_point_lonlat": [
+        -73.9902669,
+        40.7556551
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/5dc571cb-a073-47d5-8692-9477f793ece8",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 232.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "266143353",
+      "building_name": null,
+      "photo_id": "5dc571cb-a073-47d5-8692-9477f793ece8",
+      "distance_m": 28.52,
+      "azimuth_delta_deg": 0.83,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        -73.9901163,
+        40.7558603
+      ],
+      "target_point_lonlat": [
+        -73.990386,
+        40.7557054
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/28ba7ed5-4f8f-4376-b40b-b789a8bfdcbd/items/5dc571cb-a073-47d5-8692-9477f793ece8",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 232.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    }
+  ]
+}

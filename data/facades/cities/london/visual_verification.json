@@ -1,0 +1,601 @@
+{
+  "schema_version": 1,
+  "city": "london",
+  "engine": "OpenCV local computer vision; free/open-source; no external AI/API",
+  "checked": 19,
+  "quality_and_geometry_candidates": 0,
+  "failed": 19,
+  "identity_policy": "Image-quality and camera/footprint geometry screening are not proof of exact depicted-building identity. Every passing item requires human confirmation before verified_facades.json and GLB texture assignment.",
+  "texture_assignment_allowed": false,
+  "items": [
+    {
+      "osm_way_id": "4245075",
+      "building_name": "London Waterloo Station",
+      "photo_id": "509c1771-eb72-4a28-b4c3-b35b41c3e895",
+      "distance_m": 16.89,
+      "azimuth_delta_deg": 19.48,
+      "facade_edge_index": 35,
+      "capture_lonlat": [
+        -0.1151972,
+        51.5015667
+      ],
+      "target_point_lonlat": [
+        -0.1149543,
+        51.5015547
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/814ca3fe-8753-4ff8-9326-756aaec33ff1/items/509c1771-eb72-4a28-b4c3-b35b41c3e895",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 114.0,
+        "field_of_view_deg": 113.0,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": 36.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "31202714",
+      "building_name": null,
+      "photo_id": "97e934a0-4c30-45f1-8c5a-b3d99eab069f",
+      "distance_m": 27.57,
+      "azimuth_delta_deg": 18.62,
+      "facade_edge_index": 32,
+      "capture_lonlat": [
+        -0.1157982,
+        51.500626
+      ],
+      "target_point_lonlat": [
+        -0.1160911,
+        51.5007939
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/d7bd2079-5c0d-4def-baab-5b01855a614f/items/97e934a0-4c30-45f1-8c5a-b3d99eab069f",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 294.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "113115179",
+      "building_name": null,
+      "photo_id": "41700c8c-abf8-4e78-836a-1de3259e882d",
+      "distance_m": 21.54,
+      "azimuth_delta_deg": 24.1,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        -0.1337984,
+        51.4978729
+      ],
+      "target_point_lonlat": [
+        -0.1339809,
+        51.497716
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/41700c8c-abf8-4e78-836a-1de3259e882d",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 240.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "113115179",
+      "building_name": null,
+      "photo_id": "53617bef-9f76-408c-b2c4-2071947b7be5",
+      "distance_m": 28.08,
+      "azimuth_delta_deg": 17.4,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        -0.1337116,
+        51.4979048
+      ],
+      "target_point_lonlat": [
+        -0.1339809,
+        51.497716
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/53617bef-9f76-408c-b2c4-2071947b7be5",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 239.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "113115179",
+      "building_name": null,
+      "photo_id": "6e9f75ee-71c5-42e3-8532-3ce2b744e35f",
+      "distance_m": 34.41,
+      "azimuth_delta_deg": 14.09,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        -0.13363,
+        51.4979351
+      ],
+      "target_point_lonlat": [
+        -0.1339809,
+        51.497716
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/6e9f75ee-71c5-42e3-8532-3ce2b744e35f",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 239.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "203869524",
+      "building_name": null,
+      "photo_id": "1b2b32eb-bba1-41c8-a5c7-525076af9af2",
+      "distance_m": 22.52,
+      "azimuth_delta_deg": 20.36,
+      "facade_edge_index": 5,
+      "capture_lonlat": [
+        -0.1323014,
+        51.4984248
+      ],
+      "target_point_lonlat": [
+        -0.1325045,
+        51.4982667
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/1b2b32eb-bba1-41c8-a5c7-525076af9af2",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 239.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "203869524",
+      "building_name": null,
+      "photo_id": "5ec696f9-7512-44a7-bb1d-0026a56afd81",
+      "distance_m": 27.52,
+      "azimuth_delta_deg": 16.47,
+      "facade_edge_index": 5,
+      "capture_lonlat": [
+        -0.1322358,
+        51.498449
+      ],
+      "target_point_lonlat": [
+        -0.1325045,
+        51.4982667
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/5ec696f9-7512-44a7-bb1d-0026a56afd81",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 239.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "203869524",
+      "building_name": null,
+      "photo_id": "fc330d37-a39c-4c95-a04a-9652a8b1ed91",
+      "distance_m": 32.34,
+      "azimuth_delta_deg": 14.78,
+      "facade_edge_index": 5,
+      "capture_lonlat": [
+        -0.1321729,
+        51.4984715
+      ],
+      "target_point_lonlat": [
+        -0.1325045,
+        51.4982667
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/fc330d37-a39c-4c95-a04a-9652a8b1ed91",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 240.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "203869525",
+      "building_name": "Department of Health and Social Care",
+      "photo_id": "571669f5-2950-4bdf-be4a-12c21f2d59e1",
+      "distance_m": 22.93,
+      "azimuth_delta_deg": 21.3,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        -0.132591,
+        51.4983161
+      ],
+      "target_point_lonlat": [
+        -0.1327981,
+        51.4981552
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/571669f5-2950-4bdf-be4a-12c21f2d59e1",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 240.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "203869525",
+      "building_name": "Department of Health and Social Care",
+      "photo_id": "b9815bf3-7ae8-4a68-896e-e7a8d32abefb",
+      "distance_m": 28.19,
+      "azimuth_delta_deg": 17.29,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        -0.1325219,
+        51.4983414
+      ],
+      "target_point_lonlat": [
+        -0.1327981,
+        51.4981552
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/b9815bf3-7ae8-4a68-896e-e7a8d32abefb",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 240.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "203869525",
+      "building_name": "Department of Health and Social Care",
+      "photo_id": "9d264018-ed54-445f-a363-1daef34db794",
+      "distance_m": 33.97,
+      "azimuth_delta_deg": 12.62,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        -0.1324489,
+        51.4983697
+      ],
+      "target_point_lonlat": [
+        -0.1327981,
+        51.4981552
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/9d264018-ed54-445f-a363-1daef34db794",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 238.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "203869536",
+      "building_name": null,
+      "photo_id": "b65a17ec-bbec-47b0-867e-df5ce59198cd",
+      "distance_m": 26.64,
+      "azimuth_delta_deg": 18.7,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        -0.1331542,
+        51.4981079
+      ],
+      "target_point_lonlat": [
+        -0.1333979,
+        51.4979226
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/b65a17ec-bbec-47b0-867e-df5ce59198cd",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 238.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "203869536",
+      "building_name": null,
+      "photo_id": "ed894e84-f072-4791-a455-0aadba47423c",
+      "distance_m": 33.24,
+      "azimuth_delta_deg": 13.79,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        -0.1330692,
+        51.4981404
+      ],
+      "target_point_lonlat": [
+        -0.1333979,
+        51.4979226
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/ed894e84-f072-4791-a455-0aadba47423c",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 237.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "203869536",
+      "building_name": null,
+      "photo_id": "e4b32a2e-36bc-45d5-9915-b0ecb03a5af8",
+      "distance_m": 29.51,
+      "azimuth_delta_deg": 18.62,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        -0.1331161,
+        51.4981217
+      ],
+      "target_point_lonlat": [
+        -0.1333979,
+        51.4979226
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/e4b32a2e-36bc-45d5-9915-b0ecb03a5af8",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 240.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "369241364",
+      "building_name": null,
+      "photo_id": "57ea0c49-c739-4334-a2cc-48ee57a5d464",
+      "distance_m": 8.58,
+      "azimuth_delta_deg": 24.37,
+      "facade_edge_index": 82,
+      "capture_lonlat": [
+        -0.1312056,
+        51.5064423
+      ],
+      "target_point_lonlat": [
+        -0.1312669,
+        51.5065094
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/14ea2dff-2d5f-4134-9a9c-0b7ff34d87aa/items/57ea0c49-c739-4334-a2cc-48ee57a5d464",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 306.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": null,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "1122580922",
+      "building_name": "Paragon East",
+      "photo_id": "a69adf6f-2a4d-4d5a-a050-5c618d0f22c8",
+      "distance_m": 33.31,
+      "azimuth_delta_deg": 23.16,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        -0.1315485,
+        51.4987062
+      ],
+      "target_point_lonlat": [
+        -0.1320258,
+        51.4986706
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/a69adf6f-2a4d-4d5a-a050-5c618d0f22c8",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 240.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "1149973649",
+      "building_name": null,
+      "photo_id": "f8d87c2e-d229-4540-a437-e6d4a4d0e2d8",
+      "distance_m": 26.64,
+      "azimuth_delta_deg": 22.27,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        -0.1289254,
+        51.4997222
+      ],
+      "target_point_lonlat": [
+        -0.1291335,
+        51.4995207
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/f8d87c2e-d229-4540-a437-e6d4a4d0e2d8",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 235.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "1149973649",
+      "building_name": null,
+      "photo_id": "8826ace5-3e87-4a61-8ca1-576070380095",
+      "distance_m": 29.69,
+      "azimuth_delta_deg": 20.68,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        -0.1288855,
+        51.4997385
+      ],
+      "target_point_lonlat": [
+        -0.1291335,
+        51.4995207
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/8826ace5-3e87-4a61-8ca1-576070380095",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 236.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "1149973649",
+      "building_name": null,
+      "photo_id": "bf1842b5-80d4-4bb3-92bc-d79fd0bd04b3",
+      "distance_m": 33.53,
+      "azimuth_delta_deg": 16.42,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        -0.1288381,
+        51.4997596
+      ],
+      "target_point_lonlat": [
+        -0.1291335,
+        51.4995207
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/bf1842b5-80d4-4bb3-92bc-d79fd0bd04b3",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 234.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    }
+  ]
+}

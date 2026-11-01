@@ -1,0 +1,415 @@
+{
+  "schema_version": 1,
+  "city": "manila",
+  "engine": "OpenCV local computer vision; free/open-source; no external AI/API",
+  "checked": 13,
+  "quality_and_geometry_candidates": 0,
+  "failed": 13,
+  "identity_policy": "Image-quality and camera/footprint geometry screening are not proof of exact depicted-building identity. Every passing item requires human confirmation before verified_facades.json and GLB texture assignment.",
+  "texture_assignment_allowed": false,
+  "items": [
+    {
+      "osm_way_id": "22788814",
+      "building_name": "Insular Life Building",
+      "photo_id": "bfe44c8d-c05e-4fb2-8aa5-a9030763ab48",
+      "distance_m": 15.07,
+      "azimuth_delta_deg": 12.67,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        121.0205997,
+        14.5573563
+      ],
+      "target_point_lonlat": [
+        121.0207346,
+        14.5573205
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/bfe44c8d-c05e-4fb2-8aa5-a9030763ab48",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 118.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "22788814",
+      "building_name": "Insular Life Building",
+      "photo_id": "90b908d1-a404-4be7-8c48-43ccf8a8fc04",
+      "distance_m": 27.85,
+      "azimuth_delta_deg": 7.02,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        121.0204966,
+        14.5574182
+      ],
+      "target_point_lonlat": [
+        121.0207346,
+        14.5573205
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/90b908d1-a404-4be7-8c48-43ccf8a8fc04",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 120.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "27323722",
+      "building_name": "PBCom Tower",
+      "photo_id": "b1a32857-5eea-4b21-966b-42dbd4c8328f",
+      "distance_m": 29.14,
+      "azimuth_delta_deg": 4.64,
+      "facade_edge_index": 5,
+      "capture_lonlat": [
+        121.0187676,
+        14.5584267
+      ],
+      "target_point_lonlat": [
+        121.0190372,
+        14.5584479
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/c24ccb08-a5d6-4c78-bad5-ddc08fcd44f1/items/b1a32857-5eea-4b21-966b-42dbd4c8328f",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 90.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "27323722",
+      "building_name": "PBCom Tower",
+      "photo_id": "f6fcdb18-9769-492b-afe8-ab8bcb5bdb2c",
+      "distance_m": 33.11,
+      "azimuth_delta_deg": 0.41,
+      "facade_edge_index": 5,
+      "capture_lonlat": [
+        121.0187309,
+        14.5584241
+      ],
+      "target_point_lonlat": [
+        121.0190372,
+        14.5584479
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/c24ccb08-a5d6-4c78-bad5-ddc08fcd44f1/items/f6fcdb18-9769-492b-afe8-ab8bcb5bdb2c",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 85.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "27323722",
+      "building_name": "PBCom Tower",
+      "photo_id": "7a8a7271-5c71-4910-947a-26b571e88f5c",
+      "distance_m": 27.38,
+      "azimuth_delta_deg": 14.01,
+      "facade_edge_index": 5,
+      "capture_lonlat": [
+        121.018784,
+        14.5584265
+      ],
+      "target_point_lonlat": [
+        121.0190372,
+        14.5584479
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/c24ccb08-a5d6-4c78-bad5-ddc08fcd44f1/items/7a8a7271-5c71-4910-947a-26b571e88f5c",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 71.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "35893548",
+      "building_name": "Tower 6789",
+      "photo_id": "74ba289e-a553-4db5-bcec-efdff2e4446e",
+      "distance_m": 23.24,
+      "azimuth_delta_deg": 20.87,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        121.0196097,
+        14.5579582
+      ],
+      "target_point_lonlat": [
+        121.019822,
+        14.5579215
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/74ba289e-a553-4db5-bcec-efdff2e4446e",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 121.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "35893548",
+      "building_name": "Tower 6789",
+      "photo_id": "e9080b03-a42b-4900-80a7-412068445869",
+      "distance_m": 33.69,
+      "azimuth_delta_deg": 11.81,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        121.0195217,
+        14.5580059
+      ],
+      "target_point_lonlat": [
+        121.019822,
+        14.5579215
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/e9080b03-a42b-4900-80a7-412068445869",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 118.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "35893549",
+      "building_name": "The KPMG Center",
+      "photo_id": "ef74acee-892c-436f-bf91-c5c31f7cbe05",
+      "distance_m": 26.81,
+      "azimuth_delta_deg": 20.87,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        121.0199037,
+        14.5577602
+      ],
+      "target_point_lonlat": [
+        121.020146,
+        14.5577055
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/ef74acee-892c-436f-bf91-c5c31f7cbe05",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 124.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "35893550",
+      "building_name": "Robinsons Summit Center",
+      "photo_id": "2436b59d-654f-48bb-81c5-3dfe34fcaf63",
+      "distance_m": 19.94,
+      "azimuth_delta_deg": 17.08,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        121.0202763,
+        14.5575399
+      ],
+      "target_point_lonlat": [
+        121.0204574,
+        14.5575029
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/2436b59d-654f-48bb-81c5-3dfe34fcaf63",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 119.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "35893550",
+      "building_name": "Robinsons Summit Center",
+      "photo_id": "6fdbec1b-bb51-4347-9c47-d0b2af52782f",
+      "distance_m": 32.94,
+      "azimuth_delta_deg": 9.87,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        121.0201685,
+        14.5575999
+      ],
+      "target_point_lonlat": [
+        121.0204574,
+        14.5575029
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/6fdbec1b-bb51-4347-9c47-d0b2af52782f",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 119.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "1512317837",
+      "building_name": null,
+      "photo_id": "e5d3787f-ac12-45ee-941f-47c7b9318208",
+      "distance_m": 14.86,
+      "azimuth_delta_deg": 1.8,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        121.0251545,
+        14.5578927
+      ],
+      "target_point_lonlat": [
+        121.0252855,
+        14.5579344
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/e5d3787f-ac12-45ee-941f-47c7b9318208",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 70.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "1512317837",
+      "building_name": null,
+      "photo_id": "a00c2c64-a41c-4f6f-a9d6-f788b7fa804d",
+      "distance_m": 4.68,
+      "azimuth_delta_deg": 18.2,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        121.0252433,
+        14.5579241
+      ],
+      "target_point_lonlat": [
+        121.0252846,
+        14.5579372
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/a00c2c64-a41c-4f6f-a9d6-f788b7fa804d",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 90.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "1512317837",
+      "building_name": null,
+      "photo_id": "8f9320a2-a5fb-4381-932a-2344caefa670",
+      "distance_m": 25.78,
+      "azimuth_delta_deg": 3.8,
+      "facade_edge_index": 0,
+      "capture_lonlat": [
+        121.0250602,
+        14.557856
+      ],
+      "target_point_lonlat": [
+        121.0252876,
+        14.5579283
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/8f9320a2-a5fb-4381-932a-2344caefa670",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 68.0,
+        "field_of_view_deg": 92.0,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    }
+  ]
+}

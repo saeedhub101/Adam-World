@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "city": "tokyo",
+  "engine": "OpenCV local computer vision; free/open-source; no external AI/API",
+  "checked": 8,
+  "quality_and_geometry_candidates": 0,
+  "failed": 8,
+  "identity_policy": "Image-quality and camera/footprint geometry screening are not proof of exact depicted-building identity. Every passing item requires human confirmation before verified_facades.json and GLB texture assignment.",
+  "texture_assignment_allowed": false,
+  "items": [
+    {
+      "osm_way_id": "136691358",
+      "building_name": null,
+      "photo_id": "06137ec2-9d67-432f-8007-7102fdf40345",
+      "distance_m": 10.88,
+      "azimuth_delta_deg": 4.3,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        139.6978705,
+        35.6601848
+      ],
+      "target_point_lonlat": [
+        139.6979257,
+        35.6602718
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/0af83954-7e00-4d24-b2fa-53cffd71eb1c/items/06137ec2-9d67-432f-8007-7102fdf40345",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 23.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "136691358",
+      "building_name": null,
+      "photo_id": "e8ecce42-fb46-42fa-91d6-41b28b327680",
+      "distance_m": 11.63,
+      "azimuth_delta_deg": 10.44,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        139.6978493,
+        35.6601877
+      ],
+      "target_point_lonlat": [
+        139.6979257,
+        35.6602718
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/0af83954-7e00-4d24-b2fa-53cffd71eb1c/items/e8ecce42-fb46-42fa-91d6-41b28b327680",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 26.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "136691358",
+      "building_name": null,
+      "photo_id": "3cc453a6-e48e-4335-af35-70cdc39c698b",
+      "distance_m": 12.98,
+      "azimuth_delta_deg": 19.84,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        139.6978227,
+        35.6601905
+      ],
+      "target_point_lonlat": [
+        139.6979257,
+        35.6602718
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/0af83954-7e00-4d24-b2fa-53cffd71eb1c/items/3cc453a6-e48e-4335-af35-70cdc39c698b",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 26.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "136691387",
+      "building_name": "Mega Don Quijote",
+      "photo_id": "b9f347de-c484-43a9-8814-d0e6ae26abad",
+      "distance_m": 10.74,
+      "azimuth_delta_deg": 0.13,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        139.6977081,
+        35.6602478
+      ],
+      "target_point_lonlat": [
+        139.6977567,
+        35.660336
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/0af83954-7e00-4d24-b2fa-53cffd71eb1c/items/b9f347de-c484-43a9-8814-d0e6ae26abad",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 24.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "136691387",
+      "building_name": "Mega Don Quijote",
+      "photo_id": "6b419432-db8e-4cda-9c44-50178d906f2c",
+      "distance_m": 11.28,
+      "azimuth_delta_deg": 1.13,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        139.6977057,
+        35.6602434
+      ],
+      "target_point_lonlat": [
+        139.6977568,
+        35.660336
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/0af83954-7e00-4d24-b2fa-53cffd71eb1c/items/6b419432-db8e-4cda-9c44-50178d906f2c",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 23.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "136691387",
+      "building_name": "Mega Don Quijote",
+      "photo_id": "525a24ab-ac7f-47c6-9696-eb6131dbbd9e",
+      "distance_m": 11.31,
+      "azimuth_delta_deg": 2.13,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        139.6977842,
+        35.6602144
+      ],
+      "target_point_lonlat": [
+        139.6978354,
+        35.6603073
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/0af83954-7e00-4d24-b2fa-53cffd71eb1c/items/525a24ab-ac7f-47c6-9696-eb6131dbbd9e",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 22.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "148780542",
+      "building_name": "Annex渋谷三善第3ビル",
+      "photo_id": "f39876d9-d203-482a-869a-53865b3b5ed3",
+      "distance_m": 24.54,
+      "azimuth_delta_deg": 17.03,
+      "facade_edge_index": 1,
+      "capture_lonlat": [
+        139.6977113,
+        35.6601823
+      ],
+      "target_point_lonlat": [
+        139.6976227,
+        35.660391
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/170f8cdc-37eb-4ed1-9e72-4e834f87b580/items/f39876d9-d203-482a-869a-53865b3b5ed3",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 358.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    },
+    {
+      "osm_way_id": "148780542",
+      "building_name": "Annex渋谷三善第3ビル",
+      "photo_id": "14b15fa9-4d6f-4b9b-a62a-4bfa9143defb",
+      "distance_m": 24.54,
+      "azimuth_delta_deg": 17.03,
+      "facade_edge_index": 1,
+      "capture_lonlat": [
+        139.6977113,
+        35.6601823
+      ],
+      "target_point_lonlat": [
+        139.6976227,
+        35.660391
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/7aa41e06-0886-41be-9d05-bc9e6a013368/items/14b15fa9-4d6f-4b9b-a62a-4bfa9143defb",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 358.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "download_or_decode_failed",
+      "error": "'numpy.int32' object is not iterable"
+    }
+  ]
+}

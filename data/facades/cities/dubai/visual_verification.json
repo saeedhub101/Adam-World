@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "city": "dubai",
+  "engine": "OpenCV local computer vision; free/open-source; no external AI/API",
+  "checked": 0,
+  "quality_and_geometry_candidates": 0,
+  "failed": 0,
+  "identity_policy": "Image-quality and camera/footprint geometry screening are not proof of exact depicted-building identity. Every passing item requires human confirmation before verified_facades.json and GLB texture assignment.",
+  "texture_assignment_allowed": false,
+  "items": []
+}
