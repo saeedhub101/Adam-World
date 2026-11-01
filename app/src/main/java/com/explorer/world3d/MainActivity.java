@@ -30,6 +30,7 @@ import androidx.core.content.FileProvider;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -107,6 +108,25 @@ public class MainActivity extends Activity {
     private class Bridge {
         @JavascriptInterface public void requestLocation() { runOnUiThread(() -> fetchLocation()); }
         @JavascriptInterface public void checkForUpdates() { MainActivity.this.checkForUpdates(false); }
+
+        // Read prepackaged offline city tiles from APK assets. No network is used.
+        @JavascriptInterface public String readAssetText(String relativePath) {
+            if (relativePath == null || !relativePath.startsWith("cities/")
+                    || relativePath.contains("..") || relativePath.startsWith("/")
+                    || relativePath.length() > 180) return null;
+            try (InputStream in = getAssets().open(relativePath);
+                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[8192];
+                int n;
+                while ((n = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, n);
+                    if (out.size() > 4 * 1024 * 1024) return null;
+                }
+                return out.toString("UTF-8");
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
 
         // Native networking avoids WebView cross-origin restrictions for file:// pages.
         // Public, keyless imagery catalogues only. Limit hosts and response size.
