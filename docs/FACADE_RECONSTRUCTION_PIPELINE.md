@@ -192,3 +192,36 @@ discovery. Source stages use continue-on-error and a final outcome summary: one
 failed catalogue or city does not prevent later sources, queues, image validation
 or repository checkpoint commits from being attempted. A failed run can be resumed
 without discarding already committed metadata or downloaded review images.
+
+
+## Phase 3 — verified facade GLB export
+
+The workflow now runs `tools/facades/build_verified_glbs.py` after evidence
+collection. It exports one local GLB per building only when
+`app/src/main/assets/facades/verified_facades.json` contains a complete,
+human-verified assignment with the exact city slug, OSM way ID, facade edge,
+Panoramax photo ID, camera calibration, licence, and a locally stored image under
+`app/src/main/assets/facades/verified/`.
+
+Each GLB contains the OSM-footprint-derived building shell and roof plus a
+camera-frustum-clipped photo projection on the selected wall. Images are embedded
+in the GLB; the game does not need a runtime image URL. Outputs are saved under
+`app/src/main/assets/facades/glb/<city>/<osm_way_id>.glb` and committed during
+the workflow run.
+
+The exporter refuses missing footprints, unreviewed images, incomplete camera
+calibration, non-redistributable/unspecified licences, unsafe paths, and proximity-
+only matches. An empty manifest is a successful no-op: it reports
+`NO_VERIFIED_FACADES` and creates no fabricated GLBs. The review gallery is
+candidate evidence only; a person must inspect the actual photograph and confirm
+the exact building and facade before an entry can be added to the verified
+manifest. Generated GLBs still require visual QA against the source photo before
+being treated as final game assets.
+
+To run the export locally after approving an assignment:
+
+```sh
+python3 -m pip install numpy trimesh Pillow shapely
+python3 tools/facades/validate_manifest.py
+python3 tools/facades/build_verified_glbs.py
+```
