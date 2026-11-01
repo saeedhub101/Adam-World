@@ -43,6 +43,7 @@ paid API or runtime remote map/model dependency is introduced.
 | Waterfalls | Renderer supports OSM nodes explicitly tagged `waterway=waterfall` or `natural=waterfall`. The current OSM import query does not yet include those nodes. | Renderer implemented; data pending |
 | Traffic lights | Mapped signal nodes now cycle green/amber/red. | Implemented |
 | Vehicle response | NPC vehicles brake when an active signal is ahead on their road approach and resume on green. | Basic signal response implemented |
+| Vehicle and pedestrian shapes | Replaced box cars and box-bodied people with sedan/SUV/van variants and articulated rounded NPC bodies with varied clothing/skin palettes. | Improved procedural models; not photoreal imported GLBs |
 
 Relevant implementation commits:
 - `5f0b8e7625cb0795ea12431867f405f419c1da9c` — DEM sampling and larger terrain-aware street labels.
@@ -110,8 +111,9 @@ preserving the original source coverage metric.
    `docs/FACADE_RECONSTRUCTION_PIPELINE.md`. No candidate may be attached to a
    building just because it is nearby. Until verified evidence is available, the
    game shows procedural OSM architecture, not real matching facade photographs.
-3. **Vehicles and pedestrians:** current NPCs are still procedural Three.js
-   geometry. Traffic signal behaviour is basic, not a full road-rule simulation.
+3. **Vehicles and pedestrians:** current NPCs are improved procedural Three.js geometry (three vehicle
+   silhouettes and articulated pedestrian variants), not photoreal imported GLB
+   models. Traffic signal behaviour is basic, not a full road-rule simulation.
    Replace these with multiple licensed local 3D models and animation clips,
    verify their scale/orientation, and keep all runtime assets inside the APK.
 4. **Water completeness:** the game now renders and interacts with mapped OSM
