@@ -149,19 +149,35 @@ def aerial_candidates(building: dict[str, Any], items: list[dict[str, Any]]) -> 
         if not ipts:
             continue
         ix = (min(p[0] for p in ipts), min(p[1] for p in ipts), max(p[0] for p in ipts), max(p[1] for p in ipts))
-        if bx[0] <= ix[2] and bx[2] >= ix[0] and bx[1] <= ix[3] and bx[3] >= ix[1]:
-            p = item.get("properties") or {}
-            found.append({
-                "item_id": str(item.get("id") or ""),
-                "title": p.get("title") or p.get("description"),
-                "datetime": p.get("datetime") or p.get("start_datetime"),
-                "gsd": p.get("gsd") or p.get("proj:gsd"),
-                "license": p.get("license") or p.get("licence"),
-                "assets": {k: v.get("href") for k, v in (item.get("assets") or {}).items()
-                           if isinstance(v, dict) and v.get("href")},
-            })
+        if not (bx[0] <= ix[2] and bx[2] >= ix[0] and bx[1] <= ix[3] and bx[3] >= ix[1]):
+            continue
+        p = item.get("properties") or {}
+        item_id = str(item.get("id") or "")
+        title = p.get("title") or p.get("description") or ""
+        gsd = number(p.get("gsd") or p.get("proj:gsd"))
+        descriptive = (item_id + " " + str(title) + " " + str(p.get("platform") or "")).upper()
+        is_dem = any(term in descriptive for term in ("_DEM", " DSM", "DEM_", "ELEVATION"))
+        if is_dem:
+            kind = "digital_elevation_model"
+        elif gsd is not None and gsd <= 1.0:
+            kind = "high_resolution_optical_candidate"
+        elif gsd is not None:
+            kind = "coarse_or_context_imagery"
+        else:
+            kind = "unclassified_raster"
+        found.append({
+            "item_id": item_id,
+            "title": title,
+            "datetime": p.get("datetime") or p.get("start_datetime"),
+            "gsd_m": gsd,
+            "kind": kind,
+            "license": p.get("license") or p.get("licence"),
+            "roof_shape_colour_candidate_only": kind == "high_resolution_optical_candidate",
+            "facade_texture_allowed": False,
+            "assets": {k: v.get("href") for k, v in (item.get("assets") or {}).items()
+                       if isinstance(v, dict) and v.get("href")},
+        })
     return found
-
 
 def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
     buildings_fc = read_fc(city_dir / "buildings.geojson")
