@@ -189,10 +189,10 @@ const matG=matB;
 const matRoadW=new THREE.MeshLambertMaterial({map:roadTexW,side:DS});
 const matRoadN=new THREE.MeshLambertMaterial({map:roadTexN,side:DS});
 const matSw=new THREE.MeshLambertMaterial({map:swTex,side:DS});
-const matRoadConcrete=new THREE.MeshStandardMaterial({color:0x777b7d,roughness:0.94});
-const matRoadPavers=new THREE.MeshStandardMaterial({color:0x817d73,roughness:0.98});
-const matRoadGravel=new THREE.MeshStandardMaterial({color:0x6e6759,roughness:1});
-const matRoadDirt=new THREE.MeshStandardMaterial({color:0x78654b,roughness:1});
+const matRoadConcrete=new THREE.MeshStandardMaterial({color:0x777b7d,roughness:0.94,side:DS});
+const matRoadPavers=new THREE.MeshStandardMaterial({color:0x817d73,roughness:0.98,side:DS});
+const matRoadGravel=new THREE.MeshStandardMaterial({color:0x6e6759,roughness:1,side:DS});
+const matRoadDirt=new THREE.MeshStandardMaterial({color:0x78654b,roughness:1,side:DS});
 // Separate mapped OSM land-cover classes; no generic park-green overlay.
 const matGrass=new THREE.MeshLambertMaterial({color:0x82945b,side:DS});
 const matForest=new THREE.MeshLambertMaterial({color:0x496b43,side:DS});
@@ -1502,7 +1502,7 @@ async function loadArea(lat,lon,spawn){
         ribbon(P,w+4.2,0.05,SW,(w+4.2)/2,2,heightOffset);
         ribbon(P,w,0.09,roadAcc,1,w>=7?12:6,heightOffset);
       }else{
-        ribbon(P,w,0.07,SW,w/2,2,heightOffset);
+        ribbon(P,w,0.07,roadAcc,w/2,2,heightOffset);
       }
       if(heightOffset>0)addBridgeSupports(P,w,heightOffset);
       if(isTunnel)addTunnelPortals(P,w);
