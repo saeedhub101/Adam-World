@@ -198,6 +198,8 @@ def photo_metadata(feature: dict[str, Any]) -> dict[str, Any]:
         "field_of_view_deg": fov,
         "pitch_deg": number(p.get("pers:pitch")),
         "roll_deg": number(p.get("pers:roll")),
+        "horizontal_accuracy_m": number(p.get("quality:horizontal_accuracy")),
+        "horizontal_pixel_density": number(p.get("panoramax:horizontal_pixel_density")),
         "license": license_value,
         "instance": p.get("instance"),
         "metadata_url": self_link,
