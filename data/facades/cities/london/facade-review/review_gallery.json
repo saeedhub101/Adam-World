@@ -27,7 +27,7 @@
         "roll_deg": null
       },
       "metadata_url": "https://api.panoramax.xyz/api/collections/814ca3fe-8753-4ff8-9326-756aaec33ff1/items/509c1771-eb72-4a28-b4c3-b35b41c3e895",
-      "full_image_url": "https://panoramax.openstreetmap.fr/derivates/50/9c/17/71/eb72-4a28-b4c3-b35b41c3e895/sd.jpg",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/509c1771-eb72-4a28-b4c3-b35b41c3e895/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
@@ -51,7 +51,7 @@
         "roll_deg": null
       },
       "metadata_url": "https://api.panoramax.xyz/api/collections/14ea2dff-2d5f-4134-9a9c-0b7ff34d87aa/items/57ea0c49-c739-4334-a2cc-48ee57a5d464",
-      "full_image_url": "https://panoramax.mapcomplete.org/derivatives/57/ea/0c/49/c739-4334-a2cc-48ee57a5d464/sd.jpg",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/57ea0c49-c739-4334-a2cc-48ee57a5d464/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
@@ -75,7 +75,7 @@
         "roll_deg": null
       },
       "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/1b2b32eb-bba1-41c8-a5c7-525076af9af2",
-      "full_image_url": "https://panoramax.openstreetmap.fr/derivates/1b/2b/32/eb/bba1-41c8-a5c7-525076af9af2/sd.jpg",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/1b2b32eb-bba1-41c8-a5c7-525076af9af2/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
@@ -99,7 +99,7 @@
         "roll_deg": null
       },
       "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/571669f5-2950-4bdf-be4a-12c21f2d59e1",
-      "full_image_url": "https://panoramax.openstreetmap.fr/derivates/57/16/69/f5/2950-4bdf-be4a-12c21f2d59e1/sd.jpg",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/571669f5-2950-4bdf-be4a-12c21f2d59e1/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
@@ -123,7 +123,7 @@
         "roll_deg": null
       },
       "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/41700c8c-abf8-4e78-836a-1de3259e882d",
-      "full_image_url": "https://panoramax.openstreetmap.fr/derivates/41/70/0c/8c/abf8-4e78-836a-1de3259e882d/sd.jpg",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/41700c8c-abf8-4e78-836a-1de3259e882d/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
@@ -147,7 +147,7 @@
         "roll_deg": null
       },
       "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/b65a17ec-bbec-47b0-867e-df5ce59198cd",
-      "full_image_url": "https://panoramax.openstreetmap.fr/derivates/b6/5a/17/ec/bbec-47b0-867e-df5ce59198cd/sd.jpg",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/b65a17ec-bbec-47b0-867e-df5ce59198cd/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
@@ -171,7 +171,7 @@
         "roll_deg": null
       },
       "metadata_url": "https://api.panoramax.xyz/api/collections/d7bd2079-5c0d-4def-baab-5b01855a614f/items/97e934a0-4c30-45f1-8c5a-b3d99eab069f",
-      "full_image_url": "https://panoramax.openstreetmap.fr/derivates/97/e9/34/a0/4c30-45f1-8c5a-b3d99eab069f/sd.jpg",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/97e934a0-4c30-45f1-8c5a-b3d99eab069f/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
@@ -195,7 +195,7 @@
         "roll_deg": null
       },
       "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/f8d87c2e-d229-4540-a437-e6d4a4d0e2d8",
-      "full_image_url": "https://panoramax.openstreetmap.fr/derivates/f8/d8/7c/2e/d229-4540-a437-e6d4a4d0e2d8/sd.jpg",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/f8d87c2e-d229-4540-a437-e6d4a4d0e2d8/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
@@ -219,7 +219,7 @@
         "roll_deg": null
       },
       "metadata_url": "https://api.panoramax.xyz/api/collections/bc07121d-f15c-4084-b66b-dc0d560fdc89/items/a69adf6f-2a4d-4d5a-a050-5c618d0f22c8",
-      "full_image_url": "https://panoramax.openstreetmap.fr/derivates/a6/9a/df/6f/2a4d-4d5a-a050-5c618d0f22c8/sd.jpg",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/a69adf6f-2a4d-4d5a-a050-5c618d0f22c8/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     }
   ],
