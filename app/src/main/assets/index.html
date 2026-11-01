@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>مدينة 3D</title>
 <script src="vendor/three.min.js"></script>
+<script src="vendor/GLTFLoader.js"></script>
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
   canvas{display:block;position:absolute;inset:0;touch-action:none}
@@ -420,7 +421,106 @@ async function loadOfflineArea(lat, lon, radiusMeters) {
 const cityGroup=new THREE.Group();scene.add(cityGroup);
 const agentGroup=new THREE.Group();scene.add(agentGroup);
 let bldgs=[],grid=new Map(),CELL=40;
+
 let carPaths=[],pedPaths=[],agents=[];
+const WORLD_MODEL_FILES={
+  adult_man:'models/people/adult-man.glb',
+  adult_woman:'models/people/adult-woman.glb',
+  child_boy:'models/people/child-boy.glb',
+  child_girl:'models/people/child-girl.glb',
+  dog:'models/animals/dog.glb',
+  sedan:'models/vehicles/sedan.glb',
+  pickup:'models/vehicles/pickup.glb',
+  bus:'models/vehicles/city-bus.glb',
+  metro_car:'models/vehicles/metro-car.glb',
+  motorcycle:'models/vehicles/motorcycle.glb',
+  water_taxi:'models/vehicles/water-taxi.glb'
+};
+const WORLD_MODEL_HEIGHT={adult_man:1.85,adult_woman:1.68,child_boy:1.11,child_girl:1.16,dog:0.92};
+const WORLD_VEHICLE_LENGTH={sedan:4.5,pickup:5.4,bus:12,motorcycle:2.05,metro_car:19,water_taxi:9.9};
+const worldModelCache=new Map();
+const worldGLTFLoader=THREE.GLTFLoader?new THREE.GLTFLoader():null;
+function loadWorldModel(key){
+  if(!WORLD_MODEL_FILES[key]||!worldGLTFLoader)return Promise.reject(new Error('3D asset unavailable: '+key));
+  if(!worldModelCache.has(key)){
+    worldModelCache.set(key,new Promise((resolve,reject)=>{
+      worldGLTFLoader.load(WORLD_MODEL_FILES[key],g=>resolve(g.scene),undefined,e=>{worldModelCache.delete(key);reject(e||new Error('GLB load failed: '+key));});
+    }));
+  }
+  return worldModelCache.get(key).then(template=>{
+    const model=template.clone(true);
+    const wheelMeshes=[];
+    model.traverse(n=>{
+      if(n.isMesh){
+        n.userData.sharedAsset=true;
+        if(/wheel|tyre|tire|rim/i.test(n.name||''))wheelMeshes.push(n);
+      }
+    });
+    let box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
+    const isVehicle=Object.prototype.hasOwnProperty.call(WORLD_VEHICLE_LENGTH,key);
+    let headingOffset=0;
+    if(isVehicle&&size.x>size.z){model.rotation.y=Math.PI/2;headingOffset=Math.PI/2;box=new THREE.Box3().setFromObject(model);size=box.getSize(new THREE.Vector3());}
+    const target=isVehicle?(WORLD_VEHICLE_LENGTH[key]||4.5):(WORLD_MODEL_HEIGHT[key]||1.7);
+    const scale=isVehicle?target/Math.max(size.x,size.z):target/Math.max(0.01,size.y);
+    const center=box.getCenter(new THREE.Vector3());
+    model.scale.setScalar(scale);
+    model.position.set(-center.x*scale,-box.min.y*scale,-center.z*scale);
+    const wrapper=new THREE.Group();wrapper.add(model);
+    wrapper.userData.headingOffset=headingOffset;
+    wrapper.userData.wheels=wheelMeshes;
+    wrapper.userData.assetKey=key;
+    return wrapper;
+  });
+}
+function cityRoadVehicleProfile(slug){
+  const profiles={
+    amman:['sedan','sedan','pickup','motorcycle'],
+    manila:['sedan','pickup','motorcycle'],
+    bangkok:['sedan','pickup','motorcycle'],
+    'new-york':['sedan','pickup','motorcycle'],
+    paris:['sedan','motorcycle'],
+    dubai:['sedan','pickup','motorcycle'],
+    tokyo:['sedan','motorcycle'],
+    london:['sedan','motorcycle'],
+    riyadh:['sedan','pickup','motorcycle'],
+    cairo:['sedan','pickup','motorcycle']
+  };
+  return profiles[slug]||profiles.amman;
+}
+async function addStaticPedestrians(slug){
+  if(!pedPaths.length)return;
+  const keys=['adult_man','adult_woman','child_boy','child_girl'];
+  const loaded={};
+  await Promise.all(keys.map(async key=>{try{loaded[key]=true;await loadWorldModel(key);}catch(e){loaded[key]=false;console.warn('Human GLB unavailable',key,e);}}));
+  const available=keys.filter(k=>loaded[k]);
+  for(let i=0;i<14&&available.length;i++){
+    const pp=pedPaths[Math.floor(Math.random()*pedPaths.length)];
+    const distance=Math.random()*Math.max(0.1,pp.path.total-0.5);
+    const side=pp.veh?(pp.w/2+1.5)*(Math.random()<0.5?-1:1):(Math.random()-0.5)*0.8;
+    const p=posAt(pp.path,distance,side);
+    if(blocked(p.x,p.z,0.28))continue;
+    try{
+      const key=available[Math.floor(Math.random()*available.length)];
+      const m=await loadWorldModel(key);
+      m.position.set(p.x,terrainHeight(p.x,p.z),p.z);
+      m.rotation.y=Math.atan2(p.dx,p.dz)+(m.userData.headingOffset||0);
+      agentGroup.add(m);
+    }catch(e){console.warn('Could not place human asset',e);}
+  }
+  try{
+    await loadWorldModel('dog');
+    for(let i=0;i<2;i++){
+      const pp=pedPaths[Math.floor(Math.random()*pedPaths.length)];
+      const p=posAt(pp.path,Math.random()*Math.max(0.1,pp.path.total-0.5),pp.veh?pp.w/2+2.2:1.1);
+      if(blocked(p.x,p.z,0.3))continue;
+      const dog=await loadWorldModel('dog');
+      dog.position.set(p.x,terrainHeight(p.x,p.z),p.z);
+      dog.rotation.y=Math.atan2(p.dx,p.dz);
+      agentGroup.add(dog);
+    }
+  }catch(e){console.warn('Dog GLB unavailable',e);}
+}
+
 
 function gridAdd(b){
   const x0=Math.floor(b.minx/CELL),x1=Math.floor(b.maxx/CELL),z0=Math.floor(b.minz/CELL),z1=Math.floor(b.maxz/CELL);
@@ -662,7 +762,7 @@ function disposeGroup(g){
     // City landmarks are nested groups; dispose their child geometry and
     // explicitly owned textures recursively when a streamed tile is replaced.
     o.traverse(node=>{
-      if(node.geometry)node.geometry.dispose();
+      if(node.geometry && !(node.userData&&node.userData.sharedAsset))node.geometry.dispose();
       if(node.userData&&node.userData.ownedTexture)node.userData.ownedTexture.dispose();
       if(node.userData&&node.userData.ownedMaterial&&node.material){
         if(Array.isArray(node.material))node.material.forEach(m=>m.dispose());
@@ -1519,24 +1619,25 @@ async function loadArea(lat,lon,spawn){
     const pool=new THREE.Mesh(new THREE.CircleGeometry(width*1.8,24),matWater);pool.rotation.x=-Math.PI/2;pool.position.set(p[0],h0+0.08,p[1]+width);cityGroup.add(pool);
   }
 
-  /* وكلاء: سيارات ومشاة */
-  const colors=[0xecf0f1,0x2c3e50,0x7f8c8d,0xf1c40f,0x2980b9,0xd35400,0x27ae60,0x111111,0x8e44ad];
+  /* سيارات ومشاة من أصول GLB محلية مرخّصة؛ لا تُنشأ بدائل صندوقية */
+  const citySlug=(data.city&&data.city.slug)||'amman';
+  const vehicleKeys=cityRoadVehicleProfile(citySlug);
   if(carPaths.length){
-    for(let i=0;i<22;i++){
-      const cp=carPaths[Math.floor(Math.random()*carPaths.length)];
-      const m=makeCar(colors[Math.floor(Math.random()*colors.length)],i%3);agentGroup.add(m);
-      agents.push({kind:'car',path:cp.path,roadWidth:cp.w,off:cp.w/4,s:Math.random()*cp.path.total,dir:Math.random()<0.5?1:-1,sp:7+Math.random()*7,m:m,ph:0});
+    const usable=[];
+    await Promise.all([...new Set(vehicleKeys)].map(async key=>{try{await loadWorldModel(key);usable.push(key);}catch(e){console.warn('Vehicle GLB unavailable',key,e);}}));
+    if(usable.length){
+      const count=Math.min(14,Math.max(5,Math.round(carPaths.length*0.22)));
+      for(let i=0;i<count;i++){
+        const cp=carPaths[Math.floor(Math.random()*carPaths.length)];
+        const key=usable[Math.floor(Math.random()*usable.length)];
+        try{
+          const m=await loadWorldModel(key);agentGroup.add(m);
+          agents.push({kind:'car',assetKey:key,path:cp.path,roadWidth:cp.w,off:Math.min(cp.w/4,1.35),s:Math.random()*cp.path.total,dir:Math.random()<0.5?1:-1,sp:key==='motorcycle'?8+Math.random()*5:5+Math.random()*4,m:m,ph:0});
+        }catch(e){console.warn('Could not create vehicle',key,e);}
+      }
     }
   }
-  if(pedPaths.length){
-    const sh=[0x3498db,0xe67e22,0x1abc9c,0x9b59b6,0xecf0f1,0xf39c12,0x95a5a6];
-    for(let i=0;i<24;i++){
-      const pp=pedPaths[Math.floor(Math.random()*pedPaths.length)];
-      const m=makePerson(sh[Math.floor(Math.random()*sh.length)],i%4);agentGroup.add(m);
-      const off=pp.veh?(pp.w/2+1.6)*(Math.random()<0.5?1:-1):(Math.random()-0.5)*0.8;
-      agents.push({kind:'ped',path:pp.path,off:off,s:Math.random()*pp.path.total,dir:Math.random()<0.5?1:-1,sp:1.1+Math.random()*0.7,m:m,ph:Math.random()*6});
-    }
-  }
+  await addStaticPedestrians(citySlug);
 
   if(spawn){
     // Find a genuinely clear walking position beside a mapped street/path.
@@ -1766,7 +1867,7 @@ function frame(now){
     const o=a.off*(a.kind==='car'?a.dir:1);
     const p=posAt(a.path,a.s,a.kind==='car'?o:(a.dir>0?a.off:a.off));
     const rideHeight=a.kind==='car'?0.13:0;
-    a.m.position.set(p.x,terrainHeight(p.x,p.z)+rideHeight,p.z);a.m.rotation.y=Math.atan2(p.dx*a.dir,p.dz*a.dir);
+    a.m.position.set(p.x,terrainHeight(p.x,p.z)+rideHeight,p.z);a.m.rotation.y=Math.atan2(p.dx*a.dir,p.dz*a.dir)+(a.m.userData.headingOffset||0);if(a.m.userData.wheels)for(const w of a.m.userData.wheels)w.rotation.x+=a.dir*moveSpeed*dt/0.34;
     if(a.kind==='ped'){a.ph+=a.sp*dt*2.2;swing(a.m,a.ph,0.6);}
   }
 
