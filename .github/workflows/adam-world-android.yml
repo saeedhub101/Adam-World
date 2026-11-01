@@ -95,7 +95,12 @@ jobs:
           import zipfile
           from pathlib import Path
           with zipfile.ZipFile('app/build/updates/adam-world-web-update.zip', 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as z:
-              z.write('app/src/main/assets/index.html', 'index.html')
+              root = Path('app/src/main/assets')
+              for rel in ['index.html', 'vendor/three.min.js', 'vendor/GLTFLoader.js']:
+                  z.write(root / rel, rel)
+              for p in sorted((root / 'models').rglob('*')):
+                  if p.is_file():
+                      z.write(p, p.relative_to(root).as_posix())
           print('WEB_UPDATE_BUNDLE_OK bytes=', Path('app/build/updates/adam-world-web-update.zip').stat().st_size)
           PY
           git fetch --force --tags origin
