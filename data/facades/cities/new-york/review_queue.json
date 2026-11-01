@@ -21382,6 +21382,26 @@
           "target_bearing_deg": 280.11
         },
         {
+          "azimuth_delta_deg": 17.03,
+          "camera": {
+            "azimuth_deg": 98.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:58.302000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 99.58,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "must_human_verify": true,
+          "photo_id": "3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "preview_url": null,
+          "target_bearing_deg": 115.03
+        },
+        {
           "azimuth_delta_deg": 24.64,
           "camera": {
             "azimuth_deg": 305.0,
@@ -22679,6 +22699,26 @@
           "target_bearing_deg": 251.16
         },
         {
+          "azimuth_delta_deg": 36.84,
+          "camera": {
+            "azimuth_deg": 98.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:58.302000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 79.63,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "must_human_verify": true,
+          "photo_id": "3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "preview_url": null,
+          "target_bearing_deg": 134.84
+        },
+        {
           "azimuth_delta_deg": 17.84,
           "camera": {
             "azimuth_deg": 275.0,
@@ -23031,6 +23071,46 @@
           "target_bearing_deg": 304.67
         },
         {
+          "azimuth_delta_deg": 40.48,
+          "camera": {
+            "azimuth_deg": 67.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:57.836000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 47.86,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/546e53b7-21b4-4dc6-9ac9-ecb093c93ce0",
+          "must_human_verify": true,
+          "photo_id": "546e53b7-21b4-4dc6-9ac9-ecb093c93ce0",
+          "preview_url": null,
+          "target_bearing_deg": 107.48
+        },
+        {
+          "azimuth_delta_deg": 9.33,
+          "camera": {
+            "azimuth_deg": 98.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:58.302000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 48.2,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "must_human_verify": true,
+          "photo_id": "3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "preview_url": null,
+          "target_bearing_deg": 107.33
+        },
+        {
           "azimuth_delta_deg": 45.44,
           "camera": {
             "azimuth_deg": 348.0,
@@ -23251,6 +23331,26 @@
           "target_bearing_deg": 291.6
         },
         {
+          "azimuth_delta_deg": 37.03,
+          "camera": {
+            "azimuth_deg": 72.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:12.831000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 67.26,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/2b1a325f-5790-4336-adc3-239bdfa6903f",
+          "must_human_verify": true,
+          "photo_id": "2b1a325f-5790-4336-adc3-239bdfa6903f",
+          "preview_url": null,
+          "target_bearing_deg": 109.03
+        },
+        {
           "azimuth_delta_deg": 25.71,
           "camera": {
             "azimuth_deg": 316.0,
@@ -23269,6 +23369,46 @@
           "photo_id": "d7cec1b9-3988-4235-aa1b-8d09ad13593b",
           "preview_url": null,
           "target_bearing_deg": 290.29
+        },
+        {
+          "azimuth_delta_deg": 32.92,
+          "camera": {
+            "azimuth_deg": 77.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:13.831000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 68.79,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/6f65e6b2-338e-42af-9660-875b3077ddbf",
+          "must_human_verify": true,
+          "photo_id": "6f65e6b2-338e-42af-9660-875b3077ddbf",
+          "preview_url": null,
+          "target_bearing_deg": 109.92
+        },
+        {
+          "azimuth_delta_deg": 13.46,
+          "camera": {
+            "azimuth_deg": 97.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:14.834000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 69.38,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "must_human_verify": true,
+          "photo_id": "3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "preview_url": null,
+          "target_bearing_deg": 110.46
         },
         {
           "azimuth_delta_deg": 6.71,
@@ -23309,6 +23449,26 @@
           "photo_id": "253d5dce-82bd-4997-b9ef-54b7d4ca5602",
           "preview_url": null,
           "target_bearing_deg": 289.26
+        },
+        {
+          "azimuth_delta_deg": 34.55,
+          "camera": {
+            "azimuth_deg": 77.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:15.369000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 70.92,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/12ec0152-bf7d-49af-b0c4-799e1342b2cd",
+          "must_human_verify": true,
+          "photo_id": "12ec0152-bf7d-49af-b0c4-799e1342b2cd",
+          "preview_url": null,
+          "target_bearing_deg": 111.55
         },
         {
           "azimuth_delta_deg": 34.73,
@@ -23752,6 +23912,26 @@
           "target_bearing_deg": 261.23
         },
         {
+          "azimuth_delta_deg": 41.4,
+          "camera": {
+            "azimuth_deg": 98.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:58.302000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 65.58,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "must_human_verify": true,
+          "photo_id": "3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "preview_url": null,
+          "target_bearing_deg": 139.4
+        },
+        {
           "azimuth_delta_deg": 10.54,
           "camera": {
             "azimuth_deg": 271.0,
@@ -23830,6 +24010,26 @@
           "photo_id": "9025c9b5-c416-463b-a50d-9384b12b46a6",
           "preview_url": null,
           "target_bearing_deg": 258.45
+        },
+        {
+          "azimuth_delta_deg": 37.06,
+          "camera": {
+            "azimuth_deg": 97.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:14.834000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 85.82,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "must_human_verify": true,
+          "photo_id": "3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "preview_url": null,
+          "target_bearing_deg": 134.06
         },
         {
           "azimuth_delta_deg": 12.47,
@@ -24282,6 +24482,46 @@
           "target_bearing_deg": 287.12
         },
         {
+          "azimuth_delta_deg": 38.23,
+          "camera": {
+            "azimuth_deg": 67.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:57.836000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 33.15,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/546e53b7-21b4-4dc6-9ac9-ecb093c93ce0",
+          "must_human_verify": true,
+          "photo_id": "546e53b7-21b4-4dc6-9ac9-ecb093c93ce0",
+          "preview_url": null,
+          "target_bearing_deg": 105.23
+        },
+        {
+          "azimuth_delta_deg": 7.03,
+          "camera": {
+            "azimuth_deg": 98.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:58.302000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 33.5,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "must_human_verify": true,
+          "photo_id": "3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "preview_url": null,
+          "target_bearing_deg": 105.03
+        },
+        {
           "azimuth_delta_deg": 44.58,
           "camera": {
             "azimuth_deg": 340.0,
@@ -24402,6 +24642,26 @@
           "target_bearing_deg": 299.93
         },
         {
+          "azimuth_delta_deg": 36.04,
+          "camera": {
+            "azimuth_deg": 72.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:12.831000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 52.51,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/2b1a325f-5790-4336-adc3-239bdfa6903f",
+          "must_human_verify": true,
+          "photo_id": "2b1a325f-5790-4336-adc3-239bdfa6903f",
+          "preview_url": null,
+          "target_bearing_deg": 108.04
+        },
+        {
           "azimuth_delta_deg": 19.64,
           "camera": {
             "azimuth_deg": 320.0,
@@ -24420,6 +24680,66 @@
           "photo_id": "8923b496-00c5-4793-b776-1582f0fb3d08",
           "preview_url": null,
           "target_bearing_deg": 300.36
+        },
+        {
+          "azimuth_delta_deg": 32.2,
+          "camera": {
+            "azimuth_deg": 77.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:13.831000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 54.03,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/6f65e6b2-338e-42af-9660-875b3077ddbf",
+          "must_human_verify": true,
+          "photo_id": "6f65e6b2-338e-42af-9660-875b3077ddbf",
+          "preview_url": null,
+          "target_bearing_deg": 109.2
+        },
+        {
+          "azimuth_delta_deg": 12.9,
+          "camera": {
+            "azimuth_deg": 97.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:14.834000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 54.61,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "must_human_verify": true,
+          "photo_id": "3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "preview_url": null,
+          "target_bearing_deg": 109.9
+        },
+        {
+          "azimuth_delta_deg": 34.29,
+          "camera": {
+            "azimuth_deg": 77.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:15.369000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 56.13,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/12ec0152-bf7d-49af-b0c4-799e1342b2cd",
+          "must_human_verify": true,
+          "photo_id": "12ec0152-bf7d-49af-b0c4-799e1342b2cd",
+          "preview_url": null,
+          "target_bearing_deg": 111.29
         },
         {
           "azimuth_delta_deg": 14.32,
@@ -24931,6 +25251,66 @@
           "target_bearing_deg": 267.08
         },
         {
+          "azimuth_delta_deg": 29.72,
+          "camera": {
+            "azimuth_deg": 67.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:57.836000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 17.88,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/546e53b7-21b4-4dc6-9ac9-ecb093c93ce0",
+          "must_human_verify": true,
+          "photo_id": "546e53b7-21b4-4dc6-9ac9-ecb093c93ce0",
+          "preview_url": null,
+          "target_bearing_deg": 96.72
+        },
+        {
+          "azimuth_delta_deg": 1.48,
+          "camera": {
+            "azimuth_deg": 98.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:58.302000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 18.24,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "must_human_verify": true,
+          "photo_id": "3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "preview_url": null,
+          "target_bearing_deg": 96.52
+        },
+        {
+          "azimuth_delta_deg": 44.01,
+          "camera": {
+            "azimuth_deg": 52.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:58.836000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 19.04,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/bb5ae38b-b6cd-4fcb-ac25-f2d144fec2d6",
+          "must_human_verify": true,
+          "photo_id": "bb5ae38b-b6cd-4fcb-ac25-f2d144fec2d6",
+          "preview_url": null,
+          "target_bearing_deg": 96.01
+        },
+        {
           "azimuth_delta_deg": 32.59,
           "camera": {
             "azimuth_deg": 307.0,
@@ -25051,6 +25431,26 @@
           "target_bearing_deg": 283.12
         },
         {
+          "azimuth_delta_deg": 33.12,
+          "camera": {
+            "azimuth_deg": 72.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:12.831000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 36.98,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/2b1a325f-5790-4336-adc3-239bdfa6903f",
+          "must_human_verify": true,
+          "photo_id": "2b1a325f-5790-4336-adc3-239bdfa6903f",
+          "preview_url": null,
+          "target_bearing_deg": 105.12
+        },
+        {
           "azimuth_delta_deg": 16.77,
           "camera": {
             "azimuth_deg": 304.0,
@@ -25069,6 +25469,46 @@
           "photo_id": "11bcbfef-bf9b-4e85-b145-7f3391e16b92",
           "preview_url": null,
           "target_bearing_deg": 287.23
+        },
+        {
+          "azimuth_delta_deg": 29.87,
+          "camera": {
+            "azimuth_deg": 77.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:13.831000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 38.45,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/6f65e6b2-338e-42af-9660-875b3077ddbf",
+          "must_human_verify": true,
+          "photo_id": "6f65e6b2-338e-42af-9660-875b3077ddbf",
+          "preview_url": null,
+          "target_bearing_deg": 106.87
+        },
+        {
+          "azimuth_delta_deg": 10.87,
+          "camera": {
+            "azimuth_deg": 97.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:14.834000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 39.0,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "must_human_verify": true,
+          "photo_id": "3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "preview_url": null,
+          "target_bearing_deg": 107.87
         },
         {
           "azimuth_delta_deg": 2.04,
@@ -25109,6 +25549,26 @@
           "photo_id": "3eac4057-28d6-4d2b-b56a-ab3486a40c4b",
           "preview_url": null,
           "target_bearing_deg": 288.8
+        },
+        {
+          "azimuth_delta_deg": 32.88,
+          "camera": {
+            "azimuth_deg": 77.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:15.369000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 40.49,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/12ec0152-bf7d-49af-b0c4-799e1342b2cd",
+          "must_human_verify": true,
+          "photo_id": "12ec0152-bf7d-49af-b0c4-799e1342b2cd",
+          "preview_url": null,
+          "target_bearing_deg": 109.88
         },
         {
           "azimuth_delta_deg": 21.19,
@@ -26049,6 +26509,66 @@
       },
       "facade_photo_candidates": [
         {
+          "azimuth_delta_deg": 32.9,
+          "camera": {
+            "azimuth_deg": 320.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:56.836000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 15.34,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/83182c4e-9774-4b73-ba09-148f2719746c",
+          "must_human_verify": true,
+          "photo_id": "83182c4e-9774-4b73-ba09-148f2719746c",
+          "preview_url": null,
+          "target_bearing_deg": 352.9
+        },
+        {
+          "azimuth_delta_deg": 4.64,
+          "camera": {
+            "azimuth_deg": 359.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:57.336000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 15.35,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/9f4f8a4d-0717-42d6-b07c-f89245940762",
+          "must_human_verify": true,
+          "photo_id": "9f4f8a4d-0717-42d6-b07c-f89245940762",
+          "preview_url": null,
+          "target_bearing_deg": 354.36
+        },
+        {
+          "azimuth_delta_deg": 43.09,
+          "camera": {
+            "azimuth_deg": 33.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:56.346000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 15.43,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/d6b90e3c-8645-4ee4-bb82-87755bcf5597",
+          "must_human_verify": true,
+          "photo_id": "d6b90e3c-8645-4ee4-bb82-87755bcf5597",
+          "preview_url": null,
+          "target_bearing_deg": 349.91
+        },
+        {
           "azimuth_delta_deg": 5.15,
           "camera": {
             "azimuth_deg": 343.0,
@@ -26067,6 +26587,46 @@
           "photo_id": "79bd4795-72a4-43e0-90a9-ba0e2a7d6fd8",
           "preview_url": null,
           "target_bearing_deg": 348.15
+        },
+        {
+          "azimuth_delta_deg": 14.19,
+          "camera": {
+            "azimuth_deg": 17.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:59.304000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 15.48,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/efe8f0d8-7d96-4ddf-bf70-c8c77648b277",
+          "must_human_verify": true,
+          "photo_id": "efe8f0d8-7d96-4ddf-bf70-c8c77648b277",
+          "preview_url": null,
+          "target_bearing_deg": 2.81
+        },
+        {
+          "azimuth_delta_deg": 5.16,
+          "camera": {
+            "azimuth_deg": 11.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:02.434000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 15.52,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/7903f335-5573-4823-9a70-f7c53ced941e",
+          "must_human_verify": true,
+          "photo_id": "7903f335-5573-4823-9a70-f7c53ced941e",
+          "preview_url": null,
+          "target_bearing_deg": 16.16
         },
         {
           "azimuth_delta_deg": 29.29,
@@ -26089,6 +26649,86 @@
           "target_bearing_deg": 345.71
         },
         {
+          "azimuth_delta_deg": 15.7,
+          "camera": {
+            "azimuth_deg": 36.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:03.869000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 15.59,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/0445f9d2-4bf2-46dd-a7cf-f12289d92604",
+          "must_human_verify": true,
+          "photo_id": "0445f9d2-4bf2-46dd-a7cf-f12289d92604",
+          "preview_url": null,
+          "target_bearing_deg": 20.3
+        },
+        {
+          "azimuth_delta_deg": 27.11,
+          "camera": {
+            "azimuth_deg": 346.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:01.434000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 15.59,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/9bedca70-ed58-481b-a68f-39d3b0dcd5bc",
+          "must_human_verify": true,
+          "photo_id": "9bedca70-ed58-481b-a68f-39d3b0dcd5bc",
+          "preview_url": null,
+          "target_bearing_deg": 13.11
+        },
+        {
+          "azimuth_delta_deg": 37.3,
+          "camera": {
+            "azimuth_deg": 343.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:03.335000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 15.59,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/1f92036c-5bda-4e1f-acc2-eadc2848e994",
+          "must_human_verify": true,
+          "photo_id": "1f92036c-5bda-4e1f-acc2-eadc2848e994",
+          "preview_url": null,
+          "target_bearing_deg": 20.3
+        },
+        {
+          "azimuth_delta_deg": 4.04,
+          "camera": {
+            "azimuth_deg": 7.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:00.910000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 15.66,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/7f2ec65b-e2eb-4380-9049-b2d7041e0d20",
+          "must_human_verify": true,
+          "photo_id": "7f2ec65b-e2eb-4380-9049-b2d7041e0d20",
+          "preview_url": null,
+          "target_bearing_deg": 11.04
+        },
+        {
           "azimuth_delta_deg": 3.18,
           "camera": {
             "azimuth_deg": 345.0,
@@ -26109,6 +26749,46 @@
           "target_bearing_deg": 341.82
         },
         {
+          "azimuth_delta_deg": 14.11,
+          "camera": {
+            "azimuth_deg": 14.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:05.005000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 15.91,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/2d01804c-c719-4c8c-9f64-987ba74d5642",
+          "must_human_verify": true,
+          "photo_id": "2d01804c-c719-4c8c-9f64-987ba74d5642",
+          "preview_url": null,
+          "target_bearing_deg": 28.11
+        },
+        {
+          "azimuth_delta_deg": 4.36,
+          "camera": {
+            "azimuth_deg": 29.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:06.476000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 16.15,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/ae04de94-6de7-40f7-a041-59b4a50b522f",
+          "must_human_verify": true,
+          "photo_id": "ae04de94-6de7-40f7-a041-59b4a50b522f",
+          "preview_url": null,
+          "target_bearing_deg": 33.36
+        },
+        {
           "azimuth_delta_deg": 14.79,
           "camera": {
             "azimuth_deg": 324.0,
@@ -26127,6 +26807,26 @@
           "photo_id": "ce85ea35-abf4-41ed-b61a-074afaf7f942",
           "preview_url": null,
           "target_bearing_deg": 338.79
+        },
+        {
+          "azimuth_delta_deg": 34.48,
+          "camera": {
+            "azimuth_deg": 13.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:09.234000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 17.32,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/91677377-d859-4d03-8447-313d25194bad",
+          "must_human_verify": true,
+          "photo_id": "91677377-d859-4d03-8447-313d25194bad",
+          "preview_url": null,
+          "target_bearing_deg": 47.48
         },
         {
           "azimuth_delta_deg": 19.8,
@@ -26189,6 +26889,46 @@
           "target_bearing_deg": 327.56
         },
         {
+          "azimuth_delta_deg": 10.45,
+          "camera": {
+            "azimuth_deg": 46.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:11.641000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 18.4,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/74f744eb-fb9f-4b5f-8a20-bd4c0d230e04",
+          "must_human_verify": true,
+          "photo_id": "74f744eb-fb9f-4b5f-8a20-bd4c0d230e04",
+          "preview_url": null,
+          "target_bearing_deg": 56.45
+        },
+        {
+          "azimuth_delta_deg": 43.45,
+          "camera": {
+            "azimuth_deg": 13.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:11.106000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 18.4,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/f7ea11cb-57a7-40be-a518-8f1ba73c6fdc",
+          "must_human_verify": true,
+          "photo_id": "f7ea11cb-57a7-40be-a518-8f1ba73c6fdc",
+          "preview_url": null,
+          "target_bearing_deg": 56.45
+        },
+        {
           "azimuth_delta_deg": 39.97,
           "camera": {
             "azimuth_deg": 286.0,
@@ -26209,6 +26949,106 @@
           "target_bearing_deg": 325.97
         },
         {
+          "azimuth_delta_deg": 6.42,
+          "camera": {
+            "azimuth_deg": 72.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:12.831000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 18.88,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/2b1a325f-5790-4336-adc3-239bdfa6903f",
+          "must_human_verify": true,
+          "photo_id": "2b1a325f-5790-4336-adc3-239bdfa6903f",
+          "preview_url": null,
+          "target_bearing_deg": 65.58
+        },
+        {
+          "azimuth_delta_deg": 5.99,
+          "camera": {
+            "azimuth_deg": 77.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:13.831000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 19.34,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/6f65e6b2-338e-42af-9660-875b3077ddbf",
+          "must_human_verify": true,
+          "photo_id": "6f65e6b2-338e-42af-9660-875b3077ddbf",
+          "preview_url": null,
+          "target_bearing_deg": 71.01
+        },
+        {
+          "azimuth_delta_deg": 23.41,
+          "camera": {
+            "azimuth_deg": 97.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:14.834000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 19.4,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "must_human_verify": true,
+          "photo_id": "3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "preview_url": null,
+          "target_bearing_deg": 73.59
+        },
+        {
+          "azimuth_delta_deg": 37.59,
+          "camera": {
+            "azimuth_deg": 36.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:14.300000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 19.4,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/8736f202-e8c9-4445-83ee-d44fe4d79adf",
+          "must_human_verify": true,
+          "photo_id": "8736f202-e8c9-4445-83ee-d44fe4d79adf",
+          "preview_url": null,
+          "target_bearing_deg": 73.59
+        },
+        {
+          "azimuth_delta_deg": 2.35,
+          "camera": {
+            "azimuth_deg": 77.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:15.369000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 19.91,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/12ec0152-bf7d-49af-b0c4-799e1342b2cd",
+          "must_human_verify": true,
+          "photo_id": "12ec0152-bf7d-49af-b0c4-799e1342b2cd",
+          "preview_url": null,
+          "target_bearing_deg": 79.35
+        },
+        {
           "azimuth_delta_deg": 24.86,
           "camera": {
             "azimuth_deg": 346.0,
@@ -26227,6 +27067,26 @@
           "photo_id": "218dd776-bf74-4eab-a631-b40bd4d88373",
           "preview_url": null,
           "target_bearing_deg": 321.14
+        },
+        {
+          "azimuth_delta_deg": 46.75,
+          "camera": {
+            "azimuth_deg": 39.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:16.762000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 20.52,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/9c5a07c0-720b-436a-a4c8-5b2593ededd9",
+          "must_human_verify": true,
+          "photo_id": "9c5a07c0-720b-436a-a4c8-5b2593ededd9",
+          "preview_url": null,
+          "target_bearing_deg": 85.75
         },
         {
           "azimuth_delta_deg": 46.47,
@@ -28441,6 +29301,26 @@
           "target_bearing_deg": 261.07
         },
         {
+          "azimuth_delta_deg": 42.76,
+          "camera": {
+            "azimuth_deg": 97.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:14.834000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 79.41,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "must_human_verify": true,
+          "photo_id": "3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "preview_url": null,
+          "target_bearing_deg": 139.76
+        },
+        {
           "azimuth_delta_deg": 22.14,
           "camera": {
             "azimuth_deg": 283.0,
@@ -29006,6 +29886,26 @@
           "photo_id": "ca203feb-d2c7-4820-8636-b4e3264caf1e",
           "preview_url": null,
           "target_bearing_deg": 264.62
+        },
+        {
+          "azimuth_delta_deg": 46.25,
+          "camera": {
+            "azimuth_deg": 97.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:14.834000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 68.54,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "must_human_verify": true,
+          "photo_id": "3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "preview_url": null,
+          "target_bearing_deg": 143.25
         },
         {
           "azimuth_delta_deg": 42.82,
@@ -107033,6 +107933,46 @@
           "target_bearing_deg": 285.4
         },
         {
+          "azimuth_delta_deg": 37.98,
+          "camera": {
+            "azimuth_deg": 67.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:57.836000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 65.41,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/546e53b7-21b4-4dc6-9ac9-ecb093c93ce0",
+          "must_human_verify": true,
+          "photo_id": "546e53b7-21b4-4dc6-9ac9-ecb093c93ce0",
+          "preview_url": null,
+          "target_bearing_deg": 104.98
+        },
+        {
+          "azimuth_delta_deg": 6.88,
+          "camera": {
+            "azimuth_deg": 98.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:58.302000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 65.76,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "must_human_verify": true,
+          "photo_id": "3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "preview_url": null,
+          "target_bearing_deg": 104.88
+        },
+        {
           "azimuth_delta_deg": 44.93,
           "camera": {
             "azimuth_deg": 330.0,
@@ -107153,6 +108093,26 @@
           "target_bearing_deg": 284.19
         },
         {
+          "azimuth_delta_deg": 34.78,
+          "camera": {
+            "azimuth_deg": 72.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:12.831000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 84.73,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/2b1a325f-5790-4336-adc3-239bdfa6903f",
+          "must_human_verify": true,
+          "photo_id": "2b1a325f-5790-4336-adc3-239bdfa6903f",
+          "preview_url": null,
+          "target_bearing_deg": 106.78
+        },
+        {
           "azimuth_delta_deg": 36.81,
           "camera": {
             "azimuth_deg": 321.0,
@@ -107171,6 +108131,66 @@
           "photo_id": "ad302a9e-260b-4044-bd17-2cacd5a5e442",
           "preview_url": null,
           "target_bearing_deg": 284.19
+        },
+        {
+          "azimuth_delta_deg": 30.53,
+          "camera": {
+            "azimuth_deg": 77.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:13.831000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 86.22,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/6f65e6b2-338e-42af-9660-875b3077ddbf",
+          "must_human_verify": true,
+          "photo_id": "6f65e6b2-338e-42af-9660-875b3077ddbf",
+          "preview_url": null,
+          "target_bearing_deg": 107.53
+        },
+        {
+          "azimuth_delta_deg": 10.98,
+          "camera": {
+            "azimuth_deg": 97.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:14.834000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 86.78,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "must_human_verify": true,
+          "photo_id": "3cc1d5ee-7430-4a71-9cfe-2a9e3a63d857",
+          "preview_url": null,
+          "target_bearing_deg": 107.98
+        },
+        {
+          "azimuth_delta_deg": 31.9,
+          "camera": {
+            "azimuth_deg": 77.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:15.369000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 88.25,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/12ec0152-bf7d-49af-b0c4-799e1342b2cd",
+          "must_human_verify": true,
+          "photo_id": "12ec0152-bf7d-49af-b0c4-799e1342b2cd",
+          "preview_url": null,
+          "target_bearing_deg": 108.9
         },
         {
           "azimuth_delta_deg": 17.67,
@@ -107952,6 +108972,46 @@
           "photo_id": "83049331-7f60-4e2b-a143-a9cd2a027d4e",
           "preview_url": null,
           "target_bearing_deg": 281.02
+        },
+        {
+          "azimuth_delta_deg": 40.68,
+          "camera": {
+            "azimuth_deg": 67.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:57.836000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 83.61,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/546e53b7-21b4-4dc6-9ac9-ecb093c93ce0",
+          "must_human_verify": true,
+          "photo_id": "546e53b7-21b4-4dc6-9ac9-ecb093c93ce0",
+          "preview_url": null,
+          "target_bearing_deg": 107.68
+        },
+        {
+          "azimuth_delta_deg": 9.59,
+          "camera": {
+            "azimuth_deg": 98.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:51:58.302000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 83.96,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "must_human_verify": true,
+          "photo_id": "3a487f30-9763-490a-92aa-e56cd27ba21d",
+          "preview_url": null,
+          "target_bearing_deg": 107.59
         },
         {
           "azimuth_delta_deg": 37.31,
@@ -114306,7 +115366,28 @@
         "building": "yes",
         "height": "23.7"
       },
-      "facade_photo_candidates": [],
+      "facade_photo_candidates": [
+        {
+          "azimuth_delta_deg": 46.16,
+          "camera": {
+            "azimuth_deg": 10.0,
+            "field_of_view_deg": null,
+            "pitch_deg": null,
+            "roll_deg": null
+          },
+          "capture_datetime": "2024-03-19T00:52:32.388000+00:00",
+          "direction_status": "within_camera_cone",
+          "distance_m": 99.68,
+          "identity_status": "unverified_candidate_only",
+          "instance": null,
+          "license": "CC-BY-SA-4.0",
+          "metadata_url": "https://api.panoramax.xyz/api/collections/9c61f518-f150-4aa3-8fb8-0ef310d6fa3f/items/99fcdf7d-6906-4528-aef5-170d0a75e379",
+          "must_human_verify": true,
+          "photo_id": "99fcdf7d-6906-4528-aef5-170d0a75e379",
+          "preview_url": null,
+          "target_bearing_deg": 56.16
+        }
+      ],
       "footprint_geometry": {
         "coordinates": [
           [
@@ -154950,5 +156031,5 @@
     "proximity_is_not_identity": true
   },
   "schema_version": 1,
-  "source_sha256": "6a5aa31a1bb3f21776200012a63d1cce00572c3be89f6066c0deb81da5e49148"
+  "source_sha256": "e523622ad1cd36e5933d4ba6e5fa62dcb585bbaef0837467d1a1c11894f2637b"
 }
