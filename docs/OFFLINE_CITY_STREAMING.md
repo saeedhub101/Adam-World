@@ -73,3 +73,10 @@ verified and the resulting local texture is baked onto that building's own mesh.
 The current verified facade manifest is still empty; the ten-city OSM geometry
 import is complete, but photorealistic facade texturing remains a separate,
 evidence-gated production phase.
+
+
+## Street-name labels and update delivery
+
+- Named OSM road ways render their actual mapped name directly on the road surface, aligned to the road direction. Arabic `name:ar` is preferred, then `name:en`, `name`, `official_name`, `loc_name`, and finally the mapped `ref`; no street names are fabricated. The visible label limit is 240 placements per loaded area.
+- Release workflow publishes a small `adam-world-web-update.zip` containing the changed game HTML. When a release marks `Native-Required: false` and `Web-Content-Changed: true`, Android downloads and applies this bundle into app-private storage, then reloads the game without reinstalling the APK or removing user data. Native-code or packaged offline-data changes still require a normal APK update.
+- Facade photo candidates remain unverified until the exact building identity and visible facade are confirmed. The latest review harvest validated 78 preview images (33 HD source images) across the cities with available Panoramax coverage; this is not 78 verified facade assignments. No candidate is assigned to a building merely because it is nearby or camera-aligned.
