@@ -405,7 +405,7 @@ function addBuildingArchitecture(P,t,height,id){
   const floors=clamp(Number.isFinite(levelsRaw)&&levelsRaw>0?Math.round(levelsRaw):Math.round(height/3.2),1,24);
   const floorH=height/floors;
   const kind=String(t.building||'').toLowerCase();
-  const residential=/apartments|residential|house|detached|semidetached|terrace|dormitory/.test(kind);
+  const residential=/apartments|residential|house|detached|semidetached|terrace|dormitory/.test(kind);\n  const utilitarian=/garage|garages|shed|hut|carport|warehouse|industrial|storage/.test(kind);
   const balconies=String(t.balcony||t['building:balcony']||'').toLowerCase();
   const allowBalconies=residential||balconies==='yes'||balconies==='true';
   // Keep materials stable and reusable; only geometry is unique per building.
