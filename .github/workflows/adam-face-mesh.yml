@@ -29,7 +29,7 @@ jobs:
       - name: Build full-body Adam photo cutout
         run: python tools/build_adam_fullbody_cutout.py --input app/src/main/assets/characters/adam/child-reference-01.png --output app/src/main/assets/characters/adam/generated/adam_fullbody_cutout.png
       - name: Validate outputs
-        run: test -s app/src/main/assets/characters/adam/generated/adam_face_mesh.json && test -s app/src/main/assets/characters/adam/generated/adam_face_texture.png && test -s app/src/main/assets/characters/adam/generated/adam_face_surface.glb
+        run: test -s app/src/main/assets/characters/adam/generated/adam_face_mesh.json && test -s app/src/main/assets/characters/adam/generated/adam_face_texture.png && test -s app/src/main/assets/characters/adam/generated/adam_face_surface.glb && test -s app/src/main/assets/characters/adam/generated/adam_fullbody_cutout.png
       - name: Save outputs to main
         run: |
           git config user.name 'github-actions[bot]'
