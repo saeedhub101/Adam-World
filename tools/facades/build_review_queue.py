@@ -20,6 +20,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import tempfile
 from pathlib import Path
 from typing import Any
