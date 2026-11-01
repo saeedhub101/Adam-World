@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "import_profile_version": 3,
+  "import_profile_version": 4,
   "city": "New York",
   "slug": "new-york",
   "source": "OpenStreetMap Overpass",
@@ -11,7 +11,7 @@
     "lon": -73.9855
   },
   "radius_m": 650,
-  "element_count": 3947,
+  "element_count": 3953,
   "geometry_layers": [
     "buildings",
     "roads",
