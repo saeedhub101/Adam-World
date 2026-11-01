@@ -189,6 +189,10 @@ const matG=matB;
 const matRoadW=new THREE.MeshLambertMaterial({map:roadTexW,side:DS});
 const matRoadN=new THREE.MeshLambertMaterial({map:roadTexN,side:DS});
 const matSw=new THREE.MeshLambertMaterial({map:swTex,side:DS});
+const matRoadConcrete=new THREE.MeshStandardMaterial({color:0x777b7d,roughness:0.94});
+const matRoadPavers=new THREE.MeshStandardMaterial({color:0x817d73,roughness:0.98});
+const matRoadGravel=new THREE.MeshStandardMaterial({color:0x6e6759,roughness:1});
+const matRoadDirt=new THREE.MeshStandardMaterial({color:0x78654b,roughness:1});
 // Separate mapped OSM land-cover classes; no generic park-green overlay.
 const matGrass=new THREE.MeshLambertMaterial({color:0x82945b,side:DS});
 const matForest=new THREE.MeshLambertMaterial({color:0x496b43,side:DS});
@@ -1412,6 +1416,7 @@ async function loadArea(lat,lon,spawn){
   for(const key of Object.keys(archAcc))archAcc[key]=[];
   bldgs=[];grid=new Map();carPaths=[];pedPaths=[];railPaths=[];
   const B=newAcc(),G=newAcc(),RWd=newAcc(),RNr=newAcc(),SW=newAcc();
+  const roadSurfaceAcc={concrete:newAcc(),pavers:newAcc(),gravel:newAcc(),dirt:newAcc()};
   const LC={grass:newAcc(),forest:newAcc(),scrub:newAcc(),crops:newAcc(),bare:newAcc(),sand:newAcc(),wetland:newAcc()};
   const WT=newAcc(),WTLine=newAcc();
   const trees=[],lamps=[],signals=[],busStops=[],stopSigns=[],crossings=[],waterfalls=[],potholes=[],speedBumps=[];const roadLabels=[],roadLabelKeys=new Set();let bcount=0;
@@ -1487,9 +1492,15 @@ async function loadArea(lat,lon,spawn){
       if(P.length<2)continue;
       P=resamplePolyline(P,4);
       const veh=w>=4.5&&t.highway!=='pedestrian',heightOffset=infrastructureHeight(t),isTunnel=heightOffset<0;
+      const surface=String(t.surface||'').toLowerCase(),smoothness=String(t.smoothness||'').toLowerCase();
+      let roadAcc=w>=7?RWd:RNr;
+      if(['concrete','concrete:plates'].includes(surface))roadAcc=roadSurfaceAcc.concrete;
+      else if(['cobblestone','sett','paving_stones','bricks'].includes(surface))roadAcc=roadSurfaceAcc.pavers;
+      else if(['gravel','fine_gravel','compacted','pebblestone','rock'].includes(surface))roadAcc=roadSurfaceAcc.gravel;
+      else if(['dirt','earth','ground','sand','mud','unpaved'].includes(surface))roadAcc=roadSurfaceAcc.dirt;
       if(w>=6||t.highway==='service'){
         ribbon(P,w+4.2,0.05,SW,(w+4.2)/2,2,heightOffset);
-        ribbon(P,w,0.09,w>=7?RWd:RNr,1,w>=7?12:6,heightOffset);
+        ribbon(P,w,0.09,roadAcc,1,w>=7?12:6,heightOffset);
       }else{
         ribbon(P,w,0.07,SW,w/2,2,heightOffset);
       }
@@ -1497,7 +1508,7 @@ async function loadArea(lat,lon,spawn){
       if(isTunnel)addTunnelPortals(P,w);
       const path=makePath(P);path.heightOffset=heightOffset;
       if(path.total>20&&!isTunnel){
-        if(veh)carPaths.push({path:path,w:w,heightOffset:heightOffset});
+        if(veh)carPaths.push({path:path,w:w,heightOffset:heightOffset,surface:surface,smoothness:smoothness});
         pedPaths.push({path:path,w:w,veh:veh});
         const roadName=String(t['name:ar']||t['name:en']||t.name||t.official_name||t.loc_name||t.ref||'').trim();
         if(roadName&&roadLabels.length<240){
@@ -1552,6 +1563,7 @@ async function loadArea(lat,lon,spawn){
   for(const item of speedBumps)addSpeedBump([item.p[0],item.p[1],0]);
   if(data.city&&data.city.slug==='amman')addRomanTheatre();
   const adds=[[accMesh(B,matB)],[accMesh(G,matG)],[accMesh(RWd,matRoadW)],[accMesh(RNr,matRoadN)],[accMesh(SW,matSw)],
+    [accMesh(roadSurfaceAcc.concrete,matRoadConcrete)],[accMesh(roadSurfaceAcc.pavers,matRoadPavers)],[accMesh(roadSurfaceAcc.gravel,matRoadGravel)],[accMesh(roadSurfaceAcc.dirt,matRoadDirt)],
     [accMesh(LC.grass,matGrass)],[accMesh(LC.forest,matForest)],[accMesh(LC.scrub,matScrub)],
     [accMesh(LC.crops,matCrops)],[accMesh(LC.bare,matBare)],[accMesh(LC.sand,matSand)],
     [accMesh(LC.wetland,matWetland)],[accMesh(WT,matWater)],[accMesh(WTLine,matWater)]];
@@ -1716,7 +1728,7 @@ async function loadArea(lat,lon,spawn){
         const key=usable[Math.floor(Math.random()*usable.length)];
         try{
           const m=await loadWorldModel(key);agentGroup.add(m);
-          agents.push({kind:'car',assetKey:key,path:cp.path,roadWidth:cp.w,off:Math.min(cp.w/4,1.35),s:Math.random()*cp.path.total,dir:Math.random()<0.5?1:-1,sp:key==='motorcycle'?8+Math.random()*5:5+Math.random()*4,m:m,ph:0});
+          agents.push({kind:'car',assetKey:key,path:cp.path,roadWidth:cp.w,roadCondition:cp.smoothness||cp.surface,off:Math.min(cp.w/4,1.35),s:Math.random()*cp.path.total,dir:Math.random()<0.5?1:-1,sp:key==='motorcycle'?8+Math.random()*5:5+Math.random()*4,m:m,ph:0});
         }catch(e){console.warn('Could not create vehicle',key,e);}
       }
     }
@@ -1949,6 +1961,8 @@ function frame(now){
   for(const a of agents){
     let moveSpeed=a.sp;
     if(a.kind==='car'){
+      if(['bad','very_bad','horrible','very_horrible','impassable'].includes(a.roadCondition))moveSpeed*=0.62;
+      else if(['intermediate','rough'].includes(a.roadCondition))moveSpeed*=0.82;
       const p0=posAt(a.path,a.s,a.off),dirX=p0.dx*a.dir,dirZ=p0.dz*a.dir;
       for(const signal of activeTrafficSignals){
         const vx=signal.p[0]-p0.x,vz=signal.p[1]-p0.z;
