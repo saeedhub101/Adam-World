@@ -93,7 +93,7 @@ jobs:
           if [ -n "$PREVIOUS_RELEASE" ]; then CHANGED_FILES=$(git diff --name-only "$PREVIOUS_RELEASE"..HEAD); else CHANGED_FILES=$(git show --format= --name-only HEAD); fi
           NATIVE_REQUIRED=false
           WEB_CONTENT_CHANGED=false
-          if printf '%s\n' "$CHANGED_FILES" | grep -Eq '^(app/src/main/java/|app/src/main/AndroidManifest.xml|app/build.gradle|data/offline-world/|data/facades/cities/[^/]+/buildings[.]geojson$)'; then NATIVE_REQUIRED=true; fi
+          if printf '%s\n' "$CHANGED_FILES" | grep -Eq '^(app/src/main/java/|app/src/main/AndroidManifest.xml|app/build.gradle|app/src/main/assets/(vendor|cities|facades)/|data/offline-world/|data/facades/cities/[^/]+/buildings[.]geojson$)'; then NATIVE_REQUIRED=true; fi
           if printf '%s\n' "$CHANGED_FILES" | grep -Fxq 'app/src/main/assets/index.html'; then WEB_CONTENT_CHANGED=true; fi
           echo "NATIVE_REQUIRED=$NATIVE_REQUIRED" >> "$GITHUB_ENV"
           echo "WEB_CONTENT_CHANGED=$WEB_CONTENT_CHANGED" >> "$GITHUB_ENV"
