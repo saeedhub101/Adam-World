@@ -131,7 +131,7 @@ def photo_quality_gate(photo: dict[str, Any], distance_m: float, delta: float | 
     if photo.get("azimuth_deg") is None: reasons.append("camera_azimuth_missing")
     elif delta is None or delta > 25: reasons.append("camera_not_facing_facade")
     fov = photo.get("field_of_view_deg")
-    if fov is None or not 25 <= fov <= 120: reasons.append("usable_field_of_view_missing_or_invalid")
+    if fov is not None and not 25 <= fov <= 120: reasons.append("usable_field_of_view_invalid")
     pitch = photo.get("pitch_deg")
     if pitch is not None and not -45 <= pitch <= 45: reasons.append("camera_pitch_not_facade_level")
     accuracy = photo.get("horizontal_accuracy_m")
@@ -140,7 +140,7 @@ def photo_quality_gate(photo: dict[str, Any], distance_m: float, delta: float | 
     if not photo.get("preview_url"): reasons.append("no_real_image_preview_asset")
     if not photo.get("image_url"): reasons.append("no_downloadable_photo_asset")
     score = 100 - min(55, int(distance_m * 1.5)) - min(35, int((delta or 0) * 1.2))
-    if fov is None: score -= 20
+    if fov is None: score -= 12
     if pitch is None: score -= 5
     if not photo.get("capture_datetime"): score -= 5
     if not reusable_photo_license(photo.get("license")): score -= 30
@@ -179,6 +179,14 @@ def photo_metadata(feature: dict[str, Any]) -> dict[str, Any]:
     # identifies the actual display image. Do not mistake tiled "data" assets for photos.
     preview_asset = thumbnail or visual
     full_image = visual
+    photo_id = str(feature.get("id") or "")
+    # The federated Panoramax catalogue may omit per-item assets while the
+    # public picture endpoint still serves thumbnail and HD derivatives by UUID.
+    if re.fullmatch(r"[0-9a-fA-F-]{36}", photo_id):
+        if not preview_asset:
+            preview_asset = {"href": f"https://api.panoramax.xyz/api/pictures/{photo_id}/thumb.jpg"}
+        if not full_image:
+            full_image = {"href": f"https://api.panoramax.xyz/api/pictures/{photo_id}/hd.jpg"}
     links = feature.get("links") or []
     self_link = next((x.get("href") for x in links if x.get("rel") == "self"), None)
     return {
@@ -300,6 +308,7 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
                 "quality_score": quality_score,
                 "eligible_for_visual_review": eligible,
                 "quality_rejection_reasons": rejection_reasons,
+                "quality_warnings": (["camera_fov_missing_manual_calibration_required"] if photo["field_of_view_deg"] is None else []),
                 "identity_status": "unverified_candidate_only",
                 "must_human_verify": True,
             })
@@ -330,7 +339,7 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
             "proximity_is_not_identity": True,
             "camera_cone_is_candidate_filter_only": True,
             "automatic_texture_assignment": False,
-            "strict_visual_review_gate": {"max_facade_distance_m": 35, "max_azimuth_delta_deg": 25, "requires_camera_fov": True, "requires_open_redistributable_license": True, "requires_real_preview_and_image_assets": True},
+            "strict_visual_review_gate": {"max_facade_distance_m": 35, "max_azimuth_delta_deg": 25, "requires_camera_azimuth": True, "camera_fov_missing_is_manual_calibration_warning": True, "requires_open_redistributable_license": True, "requires_real_preview_and_image_assets": True},
         },
         "building_count": len(queue),
         "buildings": queue,
