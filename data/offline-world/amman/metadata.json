@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "import_profile_version": 3,
+  "import_profile_version": 4,
   "city": "Amman",
   "slug": "amman",
   "source": "OpenStreetMap Overpass",
@@ -10,8 +10,8 @@
     "lat": 31.9516,
     "lon": 35.9394
   },
-  "radius_m": 650,
-  "element_count": 2071,
+  "radius_m": 1800,
+  "element_count": 11533,
   "geometry_layers": [
     "buildings",
     "roads",
