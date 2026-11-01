@@ -82,7 +82,12 @@ def source_elements(slug):
         data = read_json(full)
         elements = data.get("elements") or []
         if elements:
-            return elements, str(full.relative_to(ROOT)), "full-osm"
+            route_file = full.parent / "transit-routes.json"
+            if route_file.is_file():
+                route_data = read_json(route_file)
+                elements.extend(route_data.get("elements") or [])
+            kind = "full-osm+transit-routes" if route_file.is_file() else "full-osm"
+            return elements, str(full.relative_to(ROOT)), kind
     buildings = read_json(SOURCE / slug / "buildings.geojson")
     elements = []
     for feature in buildings.get("features", []):
