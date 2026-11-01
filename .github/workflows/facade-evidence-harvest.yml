@@ -7,7 +7,7 @@ on:
       - "tools/facades/fetch_catalogue_metadata.py"
       - "tools/facades/fetch_osm_buildings.py"
       - "tools/facades/build_review_queue.py"
-      - "tools/facades/visual_verify_facades.py"\n      - "tools/facades/visual_verify_facades.py"
+      - "tools/facades/visual_verify_facades.py"
       - "tools/facades/fetch_kartaview_metadata.py"
       - "tools/facades/prepare_facade_review.py"
       - "tools/facades/build_verified_glbs.py"
@@ -33,7 +33,6 @@ on:
 permissions:
   contents: write
 
-# Share the importer lock so manual runs cannot race incremental main-branch commits.
 concurrency:
   group: adam-world-offline-city-import
   cancel-in-progress: false
@@ -95,7 +94,7 @@ jobs:
         continue-on-error: true
         run: python3 tools/facades/build_review_queue.py
 
-      - name: Free local computer-vision screening (no API or paid service)\n        id: visual_cv\n        continue-on-error: true\n        run: |\n          python3 -m pip install --disable-pip-version-check numpy opencv-python-headless\n          python3 tools/facades/visual_verify_facades.py\n\n      - name: Free local computer-vision screening (no API or paid service)
+      - name: Free local computer-vision screening (no API or paid service)
         id: visual_cv
         continue-on-error: true
         run: |
@@ -110,14 +109,14 @@ jobs:
           python3 tools/facades/validate_manifest.py
           python3 tools/facades/build_verified_glbs.py
 
-      - name: Commit generated review queues and verified GLBs
+      - name: Commit generated review queues, visual reports and verified GLBs
         id: commit
         if: always()
         continue-on-error: true
         run: |
           git add -A data/facades/cities app/src/main/assets/facades
           if ! git diff --cached --quiet; then
-            git commit -m "Build global city facade evidence review queues"
+            git commit -m "Build facade evidence and visual screening reports"
             git pull --rebase origin main
             git push origin HEAD:main
           fi
@@ -129,11 +128,11 @@ jobs:
           OSM: ${{ steps.osm.outcome }}
           CATALOG: ${{ steps.catalog.outcome }}
           QUEUE: ${{ steps.queue.outcome }}
-          VISUAL_CV: ${{ steps.visual_cv.outcome }}\n          VISUAL_CV: ${{ steps.visual_cv.outcome }}
+          VISUAL_CV: ${{ steps.visual_cv.outcome }}
           GLB: ${{ steps.glb.outcome }}
           COMMIT: ${{ steps.commit.outcome }}
         run: |
-          printf 'Facade harvest outcomes: tests=%s osm=%s catalogue=%s queues=%s verified_glb=%s commit=%s\n' "$TESTS" "$OSM" "$CATALOG" "$QUEUE" "$GLB" "$COMMIT"
+          printf 'Facade harvest outcomes: tests=%s osm=%s catalogue=%s queues=%s visual_cv=%s verified_glb=%s commit=%s\n' "$TESTS" "$OSM" "$CATALOG" "$QUEUE" "$VISUAL_CV" "$GLB" "$COMMIT"
           for outcome in "$TESTS" "$OSM" "$CATALOG" "$QUEUE" "$VISUAL_CV" "$GLB" "$COMMIT"; do
             if [ "$outcome" != "success" ]; then exit 1; fi
           done
