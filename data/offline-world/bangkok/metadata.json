@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "city": "Bangkok",
+  "slug": "bangkok",
+  "source": "OpenStreetMap Overpass",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL 1.0",
+  "center": {
+    "lat": 13.7466,
+    "lon": 100.5347
+  },
+  "radius_m": 650,
+  "element_count": 1519,
+  "geometry_layers": [
+    "buildings",
+    "roads",
+    "parks",
+    "landcover",
+    "water",
+    "trees",
+    "street_lamps"
+  ],
+  "stored_as": "data/offline-world/bangkok/elements.json"
+}
