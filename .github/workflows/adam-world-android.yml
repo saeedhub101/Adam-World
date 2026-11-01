@@ -21,6 +21,7 @@ on:
       - "Adam World Free 3D Asset Import"
       - "Adam World Transport Infrastructure Import"
       - "Adam World Microsoft Building Footprints Import"
+      - "Adam World Amman Wide-Area Facade Evidence"
     types: [completed]
   workflow_dispatch:
 
