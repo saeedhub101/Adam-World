@@ -225,3 +225,36 @@ python3 -m pip install numpy trimesh Pillow shapely
 python3 tools/facades/validate_manifest.py
 python3 tools/facades/build_verified_glbs.py
 ```
+
+
+## Phase 4 — actual runtime architectural geometry (2026-11-01)
+
+The live Three.js city renderer now constructs building details as geometry attached
+to each OSM footprint, rather than painting window/balcony decals:
+
+- Window openings are cut into the generated facade wall panels; frames, glazing
+  and projecting sills are separate 3D meshes.
+- Residential building types and explicit OSM balcony tags generate balcony
+  slabs, front rails and vertical posts as geometry.
+- Every building receives its own detail budget before the city-wide safety cap,
+  so early buildings cannot consume all window and balcony geometry and leave
+  later buildings as blank blocks.
+- Buildings explicitly tagged with `roof:shape=hipped` or
+  `roof:shape=pyramidal` receive sloped triangular roof geometry using the
+  `roof:height` tag when available. Flat roofs retain a parapet/cornice.
+- Building height and floor count continue to prefer explicit OSM
+  `height`, `building:height`, and `building:levels` values. Missing values
+  remain deterministic estimates, not claimed measurements.
+
+This is real 3D geometry generated locally from the OSM footprint and tags. It is
+not proof that each untagged building's exact window arrangement, balcony layout,
+roof shape or facade colour matches photographs. Exact photo-derived facade
+materials remain blocked on explicit visual identity review and the currently
+empty `verified_facades.json` manifest. Do not label the candidate image galleries
+as completed reconstruction.
+
+The Android web-content build must be run after this renderer change and its
+published preview checked for window coverage, balcony placement, roof geometry,
+frame rate and memory on the target device. Future roof types and per-building
+architectural profiles should be added only from OSM tags or verified imagery,
+not guessed from nearby photographs.
