@@ -5,16 +5,17 @@
     "5b90f92da0d7280005fab355",
     "635a05775f1fd800066121e2",
     "635a06b55f1fd800066121e3",
-    "Copernicus_DSM_COG_10_N14_00_E120_00_DEM"
+    "Copernicus_DSM_COG_10_N14_00_E120_00_DEM",
+    "Copernicus_DSM_COG_10_N14_00_E121_00_DEM"
   ],
   "pages": 1,
   "complete": true,
-  "last_page_added": 0,
+  "last_page_added": 1,
   "bbox": [
-    120.9523381532672,
-    14.566720698850162,
-    120.9987530467328,
-    14.61202780114984
+    121.00078118626436,
+    14.53194269885016,
+    121.04749411373564,
+    14.57733550114984
   ],
   "source": "https://api.imagery.hotosm.org/stac/search"
 }
