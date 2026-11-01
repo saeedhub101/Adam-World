@@ -49,6 +49,20 @@ ASSETS = {
             "height_m": 1.16, "description": "Girl, approximately ten years old; static pose."
         },
     ],
+        {
+            "id": "adult_man_walk", "file": "people/adult-man-walk.glb",
+            "url": "https://files.innerscene.com/library/locomotion-collection-jordan-3d-person-animated-911f1584/a153a7018a159efb583a/locomotion-collection-jordan-3d-person-animated.glb",
+            "page": "https://www.innerscene.com/tools/library/3d-parts/locomotion-collection-jordan-3d-person-animated-911f1584",
+            "license": "CC0-1.0", "pose": "rigged", "animated": True,
+            "height_m": 1.79, "description": "Adult man with rig and seven looping locomotion clips."
+        },
+        {
+            "id": "adult_woman_walk", "file": "people/adult-woman-walk.glb",
+            "url": "https://files.innerscene.com/library/locomotion-collection-maya-3d-person-animated-1499b2fd/565cfb8a45b8a67a79c4/locomotion-collection-maya-3d-person-animated.glb",
+            "page": "https://www.innerscene.com/tools/library/3d-parts/locomotion-collection-maya-3d-person-animated-1499b2fd",
+            "license": "CC0-1.0", "pose": "rigged", "animated": True,
+            "height_m": 1.70, "description": "Adult woman with rig and seven looping locomotion clips."
+        },
     "animals": [
         {
             "id": "dog", "file": "animals/dog.glb",
@@ -184,8 +198,8 @@ def main() -> None:
                      "reason": "A free Sketchfab CC-BY model was found, but the downloadable binary and its redistribution package were not independently verified."},
                     {"id": "philippine_tricycle", "city": "manila", "status": "not_imported",
                      "reason": "Search results found paid/editorial or game-workshop assets; no verified free redistributable GLB was accepted."},
-                    {"id": "walking_animations", "status": "not_imported",
-                     "reason": "The imported human figures are static meshes without armatures; do not fake walking animation."},
+                    {"id": "children_walking_animations", "status": "not_imported",
+                     "reason": "Verified animated adult man and woman are imported; no suitable licensed animated child models have been verified."},
                     {"id": "old_jordanian_cars", "city": "amman", "status": "not_imported",
                      "reason": "No verified free, redistributable, sufficiently detailed old Jordanian vehicle model was accepted yet."}
                 ]}
