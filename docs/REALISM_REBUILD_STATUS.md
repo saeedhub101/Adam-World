@@ -83,9 +83,18 @@ Relevant commits:
 - `f6e676105128e29b1d961742d649815dd6761c03` — validation compatible with the existing Amman grid.
 - `96ca6601449c3399c229a203176a1cb9d16dab1d` — Android release is triggered after terrain import.
 
-The corrected workflow rerun must finish successfully, and the resulting Android
-release must include all ten grids, before the terrain phase is called
-release-verified.
+The corrected workflow rerun completed successfully:
+https://github.com/saeedhub101/Adam-World/actions/runs/41344416095
+
+The Android workflow was triggered by that completion (run 203), and a later
+build was also triggered by the nodata-sampling correction (run 204). Run 204 is
+the build that must be checked for all ten packaged elevation grids before the
+terrain phase is called release-verified:
+https://github.com/saeedhub101/Adam-World/actions/runs/41344476917
+
+The runtime sampler was additionally corrected to treat JSON null cells as DEM
+nodata, not as 0 metres; the nearest-valid sample fallback now handles those
+cells.
 
 ## Work still required before claiming the requested final realism
 
