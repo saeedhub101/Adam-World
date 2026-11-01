@@ -39,7 +39,7 @@ class CandidateQueueTests(unittest.TestCase):
                 __import__("json").dumps({"type": "FeatureCollection", "features": [building]}), encoding="utf-8")
             (city / "panoramax-items.geojson").write_text(
                 __import__("json").dumps({"type": "FeatureCollection", "features": [photo]}), encoding="utf-8")
-            result = mod.build_queue(city, 100)
+            result = mod.build_queue(city, 150)
         item = result["buildings"][0]
         self.assertEqual(item["facade_photo_candidates"][0]["identity_status"], "unverified_candidate_only")
         self.assertFalse(item["texture_assignment_allowed"])
