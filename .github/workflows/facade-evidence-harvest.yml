@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/facade-evidence-harvest.yml"
       - "tools/facades/fetch_catalogue_metadata.py"
       - "tools/facades/fetch_osm_buildings.py"
       - "tools/facades/build_review_queue.py"
@@ -12,6 +11,9 @@ on:
       - "tools/facades/prepare_facade_review.py"
       - "tools/facades/tests/**"
       - "data/facades/cities/**/city.json"
+  workflow_run:
+    workflows: ["Adam World Offline City Data Import"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       refresh:
@@ -27,6 +29,7 @@ on:
 permissions:
   contents: write
 
+# Share the importer lock so manual runs cannot race incremental main-branch commits.
 concurrency:
   group: adam-world-offline-city-import
   cancel-in-progress: false
@@ -48,6 +51,8 @@ jobs:
           python-version: "3.12"
 
       - name: Validate facade tooling and tests
+        id: tests
+        continue-on-error: true
         run: |
           python3 -m py_compile tools/facades/*.py tools/facades/tests/*.py
           python3 -m unittest discover -s tools/facades/tests -v
@@ -58,6 +63,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Fetch OSM building footprints with incremental city checkpoints
+        id: osm
+        continue-on-error: true
         env:
           REFRESH: ${{ inputs.refresh }}
           CITY: ${{ inputs.city }}
@@ -68,6 +75,8 @@ jobs:
           python3 tools/facades/fetch_osm_buildings.py "${args[@]}"
 
       - name: Harvest global city imagery metadata with incremental repository saves
+        id: catalog
+        continue-on-error: true
         env:
           REFRESH: ${{ inputs.refresh }}
         run: |
@@ -77,18 +86,28 @@ jobs:
             python3 tools/facades/fetch_catalogue_metadata.py --git-checkpoint
           fi
 
+      # KartaView metadata must be present before review queues are built.
       - name: Discover public KartaView street photos around the selected Amman district
+        id: kartaview
+        continue-on-error: true
         run: python3 tools/facades/fetch_kartaview_metadata.py --city amman --git-checkpoint
 
       - name: Build per-city facade review queues with strict geometry and licensing gates
+        id: queue
+        continue-on-error: true
         run: python3 tools/facades/build_review_queue.py
 
       - name: Download and validate local review images
+        id: images
+        continue-on-error: true
         run: |
           python3 -m pip install --disable-pip-version-check Pillow
           python3 tools/facades/prepare_facade_review.py --limit-per-city 50 --git-checkpoint
 
       - name: Commit generated review queues
+        id: commit
+        if: always()
+        continue-on-error: true
         run: |
           git add -A data/facades/cities
           if ! git diff --cached --quiet; then
@@ -97,3 +116,19 @@ jobs:
             git push origin HEAD:main
           fi
 
+      - name: Report partial failures after all sources have been attempted
+        if: always()
+        env:
+          TESTS: ${{ steps.tests.outcome }}
+          OSM: ${{ steps.osm.outcome }}
+          CATALOG: ${{ steps.catalog.outcome }}
+          KARTAVIEW: ${{ steps.kartaview.outcome }}
+          QUEUE: ${{ steps.queue.outcome }}
+          IMAGES: ${{ steps.images.outcome }}
+          COMMIT: ${{ steps.commit.outcome }}
+        run: |
+          printf 'Facade harvest outcomes: tests=%s osm=%s catalogue=%s kartaview=%s queues=%s images=%s commit=%s\\n' \\
+            "$TESTS" "$OSM" "$CATALOG" "$KARTAVIEW" "$QUEUE" "$IMAGES" "$COMMIT"
+          for outcome in "$TESTS" "$OSM" "$CATALOG" "$KARTAVIEW" "$QUEUE" "$IMAGES" "$COMMIT"; do
+            if [ "$outcome" != "success" ]; then exit 1; fi
+          done
