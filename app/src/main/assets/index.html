@@ -232,6 +232,66 @@ function posAt(path,s,off){
   return {x:a[0]+(b[0]-a[0])*t-dz*off,z:a[1]+(b[1]-a[1])*t+dx*off,dx:dx,dz:dz};
 }
 
+/* ---------- حزمة المدن المحلية والتقسيم المكاني ---------- */
+let offlineCityCatalog=null;
+let activeOfflineCity=null;
+const OFFLINE_TILE_RADIUS=2; // 5x5 tiles around the player; only local assets are read.
+const OFFLINE_TILE_SIZE=250;
+function offlineDistance(a,b){
+  const dy=(a.lat-b.lat)*111132;
+  const dx=(a.lon-b.lon)*111320*Math.cos((a.lat+b.lat)*Math.PI/360);
+  return Math.hypot(dx,dy);
+}
+async function readOfflineJson(path){
+  if(window.Android&&typeof Android.readAssetText==='function'){
+    const raw=Android.readAssetText(path);
+    if(!raw)throw new Error('ملف محلي غير موجود: '+path);
+    return JSON.parse(raw);
+  }
+  // Browser preview fallback. Android never uses the network for city geometry.
+  const response=await fetch('./'+path,{cache:'force-cache'});
+  if(!response.ok)throw new Error('تعذر قراءة '+path+' ('+response.status+')');
+  return response.json();
+}
+async function getOfflineCityCatalog(){
+  if(!offlineCityCatalog)offlineCityCatalog=await readOfflineJson('cities/catalog.json');
+  return offlineCityCatalog;
+}
+async function loadOfflineArea(lat,lon){
+  const catalog=await getOfflineCityCatalog();
+  let selected=null,nearest=Infinity;
+  for(const city of (catalog.cities||[])){
+    const d=offlineDistance({lat,lon},city.center);
+    if(d<nearest){nearest=d;selected=city;}
+  }
+  if(!selected)throw new Error('لا توجد مدن محلية مهيأة داخل التطبيق');
+  const coverage=Number(selected.discovery_radius_m||650);
+  if(nearest>coverage+180)throw new Error('الموقع خارج نطاق البيانات المحلية المحفوظة لمدينة '+selected.name);
+  if(!activeOfflineCity||activeOfflineCity.slug!==selected.slug){
+    activeOfflineCity=selected;
+    offlineCityCatalog=null;
+  }
+  const manifest=await readOfflineJson('cities/'+selected.slug+'/manifest.json');
+  const center=manifest.center||selected.center;
+  const kx=111320*Math.cos(center.lat*Math.PI/180),ky=111132;
+  const x=(lon-center.lon)*kx,z=-(lat-center.lat)*ky;
+  const ix=Math.floor(x/OFFLINE_TILE_SIZE),iz=Math.floor(z/OFFLINE_TILE_SIZE);
+  const wanted=new Set();
+  for(let dx=-OFFLINE_TILE_RADIUS;dx<=OFFLINE_TILE_RADIUS;dx++)
+    for(let dz=-OFFLINE_TILE_RADIUS;dz<=OFFLINE_TILE_RADIUS;dz++)wanted.add((ix+dx)+','+(iz+dz));
+  const tileIndex=new Map((manifest.tiles||[]).map(t=>[t.ix+','+t.iz,t]));
+  const nearby=[...wanted].map(k=>tileIndex.get(k)).filter(Boolean);
+  if(!nearby.length)throw new Error('لا توجد قطاعات مبانٍ محلية حول هذا الموقع في '+selected.name);
+  const elements=[];
+  for(const tile of nearby){
+    const payload=await readOfflineJson('cities/'+selected.slug+'/'+tile.file);
+    if(payload&&Array.isArray(payload.elements))elements.push(...payload.elements);
+  }
+  if(!elements.length)throw new Error('القطاعات المحلية فارغة حول الموقع الحالي');
+  console.info('Adam World offline stream:',selected.slug,'tiles',nearby.length,'elements',elements.length);
+  return {elements};
+}
+
 /* ---------- بيانات OSM ---------- */
 const RW={motorway:14,trunk:12,primary:11,secondary:9,tertiary:8,unclassified:6,residential:6,living_street:5,service:4.5,motorway_link:7,trunk_link:7,primary_link:7,secondary_link:6,tertiary_link:6,pedestrian:6,footway:2.5,path:2,steps:2,cycleway:2.5,track:3.5};
 const PALETTE=['#c9c4b8'];
@@ -723,7 +783,7 @@ function frame(now){
   sky.position.copy(camera.position);
   ground.position.x=Math.round(camera.position.x/13.3333)*13.3333;ground.position.z=Math.round(camera.position.z/13.3333)*13.3333;
 
-  if(now-lastCheck>1200){lastCheck=now;if(!loading&&Math.hypot(tx,tz)>480)reloadHere();}
+  if(now-lastCheck>900){lastCheck=now;if(!loading&&Math.hypot(tx,tz)>280)reloadHere();}
   renderer.render(scene,camera);
 }
 
