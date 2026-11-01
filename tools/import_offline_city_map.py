@@ -128,14 +128,17 @@ def main():
                 existing = json.loads(target.read_text(encoding="utf-8"))
                 metadata_existing = json.loads(metadata_path.read_text(encoding="utf-8"))
                 existing_count = len(existing.get("elements") or [])
+                same_center = metadata_existing.get("center") == city.get("center")
+                same_radius = float(metadata_existing.get("radius_m", -1)) == float(city.get("discovery_radius_m", 650))
                 if (existing_count > 0
                         and existing_count == int(metadata_existing.get("element_count", -1))
-                        and int(metadata_existing.get("import_profile_version", 0)) == IMPORT_PROFILE_VERSION):
-                    print(f"{city['name']}: already stored with import profile {IMPORT_PROFILE_VERSION} ({existing_count} elements); skip")
+                        and int(metadata_existing.get("import_profile_version", 0)) == IMPORT_PROFILE_VERSION
+                        and same_center and same_radius):
+                    print(f"{city['name']}: already stored with import profile {IMPORT_PROFILE_VERSION} and matching area ({existing_count} elements); skip")
                     succeeded += 1
                     continue
                 if existing_count > 0:
-                    print(f"{city['name']}: refreshing existing data for import profile {IMPORT_PROFILE_VERSION}")
+                    print(f"{city['name']}: refreshing existing data because profile, centre or radius changed")
             except Exception:
                 print(f"{city['name']}: existing city data or metadata is invalid; re-importing")
         elif target.is_file():
