@@ -7,11 +7,11 @@
   "attribution": "© OpenStreetMap contributors",
   "license": "ODbL 1.0",
   "center": {
-    "lat": 14.5547,
-    "lon": 121.0244
+    "lat": 14.57655,
+    "lon": 120.98105
   },
-  "radius_m": 650,
-  "element_count": 1889,
+  "radius_m": 900,
+  "element_count": 3435,
   "geometry_layers": [
     "buildings",
     "roads",
