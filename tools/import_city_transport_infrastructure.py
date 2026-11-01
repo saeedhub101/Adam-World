@@ -35,6 +35,7 @@ def query_for(lat: float, lon: float, radius: int) -> str:
         f'node["natural"="waterfall"]{around};'
         f'node["waterway"="waterfall"]{around};'
         f'node["hazard"="pothole"]{around};'
+        f'node["traffic_calming"]{around};'
         f'node["railway"~"station|halt|tram_stop|subway_entrance|platform|stop"]{around};'
         f'node["public_transport"~"station|platform|stop_position"]{around};'
         f'node["highway"~"bus_stop|traffic_signals|crossing"]{around};'
