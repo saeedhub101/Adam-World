@@ -1,5 +1,5 @@
 {
-  "next": 11,
+  "next": 12,
   "bbox": [
     55.2675241,
     25.1907262,
@@ -7,5 +7,5 @@
     25.2041005
   ],
   "seen": [],
-  "complete": false
+  "complete": true
 }
