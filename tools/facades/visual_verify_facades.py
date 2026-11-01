@@ -98,8 +98,15 @@ def process_city(city: Path, limit: int, delay: float) -> dict:
                   "identity_status":"unverified_requires_human_confirmation",
                   "texture_assignment_allowed":False}
             try:
-                raw=fetch_image(photo.get("preview_url") or "")
+                # Prefer Panoramax HD image bytes: the thumbnail endpoint is commonly only
+                # 500px wide and would fail the 640px facade-resolution gate even
+                # when a full-resolution image is available.
+                image_url=photo.get("image_url") or photo.get("preview_url") or ""
+                asset_kind="hd" if photo.get("image_url") else "preview"
+                raw=fetch_image(image_url)
                 metrics=analyze_image(raw)
+                item["image_asset_url"]=image_url
+                item["image_asset_kind"]=asset_kind
                 item["image_sha256"]=hashlib.sha256(raw).hexdigest()
                 item["computer_vision"]=metrics
                 # Geometry + image quality can rank candidates, but never identify a building.
