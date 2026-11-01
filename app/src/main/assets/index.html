@@ -371,6 +371,105 @@ function parseColor(t,id){
   return new THREE.Color('#c9c4b8');
 }
 function newAcc(){return {pos:[],uv:[],col:[]};}
+
+// Parametric architectural geometry: windows, reveals, sills, balconies and roof
+// parapets are real 3D meshes attached to the OSM building footprint (not textures).
+const archAcc={glass:[],frame:[],sill:[],balcony:[],trim:[]};
+const archMats={
+  glass:new THREE.MeshStandardMaterial({color:0x557b94,metalness:0.28,roughness:0.24,side:DS}),
+  frame:new THREE.MeshStandardMaterial({color:0xddd8ce,metalness:0.05,roughness:0.72}),
+  sill:new THREE.MeshStandardMaterial({color:0xb8ad9b,roughness:0.88}),
+  balcony:new THREE.MeshStandardMaterial({color:0xaaa69e,metalness:0.12,roughness:0.72}),
+  trim:new THREE.MeshStandardMaterial({color:0x9f9688,roughness:0.9})
+};
+function pushArchBox(target,c,ax,ay,az,w,h,d){
+  const v=[];
+  for(const yy of [-1,1])for(const xx of [-1,1])for(const zz of [-1,1]){
+    v.push(c[0]+ax[0]*xx*w/2+ay[0]*yy*h/2+az[0]*zz*d/2,
+           c[1]+ax[1]*xx*w/2+ay[1]*yy*h/2+az[1]*zz*d/2,
+           c[2]+ax[2]*xx*w/2+ay[2]*yy*h/2+az[2]*zz*d/2);
+  }
+  const faces=[0,2,3,0,3,1,4,5,7,4,7,6,0,1,5,0,5,4,2,6,7,2,7,3,0,4,6,0,6,2,1,3,7,1,7,5];
+  for(const i of faces)target.push(v[i*3],v[i*3+1],v[i*3+2]);
+}
+function addArchitecturalMesh(target,material){
+  if(!target.length)return;
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(target,3));
+  g.computeVertexNormals();cityGroup.add(new THREE.Mesh(g,material));
+}
+function addBuildingArchitecture(P,t,height,id){
+  const area=polyArea(P),outwardSign=area>=0?1:-1;
+  const levelsRaw=parseFloat(t['building:levels']);
+  const floors=clamp(Number.isFinite(levelsRaw)&&levelsRaw>0?Math.round(levelsRaw):Math.round(height/3.2),1,24);
+  const floorH=height/floors;
+  const kind=String(t.building||'').toLowerCase();
+  const residential=/apartments|residential|house|detached|semidetached|terrace|dormitory/.test(kind);
+  const balconies=String(t.balcony||t['building:balcony']||'').toLowerCase();
+  const allowBalconies=residential||balconies==='yes'||balconies==='true';
+  const windowRaw=String(t['window:colour']||t['window:color']||'').toLowerCase();
+  const glassColor=windowRaw.includes('green')?0x587f70:windowRaw.includes('brown')?0x806d58:0x557b94;
+  // Keep materials stable and reusable; only geometry is unique per building.
+  const edgeCount=P.length;
+  for(let e=0;e<edgeCount;e++){
+    const a=P[e],b=P[(e+1)%edgeCount],dx=b[0]-a[0],dz=b[1]-a[1];
+    const len=Math.hypot(dx,dz);if(len<3.2)continue;
+    const tx=dx/len,tz=dz/len,nx=outwardSign*tz,nz=-outwardSign*tx;
+    const ax=[tx,0,tz],ay=[0,1,0],az=[nx,0,nz];
+    const count=clamp(Math.floor(len/3.25),1,18),spacing=len/count;
+    const ww=Math.min(1.45,Math.max(0.72,spacing*0.52));
+    const wh=Math.min(1.55,Math.max(0.95,floorH*0.53));
+    const mid=[(a[0]+b[0])/2,0,(a[1]+b[1])/2];
+    // Ground floor stays more open; upper floors receive repeated real window assemblies.
+    for(let fl=0;fl<floors;fl++){
+      const base=fl*floorH;
+      const cy=base+Math.min(floorH*0.58,Math.max(1.15,floorH*0.56));
+      if(cy+wh/2>height-0.12)continue;
+      for(let wi=0;wi<count;wi++){
+        const along=-len/2+(wi+0.5)*spacing;
+        const c=[mid[0]+tx*along+nx*0.055,cy,mid[2]+tz*along+nz*0.055];
+        const fw=0.065,fd=0.10;
+        // Four raised frame members around a recessed glazed pane.
+        pushArchBox(archAcc.frame,c,ax,ay,az,fw,wh,fd);
+        for(const side of [-1,1]){
+          const q=[c[0]+tx*side*(ww/2-fw/2),c[1],c[2]+tz*side*(ww/2-fw/2)];
+          pushArchBox(archAcc.frame,q,ax,ay,az,fw,wh,fd);
+        }
+        for(const side of [-1,1]){
+          const q=[c[0],c[1]+side*(wh/2-fw/2),c[2]];
+          pushArchBox(archAcc.frame,q,ax,ay,az,ww,fw,fd);
+        }
+        const pane=[c[0]+nx*0.035,c[1],c[2]+nz*0.035];
+        pushArchBox(archAcc.glass,pane,ax,ay,az,Math.max(0.35,ww-2*fw),Math.max(0.45,wh-2*fw),0.035);
+        const sill=[c[0]+nx*0.09,c[1]-wh/2-0.035,c[2]+nz*0.09];
+        pushArchBox(archAcc.sill,sill,ax,ay,az,ww+0.22,0.10,0.22);
+        // Balcony slabs, front rails and vertical balusters are separate 3D geometry.
+        const balconyEvery=(count>5?3:2);
+        const hasBalcony=allowBalconies&&fl>0&&wi%balconyEvery===0&&ww>=0.95;
+        if(hasBalcony){
+          const bc=[c[0]+nx*0.52,base+0.13,c[2]+nz*0.52];
+          pushArchBox(archAcc.balcony,bc,ax,ay,az,Math.min(2.15,spacing*0.82),0.16,1.02);
+          const bw=Math.min(2.05,spacing*0.78),railY=base+1.12,front=[c[0]+nx*1.00,railY,c[2]+nz*1.00];
+          pushArchBox(archAcc.balcony,front,ax,ay,az,bw,0.075,0.075);
+          for(let k=0;k<=Math.max(3,Math.floor(bw/0.28));k++){
+            const u=-bw/2+bw*k/Math.max(3,Math.floor(bw/0.28));
+            const post=[front[0]+tx*u,base+0.62,front[2]+tz*u];
+            pushArchBox(archAcc.balcony,post,ax,ay,az,0.045,0.92,0.055);
+          }
+          const wallRail=[c[0]+nx*0.18,base+0.58,c[2]+nz*0.18];
+          pushArchBox(archAcc.balcony,wallRail,ax,ay,az,bw,0.055,0.055);
+        }
+      }
+    }
+    // Continuous ground plinth and a modest parapet/cornice follow the true footprint edge.
+    const plinth=[mid[0]+nx*0.025,0.22,mid[2]+nz*0.025];
+    pushArchBox(archAcc.trim,plinth,ax,ay,az,len,0.34,0.12);
+    if(String(t['roof:shape']||'flat')==='flat'){
+      const cornice=[mid[0]+nx*0.06,height+0.18,mid[2]+nz*0.06];
+      pushArchBox(archAcc.trim,cornice,ax,ay,az,len,0.34,0.24);
+    }
+  }
+}
 function accMesh(acc,mat){
   if(!acc.pos.length)return null;
   const g=new THREE.BufferGeometry();
@@ -576,7 +675,7 @@ async function loadArea(lat,lon,spawn){
       const osmWayId=String(el.id).replace(/^way\//,'');
       const facadeItems=facadeAssignments.get(osmWayId)||[];
       for(const facadeAssignment of facadeItems)addFacadePhotoProjection(facadeAssignment,P,h);
-      const acc=B;
+      addBuildingArchitecture(P,t,h,el.id);\n      const acc=B;
       const col=parseColor(t,el.id);
       const roofRaw=t['roof:colour']||t['roof:color'];
       let roofC=new THREE.Color('#9a9388');
