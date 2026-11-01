@@ -1059,6 +1059,934 @@
         "https://stac-extensions.github.io/grid/v1.1.0/schema.json",
         "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
       ]
+    },
+    {
+      "id": "47-122022120000-102001010D34B900",
+      "bbox": [
+        100.47832135237414,
+        13.73262666,
+        100.52753036999599,
+        13.74627739628908
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/maxar-opendata"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/maxar-opendata"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/maxar-opendata/items/47-122022120000-102001010D34B900"
+        },
+        {
+          "rel": "derived_from",
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D34B900.json",
+          "type": "application/json"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D34B900-visual.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "visual"
+          ],
+          "title": "Visual Image",
+          "eo:bands": [
+            {
+              "name": "BAND_P_V",
+              "description": "Pan Visual"
+            }
+          ],
+          "alternate": {
+            "s3": {
+              "href": "s3://maxar-opendata/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D34B900-visual.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "proj:bbox": [
+            659843.75,
+            1514843.75,
+            665156.25,
+            1520156.25
+          ],
+          "proj:shape": [
+            17408,
+            17408
+          ],
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.30517578125,
+            0.0,
+            659843.75,
+            0.0,
+            -0.30517578125,
+            1520156.25,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "data-mask": {
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D34B900-data-mask.gpkg",
+          "type": "application/geopackage+sqlite3",
+          "roles": [
+            "data-mask"
+          ],
+          "title": "Data Mask",
+          "alternate": {
+            "s3": {
+              "href": "s3://maxar-opendata/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D34B900-data-mask.gpkg",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "pan_analytic": {
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D34B900-pan.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "Panchromatic Image",
+          "eo:bands": [
+            {
+              "name": "BAND_P",
+              "description": "Pan"
+            }
+          ],
+          "alternate": {
+            "s3": {
+              "href": "s3://maxar-opendata/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D34B900-pan.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "proj:bbox": [
+            659843.75,
+            1514843.75,
+            665156.25,
+            1520156.25
+          ],
+          "proj:shape": [
+            9506,
+            9506
+          ],
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.5588575636440143,
+            0.0,
+            659843.75,
+            0.0,
+            -0.5588575636440143,
+            1520156.25,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              100.47840682907747,
+              13.74627739628908
+            ],
+            [
+              100.52753036999599,
+              13.745978008465396
+            ],
+            [
+              100.52744399073059,
+              13.73262666
+            ],
+            [
+              100.47832135237414,
+              13.73262666
+            ],
+            [
+              100.47840682907747,
+              13.74627739628908
+            ]
+          ]
+        ]
+      },
+      "collection": "maxar-opendata",
+      "properties": {
+        "hd": true,
+        "gsd": 0.59,
+        "title": "Myanmar Earthquake 2025 - MXRA-Z47-122022120000",
+        "quadkey": "122022120000",
+        "datetime": "2025-04-04T07:03:38Z",
+        "platform": "WV01",
+        "utm_zone": 47,
+        "grid:code": "MXRA-Z47-122022120000",
+        "proj:bbox": [
+          659843.75,
+          1518646.2988965022,
+          665156.25,
+          1520156.25
+        ],
+        "proj:code": "EPSG:32647",
+        "catalog_id": "102001010D34B900",
+        "view:azimuth": 252.1,
+        "proj:geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                659843.75,
+                1520156.25
+              ],
+              [
+                665156.25,
+                1520156.25
+              ],
+              [
+                665156.25,
+                1518680.2042922569
+              ],
+              [
+                659843.75,
+                1518646.2988965022
+              ],
+              [
+                659843.75,
+                1520156.25
+              ]
+            ]
+          ]
+        },
+        "tile:data_area": 7.9,
+        "view:off_nadir": 25.4,
+        "tile:clouds_area": 0.2,
+        "view:sun_azimuth": 255.3,
+        "oam:platform_type": "satellite",
+        "oam:producer_name": "Maxar",
+        "view:sun_elevation": 63.5,
+        "tile:clouds_percent": 3,
+        "ard_metadata_version": "0.0.1",
+        "view:incidence_angle": 62.5
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/view/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/eo/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/grid/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
+    },
+    {
+      "id": "47-122022102222-102001010D34B900",
+      "bbox": [
+        100.47838910945431,
+        13.743153335615858,
+        100.52782385728932,
+        13.791473092602182
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/maxar-opendata"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/maxar-opendata"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/maxar-opendata/items/47-122022102222-102001010D34B900"
+        },
+        {
+          "rel": "derived_from",
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D34B900.json",
+          "type": "application/json"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D34B900-visual.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "visual"
+          ],
+          "title": "Visual Image",
+          "eo:bands": [
+            {
+              "name": "BAND_P_V",
+              "description": "Pan Visual"
+            }
+          ],
+          "alternate": {
+            "s3": {
+              "href": "s3://maxar-opendata/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D34B900-visual.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "proj:bbox": [
+            659843.75,
+            1519843.75,
+            665156.25,
+            1525156.25
+          ],
+          "proj:shape": [
+            17408,
+            17408
+          ],
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.30517578125,
+            0.0,
+            659843.75,
+            0.0,
+            -0.30517578125,
+            1525156.25,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "data-mask": {
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D34B900-data-mask.gpkg",
+          "type": "application/geopackage+sqlite3",
+          "roles": [
+            "data-mask"
+          ],
+          "title": "Data Mask",
+          "alternate": {
+            "s3": {
+              "href": "s3://maxar-opendata/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D34B900-data-mask.gpkg",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "pan_analytic": {
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D34B900-pan.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "Panchromatic Image",
+          "eo:bands": [
+            {
+              "name": "BAND_P",
+              "description": "Pan"
+            }
+          ],
+          "alternate": {
+            "s3": {
+              "href": "s3://maxar-opendata/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D34B900-pan.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "proj:bbox": [
+            659843.75,
+            1519843.75,
+            665156.25,
+            1525156.25
+          ],
+          "proj:shape": [
+            9494,
+            9494
+          ],
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.5595639351169159,
+            0.0,
+            659843.75,
+            0.0,
+            -0.5595639351169159,
+            1525156.25,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              100.47869088669376,
+              13.791473092602182
+            ],
+            [
+              100.47838910945431,
+              13.743452659584317
+            ],
+            [
+              100.52751206214579,
+              13.743153335615858
+            ],
+            [
+              100.52782385728932,
+              13.791172682894551
+            ],
+            [
+              100.47869088669376,
+              13.791473092602182
+            ]
+          ]
+        ]
+      },
+      "collection": "maxar-opendata",
+      "properties": {
+        "hd": true,
+        "gsd": 0.59,
+        "title": "Myanmar Earthquake 2025 - MXRA-Z47-122022102222",
+        "quadkey": "122022102222",
+        "datetime": "2025-04-04T07:03:38Z",
+        "platform": "WV01",
+        "utm_zone": 47,
+        "grid:code": "MXRA-Z47-122022102222",
+        "proj:bbox": [
+          659843.75,
+          1519843.75,
+          665156.25,
+          1525156.25
+        ],
+        "proj:code": "EPSG:32647",
+        "catalog_id": "102001010D34B900",
+        "view:azimuth": 251.5,
+        "proj:geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                659843.75,
+                1525156.25
+              ],
+              [
+                659843.75,
+                1519843.75
+              ],
+              [
+                665156.25,
+                1519843.75
+              ],
+              [
+                665156.25,
+                1525156.25
+              ],
+              [
+                659843.75,
+                1525156.25
+              ]
+            ]
+          ]
+        },
+        "tile:data_area": 28.2,
+        "view:off_nadir": 25.4,
+        "tile:clouds_area": 1.7,
+        "view:sun_azimuth": 255.3,
+        "oam:platform_type": "satellite",
+        "oam:producer_name": "Maxar",
+        "view:sun_elevation": 63.5,
+        "tile:clouds_percent": 6,
+        "ard_metadata_version": "0.0.1",
+        "view:incidence_angle": 62.5
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/view/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/eo/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/grid/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
+    },
+    {
+      "id": "47-122022120000-102001010D92B700",
+      "bbox": [
+        100.47832130319243,
+        13.73262666,
+        100.52753036999599,
+        13.74627739628908
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/maxar-opendata"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/maxar-opendata"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/maxar-opendata/items/47-122022120000-102001010D92B700"
+        },
+        {
+          "rel": "derived_from",
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D92B700.json",
+          "type": "application/json"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D92B700-visual.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "visual"
+          ],
+          "title": "Visual Image",
+          "eo:bands": [
+            {
+              "name": "BAND_P_V",
+              "description": "Pan Visual"
+            }
+          ],
+          "alternate": {
+            "s3": {
+              "href": "s3://maxar-opendata/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D92B700-visual.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "proj:bbox": [
+            659843.75,
+            1514843.75,
+            665156.25,
+            1520156.25
+          ],
+          "proj:shape": [
+            17408,
+            17408
+          ],
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.30517578125,
+            0.0,
+            659843.75,
+            0.0,
+            -0.30517578125,
+            1520156.25,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "data-mask": {
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D92B700-data-mask.gpkg",
+          "type": "application/geopackage+sqlite3",
+          "roles": [
+            "data-mask"
+          ],
+          "title": "Data Mask",
+          "alternate": {
+            "s3": {
+              "href": "s3://maxar-opendata/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D92B700-data-mask.gpkg",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "pan_analytic": {
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D92B700-pan.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "Panchromatic Image",
+          "eo:bands": [
+            {
+              "name": "BAND_P",
+              "description": "Pan"
+            }
+          ],
+          "alternate": {
+            "s3": {
+              "href": "s3://maxar-opendata/events/Earthquake-Myanmar-March-2025/ard/47/122022120000/2025-04-04/102001010D92B700-pan.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "proj:bbox": [
+            659843.75,
+            1514843.75,
+            665156.25,
+            1520156.25
+          ],
+          "proj:shape": [
+            8566,
+            8566
+          ],
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.6201844501517628,
+            0.0,
+            659843.75,
+            0.0,
+            -0.6201844501517628,
+            1520156.25,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              100.47840682907747,
+              13.74627739628908
+            ],
+            [
+              100.52753036999599,
+              13.745978008465396
+            ],
+            [
+              100.52744396624841,
+              13.73262666
+            ],
+            [
+              100.47832130319243,
+              13.73262666
+            ],
+            [
+              100.47840682907747,
+              13.74627739628908
+            ]
+          ]
+        ]
+      },
+      "collection": "maxar-opendata",
+      "properties": {
+        "hd": true,
+        "gsd": 0.63,
+        "title": "Myanmar Earthquake 2025 - MXRA-Z47-122022120000",
+        "quadkey": "122022120000",
+        "datetime": "2025-04-04T07:02:56Z",
+        "platform": "WV01",
+        "utm_zone": 47,
+        "grid:code": "MXRA-Z47-122022120000",
+        "proj:bbox": [
+          659843.75,
+          1518646.2988965022,
+          665156.25,
+          1520156.25
+        ],
+        "proj:code": "EPSG:32647",
+        "catalog_id": "102001010D92B700",
+        "view:azimuth": 323.9,
+        "proj:geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                659843.75,
+                1520156.25
+              ],
+              [
+                665156.25,
+                1520156.25
+              ],
+              [
+                665156.25,
+                1518680.2042922569
+              ],
+              [
+                659843.75,
+                1518646.2988965022
+              ],
+              [
+                659843.75,
+                1520156.25
+              ]
+            ]
+          ]
+        },
+        "tile:data_area": 7.9,
+        "view:off_nadir": 29.1,
+        "tile:clouds_area": 0.2,
+        "view:sun_azimuth": 255.2,
+        "oam:platform_type": "satellite",
+        "oam:producer_name": "Maxar",
+        "view:sun_elevation": 63.7,
+        "tile:clouds_percent": 3,
+        "ard_metadata_version": "0.0.1",
+        "view:incidence_angle": 58.4
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/view/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/eo/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/grid/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
+    },
+    {
+      "id": "47-122022102222-102001010D92B700",
+      "bbox": [
+        100.47838910945431,
+        13.743153335615858,
+        100.52782385728932,
+        13.791473092602182
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/maxar-opendata"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/maxar-opendata"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/maxar-opendata/items/47-122022102222-102001010D92B700"
+        },
+        {
+          "rel": "derived_from",
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D92B700.json",
+          "type": "application/json"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D92B700-visual.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "visual"
+          ],
+          "title": "Visual Image",
+          "eo:bands": [
+            {
+              "name": "BAND_P_V",
+              "description": "Pan Visual"
+            }
+          ],
+          "alternate": {
+            "s3": {
+              "href": "s3://maxar-opendata/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D92B700-visual.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "proj:bbox": [
+            659843.75,
+            1519843.75,
+            665156.25,
+            1525156.25
+          ],
+          "proj:shape": [
+            17408,
+            17408
+          ],
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.30517578125,
+            0.0,
+            659843.75,
+            0.0,
+            -0.30517578125,
+            1525156.25,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "data-mask": {
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D92B700-data-mask.gpkg",
+          "type": "application/geopackage+sqlite3",
+          "roles": [
+            "data-mask"
+          ],
+          "title": "Data Mask",
+          "alternate": {
+            "s3": {
+              "href": "s3://maxar-opendata/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D92B700-data-mask.gpkg",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "pan_analytic": {
+          "href": "https://maxar-opendata.s3.amazonaws.com/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D92B700-pan.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "Panchromatic Image",
+          "eo:bands": [
+            {
+              "name": "BAND_P",
+              "description": "Pan"
+            }
+          ],
+          "alternate": {
+            "s3": {
+              "href": "s3://maxar-opendata/events/Earthquake-Myanmar-March-2025/ard/47/122022102222/2025-04-04/102001010D92B700-pan.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "proj:bbox": [
+            659843.75,
+            1519843.75,
+            665156.25,
+            1525156.25
+          ],
+          "proj:shape": [
+            8586,
+            8586
+          ],
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.6187398089913814,
+            0.0,
+            659843.75,
+            0.0,
+            -0.6187398089913814,
+            1525156.25,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              100.47869088669376,
+              13.791473092602182
+            ],
+            [
+              100.47838910945431,
+              13.743452659584317
+            ],
+            [
+              100.52751206214579,
+              13.743153335615858
+            ],
+            [
+              100.52782385728932,
+              13.791172682894551
+            ],
+            [
+              100.47869088669376,
+              13.791473092602182
+            ]
+          ]
+        ]
+      },
+      "collection": "maxar-opendata",
+      "properties": {
+        "hd": true,
+        "gsd": 0.62,
+        "title": "Myanmar Earthquake 2025 - MXRA-Z47-122022102222",
+        "quadkey": "122022102222",
+        "datetime": "2025-04-04T07:02:55Z",
+        "platform": "WV01",
+        "utm_zone": 47,
+        "grid:code": "MXRA-Z47-122022102222",
+        "proj:bbox": [
+          659843.75,
+          1519843.75,
+          665156.25,
+          1525156.25
+        ],
+        "proj:code": "EPSG:32647",
+        "catalog_id": "102001010D92B700",
+        "view:azimuth": 323.7,
+        "proj:geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                659843.75,
+                1525156.25
+              ],
+              [
+                659843.75,
+                1519843.75
+              ],
+              [
+                665156.25,
+                1519843.75
+              ],
+              [
+                665156.25,
+                1525156.25
+              ],
+              [
+                659843.75,
+                1525156.25
+              ]
+            ]
+          ]
+        },
+        "tile:data_area": 28.2,
+        "view:off_nadir": 28.9,
+        "tile:clouds_area": 1.5,
+        "view:sun_azimuth": 255.1,
+        "oam:platform_type": "satellite",
+        "oam:producer_name": "Maxar",
+        "view:sun_elevation": 63.7,
+        "tile:clouds_percent": 5,
+        "ard_metadata_version": "0.0.1",
+        "view:incidence_angle": 58.6
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/view/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/eo/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/grid/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
     }
   ]
 }
