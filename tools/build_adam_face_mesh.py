@@ -9,7 +9,6 @@ import mediapipe as mp
 import numpy as np
 import trimesh
 from scipy.spatial import Delaunay
-from matplotlib.path import Path as PolygonPath
 from PIL import Image
 
 TASK_URL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
@@ -82,13 +81,6 @@ def main():
     # Triangulate their image-plane coordinates into a valid facial surface.
     triangulation = Delaunay(np.asarray([[p.x, p.y] for p in landmarks], dtype=np.float64))
     faces = triangulation.simplices.astype(int).tolist()
-    # Keep only triangles whose centroid lies inside the detected facial oval.
-    oval_ids = [p for edge in mp.solutions.face_mesh.FACEMESH_FACE_OVAL for p in edge]
-    oval = np.asarray([[landmarks[i].x, landmarks[i].y] for i in sorted(set(oval_ids))])
-    inside = PolygonPath(oval).contains_points(
-        np.asarray([[np.mean([landmarks[i].x for i in tri]), np.mean([landmarks[i].y for i in tri])] for tri in faces])
-    )
-    faces = [tri for tri, keep in zip(faces, inside) if keep]
     if not faces:
         raise RuntimeError("Face triangulation produced no usable triangles.")
     mesh = trimesh.Trimesh(vertices=np.asarray(vertices), faces=np.asarray(faces), process=False)
