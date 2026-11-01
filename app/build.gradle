@@ -8,6 +8,10 @@ android {
     namespace 'com.explorer.world3d'
     compileSdk 34
 
+    buildFeatures {
+        buildConfig true
+    }
+
     defaultConfig {
         applicationId "com.explorer.world3d"
         minSdk 24
