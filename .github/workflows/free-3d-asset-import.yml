@@ -25,5 +25,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+      - name: Validate importer syntax
+        run: python3 -m py_compile tools/import_free_3d_assets.py
       - name: Import licensed GLB assets and checkpoint by category
         run: python3 tools/import_free_3d_assets.py
