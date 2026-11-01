@@ -53,6 +53,19 @@
       "status": "kept",
       "bytes": 20246420,
       "sha256": "3bd968dfb8a8dbcb84aefa80ab806a582b935566917a561bd423633e271aa046"
+    },
+    {
+      "id": "dog",
+      "file": "animals/dog.glb",
+      "page": "https://www.innerscene.com/tools/library/3d-parts/standing-dog-bf156da2",
+      "license": "CC0-1.0",
+      "pose": "standing",
+      "animated": false,
+      "height_m": 0.92,
+      "description": "Medium companion dog; static mesh.",
+      "status": "kept",
+      "bytes": 4471976,
+      "sha256": "6b0c04a2a95b7c47c50e87462ac984683bc992fc792338792f2b22cfb14597f2"
     }
   ],
   "city_profiles": {
