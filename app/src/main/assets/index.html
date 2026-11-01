@@ -826,7 +826,7 @@ const ped=makeAdamCharacter();scene.add(ped);
   const height=1.88,width=Math.min(1.18,height*aspect);
   const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,alphaTest:0.08,side:THREE.DoubleSide,depthWrite:false});
   const photoBody=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);
-  photoBody.name='adam-fullbody-photo-cutout';photoBody.position.set(0,0.94,0.12);photoBody.renderOrder=4;
+  photoBody.name='adam-fullbody-photo-cutout';photoBody.position.set(0,0.94,0.12);photoBody.renderOrder=4;photoBody.frustumCulled=false;
   ped.add(photoBody);ped.userData.photoBody=photoBody;
   console.info('Adam full-body reference photo loaded as playable character.');
  }catch(error){console.error('Adam full-body photo could not be loaded:',error);}
