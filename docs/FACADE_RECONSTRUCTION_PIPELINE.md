@@ -117,3 +117,22 @@ The city review-queue builder needs `buildings.geojson` for each city. Until tho
 OSM footprints are present, imagery metadata can still be collected for all
 registered destination areas, but no building/photo candidate pairing or facade
 texture is produced.
+
+
+## First catalogue harvest observations
+
+The initial metadata harvest completed for all ten configured destination areas.
+The current 650 m discovery windows returned Panoramax records in Manila (500),
+New York (286), Paris (500), Tokyo (40) and London (150); the first-page metadata
+queries returned no records in the current windows for Amman, Bangkok, Dubai, Riyadh
+and Cairo. These counts are catalogue records, not verified facade matches; a 500
+record response is a discovery result and not a claim that all images in a city
+have been exhausted.
+
+OpenAerialMap's STAC search returned metadata records in each configured window,
+but some are elevation products rather than optical imagery. For example, the
+Amman result is a Copernicus DSM at 30 m GSD, useful as terrain/elevation evidence
+but not as a building roof photograph. The review-queue processor now classifies
+DEM/DSM products separately and never allows them to become roof texture
+candidates. Even high-resolution optical imagery is only a roof-shape/colour
+candidate; it is not allowed to texture a facade.
