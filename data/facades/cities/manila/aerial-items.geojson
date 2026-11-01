@@ -1,0 +1,1545 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "635a06b55f1fd800066121e3",
+      "bbox": [
+        120.959963,
+        14.575982,
+        120.991033,
+        14.606885
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap/items/635a06b55f1fd800066121e3"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/635a00b05f1fd800066121da/0/635a00b05f1fd800066121dc.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "Intramuros, Manila PHILIPPINES",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/635a00b05f1fd800066121da/0/635a00b05f1fd800066121dc.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "file:size": 1012871121,
+          "proj:bbox": [
+            280244.1187760512,
+            1612413.3537584404,
+            283562.6072450512,
+            1615803.7748954403
+          ],
+          "proj:code": "EPSG:32651",
+          "proj:shape": [
+            42797,
+            41889
+          ],
+          "proj:geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  280244.1187760512,
+                  1612413.3537584404
+                ],
+                [
+                  283562.6072450512,
+                  1612413.3537584404
+                ],
+                [
+                  283562.6072450512,
+                  1615803.7748954403
+                ],
+                [
+                  280244.1187760512,
+                  1615803.7748954403
+                ],
+                [
+                  280244.1187760512,
+                  1612413.3537584404
+                ]
+              ]
+            ]
+          },
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.07922099999999932,
+            0.0,
+            280244.1187760512,
+            0.0,
+            -0.07922099999999932,
+            1615803.7748954403,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "metadata": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/635a00b05f1fd800066121da/0/635a00b05f1fd800066121dc_meta.json",
+          "type": "application/json",
+          "roles": [
+            "metadata"
+          ],
+          "title": "metadata",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/635a00b05f1fd800066121da/0/635a00b05f1fd800066121dc_meta.json",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "thumbnail": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/635a00b05f1fd800066121da/0/635a00b05f1fd800066121dc.png",
+          "type": "image/png",
+          "roles": [
+            "thumbnail"
+          ],
+          "title": "thumbnail",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/635a00b05f1fd800066121da/0/635a00b05f1fd800066121dc.png",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                120.959963,
+                14.606617
+              ],
+              [
+                120.960245,
+                14.575982
+              ],
+              [
+                120.991033,
+                14.576249
+              ],
+              [
+                120.990755,
+                14.606885
+              ],
+              [
+                120.959963,
+                14.606617
+              ]
+            ]
+          ]
+        ]
+      },
+      "collection": "openaerialmap",
+      "properties": {
+        "gsd": 0.079221,
+        "title": "Intramuros, Manila PHILIPPINES",
+        "created": "2022-10-27T04:19:01.495+00:00",
+        "license": "CC-BY-SA-4.0",
+        "providers": [
+          {
+            "name": "DATUM PH",
+            "roles": [
+              "producer",
+              "licensor"
+            ],
+            "description": "DATUM PH,info@datum.ph"
+          }
+        ],
+        "instruments": [
+          "mavic"
+        ],
+        "end_datetime": "2022-10-10T17:00:00Z",
+        "start_datetime": "2022-10-10T16:00:00Z",
+        "oam:platform_type": "uav",
+        "oam:producer_name": "DATUM PH"
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
+    },
+    {
+      "id": "635a05775f1fd800066121e2",
+      "bbox": [
+        120.960256,
+        14.580908,
+        120.982681,
+        14.597167
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap/items/635a05775f1fd800066121e2"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/635a00b05f1fd800066121da/0/635a00b05f1fd800066121db.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "Intramuros, Manila PHILIPPINES",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/635a00b05f1fd800066121da/0/635a00b05f1fd800066121db.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "file:size": 211896546,
+          "proj:bbox": [
+            280266.1422156823,
+            1612958.275196056,
+            282667.2058324823,
+            1614736.2672208562
+          ],
+          "proj:code": "EPSG:32651",
+          "proj:shape": [
+            44887,
+            60617
+          ],
+          "proj:geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  280266.1422156823,
+                  1612958.275196056
+                ],
+                [
+                  282667.2058324823,
+                  1612958.275196056
+                ],
+                [
+                  282667.2058324823,
+                  1614736.2672208562
+                ],
+                [
+                  280266.1422156823,
+                  1614736.2672208562
+                ],
+                [
+                  280266.1422156823,
+                  1612958.275196056
+                ]
+              ]
+            ]
+          },
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.039610400000000094,
+            0.0,
+            280266.1422156823,
+            0.0,
+            -0.03961040000000093,
+            1614736.2672208562,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "metadata": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/635a00b05f1fd800066121da/0/635a00b05f1fd800066121db_meta.json",
+          "type": "application/json",
+          "roles": [
+            "metadata"
+          ],
+          "title": "metadata",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/635a00b05f1fd800066121da/0/635a00b05f1fd800066121db_meta.json",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "thumbnail": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/635a00b05f1fd800066121da/0/635a00b05f1fd800066121db.png",
+          "type": "image/png",
+          "roles": [
+            "thumbnail"
+          ],
+          "title": "thumbnail",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/635a00b05f1fd800066121da/0/635a00b05f1fd800066121db.png",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                120.960256,
+                14.596973
+              ],
+              [
+                120.960404,
+                14.580908
+              ],
+              [
+                120.982681,
+                14.581101
+              ],
+              [
+                120.982534,
+                14.597167
+              ],
+              [
+                120.960256,
+                14.596973
+              ]
+            ]
+          ]
+        ]
+      },
+      "collection": "openaerialmap",
+      "properties": {
+        "gsd": 0.0396104,
+        "title": "Intramuros, Manila PHILIPPINES",
+        "created": "2022-10-27T04:13:43.325+00:00",
+        "license": "CC-BY-SA-4.0",
+        "providers": [
+          {
+            "name": "DATUM PH",
+            "roles": [
+              "producer",
+              "licensor"
+            ],
+            "description": "DATUM PH,info@datum.ph"
+          }
+        ],
+        "instruments": [
+          "mavic"
+        ],
+        "end_datetime": "2022-10-10T17:00:00Z",
+        "start_datetime": "2022-10-10T16:00:00Z",
+        "oam:platform_type": "uav",
+        "oam:producer_name": "DATUM PH"
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
+    },
+    {
+      "id": "Copernicus_DSM_COG_10_N14_00_E120_00_DEM",
+      "bbox": [
+        119.99986111111112,
+        14.00013888888889,
+        120.99986111111112,
+        15.00013888888889
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/cop-dem-glo-30"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/cop-dem-glo-30"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/cop-dem-glo-30/items/Copernicus_DSM_COG_10_N14_00_E120_00_DEM"
+        },
+        {
+          "rel": "derived_from",
+          "href": "https://earth-search.aws.element84.com/v1/collections/cop-dem-glo-30/items/Copernicus_DSM_COG_10_N14_00_E120_00_DEM",
+          "type": "application/geo+json"
+        }
+      ],
+      "assets": {
+        "data": {
+          "href": "https://copernicus-dem-30m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_10_N14_00_E120_00_DEM/Copernicus_DSM_COG_10_N14_00_E120_00_DEM.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "Data",
+          "alternate": {
+            "s3": {
+              "href": "s3://copernicus-dem-30m/Copernicus_DSM_COG_10_N14_00_E120_00_DEM/Copernicus_DSM_COG_10_N14_00_E120_00_DEM.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "raster:bands": [
+            {
+              "unit": "meter",
+              "sampling": "point",
+              "data_type": "float32",
+              "spatial_resolution": 30
+            }
+          ],
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              120.99986111111112,
+              14.00013888888889
+            ],
+            [
+              120.99986111111112,
+              15.00013888888889
+            ],
+            [
+              119.99986111111112,
+              15.00013888888889
+            ],
+            [
+              119.99986111111112,
+              14.00013888888889
+            ],
+            [
+              120.99986111111112,
+              14.00013888888889
+            ]
+          ]
+        ]
+      },
+      "collection": "cop-dem-glo-30",
+      "properties": {
+        "gsd": 30,
+        "created": "2023-03-28T15:20:21.626Z",
+        "updated": "2023-04-20T18:10:43.047Z",
+        "datetime": "2021-04-22T00:00:00Z",
+        "platform": "tandem-x",
+        "grid:code": "CDEM-N14E120",
+        "proj:code": "EPSG:4326",
+        "proj:shape": [
+          3600,
+          3600
+        ],
+        "proj:centroid": {
+          "lat": 14.5,
+          "lon": 120.5
+        },
+        "proj:transform": [
+          0.0002777777777777778,
+          0,
+          119.99986111111112,
+          0,
+          -0.0002777777777777778,
+          15.00013888888889
+        ],
+        "storage:region": "eu-central-1",
+        "storage:platform": "AWS",
+        "processing:software": {
+          "cop-dem-glo-to-stac": "2023.03.28"
+        },
+        "earthsearch:payload_id": "cop-dem-glo/workflow-cop-dem-glo-to-stac/ead5d164a01c25f15a7d15a4e85f1ac0",
+        "storage:requester_pays": false
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/storage/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/grid/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/processing/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+      ]
+    },
+    {
+      "id": "5b90f92da0d7280005fab355",
+      "bbox": [
+        120.979078,
+        14.592126,
+        120.984291,
+        14.596839
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap/items/5b90f92da0d7280005fab355"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/5b90f8fda0d7280005fab353/0/5b90f8fda0d7280005fab354.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "Arroceros Forest Park",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/5b90f8fda0d7280005fab353/0/5b90f8fda0d7280005fab354.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "file:size": 17188832,
+          "proj:bbox": [
+            282292.50093000004,
+            1614180.52146,
+            282853.38785000006,
+            1614699.52896
+          ],
+          "proj:code": "EPSG:32651",
+          "proj:shape": [
+            10125,
+            10942
+          ],
+          "proj:geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  282292.50093000004,
+                  1614180.52146
+                ],
+                [
+                  282853.38785000006,
+                  1614180.52146
+                ],
+                [
+                  282853.38785000006,
+                  1614699.52896
+                ],
+                [
+                  282292.50093000004,
+                  1614699.52896
+                ],
+                [
+                  282292.50093000004,
+                  1614180.52146
+                ]
+              ]
+            ]
+          },
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            0.05126000000000001,
+            0.0,
+            282292.50093000004,
+            0.0,
+            -0.05126000000000001,
+            1614699.52896,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "metadata": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/5b90f8fda0d7280005fab353/0/5b90f8fda0d7280005fab354_meta.json",
+          "type": "application/json",
+          "roles": [
+            "metadata"
+          ],
+          "title": "metadata",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/5b90f8fda0d7280005fab353/0/5b90f8fda0d7280005fab354_meta.json",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "thumbnail": {
+          "href": "https://oin-hotosm-temp.s3.amazonaws.com/5b90f8fda0d7280005fab353/0/5b90f8fda0d7280005fab354.png",
+          "type": "image/png",
+          "roles": [
+            "thumbnail"
+          ],
+          "title": "thumbnail",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/5b90f8fda0d7280005fab353/0/5b90f8fda0d7280005fab354.png",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                120.981925,
+                14.59683
+              ],
+              [
+                120.981926,
+                14.596783
+              ],
+              [
+                120.981974,
+                14.596784
+              ],
+              [
+                120.981974,
+                14.596737
+              ],
+              [
+                120.981926,
+                14.596737
+              ],
+              [
+                120.981831,
+                14.596736
+              ],
+              [
+                120.981832,
+                14.596643
+              ],
+              [
+                120.981784,
+                14.596643
+              ],
+              [
+                120.981736,
+                14.596642
+              ],
+              [
+                120.981737,
+                14.596596
+              ],
+              [
+                120.981689,
+                14.596596
+              ],
+              [
+                120.981688,
+                14.596642
+              ],
+              [
+                120.981545,
+                14.596641
+              ],
+              [
+                120.981546,
+                14.596594
+              ],
+              [
+                120.981498,
+                14.596594
+              ],
+              [
+                120.98145,
+                14.596594
+              ],
+              [
+                120.981451,
+                14.596547
+              ],
+              [
+                120.981403,
+                14.596547
+              ],
+              [
+                120.981402,
+                14.596593
+              ],
+              [
+                120.981211,
+                14.596591
+              ],
+              [
+                120.981213,
+                14.596406
+              ],
+              [
+                120.981165,
+                14.596405
+              ],
+              [
+                120.980974,
+                14.596404
+              ],
+              [
+                120.980976,
+                14.596264
+              ],
+              [
+                120.980928,
+                14.596264
+              ],
+              [
+                120.98088,
+                14.596264
+              ],
+              [
+                120.980881,
+                14.596124
+              ],
+              [
+                120.980834,
+                14.596124
+              ],
+              [
+                120.980833,
+                14.59617
+              ],
+              [
+                120.980738,
+                14.596169
+              ],
+              [
+                120.980738,
+                14.596123
+              ],
+              [
+                120.98069,
+                14.596123
+              ],
+              [
+                120.980499,
+                14.596121
+              ],
+              [
+                120.980502,
+                14.595889
+              ],
+              [
+                120.980454,
+                14.595888
+              ],
+              [
+                120.98012,
+                14.595885
+              ],
+              [
+                120.98012,
+                14.595839
+              ],
+              [
+                120.980072,
+                14.595839
+              ],
+              [
+                120.980025,
+                14.595838
+              ],
+              [
+                120.980026,
+                14.595653
+              ],
+              [
+                120.979978,
+                14.595652
+              ],
+              [
+                120.979788,
+                14.59565
+              ],
+              [
+                120.979788,
+                14.595558
+              ],
+              [
+                120.979741,
+                14.595557
+              ],
+              [
+                120.979741,
+                14.595464
+              ],
+              [
+                120.979789,
+                14.595465
+              ],
+              [
+                120.97979,
+                14.595418
+              ],
+              [
+                120.979742,
+                14.595418
+              ],
+              [
+                120.979551,
+                14.595416
+              ],
+              [
+                120.979552,
+                14.595323
+              ],
+              [
+                120.979504,
+                14.595323
+              ],
+              [
+                120.979505,
+                14.595184
+              ],
+              [
+                120.979458,
+                14.595183
+              ],
+              [
+                120.979267,
+                14.595182
+              ],
+              [
+                120.979268,
+                14.595042
+              ],
+              [
+                120.97922,
+                14.595042
+              ],
+              [
+                120.979172,
+                14.595041
+              ],
+              [
+                120.979173,
+                14.594949
+              ],
+              [
+                120.979125,
+                14.594948
+              ],
+              [
+                120.979078,
+                14.594948
+              ],
+              [
+                120.979091,
+                14.593462
+              ],
+              [
+                120.97933,
+                14.593464
+              ],
+              [
+                120.979331,
+                14.593325
+              ],
+              [
+                120.979284,
+                14.593324
+              ],
+              [
+                120.979284,
+                14.593231
+              ],
+              [
+                120.979332,
+                14.593232
+              ],
+              [
+                120.979333,
+                14.593093
+              ],
+              [
+                120.979286,
+                14.593092
+              ],
+              [
+                120.979286,
+                14.592999
+              ],
+              [
+                120.979477,
+                14.593001
+              ],
+              [
+                120.979477,
+                14.593047
+              ],
+              [
+                120.979573,
+                14.593048
+              ],
+              [
+                120.979575,
+                14.59277
+              ],
+              [
+                120.979766,
+                14.592771
+              ],
+              [
+                120.979766,
+                14.592725
+              ],
+              [
+                120.979814,
+                14.592725
+              ],
+              [
+                120.979815,
+                14.592679
+              ],
+              [
+                120.979767,
+                14.592678
+              ],
+              [
+                120.979769,
+                14.5924
+              ],
+              [
+                120.979817,
+                14.5924
+              ],
+              [
+                120.979818,
+                14.592307
+              ],
+              [
+                120.979914,
+                14.592308
+              ],
+              [
+                120.979914,
+                14.592262
+              ],
+              [
+                120.980153,
+                14.592264
+              ],
+              [
+                120.980154,
+                14.592171
+              ],
+              [
+                120.980297,
+                14.592172
+              ],
+              [
+                120.980297,
+                14.592126
+              ],
+              [
+                120.9813,
+                14.592134
+              ],
+              [
+                120.981299,
+                14.592181
+              ],
+              [
+                120.981347,
+                14.592181
+              ],
+              [
+                120.981346,
+                14.592274
+              ],
+              [
+                120.981776,
+                14.592278
+              ],
+              [
+                120.981824,
+                14.592278
+              ],
+              [
+                120.981823,
+                14.592325
+              ],
+              [
+                120.981871,
+                14.592325
+              ],
+              [
+                120.981871,
+                14.592279
+              ],
+              [
+                120.981967,
+                14.592279
+              ],
+              [
+                120.981967,
+                14.592326
+              ],
+              [
+                120.982014,
+                14.592326
+              ],
+              [
+                120.982062,
+                14.592327
+              ],
+              [
+                120.98206,
+                14.592512
+              ],
+              [
+                120.982108,
+                14.592513
+              ],
+              [
+                120.982156,
+                14.592513
+              ],
+              [
+                120.982155,
+                14.59256
+              ],
+              [
+                120.982203,
+                14.59256
+              ],
+              [
+                120.982204,
+                14.592514
+              ],
+              [
+                120.982251,
+                14.592514
+              ],
+              [
+                120.982299,
+                14.592514
+              ],
+              [
+                120.982298,
+                14.592607
+              ],
+              [
+                120.982346,
+                14.592608
+              ],
+              [
+                120.982346,
+                14.592561
+              ],
+              [
+                120.982442,
+                14.592562
+              ],
+              [
+                120.982442,
+                14.592516
+              ],
+              [
+                120.98249,
+                14.592516
+              ],
+              [
+                120.982538,
+                14.592517
+              ],
+              [
+                120.982537,
+                14.592656
+              ],
+              [
+                120.982584,
+                14.592656
+              ],
+              [
+                120.982584,
+                14.592703
+              ],
+              [
+                120.982632,
+                14.592703
+              ],
+              [
+                120.982631,
+                14.592796
+              ],
+              [
+                120.982965,
+                14.592799
+              ],
+              [
+                120.983013,
+                14.592799
+              ],
+              [
+                120.983012,
+                14.592892
+              ],
+              [
+                120.983107,
+                14.592893
+              ],
+              [
+                120.983155,
+                14.592893
+              ],
+              [
+                120.983154,
+                14.593033
+              ],
+              [
+                120.983488,
+                14.593036
+              ],
+              [
+                120.983536,
+                14.593036
+              ],
+              [
+                120.983534,
+                14.593268
+              ],
+              [
+                120.983725,
+                14.59327
+              ],
+              [
+                120.983772,
+                14.59327
+              ],
+              [
+                120.98377,
+                14.593502
+              ],
+              [
+                120.983914,
+                14.593504
+              ],
+              [
+                120.983961,
+                14.593504
+              ],
+              [
+                120.98396,
+                14.593597
+              ],
+              [
+                120.984008,
+                14.593597
+              ],
+              [
+                120.984007,
+                14.593737
+              ],
+              [
+                120.984198,
+                14.593738
+              ],
+              [
+                120.984246,
+                14.593739
+              ],
+              [
+                120.984244,
+                14.593971
+              ],
+              [
+                120.984291,
+                14.593971
+              ],
+              [
+                120.984284,
+                14.594761
+              ],
+              [
+                120.984236,
+                14.59476
+              ],
+              [
+                120.984228,
+                14.595689
+              ],
+              [
+                120.983941,
+                14.595686
+              ],
+              [
+                120.983939,
+                14.595919
+              ],
+              [
+                120.983748,
+                14.595917
+              ],
+              [
+                120.983747,
+                14.596056
+              ],
+              [
+                120.983699,
+                14.596056
+              ],
+              [
+                120.983699,
+                14.596102
+              ],
+              [
+                120.983747,
+                14.596103
+              ],
+              [
+                120.983745,
+                14.596242
+              ],
+              [
+                120.983698,
+                14.596241
+              ],
+              [
+                120.983696,
+                14.596381
+              ],
+              [
+                120.983553,
+                14.59638
+              ],
+              [
+                120.983553,
+                14.596426
+              ],
+              [
+                120.983457,
+                14.596425
+              ],
+              [
+                120.983455,
+                14.596611
+              ],
+              [
+                120.983408,
+                14.59661
+              ],
+              [
+                120.983408,
+                14.596564
+              ],
+              [
+                120.98336,
+                14.596564
+              ],
+              [
+                120.98336,
+                14.59661
+              ],
+              [
+                120.983312,
+                14.59661
+              ],
+              [
+                120.983312,
+                14.596656
+              ],
+              [
+                120.983121,
+                14.596654
+              ],
+              [
+                120.98312,
+                14.596747
+              ],
+              [
+                120.982977,
+                14.596746
+              ],
+              [
+                120.982976,
+                14.596839
+              ],
+              [
+                120.981925,
+                14.59683
+              ]
+            ]
+          ]
+        ]
+      },
+      "collection": "openaerialmap",
+      "properties": {
+        "gsd": 0.05126,
+        "title": "Arroceros Forest Park",
+        "created": "2018-09-06T09:53:49.833+00:00",
+        "license": "CC-BY-4.0",
+        "providers": [
+          {
+            "name": "Leonard G. Soriano and Ian Gongona",
+            "roles": [
+              "producer",
+              "licensor"
+            ],
+            "description": "Leonard Soriano,lpmgsoriano@gmail.com"
+          }
+        ],
+        "instruments": [
+          "DJI Phantom 4"
+        ],
+        "end_datetime": "2018-08-07T17:00:00Z",
+        "start_datetime": "2018-08-07T16:00:00Z",
+        "oam:platform_type": "uav",
+        "oam:producer_name": "Leonard G. Soriano and Ian Gongona"
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
+    },
+    {
+      "id": "59e62b793d6412ef722094ec",
+      "bbox": [
+        119.7771810782953,
+        13.382661519444977,
+        121.92320670797218,
+        15.521603742825059
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap/items/59e62b793d6412ef722094ec"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "http://oin-hotosm-temp.s3.amazonaws.com/55fb06ae824d4dbc00af0f84/0/55fb07462b67227a79b4f4ef.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "ZZZ Landsat Test",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/55fb06ae824d4dbc00af0f84/0/55fb07462b67227a79b4f4ef.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "file:size": 9424747,
+          "proj:bbox": [
+            13333534.806289561,
+            1503484.5163427943,
+            13572429.286614504,
+            1749387.372193888
+          ],
+          "proj:code": "EPSG:3857",
+          "proj:shape": [
+            7821,
+            7641
+          ],
+          "proj:geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  13333534.806289561,
+                  1503484.5163427943
+                ],
+                [
+                  13572429.286614504,
+                  1503484.5163427943
+                ],
+                [
+                  13572429.286614504,
+                  1749387.372193888
+                ],
+                [
+                  13333534.806289561,
+                  1749387.372193888
+                ],
+                [
+                  13333534.806289561,
+                  1503484.5163427943
+                ]
+              ]
+            ]
+          },
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            31.26481878352868,
+            0.0,
+            13333534.806289561,
+            0.0,
+            -31.441357352140873,
+            1749387.372193888,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "metadata": {
+          "href": "http://oin-hotosm-temp.s3.amazonaws.com/55fb06ae824d4dbc00af0f84/0/55fb07462b67227a79b4f4ef_meta.json",
+          "type": "application/json",
+          "roles": [
+            "metadata"
+          ],
+          "title": "metadata",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/55fb06ae824d4dbc00af0f84/0/55fb07462b67227a79b4f4ef_meta.json",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "thumbnail": {
+          "href": "http://oin-hotosm-temp.s3.amazonaws.com/55fb06ae824d4dbc00af0f84/0/55fb07462b67227a79b4f4ef_thumb.png",
+          "type": "image/png",
+          "roles": [
+            "thumbnail"
+          ],
+          "title": "thumbnail",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/55fb06ae824d4dbc00af0f84/0/55fb07462b67227a79b4f4ef_thumb.png",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.7771810782953,
+              15.521603742825059
+            ],
+            [
+              121.92320670797218,
+              15.521603742825059
+            ],
+            [
+              121.92320670797218,
+              13.382661519444977
+            ],
+            [
+              119.7771810782953,
+              13.382661519444977
+            ],
+            [
+              119.7771810782953,
+              15.521603742825059
+            ]
+          ]
+        ]
+      },
+      "collection": "openaerialmap",
+      "properties": {
+        "gsd": 31.353088067834776,
+        "title": "ZZZ Landsat Test",
+        "created": "2015-09-17T00:00:00+00:00",
+        "providers": [
+          {
+            "name": "USGS",
+            "roles": [
+              "producer",
+              "licensor"
+            ],
+            "description": "Cristiano Giovando,cristiano.giovando@hotosm.org"
+          }
+        ],
+        "instruments": [
+          "OLI"
+        ],
+        "end_datetime": "2015-09-17T18:29:55.662Z",
+        "start_datetime": "2015-09-17T18:28:47.252Z",
+        "oam:platform_type": "satellite",
+        "oam:producer_name": "USGS"
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
+    }
+  ]
+}

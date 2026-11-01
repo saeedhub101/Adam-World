@@ -1,0 +1,20 @@
+{
+  "next_url": null,
+  "seen_ids": [
+    "59e62b793d6412ef722094ec",
+    "5b90f92da0d7280005fab355",
+    "635a05775f1fd800066121e2",
+    "635a06b55f1fd800066121e3",
+    "Copernicus_DSM_COG_10_N14_00_E120_00_DEM"
+  ],
+  "pages": 1,
+  "complete": true,
+  "last_page_added": 5,
+  "bbox": [
+    120.9697664241588,
+    14.583760977362559,
+    120.98183357584121,
+    14.595439022637443
+  ],
+  "source": "https://api.imagery.hotosm.org/stac/search"
+}
