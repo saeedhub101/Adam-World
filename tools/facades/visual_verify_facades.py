@@ -53,7 +53,7 @@ def analyze_image(raw: bytes) -> dict:
                             minLineLength=max(25,int(min(gray.shape)*0.10)),maxLineGap=12)
     vertical = horizontal = 0.0
     if lines is not None:
-        for line in lines[:,0]:
+        for line in lines.reshape(-1,4):
             x1,y1,x2,y2 = map(int,line)
             length = math.hypot(x2-x1,y2-y1)
             angle = abs(math.degrees(math.atan2(y2-y1,x2-x1))) % 180
