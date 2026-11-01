@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "app/**"
+      - "!app/src/main/assets/models/**"
       - "tools/facades/**"
       - "tools/build_offline_city_tiles.py"
       - "data/facades/cities/**"
@@ -17,6 +18,7 @@ on:
     workflows:
       - "Adam World Offline City Data Import"
       - "Adam World Copernicus Terrain Import"
+      - "Adam World Free 3D Asset Import"
     types: [completed]
   workflow_dispatch:
 
@@ -76,6 +78,10 @@ jobs:
             https://raw.githubusercontent.com/mrdoob/three.js/r128/build/three.min.js \
             --output app/src/main/assets/vendor/three.min.js
           test -s app/src/main/assets/vendor/three.min.js
+          curl --fail --location --retry 3 --retry-delay 2 \
+            https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/js/loaders/GLTFLoader.js \
+            --output app/src/main/assets/vendor/GLTFLoader.js
+          test -s app/src/main/assets/vendor/GLTFLoader.js
 
       - name: Package offline city tiles into the APK
         run: python3 tools/build_offline_city_tiles.py
@@ -149,6 +155,18 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK"
           jarsigner -verify -verbose -certs "$AAB" >/tmp/adam-world-aab-signature.txt
           grep -q 'assets/vendor/three.min.js' <(unzip -l "$APK")
+          grep -q 'assets/vendor/GLTFLoader.js' <(unzip -l "$APK")
+          grep -q 'assets/models/manifest.json' <(unzip -l "$APK")
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          manifest=json.loads(Path('app/src/main/assets/models/manifest.json').read_text())
+          for model in manifest.get('models', []):
+              p=Path('app/src/main/assets/models')/model['file'].split('models/',1)[-1]
+              if not p.is_file() or p.read_bytes()[:4] != b'glTF':
+                  raise SystemExit(f"Missing or invalid GLB: {p}")
+          print('LOCAL_3D_ASSET_MANIFEST_OK', len(manifest.get('models', [])))
+          PY
           grep -q 'assets/cities/catalog.json' <(unzip -l "$APK")
           for city in amman manila bangkok new-york paris dubai tokyo london riyadh cairo; do
             grep -q "assets/cities/$city/manifest.json" <(unzip -l "$APK")
