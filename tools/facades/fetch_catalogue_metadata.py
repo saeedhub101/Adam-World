@@ -52,7 +52,16 @@ def bbox_from_city(city: Path) -> tuple[float, float, float, float]:
         for feature in fc.get("features", []):
             walk((feature.get("geometry") or {}).get("coordinates", []))
         if coords:
-            return min(x for x, _ in coords), min(y for _, y in coords), max(x for x, _ in coords), max(y for _, y in coords)
+            min_lon, min_lat = min(x for x, _ in coords), min(y for _, y in coords)
+            max_lon, max_lat = max(x for x, _ in coords), max(y for _, y in coords)
+            # Expand discovery bounds for street-level captures around the buildings.
+            # Proximity is only candidate discovery, never proof of facade identity.
+            import math
+            pad_m = float(os.environ.get('FACADE_CATALOGUE_PADDING_M', '1800'))
+            mid_lat = (min_lat + max_lat) / 2
+            pad_lat = pad_m / 111320.0
+            pad_lon = pad_m / (111320.0 * max(0.01, math.cos(math.radians(mid_lat))))
+            return min_lon - pad_lon, min_lat - pad_lat, max_lon + pad_lon, max_lat + pad_lat
     config_path = city / "city.json"
     if not config_path.exists():
         raise ValueError("neither buildings.geojson nor city.json is available")
@@ -100,9 +109,12 @@ def fetch_source(city: Path, source: str, bbox: tuple[float, float, float, float
         state_path.unlink(missing_ok=True)
         output_path.unlink(missing_ok=True)
     state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
-    if state.get("complete"):
-        print(f"UNCHANGED {city.name}/{source}: catalogue scan already complete (use --refresh to rescan)")
+    if state.get("complete") and state.get("bbox") == list(bbox):
+        print(f"UNCHANGED {city.name}/{source}: catalogue scan already complete for current discovery bounds")
         return
+    if state and state.get("bbox") != list(bbox):
+        # Keep old features but restart pagination to discover the expanded area.
+        state = {}
     if "next_url" not in state:
         query = urlencode({"bbox": ",".join(f"{v:.7f}" for v in bbox), "limit": args.page_size})
         state = {"next_url": endpoint + "?" + query, "seen_ids": [], "pages": 0, "complete": False}
