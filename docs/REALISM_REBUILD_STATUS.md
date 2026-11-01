@@ -36,11 +36,11 @@ paid API or runtime remote map/model dependency is introduced.
 | Agents | Player, NPCs and vehicles sample local terrain height each frame. | Existing implementation retained |
 | Street names | Increased bold label size and width; labels sit at the sampled local terrain elevation. | Implemented |
 | Roman Theatre | Added a generated limestone block/grain texture and UVs to the existing cavea, seating rows, diazomata, stair aisles and stage masonry. | Improved; not survey/photo exact |
-| Rivers and streams | OSM linear waterway features are rendered as terrain-following water ribbons and recorded for water interaction. | Implemented |
+| Rivers and streams | Renderer supports OSM linear waterway features as terrain-following ribbons and swimming zones. The current OSM import query does not yet fetch river/stream/canal ways (it fetches riverbank polygons), so source coverage is not complete. | Renderer implemented; data pending |
 | Water polygons | OSM water bodies are rendered and recorded for water interaction. | Implemented |
 | Water appearance | Added a tiled moving surface pattern to the water material. | Implemented |
 | Swimming interaction | Player movement slows in mapped water and the rig enters a simple paddling pose. | Basic interaction implemented |
-| Waterfalls | OSM features explicitly tagged `waterway=waterfall` or `natural=waterfall` produce a vertical cascade and pool. No waterfall is fabricated where OSM has no feature. | Implemented for mapped nodes |
+| Waterfalls | Renderer supports OSM nodes explicitly tagged `waterway=waterfall` or `natural=waterfall`. The current OSM import query does not yet include those nodes. | Renderer implemented; data pending |
 | Traffic lights | Mapped signal nodes now cycle green/amber/red. | Implemented |
 | Vehicle response | NPC vehicles brake when an active signal is ahead on their road approach and resume on green. | Basic signal response implemented |
 
@@ -94,7 +94,9 @@ https://github.com/saeedhub101/Adam-World/actions/runs/41344476917
 
 The runtime sampler was additionally corrected to treat JSON null cells as DEM
 nodata, not as 0 metres; the nearest-valid sample fallback now handles those
-cells.
+cells. The terrain importer also fills sparse raster voids with nearest valid
+neighbour elevations so the rendered terrain mesh remains continuous while
+preserving the original source coverage metric.
 
 ## Work still required before claiming the requested final realism
 
