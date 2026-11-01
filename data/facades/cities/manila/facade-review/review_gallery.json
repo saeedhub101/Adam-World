@@ -2,3683 +2,519 @@
   "schema_version": 1,
   "city": "manila",
   "policy": "Image decode, minimum dimensions, camera geometry and licence are machine-filtered. Exact depicted-building identity remains unverified until visual inspection.",
-  "eligible_building_candidates": 50,
-  "downloaded_valid_images": 50,
-  "downloaded_hd_images": 10,
+  "eligible_building_candidates": 6,
+  "downloaded_valid_images": 6,
+  "downloaded_hd_images": 6,
   "failed_or_rejected_images": 0,
   "items": [
     {
-      "osm_way_id": "1110941023",
-      "osm_url": "https://www.openstreetmap.org/way/1110941023",
+      "osm_way_id": "1512317837",
+      "osm_url": "https://www.openstreetmap.org/way/1512317837",
       "building_name": null,
       "footprint_geometry": {
         "coordinates": [
           [
             [
-              120.9766733,
-              14.5892516
+              121.0252903,
+              14.5579203
             ],
             [
-              120.9768005,
-              14.5891196
+              121.0252793,
+              14.5579528
             ],
             [
-              120.9768669,
-              14.5891796
+              121.0254129,
+              14.5579951
             ],
             [
-              120.9769152,
-              14.5891173
+              121.0254239,
+              14.5579625
             ],
             [
-              120.9766511,
-              14.5889331
-            ],
-            [
-              120.9764973,
-              14.5890927
-            ],
-            [
-              120.9766733,
-              14.5892516
+              121.0252903,
+              14.5579203
             ]
           ]
         ],
         "type": "Polygon"
       },
       "capture_lonlat": [
-        120.9766691,
-        14.5889109
+        121.0251545,
+        14.5578927
       ],
       "target_point_lonlat": [
-        120.9766521,
-        14.5889338
-      ],
-      "facade_edge_index": 3,
-      "target_bearing_deg": 324.31,
-      "photo_id": "6656417d-7591-45ac-b09f-4f23eab0e66a",
-      "image": "images/6656417d-7591-45ac-b09f-4f23eab0e66a.jpg",
-      "hd_image": "full/6656417d-7591-45ac-b09f-4f23eab0e66a.mpo",
-      "width": 500,
-      "height": 375,
-      "distance_m": 3.14,
-      "azimuth_delta_deg": 1.31,
-      "quality_score": 90,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:26:36.190000+00:00",
-      "camera": {
-        "azimuth_deg": 323.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/9b024b1e-eabb-4623-9e08-7316f98f829b/items/6656417d-7591-45ac-b09f-4f23eab0e66a",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/6656417d-7591-45ac-b09f-4f23eab0e66a/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "83591498",
-      "osm_url": "https://www.openstreetmap.org/way/83591498",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9754458,
-              14.5880794
-            ],
-            [
-              120.9756743,
-              14.5877952
-            ],
-            [
-              120.9758916,
-              14.5879699
-            ],
-            [
-              120.9757953,
-              14.5880898
-            ],
-            [
-              120.97582,
-              14.5881097
-            ],
-            [
-              120.9756878,
-              14.5882741
-            ],
-            [
-              120.9754458,
-              14.5880794
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.975711,
-        14.587807
-      ],
-      "target_point_lonlat": [
-        120.975702,
-        14.5878175
-      ],
-      "facade_edge_index": 1,
-      "target_bearing_deg": 320.38,
-      "photo_id": "85b26d01-2373-474f-a518-86abe6175737",
-      "image": "images/85b26d01-2373-474f-a518-86abe6175737.jpg",
-      "hd_image": "full/85b26d01-2373-474f-a518-86abe6175737.mpo",
-      "width": 500,
-      "height": 375,
-      "distance_m": 1.51,
-      "azimuth_delta_deg": 4.38,
-      "quality_score": 88,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:16:02.095000+00:00",
-      "camera": {
-        "azimuth_deg": 316.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/5ad2dd0e-32b1-4eb6-88ef-d15ded7aad0e/items/85b26d01-2373-474f-a518-86abe6175737",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/85b26d01-2373-474f-a518-86abe6175737/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "762411592",
-      "osm_url": "https://www.openstreetmap.org/way/762411592",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9754884,
-              14.588416
-            ],
-            [
-              120.9756579,
-              14.5882578
-            ],
-            [
-              120.9757228,
-              14.5883274
-            ],
-            [
-              120.9755533,
-              14.5884855
-            ],
-            [
-              120.9754884,
-              14.588416
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.975476,
-        14.5883802
-      ],
-      "target_point_lonlat": [
-        120.9755004,
-        14.5884048
+        121.0252855,
+        14.5579344
       ],
       "facade_edge_index": 0,
-      "target_bearing_deg": 43.87,
-      "photo_id": "dc471bd7-b9ab-4826-9edf-3a102da88439",
-      "image": "images/dc471bd7-b9ab-4826-9edf-3a102da88439.jpg",
-      "hd_image": "full/dc471bd7-b9ab-4826-9edf-3a102da88439.mpo",
+      "target_bearing_deg": 71.8,
+      "photo_id": "e5d3787f-ac12-45ee-941f-47c7b9318208",
+      "image": "images/e5d3787f-ac12-45ee-941f-47c7b9318208.jpg",
+      "hd_image": "full/e5d3787f-ac12-45ee-941f-47c7b9318208.mpo",
       "width": 500,
       "height": 375,
-      "distance_m": 3.79,
-      "azimuth_delta_deg": 1.87,
-      "quality_score": 88,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:16:36.095000+00:00",
-      "camera": {
-        "azimuth_deg": 42.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/5ad2dd0e-32b1-4eb6-88ef-d15ded7aad0e/items/dc471bd7-b9ab-4826-9edf-3a102da88439",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/dc471bd7-b9ab-4826-9edf-3a102da88439/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1110941022",
-      "osm_url": "https://www.openstreetmap.org/way/1110941022",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9765671,
-              14.5893976
-            ],
-            [
-              120.9766767,
-              14.5892612
-            ],
-            [
-              120.9766173,
-              14.5892171
-            ],
-            [
-              120.9765032,
-              14.5893424
-            ],
-            [
-              120.9765671,
-              14.5893976
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9764928,
-        14.5893341
-      ],
-      "target_point_lonlat": [
-        120.9765032,
-        14.5893424
-      ],
-      "facade_edge_index": 2,
-      "target_bearing_deg": 50.49,
-      "photo_id": "ccae4f5b-1e78-4c88-9232-c4910d3e17c9",
-      "image": "images/ccae4f5b-1e78-4c88-9232-c4910d3e17c9.jpg",
-      "hd_image": "full/ccae4f5b-1e78-4c88-9232-c4910d3e17c9.mpo",
-      "width": 500,
-      "height": 375,
-      "distance_m": 1.45,
-      "azimuth_delta_deg": 5.49,
-      "quality_score": 87,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:27:02.191000+00:00",
-      "camera": {
-        "azimuth_deg": 45.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/ccae4f5b-1e78-4c88-9232-c4910d3e17c9",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/ccae4f5b-1e78-4c88-9232-c4910d3e17c9/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "267200604",
-      "osm_url": "https://www.openstreetmap.org/way/267200604",
-      "building_name": "Seamen's Center Annex",
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9764873,
-              14.5890947
-            ],
-            [
-              120.9763601,
-              14.5892311
-            ],
-            [
-              120.9764941,
-              14.5893369
-            ],
-            [
-              120.9766212,
-              14.5892077
-            ],
-            [
-              120.9764873,
-              14.5890947
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9765125,
-        14.5890836
-      ],
-      "target_point_lonlat": [
-        120.976496,
-        14.589102
-      ],
-      "facade_edge_index": 3,
-      "target_bearing_deg": 319.01,
-      "photo_id": "166a7c09-53d3-4272-9a97-2b493015c061",
-      "image": "images/166a7c09-53d3-4272-9a97-2b493015c061.jpg",
-      "hd_image": "full/166a7c09-53d3-4272-9a97-2b493015c061.mpo",
-      "width": 500,
-      "height": 375,
-      "distance_m": 2.71,
-      "azimuth_delta_deg": 4.99,
-      "quality_score": 86,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:26:46.191000+00:00",
-      "camera": {
-        "azimuth_deg": 324.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/166a7c09-53d3-4272-9a97-2b493015c061",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/166a7c09-53d3-4272-9a97-2b493015c061/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "421439720",
-      "osm_url": "https://www.openstreetmap.org/way/421439720",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9754322,
-              14.5883403
-            ],
-            [
-              120.9754695,
-              14.5883825
-            ],
-            [
-              120.9755725,
-              14.5882913
-            ],
-            [
-              120.9755352,
-              14.5882492
-            ],
-            [
-              120.9754322,
-              14.5883403
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9754076,
-        14.5883042
-      ],
-      "target_point_lonlat": [
-        120.9754373,
-        14.5883358
-      ],
-      "facade_edge_index": 3,
-      "target_bearing_deg": 42.33,
-      "photo_id": "a1cce49f-0aa7-43b4-952f-b552419b5c82",
-      "image": "images/a1cce49f-0aa7-43b4-952f-b552419b5c82.jpg",
-      "hd_image": "full/a1cce49f-0aa7-43b4-952f-b552419b5c82.mpo",
-      "width": 500,
-      "height": 375,
-      "distance_m": 4.75,
-      "azimuth_delta_deg": 2.33,
-      "quality_score": 86,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:16:32.095000+00:00",
-      "camera": {
-        "azimuth_deg": 40.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/5ad2dd0e-32b1-4eb6-88ef-d15ded7aad0e/items/a1cce49f-0aa7-43b4-952f-b552419b5c82",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/a1cce49f-0aa7-43b4-952f-b552419b5c82/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1110941024",
-      "osm_url": "https://www.openstreetmap.org/way/1110941024",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.976654,
-              14.5889269
-            ],
-            [
-              120.9769233,
-              14.5891166
-            ],
-            [
-              120.9769578,
-              14.5890707
-            ],
-            [
-              120.9767444,
-              14.5889205
-            ],
-            [
-              120.9767713,
-              14.5888848
-            ],
-            [
-              120.9767221,
-              14.5888465
-            ],
-            [
-              120.976654,
-              14.5889269
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9767627,
-        14.5888089
-      ],
-      "target_point_lonlat": [
-        120.9767278,
-        14.588851
-      ],
-      "facade_edge_index": 4,
-      "target_bearing_deg": 321.28,
-      "photo_id": "cfda6537-7dc3-4274-b66a-9ee7b4b6ad78",
-      "image": "images/cfda6537-7dc3-4274-b66a-9ee7b4b6ad78.jpg",
-      "hd_image": "full/cfda6537-7dc3-4274-b66a-9ee7b4b6ad78.mpo",
-      "width": 500,
-      "height": 375,
-      "distance_m": 6.0,
-      "azimuth_delta_deg": 2.28,
-      "quality_score": 85,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:26:30.191000+00:00",
-      "camera": {
-        "azimuth_deg": 319.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/9b024b1e-eabb-4623-9e08-7316f98f829b/items/cfda6537-7dc3-4274-b66a-9ee7b4b6ad78",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/cfda6537-7dc3-4274-b66a-9ee7b4b6ad78/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1108871587",
-      "osm_url": "https://www.openstreetmap.org/way/1108871587",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9771881,
-              14.5899053
-            ],
-            [
-              120.977306,
-              14.5897692
-            ],
-            [
-              120.977247,
-              14.5897214
-            ],
-            [
-              120.9772394,
-              14.5897302
-            ],
-            [
-              120.9772201,
-              14.5897146
-            ],
-            [
-              120.9771099,
-              14.5898419
-            ],
-            [
-              120.9771881,
-              14.5899053
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9770778,
-        14.5898226
-      ],
-      "target_point_lonlat": [
-        120.9771099,
-        14.5898419
-      ],
-      "facade_edge_index": 5,
-      "target_bearing_deg": 58.15,
-      "photo_id": "a40339ba-c8cf-4cfb-af91-3cdd9f1f9576",
-      "image": "images/a40339ba-c8cf-4cfb-af91-3cdd9f1f9576.jpg",
-      "hd_image": "full/a40339ba-c8cf-4cfb-af91-3cdd9f1f9576.mpo",
-      "width": 500,
-      "height": 375,
-      "distance_m": 4.07,
-      "azimuth_delta_deg": 7.15,
-      "quality_score": 81,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:27:34.190000+00:00",
-      "camera": {
-        "azimuth_deg": 51.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/a40339ba-c8cf-4cfb-af91-3cdd9f1f9576",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/a40339ba-c8cf-4cfb-af91-3cdd9f1f9576/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1110941017",
-      "osm_url": "https://www.openstreetmap.org/way/1110941017",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9762788,
-              14.5904448
-            ],
-            [
-              120.9762492,
-              14.5904796
-            ],
-            [
-              120.9763696,
-              14.5905818
-            ],
-            [
-              120.9763991,
-              14.590547
-            ],
-            [
-              120.9762788,
-              14.5904448
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9762159,
-        14.5905099
-      ],
-      "target_point_lonlat": [
-        120.9762492,
-        14.5904796
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 133.24,
-      "photo_id": "9c413a9d-3b09-489e-be34-cb3286a1c7c9",
-      "image": "images/9c413a9d-3b09-489e-be34-cb3286a1c7c9.jpg",
-      "hd_image": "full/9c413a9d-3b09-489e-be34-cb3286a1c7c9.mpo",
-      "width": 500,
-      "height": 375,
-      "distance_m": 4.92,
-      "azimuth_delta_deg": 8.24,
-      "quality_score": 79,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:18:08.184000+00:00",
-      "camera": {
-        "azimuth_deg": 125.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/9c413a9d-3b09-489e-be34-cb3286a1c7c9",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/9c413a9d-3b09-489e-be34-cb3286a1c7c9/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1109857928",
-      "osm_url": "https://www.openstreetmap.org/way/1109857928",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9765744,
-              14.5894031
-            ],
-            [
-              120.9766291,
-              14.5894486
-            ],
-            [
-              120.9766918,
-              14.5894962
-            ],
-            [
-              120.9768069,
-              14.5893621
-            ],
-            [
-              120.9766815,
-              14.5892677
-            ],
-            [
-              120.9765744,
-              14.5894031
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9765232,
-        14.5893642
-      ],
-      "target_point_lonlat": [
-        120.9765748,
-        14.5894026
-      ],
-      "facade_edge_index": 4,
-      "target_bearing_deg": 52.47,
-      "photo_id": "a13a2b34-308e-4864-8e85-125cf41c3d6d",
-      "image": "images/a13a2b34-308e-4864-8e85-125cf41c3d6d.jpg",
-      "hd_image": "full/a13a2b34-308e-4864-8e85-125cf41c3d6d.mpo",
-      "width": 500,
-      "height": 375,
-      "distance_m": 7.01,
-      "azimuth_delta_deg": 6.53,
-      "quality_score": 78,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:27:04.191000+00:00",
-      "camera": {
-        "azimuth_deg": 59.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/a13a2b34-308e-4864-8e85-125cf41c3d6d",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/a13a2b34-308e-4864-8e85-125cf41c3d6d/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "421439718",
-      "osm_url": "https://www.openstreetmap.org/way/421439718",
-      "building_name": "Pandiman Philippines",
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9756201,
-              14.5885515
-            ],
-            [
-              120.975653,
-              14.5885778
-            ],
-            [
-              120.9756956,
-              14.5886135
-            ],
-            [
-              120.9757444,
-              14.5886532
-            ],
-            [
-              120.9757614,
-              14.5886673
-            ],
-            [
-              120.9759048,
-              14.5884955
-            ],
-            [
-              120.9758878,
-              14.5884814
-            ],
-            [
-              120.9758824,
-              14.588477
-            ],
-            [
-              120.975915,
-              14.5884367
-            ],
-            [
-              120.975838,
-              14.5883744
-            ],
-            [
-              120.9758054,
-              14.5884147
-            ],
-            [
-              120.9757858,
-              14.5884005
-            ],
-            [
-              120.9757645,
-              14.5884199
-            ],
-            [
-              120.9756201,
-              14.5885515
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9755908,
-        14.5885277
-      ],
-      "target_point_lonlat": [
-        120.9756201,
-        14.5885515
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 49.99,
-      "photo_id": "150e2cd0-7c24-42f3-83c7-71e8f551e1fc",
-      "image": "images/150e2cd0-7c24-42f3-83c7-71e8f551e1fc.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 4.12,
-      "azimuth_delta_deg": 11.99,
-      "quality_score": 75,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:16:42.095000+00:00",
-      "camera": {
-        "azimuth_deg": 38.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/ced097ad-7089-49a6-a5b3-57e56871267f/items/150e2cd0-7c24-42f3-83c7-71e8f551e1fc",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/150e2cd0-7c24-42f3-83c7-71e8f551e1fc/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "267200601",
-      "osm_url": "https://www.openstreetmap.org/way/267200601",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9770122,
-              14.5897396
-            ],
-            [
-              120.9770771,
-              14.5896679
-            ],
-            [
-              120.9770249,
-              14.5896236
-            ],
-            [
-              120.97696,
-              14.5896954
-            ],
-            [
-              120.9770122,
-              14.5897396
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9768562,
-        14.5896364
-      ],
-      "target_point_lonlat": [
-        120.97696,
-        14.5896954
-      ],
-      "facade_edge_index": 2,
-      "target_bearing_deg": 59.57,
-      "photo_id": "b51f6a45-aecb-4015-82e2-7524af931724",
-      "image": "images/b51f6a45-aecb-4015-82e2-7524af931724.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 12.96,
-      "azimuth_delta_deg": 1.57,
-      "quality_score": 75,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:27:22.191000+00:00",
-      "camera": {
-        "azimuth_deg": 58.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/b51f6a45-aecb-4015-82e2-7524af931724",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/b51f6a45-aecb-4015-82e2-7524af931724/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "268218695",
-      "osm_url": "https://www.openstreetmap.org/way/268218695",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9764045,
-              14.5903119
-            ],
-            [
-              120.9766589,
-              14.5905014
-            ],
-            [
-              120.9767118,
-              14.5904575
-            ],
-            [
-              120.9767367,
-              14.5904249
-            ],
-            [
-              120.9766323,
-              14.5903518
-            ],
-            [
-              120.9766422,
-              14.5903396
-            ],
-            [
-              120.9765832,
-              14.5902958
-            ],
-            [
-              120.9765723,
-              14.59031
-            ],
-            [
-              120.9764699,
-              14.5902334
-            ],
-            [
-              120.9764045,
-              14.5903119
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9763351,
-        14.5903886
-      ],
-      "target_point_lonlat": [
-        120.9764045,
-        14.5903119
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 138.79,
-      "photo_id": "6a9dcaa5-ad99-46db-b178-137255ec42b6",
-      "image": "images/6a9dcaa5-ad99-46db-b178-137255ec42b6.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 11.34,
-      "azimuth_delta_deg": 4.21,
-      "quality_score": 73,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:18:16.188000+00:00",
-      "camera": {
-        "azimuth_deg": 143.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/6a9dcaa5-ad99-46db-b178-137255ec42b6",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/6a9dcaa5-ad99-46db-b178-137255ec42b6/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1109857935",
-      "osm_url": "https://www.openstreetmap.org/way/1109857935",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9773154,
-              14.5900036
-            ],
-            [
-              120.9774015,
-              14.5900748
-            ],
-            [
-              120.9774514,
-              14.5900183
-            ],
-            [
-              120.9773653,
-              14.589947
-            ],
-            [
-              120.9773154,
-              14.5900036
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9772455,
-        14.5899755
-      ],
-      "target_point_lonlat": [
-        120.9773154,
-        14.5900036
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 67.44,
-      "photo_id": "4df945f1-706e-4200-bdd7-db5a98e76468",
-      "image": "images/4df945f1-706e-4200-bdd7-db5a98e76468.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 8.15,
-      "azimuth_delta_deg": 10.44,
+      "distance_m": 14.86,
+      "azimuth_delta_deg": 1.8,
       "quality_score": 71,
       "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:27:42.191000+00:00",
+      "capture_datetime": "2024-03-02T02:41:06.439000+00:00",
       "camera": {
-        "azimuth_deg": 57.0,
+        "azimuth_deg": 70.0,
         "field_of_view_deg": 92.0,
         "horizontal_accuracy_m": 4.0,
         "horizontal_pixel_density": 56.0,
         "pitch_deg": null,
         "roll_deg": null
       },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/9b024b1e-eabb-4623-9e08-7316f98f829b/items/4df945f1-706e-4200-bdd7-db5a98e76468",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/4df945f1-706e-4200-bdd7-db5a98e76468/hd.jpg",
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/e5d3787f-ac12-45ee-941f-47c7b9318208",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/e5d3787f-ac12-45ee-941f-47c7b9318208/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
-      "osm_way_id": "1112818599",
-      "osm_url": "https://www.openstreetmap.org/way/1112818599",
-      "building_name": null,
+      "osm_way_id": "22788814",
+      "osm_url": "https://www.openstreetmap.org/way/22788814",
+      "building_name": "Insular Life Building",
       "footprint_geometry": {
         "coordinates": [
           [
             [
-              120.9754828,
-              14.5901806
+              121.0209065,
+              14.5575311
             ],
             [
-              120.9755134,
-              14.5902041
+              121.020823,
+              14.5574153
             ],
             [
-              120.9755391,
-              14.590173
+              121.0208073,
+              14.5574304
             ],
             [
-              120.9755085,
-              14.5901495
+              121.0207346,
+              14.5573205
             ],
             [
-              120.9754828,
-              14.5901806
+              121.0210246,
+              14.5571351
+            ],
+            [
+              121.021092,
+              14.5571021
+            ],
+            [
+              121.0211516,
+              14.5570803
+            ],
+            [
+              121.0212134,
+              14.5570678
+            ],
+            [
+              121.0212616,
+              14.5570662
+            ],
+            [
+              121.0213128,
+              14.5570693
+            ],
+            [
+              121.0213559,
+              14.5570761
+            ],
+            [
+              121.0215181,
+              14.5571253
+            ],
+            [
+              121.0214625,
+              14.5572972
+            ],
+            [
+              121.0213726,
+              14.5572709
+            ],
+            [
+              121.0213052,
+              14.5572545
+            ],
+            [
+              121.0212592,
+              14.5572546
+            ],
+            [
+              121.0212167,
+              14.5572613
+            ],
+            [
+              121.0211807,
+              14.5572722
+            ],
+            [
+              121.0211448,
+              14.5572884
+            ],
+            [
+              121.0211671,
+              14.5573243
+            ],
+            [
+              121.021194,
+              14.5573583
+            ],
+            [
+              121.0212334,
+              14.5573904
+            ],
+            [
+              121.0212079,
+              14.5574252
+            ],
+            [
+              121.0211733,
+              14.5574533
+            ],
+            [
+              121.021131,
+              14.5574785
+            ],
+            [
+              121.0210917,
+              14.5574941
+            ],
+            [
+              121.02107,
+              14.5574483
+            ],
+            [
+              121.0210414,
+              14.5574068
+            ],
+            [
+              121.0210085,
+              14.5573776
+            ],
+            [
+              121.020946,
+              14.5574223
+            ],
+            [
+              121.0209852,
+              14.5574763
+            ],
+            [
+              121.0209065,
+              14.5575311
             ]
           ]
         ],
         "type": "Polygon"
       },
       "capture_lonlat": [
-        120.975595,
-        14.5901966
+        121.0205997,
+        14.5573563
       ],
       "target_point_lonlat": [
-        120.9755391,
-        14.590173
-      ],
-      "facade_edge_index": 1,
-      "target_bearing_deg": 246.43,
-      "photo_id": "8e7352c5-1821-4426-ad10-13737fdf1ab7",
-      "image": "images/8e7352c5-1821-4426-ad10-13737fdf1ab7.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 6.57,
-      "azimuth_delta_deg": 13.43,
-      "quality_score": 70,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:41:23.407000+00:00",
-      "camera": {
-        "azimuth_deg": 233.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/7b7dbaac-32b3-4e8f-b850-cf793c947d07/items/8e7352c5-1821-4426-ad10-13737fdf1ab7",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/8e7352c5-1821-4426-ad10-13737fdf1ab7/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "421439722",
-      "osm_url": "https://www.openstreetmap.org/way/421439722",
-      "building_name": "National Commission for Culture and the Arts",
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9757409,
-              14.5882882
-            ],
-            [
-              120.9759617,
-              14.5884732
-            ],
-            [
-              120.9760405,
-              14.588379
-            ],
-            [
-              120.9761175,
-              14.5882872
-            ],
-            [
-              120.9758967,
-              14.5881022
-            ],
-            [
-              120.9757409,
-              14.5882882
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9762235,
-        14.5882422
-      ],
-      "target_point_lonlat": [
-        120.9761175,
-        14.5882872
+        121.0207346,
+        14.5573205
       ],
       "facade_edge_index": 2,
-      "target_bearing_deg": 293.69,
-      "photo_id": "4332db60-179f-4667-aed5-939095f89886",
-      "image": "images/4332db60-179f-4667-aed5-939095f89886.jpg",
-      "hd_image": null,
+      "target_bearing_deg": 105.33,
+      "photo_id": "bfe44c8d-c05e-4fb2-8aa5-a9030763ab48",
+      "image": "images/bfe44c8d-c05e-4fb2-8aa5-a9030763ab48.jpg",
+      "hd_image": "full/bfe44c8d-c05e-4fb2-8aa5-a9030763ab48.mpo",
       "width": 500,
       "height": 375,
-      "distance_m": 12.47,
-      "azimuth_delta_deg": 8.31,
-      "quality_score": 68,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:20:10.096000+00:00",
-      "camera": {
-        "azimuth_deg": 302.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/6cd09c23-b975-433b-83c2-6dc18307aa83/items/4332db60-179f-4667-aed5-939095f89886",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/4332db60-179f-4667-aed5-939095f89886/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1112818598",
-      "osm_url": "https://www.openstreetmap.org/way/1112818598",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9755251,
-              14.5902027
-            ],
-            [
-              120.975547,
-              14.5902209
-            ],
-            [
-              120.9755663,
-              14.5901976
-            ],
-            [
-              120.9755444,
-              14.5901794
-            ],
-            [
-              120.9755251,
-              14.5902027
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9756292,
-        14.5902215
-      ],
-      "target_point_lonlat": [
-        120.9755663,
-        14.5901976
-      ],
-      "facade_edge_index": 1,
-      "target_bearing_deg": 248.56,
-      "photo_id": "c7d47047-26f4-4bf5-904d-de30593fea11",
-      "image": "images/c7d47047-26f4-4bf5-904d-de30593fea11.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 7.28,
-      "azimuth_delta_deg": 15.56,
-      "quality_score": 67,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:41:21.407000+00:00",
-      "camera": {
-        "azimuth_deg": 233.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/7b7dbaac-32b3-4e8f-b850-cf793c947d07/items/c7d47047-26f4-4bf5-904d-de30593fea11",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/c7d47047-26f4-4bf5-904d-de30593fea11/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "267200969",
-      "osm_url": "https://www.openstreetmap.org/way/267200969",
-      "building_name": "Casa Maritima",
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9763655,
-              14.5881116
-            ],
-            [
-              120.976245,
-              14.5882595
-            ],
-            [
-              120.9763708,
-              14.588362
-            ],
-            [
-              120.9764952,
-              14.5884633
-            ],
-            [
-              120.9765119,
-              14.5884769
-            ],
-            [
-              120.9765422,
-              14.5884397
-            ],
-            [
-              120.9765994,
-              14.5883695
-            ],
-            [
-              120.9766324,
-              14.588329
-            ],
-            [
-              120.9765787,
-              14.5882852
-            ],
-            [
-              120.9764913,
-              14.588214
-            ],
-            [
-              120.9763655,
-              14.5881116
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9764015,
-        14.588054
-      ],
-      "target_point_lonlat": [
-        120.9763655,
-        14.5881116
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 328.83,
-      "photo_id": "0cb04844-65a3-418b-beb8-7d6a65915903",
-      "image": "images/0cb04844-65a3-418b-beb8-7d6a65915903.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 7.48,
-      "azimuth_delta_deg": 14.83,
-      "quality_score": 67,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:19:58.096000+00:00",
-      "camera": {
-        "azimuth_deg": 314.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/5ad2dd0e-32b1-4eb6-88ef-d15ded7aad0e/items/0cb04844-65a3-418b-beb8-7d6a65915903",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/0cb04844-65a3-418b-beb8-7d6a65915903/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1109857929",
-      "osm_url": "https://www.openstreetmap.org/way/1109857929",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9771839,
-              14.5890777
-            ],
-            [
-              120.9773067,
-              14.5891776
-            ],
-            [
-              120.9774769,
-              14.5889684
-            ],
-            [
-              120.9773885,
-              14.5888965
-            ],
-            [
-              120.9772939,
-              14.5890128
-            ],
-            [
-              120.9772595,
-              14.5889848
-            ],
-            [
-              120.9771839,
-              14.5890777
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9772473,
-        14.5892709
-      ],
-      "target_point_lonlat": [
-        120.9773067,
-        14.5891776
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 148.36,
-      "photo_id": "e2b7aee7-2b19-4dfb-b205-a975703f5f18",
-      "image": "images/e2b7aee7-2b19-4dfb-b205-a975703f5f18.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 12.18,
-      "azimuth_delta_deg": 8.36,
-      "quality_score": 67,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:19:20.187000+00:00",
-      "camera": {
-        "azimuth_deg": 140.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/9b024b1e-eabb-4623-9e08-7316f98f829b/items/e2b7aee7-2b19-4dfb-b205-a975703f5f18",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/e2b7aee7-2b19-4dfb-b205-a975703f5f18/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1112818597",
-      "osm_url": "https://www.openstreetmap.org/way/1112818597",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9755527,
-              14.5902219
-            ],
-            [
-              120.9755761,
-              14.5902413
-            ],
-            [
-              120.975592,
-              14.5902222
-            ],
-            [
-              120.9755685,
-              14.5902028
-            ],
-            [
-              120.9755527,
-              14.5902219
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9756994,
-        14.5902732
-      ],
-      "target_point_lonlat": [
-        120.975592,
-        14.5902222
-      ],
-      "facade_edge_index": 1,
-      "target_bearing_deg": 243.86,
-      "photo_id": "ea1d9e3a-708e-4d47-bfa7-e45e2aba0678",
-      "image": "images/ea1d9e3a-708e-4d47-bfa7-e45e2aba0678.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 12.88,
-      "azimuth_delta_deg": 7.86,
-      "quality_score": 67,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:41:17.407000+00:00",
-      "camera": {
-        "azimuth_deg": 236.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/7b7dbaac-32b3-4e8f-b850-cf793c947d07/items/ea1d9e3a-708e-4d47-bfa7-e45e2aba0678",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/ea1d9e3a-708e-4d47-bfa7-e45e2aba0678/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "267201267",
-      "osm_url": "https://www.openstreetmap.org/way/267201267",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9774917,
-              14.5901165
-            ],
-            [
-              120.977525,
-              14.5900782
-            ],
-            [
-              120.9774586,
-              14.5900198
-            ],
-            [
-              120.9774079,
-              14.5900739
-            ],
-            [
-              120.9774649,
-              14.5901242
-            ],
-            [
-              120.9774917,
-              14.5901165
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9772943,
-        14.5900063
-      ],
-      "target_point_lonlat": [
-        120.9774079,
-        14.5900739
-      ],
-      "facade_edge_index": 2,
-      "target_bearing_deg": 58.41,
-      "photo_id": "c5768d9f-7411-4b46-b981-a8e3f24764fe",
-      "image": "images/c5768d9f-7411-4b46-b981-a8e3f24764fe.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 14.36,
-      "azimuth_delta_deg": 6.41,
-      "quality_score": 67,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:27:44.190000+00:00",
-      "camera": {
-        "azimuth_deg": 52.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/9b024b1e-eabb-4623-9e08-7316f98f829b/items/c5768d9f-7411-4b46-b981-a8e3f24764fe",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/c5768d9f-7411-4b46-b981-a8e3f24764fe/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1112818118",
-      "osm_url": "https://www.openstreetmap.org/way/1112818118",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9755913,
-              14.5903357
-            ],
-            [
-              120.9756218,
-              14.5903617
-            ],
-            [
-              120.9756051,
-              14.5903813
-            ],
-            [
-              120.9756359,
-              14.5904076
-            ],
-            [
-              120.9757061,
-              14.5903254
-            ],
-            [
-              120.9756447,
-              14.5902731
-            ],
-            [
-              120.9755913,
-              14.5903357
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9756175,
-        14.5902101
-      ],
-      "target_point_lonlat": [
-        120.9756447,
-        14.5902731
-      ],
-      "facade_edge_index": 4,
-      "target_bearing_deg": 22.68,
-      "photo_id": "fff5ed1c-c8ef-442c-962a-ada4a20bb821",
-      "image": "images/fff5ed1c-c8ef-442c-962a-ada4a20bb821.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 7.59,
-      "azimuth_delta_deg": 15.32,
-      "quality_score": 66,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:35:01.405000+00:00",
-      "camera": {
-        "azimuth_deg": 38.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/7d9348c2-502f-4b88-b26a-fe4dec20a2e7/items/fff5ed1c-c8ef-442c-962a-ada4a20bb821",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/fff5ed1c-c8ef-442c-962a-ada4a20bb821/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1112821530",
-      "osm_url": "https://www.openstreetmap.org/way/1112821530",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9752864,
-              14.5883534
-            ],
-            [
-              120.9753365,
-              14.5884177
-            ],
-            [
-              120.9753691,
-              14.588394
-            ],
-            [
-              120.975319,
-              14.5883296
-            ],
-            [
-              120.9752864,
-              14.5883534
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9753581,
-        14.5881666
-      ],
-      "target_point_lonlat": [
-        120.975319,
-        14.5883296
-      ],
-      "facade_edge_index": 2,
-      "target_bearing_deg": 346.93,
-      "photo_id": "efa97aa9-ff8d-47dc-9208-9a1a0931645d",
-      "image": "images/efa97aa9-ff8d-47dc-9208-9a1a0931645d.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 18.6,
-      "azimuth_delta_deg": 1.93,
-      "quality_score": 66,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:16:24.095000+00:00",
-      "camera": {
-        "azimuth_deg": 345.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/ced097ad-7089-49a6-a5b3-57e56871267f/items/efa97aa9-ff8d-47dc-9208-9a1a0931645d",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/efa97aa9-ff8d-47dc-9208-9a1a0931645d/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1109857934",
-      "osm_url": "https://www.openstreetmap.org/way/1109857934",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9772487,
-              14.5899482
-            ],
-            [
-              120.977314,
-              14.5900019
-            ],
-            [
-              120.9773619,
-              14.5899473
-            ],
-            [
-              120.9772966,
-              14.5898936
-            ],
-            [
-              120.9772487,
-              14.5899482
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9771222,
-        14.5898578
-      ],
-      "target_point_lonlat": [
-        120.9772487,
-        14.5899482
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 53.56,
-      "photo_id": "432358c5-a6b5-4d54-82a0-f01a91183371",
-      "image": "images/432358c5-a6b5-4d54-82a0-f01a91183371.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 16.93,
-      "azimuth_delta_deg": 4.56,
-      "quality_score": 65,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:27:36.191000+00:00",
-      "camera": {
-        "azimuth_deg": 49.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/432358c5-a6b5-4d54-82a0-f01a91183371",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/432358c5-a6b5-4d54-82a0-f01a91183371/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "639239855",
-      "osm_url": "https://www.openstreetmap.org/way/639239855",
-      "building_name": "Residencia 729",
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9766335,
-              14.5897486
-            ],
-            [
-              120.9767426,
-              14.5898446
-            ],
-            [
-              120.9768316,
-              14.5897433
-            ],
-            [
-              120.9768276,
-              14.5897144
-            ],
-            [
-              120.9767351,
-              14.5896331
-            ],
-            [
-              120.9766335,
-              14.5897486
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9767029,
-        14.5899181
-      ],
-      "target_point_lonlat": [
-        120.9767426,
-        14.5898446
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 152.4,
-      "photo_id": "a217c908-a108-426e-8c50-20228ca1c03c",
-      "image": "images/a217c908-a108-426e-8c50-20228ca1c03c.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 9.22,
-      "azimuth_delta_deg": 16.4,
-      "quality_score": 63,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:18:44.188000+00:00",
-      "camera": {
-        "azimuth_deg": 136.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/9b024b1e-eabb-4623-9e08-7316f98f829b/items/a217c908-a108-426e-8c50-20228ca1c03c",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/a217c908-a108-426e-8c50-20228ca1c03c/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "762414131",
-      "osm_url": "https://www.openstreetmap.org/way/762414131",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9752584,
-              14.5893495
-            ],
-            [
-              120.9753525,
-              14.5892443
-            ],
-            [
-              120.9755521,
-              14.5894228
-            ],
-            [
-              120.9755054,
-              14.589475
-            ],
-            [
-              120.9754183,
-              14.5893972
-            ],
-            [
-              120.975371,
-              14.5894502
-            ],
-            [
-              120.9752584,
-              14.5893495
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9754577,
-        14.5891069
-      ],
-      "target_point_lonlat": [
-        120.9753525,
-        14.5892443
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 323.46,
-      "photo_id": "55a28e50-8841-41b9-a65c-c84d9d593847",
-      "image": "images/55a28e50-8841-41b9-a65c-c84d9d593847.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 19.02,
-      "azimuth_delta_deg": 3.46,
-      "quality_score": 63,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:21:00.096000+00:00",
-      "camera": {
-        "azimuth_deg": 320.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/5ad2dd0e-32b1-4eb6-88ef-d15ded7aad0e/items/55a28e50-8841-41b9-a65c-c84d9d593847",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/55a28e50-8841-41b9-a65c-c84d9d593847/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1110941020",
-      "osm_url": "https://www.openstreetmap.org/way/1110941020",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9771452,
-              14.5892026
-            ],
-            [
-              120.9772274,
-              14.5892597
-            ],
-            [
-              120.9772804,
-              14.5891882
-            ],
-            [
-              120.9771981,
-              14.5891311
-            ],
-            [
-              120.9771452,
-              14.5892026
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9771329,
-        14.5894165
-      ],
-      "target_point_lonlat": [
-        120.9772274,
-        14.5892597
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 149.75,
-      "photo_id": "b4719586-ce53-444a-84a7-9c0f613dc285",
-      "image": "images/b4719586-ce53-444a-84a7-9c0f613dc285.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 20.18,
-      "azimuth_delta_deg": 2.75,
-      "quality_score": 62,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:19:12.188000+00:00",
-      "camera": {
-        "azimuth_deg": 147.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/b4719586-ce53-444a-84a7-9c0f613dc285",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/b4719586-ce53-444a-84a7-9c0f613dc285/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "89571506",
-      "osm_url": "https://www.openstreetmap.org/way/89571506",
-      "building_name": "San Agustin Church",
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9754486,
-              14.5885942
-            ],
-            [
-              120.9756576,
-              14.5887835
-            ],
-            [
-              120.9756015,
-              14.5888453
-            ],
-            [
-              120.9754929,
-              14.5889653
-            ],
-            [
-              120.9752842,
-              14.5891804
-            ],
-            [
-              120.9752306,
-              14.5892363
-            ],
-            [
-              120.9752101,
-              14.5892162
-            ],
-            [
-              120.9751856,
-              14.5891923
-            ],
-            [
-              120.9751823,
-              14.5891893
-            ],
-            [
-              120.9751763,
-              14.5891838
-            ],
-            [
-              120.9751703,
-              14.5891904
-            ],
-            [
-              120.9751442,
-              14.5891667
-            ],
-            [
-              120.9751502,
-              14.5891602
-            ],
-            [
-              120.9751342,
-              14.5891456
-            ],
-            [
-              120.9751205,
-              14.5891332
-            ],
-            [
-              120.9751142,
-              14.5891401
-            ],
-            [
-              120.9750867,
-              14.5891151
-            ],
-            [
-              120.9750929,
-              14.5891083
-            ],
-            [
-              120.9750874,
-              14.5891033
-            ],
-            [
-              120.9750324,
-              14.5890535
-            ],
-            [
-              120.975046,
-              14.5890385
-            ],
-            [
-              120.9750811,
-              14.5889998
-            ],
-            [
-              120.9752836,
-              14.5887763
-            ],
-            [
-              120.9753464,
-              14.588707
-            ],
-            [
-              120.9753914,
-              14.5886573
-            ],
-            [
-              120.9754486,
-              14.5885942
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9758232,
-        14.5886862
-      ],
-      "target_point_lonlat": [
-        120.9756576,
-        14.5887835
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 301.26,
-      "photo_id": "984e1476-63d1-43b4-ad20-f8b8c37f49ee",
-      "image": "images/984e1476-63d1-43b4-ad20-f8b8c37f49ee.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 20.86,
-      "azimuth_delta_deg": 1.74,
-      "quality_score": 62,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:20:38.097000+00:00",
-      "camera": {
-        "azimuth_deg": 303.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/6cd09c23-b975-433b-83c2-6dc18307aa83/items/984e1476-63d1-43b4-ad20-f8b8c37f49ee",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/984e1476-63d1-43b4-ad20-f8b8c37f49ee/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1111660275",
-      "osm_url": "https://www.openstreetmap.org/way/1111660275",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9764874,
-              14.5902226
-            ],
-            [
-              120.9767038,
-              14.5903783
-            ],
-            [
-              120.9767291,
-              14.5903454
-            ],
-            [
-              120.9765127,
-              14.5901897
-            ],
-            [
-              120.9764874,
-              14.5902226
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9763957,
-        14.5902917
-      ],
-      "target_point_lonlat": [
-        120.9764874,
-        14.5902226
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 127.91,
-      "photo_id": "82cc4960-ae94-4c61-8561-8fe31de1100e",
-      "image": "images/82cc4960-ae94-4c61-8561-8fe31de1100e.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 12.51,
-      "azimuth_delta_deg": 14.09,
-      "quality_score": 61,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:18:22.188000+00:00",
-      "camera": {
-        "azimuth_deg": 142.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/82cc4960-ae94-4c61-8561-8fe31de1100e",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/82cc4960-ae94-4c61-8561-8fe31de1100e/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "267200613",
-      "osm_url": "https://www.openstreetmap.org/way/267200613",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9763176,
-              14.5893133
-            ],
-            [
-              120.9762635,
-              14.5893784
-            ],
-            [
-              120.9762127,
-              14.5894393
-            ],
-            [
-              120.976167,
-              14.5894943
-            ],
-            [
-              120.9761779,
-              14.5895034
-            ],
-            [
-              120.9762035,
-              14.5895247
-            ],
-            [
-              120.9763009,
-              14.5896058
-            ],
-            [
-              120.9763107,
-              14.589594
-            ],
-            [
-              120.9763648,
-              14.5896391
-            ],
-            [
-              120.9763765,
-              14.5896251
-            ],
-            [
-              120.9764336,
-              14.5896727
-            ],
-            [
-              120.976535,
-              14.5895509
-            ],
-            [
-              120.9765507,
-              14.589532
-            ],
-            [
-              120.9765628,
-              14.5895175
-            ],
-            [
-              120.9765575,
-              14.589513
-            ],
-            [
-              120.9765268,
-              14.5894874
-            ],
-            [
-              120.9764803,
-              14.5894487
-            ],
-            [
-              120.9764488,
-              14.5894225
-            ],
-            [
-              120.976404,
-              14.5893853
-            ],
-            [
-              120.9763726,
-              14.589359
-            ],
-            [
-              120.9763176,
-              14.5893133
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9764461,
-        14.5891853
-      ],
-      "target_point_lonlat": [
-        120.9763264,
-        14.5893206
-      ],
-      "facade_edge_index": 19,
-      "target_bearing_deg": 319.45,
-      "photo_id": "8e0489d8-c501-4f59-9fad-936f5c755f1d",
-      "image": "images/8e0489d8-c501-4f59-9fad-936f5c755f1d.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 19.81,
-      "azimuth_delta_deg": 6.55,
-      "quality_score": 59,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:26:52.191000+00:00",
-      "camera": {
-        "azimuth_deg": 326.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/9b024b1e-eabb-4623-9e08-7316f98f829b/items/8e0489d8-c501-4f59-9fad-936f5c755f1d",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/8e0489d8-c501-4f59-9fad-936f5c755f1d/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "59342534",
-      "osm_url": "https://www.openstreetmap.org/way/59342534",
-      "building_name": "Oscar Ledesma Building",
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9748239,
-              14.5898084
-            ],
-            [
-              120.9749414,
-              14.5896797
-            ],
-            [
-              120.9749499,
-              14.5896885
-            ],
-            [
-              120.9749577,
-              14.5896815
-            ],
-            [
-              120.9749675,
-              14.5896795
-            ],
-            [
-              120.9749768,
-              14.5896832
-            ],
-            [
-              120.9749835,
-              14.5896886
-            ],
-            [
-              120.9749885,
-              14.589696
-            ],
-            [
-              120.9749966,
-              14.5896889
-            ],
-            [
-              120.9752205,
-              14.5898835
-            ],
-            [
-              120.9752128,
-              14.589891
-            ],
-            [
-              120.9750886,
-              14.5900249
-            ],
-            [
-              120.9750837,
-              14.5900313
-            ],
-            [
-              120.9748239,
-              14.5898084
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9746468,
-        14.5899373
-      ],
-      "target_point_lonlat": [
-        120.9748239,
-        14.5898084
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 126.95,
-      "photo_id": "7f04b34c-055e-49c9-b65b-134fff161ea5",
-      "image": "images/7f04b34c-055e-49c9-b65b-134fff161ea5.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 23.86,
-      "azimuth_delta_deg": 1.05,
-      "quality_score": 59,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:25:37.294000+00:00",
-      "camera": {
-        "azimuth_deg": 128.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/6d479621-aa16-4562-aa14-5f41e6e3495d/items/7f04b34c-055e-49c9-b65b-134fff161ea5",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/7f04b34c-055e-49c9-b65b-134fff161ea5/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1110160952",
-      "osm_url": "https://www.openstreetmap.org/way/1110160952",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9745257,
-              14.5902282
-            ],
-            [
-              120.9745465,
-              14.5902046
-            ],
-            [
-              120.9745115,
-              14.5901759
-            ],
-            [
-              120.9744907,
-              14.5901995
-            ],
-            [
-              120.9745257,
-              14.5902282
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9745325,
-        14.5900782
-      ],
-      "target_point_lonlat": [
-        120.9745115,
-        14.5901759
-      ],
-      "facade_edge_index": 1,
-      "target_bearing_deg": 348.25,
-      "photo_id": "46a036cf-0393-49fe-82e8-fbe923861ec7",
-      "image": "images/46a036cf-0393-49fe-82e8-fbe923861ec7.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 11.09,
-      "azimuth_delta_deg": 18.25,
+      "distance_m": 15.07,
+      "azimuth_delta_deg": 12.67,
       "quality_score": 58,
       "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:23:15.069000+00:00",
+      "capture_datetime": "2024-03-02T02:38:08.439000+00:00",
       "camera": {
-        "azimuth_deg": 330.0,
+        "azimuth_deg": 118.0,
         "field_of_view_deg": 92.0,
         "horizontal_accuracy_m": 4.0,
         "horizontal_pixel_density": 56.0,
         "pitch_deg": null,
         "roll_deg": null
       },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/e429747e-9d6f-4b4a-989f-03840a7469c0/items/46a036cf-0393-49fe-82e8-fbe923861ec7",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/46a036cf-0393-49fe-82e8-fbe923861ec7/hd.jpg",
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/bfe44c8d-c05e-4fb2-8aa5-a9030763ab48",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/bfe44c8d-c05e-4fb2-8aa5-a9030763ab48/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
-      "osm_way_id": "1112819517",
-      "osm_url": "https://www.openstreetmap.org/way/1112819517",
-      "building_name": null,
+      "osm_way_id": "27323722",
+      "osm_url": "https://www.openstreetmap.org/way/27323722",
+      "building_name": "PBCom Tower",
       "footprint_geometry": {
         "coordinates": [
           [
             [
-              120.9756744,
-              14.5902009
+              121.0194216,
+              14.5581678
             ],
             [
-              120.9756932,
-              14.5902161
+              121.01972,
+              14.5585946
             ],
             [
-              120.9757325,
-              14.5901704
+              121.0193015,
+              14.5588635
             ],
             [
-              120.9757138,
-              14.5901553
+              121.0190505,
+              14.5585056
             ],
             [
-              120.9756744,
-              14.5902009
+              121.0190425,
+              14.5584881
+            ],
+            [
+              121.0190371,
+              14.5584692
+            ],
+            [
+              121.0190372,
+              14.5584479
+            ],
+            [
+              121.0190436,
+              14.55843
+            ],
+            [
+              121.0190551,
+              14.5584149
+            ],
+            [
+              121.0190684,
+              14.558403
+            ],
+            [
+              121.0194216,
+              14.5581678
             ]
           ]
         ],
         "type": "Polygon"
       },
       "capture_lonlat": [
-        120.9757572,
-        14.5903218
+        121.0187676,
+        14.5584267
       ],
       "target_point_lonlat": [
-        120.9756932,
-        14.5902161
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 210.37,
-      "photo_id": "fb373921-030e-4a66-b1b7-f28213508417",
-      "image": "images/fb373921-030e-4a66-b1b7-f28213508417.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 13.62,
-      "azimuth_delta_deg": 14.63,
-      "quality_score": 58,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:41:13.407000+00:00",
-      "camera": {
-        "azimuth_deg": 225.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/7b7dbaac-32b3-4e8f-b850-cf793c947d07/items/fb373921-030e-4a66-b1b7-f28213508417",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/fb373921-030e-4a66-b1b7-f28213508417/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "762415668",
-      "osm_url": "https://www.openstreetmap.org/way/762415668",
-      "building_name": "Casa Manila",
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9752555,
-              14.5898497
-            ],
-            [
-              120.9749973,
-              14.5896178
-            ],
-            [
-              120.9751303,
-              14.5894698
-            ],
-            [
-              120.9751337,
-              14.5894729
-            ],
-            [
-              120.9751979,
-              14.5895306
-            ],
-            [
-              120.9752271,
-              14.5895568
-            ],
-            [
-              120.9752305,
-              14.5895599
-            ],
-            [
-              120.9751859,
-              14.5896096
-            ],
-            [
-              120.975299,
-              14.5897112
-            ],
-            [
-              120.9753059,
-              14.5897036
-            ],
-            [
-              120.9753507,
-              14.5897438
-            ],
-            [
-              120.9753476,
-              14.5897472
-            ],
-            [
-              120.9752585,
-              14.5898464
-            ],
-            [
-              120.9752555,
-              14.5898497
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9748722,
-        14.5896873
-      ],
-      "target_point_lonlat": [
-        120.9749973,
-        14.5896178
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 119.86,
-      "photo_id": "60400a4b-1ae0-4301-a581-3e8e658f0c85",
-      "image": "images/60400a4b-1ae0-4301-a581-3e8e658f0c85.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 15.53,
-      "azimuth_delta_deg": 12.14,
-      "quality_score": 58,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:25:55.294000+00:00",
-      "camera": {
-        "azimuth_deg": 132.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/00c26c19-3e7c-4b36-b1c3-9b16048c1131/items/60400a4b-1ae0-4301-a581-3e8e658f0c85",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/60400a4b-1ae0-4301-a581-3e8e658f0c85/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "267200968",
-      "osm_url": "https://www.openstreetmap.org/way/267200968",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.977217,
-              14.589275
-            ],
-            [
-              120.9772098,
-              14.589269
-            ],
-            [
-              120.9769694,
-              14.5890725
-            ],
-            [
-              120.9768409,
-              14.5892298
-            ],
-            [
-              120.9770812,
-              14.5894262
-            ],
-            [
-              120.9770885,
-              14.5894322
-            ],
-            [
-              120.977217,
-              14.589275
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9770477,
-        14.5895389
-      ],
-      "target_point_lonlat": [
-        120.9770885,
-        14.5894322
-      ],
-      "facade_edge_index": 4,
-      "target_bearing_deg": 159.69,
-      "photo_id": "e478bc8b-f4bd-4d2d-9645-c193756fbabb",
-      "image": "images/e478bc8b-f4bd-4d2d-9645-c193756fbabb.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 12.65,
-      "azimuth_delta_deg": 17.69,
-      "quality_score": 56,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:19:06.188000+00:00",
-      "camera": {
-        "azimuth_deg": 142.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/e478bc8b-f4bd-4d2d-9645-c193756fbabb",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/e478bc8b-f4bd-4d2d-9645-c193756fbabb/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1109857919",
-      "osm_url": "https://www.openstreetmap.org/way/1109857919",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9766103,
-              14.5896115
-            ],
-            [
-              120.9766692,
-              14.5896645
-            ],
-            [
-              120.9767071,
-              14.5896251
-            ],
-            [
-              120.9766482,
-              14.589572
-            ],
-            [
-              120.9766103,
-              14.5896115
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9765645,
-        14.5893885
-      ],
-      "target_point_lonlat": [
-        120.9766482,
-        14.589572
-      ],
-      "facade_edge_index": 2,
-      "target_bearing_deg": 23.82,
-      "photo_id": "3e42787d-51d9-4407-8de1-46399b1692a2",
-      "image": "images/3e42787d-51d9-4407-8de1-46399b1692a2.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 22.3,
-      "azimuth_delta_deg": 5.18,
-      "quality_score": 56,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:27:06.190000+00:00",
-      "camera": {
-        "azimuth_deg": 29.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/9b024b1e-eabb-4623-9e08-7316f98f829b/items/3e42787d-51d9-4407-8de1-46399b1692a2",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/3e42787d-51d9-4407-8de1-46399b1692a2/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "267201598",
-      "osm_url": "https://www.openstreetmap.org/way/267201598",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9757201,
-              14.5894925
-            ],
-            [
-              120.9758282,
-              14.5893732
-            ],
-            [
-              120.9757622,
-              14.5893133
-            ],
-            [
-              120.9757211,
-              14.5893586
-            ],
-            [
-              120.975562,
-              14.5892144
-            ],
-            [
-              120.9755686,
-              14.5892071
-            ],
-            [
-              120.9754783,
-              14.5891252
-            ],
-            [
-              120.9754047,
-              14.5892065
-            ],
-            [
-              120.9757201,
-              14.5894925
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9755101,
-        14.589038
-      ],
-      "target_point_lonlat": [
-        120.9754783,
-        14.5891252
+        121.0190372,
+        14.5584479
       ],
       "facade_edge_index": 5,
-      "target_bearing_deg": 340.56,
-      "photo_id": "cbd3f77a-99ac-420d-935d-ca818a3b5486",
-      "image": "images/cbd3f77a-99ac-420d-935d-ca818a3b5486.jpg",
-      "hd_image": null,
+      "target_bearing_deg": 85.36,
+      "photo_id": "b1a32857-5eea-4b21-966b-42dbd4c8328f",
+      "image": "images/b1a32857-5eea-4b21-966b-42dbd4c8328f.jpg",
+      "hd_image": "full/b1a32857-5eea-4b21-966b-42dbd4c8328f.mpo",
       "width": 500,
       "height": 375,
-      "distance_m": 10.28,
-      "azimuth_delta_deg": 21.56,
-      "quality_score": 55,
+      "distance_m": 29.14,
+      "azimuth_delta_deg": 4.64,
+      "quality_score": 47,
       "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:20:56.097000+00:00",
+      "capture_datetime": "2024-03-02T02:37:20.439000+00:00",
       "camera": {
-        "azimuth_deg": 319.0,
+        "azimuth_deg": 90.0,
         "field_of_view_deg": 92.0,
         "horizontal_accuracy_m": 4.0,
         "horizontal_pixel_density": 56.0,
         "pitch_deg": null,
         "roll_deg": null
       },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/6cd09c23-b975-433b-83c2-6dc18307aa83/items/cbd3f77a-99ac-420d-935d-ca818a3b5486",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/cbd3f77a-99ac-420d-935d-ca818a3b5486/hd.jpg",
+      "metadata_url": "https://api.panoramax.xyz/api/collections/c24ccb08-a5d6-4c78-bad5-ddc08fcd44f1/items/b1a32857-5eea-4b21-966b-42dbd4c8328f",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/b1a32857-5eea-4b21-966b-42dbd4c8328f/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
-      "osm_way_id": "606536853",
-      "osm_url": "https://www.openstreetmap.org/way/606536853",
-      "building_name": null,
+      "osm_way_id": "35893550",
+      "osm_url": "https://www.openstreetmap.org/way/35893550",
+      "building_name": "Robinsons Summit Center",
       "footprint_geometry": {
         "coordinates": [
           [
             [
-              120.9766483,
-              14.5900551
+              121.0204574,
+              14.5575029
             ],
             [
-              120.9766206,
-              14.5900903
+              121.0206936,
+              14.5578499
             ],
             [
-              120.9767148,
-              14.5901597
+              121.0209585,
+              14.5576713
             ],
             [
-              120.9766343,
-              14.5902689
+              121.020724,
+              14.5573271
             ],
             [
-              120.97673,
-              14.5903394
-            ],
-            [
-              120.9767542,
-              14.5903066
-            ],
-            [
-              120.9767312,
-              14.5902897
-            ],
-            [
-              120.9767875,
-              14.5902133
-            ],
-            [
-              120.9768151,
-              14.5901781
-            ],
-            [
-              120.9768203,
-              14.5901711
-            ],
-            [
-              120.9767293,
-              14.590104
-            ],
-            [
-              120.9767241,
-              14.590111
-            ],
-            [
-              120.9766483,
-              14.5900551
+              121.0204574,
+              14.5575029
             ]
           ]
         ],
         "type": "Polygon"
       },
       "capture_lonlat": [
-        120.9765189,
-        14.5901314
+        121.0202763,
+        14.5575399
       ],
       "target_point_lonlat": [
-        120.9766206,
-        14.5900903
+        121.0204574,
+        14.5575029
       ],
       "facade_edge_index": 0,
-      "target_bearing_deg": 112.67,
-      "photo_id": "184860ab-cead-4011-b03a-e07a1d5182d7",
-      "image": "images/184860ab-cead-4011-b03a-e07a1d5182d7.jpg",
-      "hd_image": null,
+      "target_bearing_deg": 101.92,
+      "photo_id": "2436b59d-654f-48bb-81c5-3dfe34fcaf63",
+      "image": "images/2436b59d-654f-48bb-81c5-3dfe34fcaf63.jpg",
+      "hd_image": "full/2436b59d-654f-48bb-81c5-3dfe34fcaf63.mpo",
       "width": 500,
       "height": 375,
-      "distance_m": 11.87,
-      "azimuth_delta_deg": 19.33,
-      "quality_score": 55,
+      "distance_m": 19.94,
+      "azimuth_delta_deg": 17.08,
+      "quality_score": 46,
       "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:18:32.188000+00:00",
+      "capture_datetime": "2024-03-02T02:38:02.439000+00:00",
       "camera": {
-        "azimuth_deg": 132.0,
+        "azimuth_deg": 119.0,
         "field_of_view_deg": 92.0,
         "horizontal_accuracy_m": 4.0,
         "horizontal_pixel_density": 56.0,
         "pitch_deg": null,
         "roll_deg": null
       },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/9b024b1e-eabb-4623-9e08-7316f98f829b/items/184860ab-cead-4011-b03a-e07a1d5182d7",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/184860ab-cead-4011-b03a-e07a1d5182d7/hd.jpg",
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/2436b59d-654f-48bb-81c5-3dfe34fcaf63",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/2436b59d-654f-48bb-81c5-3dfe34fcaf63/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
-      "osm_way_id": "1108871583",
-      "osm_url": "https://www.openstreetmap.org/way/1108871583",
-      "building_name": null,
+      "osm_way_id": "35893548",
+      "osm_url": "https://www.openstreetmap.org/way/35893548",
+      "building_name": "Tower 6789",
       "footprint_geometry": {
         "coordinates": [
           [
             [
-              120.9765076,
-              14.5898453
+              121.0200229,
+              14.5581925
             ],
             [
-              120.9766326,
-              14.5899498
+              121.019822,
+              14.5579215
             ],
             [
-              120.9767313,
-              14.5898392
+              121.020119,
+              14.5577152
             ],
             [
-              120.9766063,
-              14.5897347
+              121.0203199,
+              14.5579861
             ],
             [
-              120.9765076,
-              14.5898453
+              121.0200229,
+              14.5581925
             ]
           ]
         ],
         "type": "Polygon"
       },
       "capture_lonlat": [
-        120.9766156,
-        14.5900283
+        121.0196097,
+        14.5579582
       ],
       "target_point_lonlat": [
-        120.9766326,
-        14.5899498
+        121.019822,
+        14.5579215
       ],
       "facade_edge_index": 0,
-      "target_bearing_deg": 168.16,
-      "photo_id": "80e8ee39-bcd4-4692-8c60-324618e7c328",
-      "image": "images/80e8ee39-bcd4-4692-8c60-324618e7c328.jpg",
-      "hd_image": null,
+      "target_bearing_deg": 100.13,
+      "photo_id": "74ba289e-a553-4db5-bcec-efdff2e4446e",
+      "image": "images/74ba289e-a553-4db5-bcec-efdff2e4446e.jpg",
+      "hd_image": "full/74ba289e-a553-4db5-bcec-efdff2e4446e.mpo",
       "width": 500,
       "height": 375,
-      "distance_m": 8.91,
-      "azimuth_delta_deg": 24.16,
-      "quality_score": 54,
+      "distance_m": 23.24,
+      "azimuth_delta_deg": 20.87,
+      "quality_score": 36,
       "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:18:38.187000+00:00",
+      "capture_datetime": "2024-03-02T02:37:46.439000+00:00",
       "camera": {
-        "azimuth_deg": 144.0,
+        "azimuth_deg": 121.0,
         "field_of_view_deg": 92.0,
         "horizontal_accuracy_m": 4.0,
         "horizontal_pixel_density": 56.0,
         "pitch_deg": null,
         "roll_deg": null
       },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/80e8ee39-bcd4-4692-8c60-324618e7c328",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/80e8ee39-bcd4-4692-8c60-324618e7c328/hd.jpg",
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/74ba289e-a553-4db5-bcec-efdff2e4446e",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/74ba289e-a553-4db5-bcec-efdff2e4446e/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     },
     {
-      "osm_way_id": "1112819516",
-      "osm_url": "https://www.openstreetmap.org/way/1112819516",
-      "building_name": null,
+      "osm_way_id": "35893549",
+      "osm_url": "https://www.openstreetmap.org/way/35893549",
+      "building_name": "The KPMG Center",
       "footprint_geometry": {
         "coordinates": [
           [
             [
-              120.9757023,
-              14.590216
+              121.020146,
+              14.5577055
             ],
             [
-              120.9757288,
-              14.5902374
+              121.0203466,
+              14.557991
             ],
             [
-              120.9757715,
-              14.5901878
+              121.0206426,
+              14.5577963
             ],
             [
-              120.9757451,
-              14.5901664
+              121.0204419,
+              14.5575107
             ],
             [
-              120.9757023,
-              14.590216
+              121.020146,
+              14.5577055
             ]
           ]
         ],
         "type": "Polygon"
       },
       "capture_lonlat": [
-        120.9757819,
-        14.5903474
+        121.0199037,
+        14.5577602
       ],
       "target_point_lonlat": [
-        120.9757288,
-        14.5902374
+        121.020146,
+        14.5577055
       ],
       "facade_edge_index": 0,
-      "target_bearing_deg": 205.04,
-      "photo_id": "f39105da-dc1d-4bc1-bb95-baaddeaad0d8",
-      "image": "images/f39105da-dc1d-4bc1-bb95-baaddeaad0d8.jpg",
-      "hd_image": null,
+      "target_bearing_deg": 103.13,
+      "photo_id": "ef74acee-892c-436f-bf91-c5c31f7cbe05",
+      "image": "images/ef74acee-892c-436f-bf91-c5c31f7cbe05.jpg",
+      "hd_image": "full/ef74acee-892c-436f-bf91-c5c31f7cbe05.mpo",
       "width": 500,
       "height": 375,
-      "distance_m": 13.5,
-      "azimuth_delta_deg": 17.96,
-      "quality_score": 54,
+      "distance_m": 26.81,
+      "azimuth_delta_deg": 20.87,
+      "quality_score": 30,
       "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:41:11.407000+00:00",
+      "capture_datetime": "2024-03-02T02:37:54.438000+00:00",
       "camera": {
-        "azimuth_deg": 223.0,
+        "azimuth_deg": 124.0,
         "field_of_view_deg": 92.0,
         "horizontal_accuracy_m": 4.0,
         "horizontal_pixel_density": 56.0,
         "pitch_deg": null,
         "roll_deg": null
       },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/7d9348c2-502f-4b88-b26a-fe4dec20a2e7/items/f39105da-dc1d-4bc1-bb95-baaddeaad0d8",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/f39105da-dc1d-4bc1-bb95-baaddeaad0d8/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "762420950",
-      "osm_url": "https://www.openstreetmap.org/way/762420950",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9760851,
-              14.5909404
-            ],
-            [
-              120.976217,
-              14.5907944
-            ],
-            [
-              120.9763205,
-              14.5908879
-            ],
-            [
-              120.9762966,
-              14.5909143
-            ],
-            [
-              120.9762789,
-              14.5909339
-            ],
-            [
-              120.9762313,
-              14.5909867
-            ],
-            [
-              120.9762086,
-              14.5910118
-            ],
-            [
-              120.9761792,
-              14.5910443
-            ],
-            [
-              120.9761686,
-              14.5910347
-            ],
-            [
-              120.976178,
-              14.5910243
-            ],
-            [
-              120.9760851,
-              14.5909404
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9761578,
-        14.5907033
-      ],
-      "target_point_lonlat": [
-        120.976217,
-        14.5907944
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 32.16,
-      "photo_id": "134abd91-1ba0-43d5-b1e5-71bb394f71a7",
-      "image": "images/134abd91-1ba0-43d5-b1e5-71bb394f71a7.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 11.97,
-      "azimuth_delta_deg": 20.84,
-      "quality_score": 53,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:35:41.404000+00:00",
-      "camera": {
-        "azimuth_deg": 53.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/7d9348c2-502f-4b88-b26a-fe4dec20a2e7/items/134abd91-1ba0-43d5-b1e5-71bb394f71a7",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/134abd91-1ba0-43d5-b1e5-71bb394f71a7/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "267200598",
-      "osm_url": "https://www.openstreetmap.org/way/267200598",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9761289,
-              14.5907761
-            ],
-            [
-              120.9761807,
-              14.5908217
-            ],
-            [
-              120.9762082,
-              14.5907924
-            ],
-            [
-              120.9761563,
-              14.5907468
-            ],
-            [
-              120.9761289,
-              14.5907761
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9763386,
-        14.590829
-      ],
-      "target_point_lonlat": [
-        120.9762082,
-        14.5907924
-      ],
-      "facade_edge_index": 1,
-      "target_bearing_deg": 253.83,
-      "photo_id": "e670c4c6-c001-44e0-b187-88a0c452f4ab",
-      "image": "images/e670c4c6-c001-44e0-b187-88a0c452f4ab.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 14.62,
-      "azimuth_delta_deg": 17.83,
-      "quality_score": 53,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:40:40.407000+00:00",
-      "camera": {
-        "azimuth_deg": 236.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/7d9348c2-502f-4b88-b26a-fe4dec20a2e7/items/e670c4c6-c001-44e0-b187-88a0c452f4ab",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/e670c4c6-c001-44e0-b187-88a0c452f4ab/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "267201796",
-      "osm_url": "https://www.openstreetmap.org/way/267201796",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9759158,
-              14.5904014
-            ],
-            [
-              120.9759729,
-              14.5903341
-            ],
-            [
-              120.976015,
-              14.5903699
-            ],
-            [
-              120.9760407,
-              14.5903397
-            ],
-            [
-              120.976015,
-              14.5903178
-            ],
-            [
-              120.9760248,
-              14.5903063
-            ],
-            [
-              120.9759197,
-              14.590217
-            ],
-            [
-              120.9758271,
-              14.590326
-            ],
-            [
-              120.9759158,
-              14.5904014
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9756642,
-        14.5902573
-      ],
-      "target_point_lonlat": [
-        120.9758271,
-        14.590326
-      ],
-      "facade_edge_index": 6,
-      "target_bearing_deg": 66.45,
-      "photo_id": "3b78741b-1a40-4486-a397-a250bf6595c5",
-      "image": "images/3b78741b-1a40-4486-a397-a250bf6595c5.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 19.14,
-      "azimuth_delta_deg": 12.45,
-      "quality_score": 53,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:35:05.404000+00:00",
-      "camera": {
-        "azimuth_deg": 54.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/7d9348c2-502f-4b88-b26a-fe4dec20a2e7/items/3b78741b-1a40-4486-a397-a250bf6595c5",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/3b78741b-1a40-4486-a397-a250bf6595c5/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "72518967",
-      "osm_url": "https://www.openstreetmap.org/way/72518967",
-      "building_name": "Palacio Grande",
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9738915,
-              14.5902246
-            ],
-            [
-              120.9741076,
-              14.5904269
-            ],
-            [
-              120.9741062,
-              14.5904645
-            ],
-            [
-              120.9739591,
-              14.5906231
-            ],
-            [
-              120.9739475,
-              14.5906129
-            ],
-            [
-              120.9738199,
-              14.5905015
-            ],
-            [
-              120.9738764,
-              14.5904441
-            ],
-            [
-              120.9737725,
-              14.5903444
-            ],
-            [
-              120.9738848,
-              14.5902314
-            ],
-            [
-              120.9738915,
-              14.5902246
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9743158,
-        14.5903252
-      ],
-      "target_point_lonlat": [
-        120.9741076,
-        14.5904269
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 296.78,
-      "photo_id": "be66790b-4c3b-4903-8dea-96f60c3b685d",
-      "image": "images/be66790b-4c3b-4903-8dea-96f60c3b685d.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 25.12,
-      "azimuth_delta_deg": 4.22,
-      "quality_score": 53,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-09T23:52:20.456000+00:00",
-      "camera": {
-        "azimuth_deg": 301.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/7c293b54-859f-4f22-b245-92647606a336/items/be66790b-4c3b-4903-8dea-96f60c3b685d",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/be66790b-4c3b-4903-8dea-96f60c3b685d/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "89571509",
-      "osm_url": "https://www.openstreetmap.org/way/89571509",
-      "building_name": "Knights of Columbus",
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9758823,
-              14.5888311
-            ],
-            [
-              120.9760884,
-              14.5885876
-            ],
-            [
-              120.9761881,
-              14.588672
-            ],
-            [
-              120.9761948,
-              14.5886642
-            ],
-            [
-              120.9763015,
-              14.5887546
-            ],
-            [
-              120.9760834,
-              14.5890121
-            ],
-            [
-              120.9759754,
-              14.5889206
-            ],
-            [
-              120.9759806,
-              14.5889144
-            ],
-            [
-              120.9758823,
-              14.5888311
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9756911,
-        14.5886669
-      ],
-      "target_point_lonlat": [
-        120.9758884,
-        14.5888239
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 50.58,
-      "photo_id": "88cda1c3-4a74-43f3-a067-b6e354abcc64",
-      "image": "images/88cda1c3-4a74-43f3-a067-b6e354abcc64.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 27.5,
-      "azimuth_delta_deg": 1.42,
-      "quality_score": 53,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:16:48.095000+00:00",
-      "camera": {
-        "azimuth_deg": 52.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/5ad2dd0e-32b1-4eb6-88ef-d15ded7aad0e/items/88cda1c3-4a74-43f3-a067-b6e354abcc64",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/88cda1c3-4a74-43f3-a067-b6e354abcc64/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "829243250",
-      "osm_url": "https://www.openstreetmap.org/way/829243250",
-      "building_name": "Seminario San Agustin (Postulancy)",
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9751406,
-              14.5883206
-            ],
-            [
-              120.9752458,
-              14.5882139
-            ],
-            [
-              120.9750854,
-              14.5880085
-            ],
-            [
-              120.9750154,
-              14.5880798
-            ],
-            [
-              120.9748833,
-              14.588219
-            ],
-            [
-              120.974978,
-              14.5883023
-            ],
-            [
-              120.9750408,
-              14.5882314
-            ],
-            [
-              120.9751406,
-              14.5883206
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9753952,
-        14.5881303
-      ],
-      "target_point_lonlat": [
-        120.9752458,
-        14.5882139
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 300.04,
-      "photo_id": "b80f0786-a7a5-4acf-9f5c-41638d1e2f89",
-      "image": "images/b80f0786-a7a5-4acf-9f5c-41638d1e2f89.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 18.58,
-      "azimuth_delta_deg": 13.96,
-      "quality_score": 52,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:16:22.095000+00:00",
-      "camera": {
-        "azimuth_deg": 314.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/5ad2dd0e-32b1-4eb6-88ef-d15ded7aad0e/items/b80f0786-a7a5-4acf-9f5c-41638d1e2f89",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/b80f0786-a7a5-4acf-9f5c-41638d1e2f89/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1111660296",
-      "osm_url": "https://www.openstreetmap.org/way/1111660296",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9773015,
-              14.5892925
-            ],
-            [
-              120.9774657,
-              14.5894354
-            ],
-            [
-              120.977506,
-              14.5893891
-            ],
-            [
-              120.9773419,
-              14.5892462
-            ],
-            [
-              120.9773015,
-              14.5892925
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9771903,
-        14.5893371
-      ],
-      "target_point_lonlat": [
-        120.9773015,
-        14.5892925
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 112.51,
-      "photo_id": "59b5cf75-2243-4db4-a41b-6e3795a6d1db",
-      "image": "images/59b5cf75-2243-4db4-a41b-6e3795a6d1db.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 12.96,
-      "azimuth_delta_deg": 21.49,
-      "quality_score": 51,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T01:19:16.188000+00:00",
-      "camera": {
-        "azimuth_deg": 134.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/59b5cf75-2243-4db4-a41b-6e3795a6d1db",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/59b5cf75-2243-4db4-a41b-6e3795a6d1db/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "267201599",
-      "osm_url": "https://www.openstreetmap.org/way/267201599",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9759857,
-              14.589023
-            ],
-            [
-              120.9757385,
-              14.5888274
-            ],
-            [
-              120.9756173,
-              14.5889682
-            ],
-            [
-              120.9756898,
-              14.5890238
-            ],
-            [
-              120.9756786,
-              14.5890331
-            ],
-            [
-              120.9758638,
-              14.5891846
-            ],
-            [
-              120.9759857,
-              14.589023
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.975784,
-        14.588712
-      ],
-      "target_point_lonlat": [
-        120.9757385,
-        14.5888274
-      ],
-      "facade_edge_index": 1,
-      "target_bearing_deg": 339.11,
-      "photo_id": "bd7d9ffd-19d2-4583-9022-ff520b3ed8ea",
-      "image": "images/bd7d9ffd-19d2-4583-9022-ff520b3ed8ea.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 13.73,
-      "azimuth_delta_deg": 20.11,
-      "quality_score": 51,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:20:40.097000+00:00",
-      "camera": {
-        "azimuth_deg": 319.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/5ad2dd0e-32b1-4eb6-88ef-d15ded7aad0e/items/bd7d9ffd-19d2-4583-9022-ff520b3ed8ea",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/bd7d9ffd-19d2-4583-9022-ff520b3ed8ea/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "267200602",
-      "osm_url": "https://www.openstreetmap.org/way/267200602",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9765695,
-              14.5911112
-            ],
-            [
-              120.9763182,
-              14.5908972
-            ],
-            [
-              120.9761411,
-              14.591092
-            ],
-            [
-              120.9763924,
-              14.591306
-            ],
-            [
-              120.9765695,
-              14.5911112
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9762422,
-        14.590765
-      ],
-      "target_point_lonlat": [
-        120.9763182,
-        14.5908972
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 29.09,
-      "photo_id": "528f4ec4-cd0e-434e-b875-cac3bc30e470",
-      "image": "images/528f4ec4-cd0e-434e-b875-cac3bc30e470.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 16.82,
-      "azimuth_delta_deg": 16.91,
-      "quality_score": 50,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:35:45.405000+00:00",
-      "camera": {
-        "azimuth_deg": 46.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/528934fd-a3b6-4c7f-aaa7-e097e335161f/items/528f4ec4-cd0e-434e-b875-cac3bc30e470",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/528f4ec4-cd0e-434e-b875-cac3bc30e470/hd.jpg",
-      "identity_status": "requires_visual_identity_review"
-    },
-    {
-      "osm_way_id": "1112819515",
-      "osm_url": "https://www.openstreetmap.org/way/1112819515",
-      "building_name": null,
-      "footprint_geometry": {
-        "coordinates": [
-          [
-            [
-              120.9757339,
-              14.5902411
-            ],
-            [
-              120.9757857,
-              14.5902829
-            ],
-            [
-              120.9758154,
-              14.5902485
-            ],
-            [
-              120.9757636,
-              14.5902066
-            ],
-            [
-              120.9757339,
-              14.5902411
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      },
-      "capture_lonlat": [
-        120.9758772,
-        14.5904436
-      ],
-      "target_point_lonlat": [
-        120.9757857,
-        14.5902829
-      ],
-      "facade_edge_index": 0,
-      "target_bearing_deg": 208.86,
-      "photo_id": "6ea8bb37-8de1-4ace-a5b0-88cd254e9872",
-      "image": "images/6ea8bb37-8de1-4ace-a5b0-88cd254e9872.jpg",
-      "hd_image": null,
-      "width": 500,
-      "height": 375,
-      "distance_m": 20.4,
-      "azimuth_delta_deg": 13.14,
-      "quality_score": 50,
-      "license": "CC-BY-SA-4.0",
-      "capture_datetime": "2024-03-10T00:41:05.407000+00:00",
-      "camera": {
-        "azimuth_deg": 222.0,
-        "field_of_view_deg": 92.0,
-        "horizontal_accuracy_m": 4.0,
-        "horizontal_pixel_density": 56.0,
-        "pitch_deg": null,
-        "roll_deg": null
-      },
-      "metadata_url": "https://api.panoramax.xyz/api/collections/7b7dbaac-32b3-4e8f-b850-cf793c947d07/items/6ea8bb37-8de1-4ace-a5b0-88cd254e9872",
-      "full_image_url": "https://api.panoramax.xyz/api/pictures/6ea8bb37-8de1-4ace-a5b0-88cd254e9872/hd.jpg",
+      "metadata_url": "https://api.panoramax.xyz/api/collections/fb1712a3-5144-4787-be2a-d001d08e6979/items/ef74acee-892c-436f-bf91-c5c31f7cbe05",
+      "full_image_url": "https://api.panoramax.xyz/api/pictures/ef74acee-892c-436f-bf91-c5c31f7cbe05/hd.jpg",
       "identity_status": "requires_visual_identity_review"
     }
   ],
