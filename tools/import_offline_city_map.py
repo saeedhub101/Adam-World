@@ -37,6 +37,10 @@ def query_for(city):
         f'way["waterway"="riverbank"]{around};'
         f'node["natural"="tree"]{around};'
         f'node["highway"="street_lamp"]{around};'
+        f'node["highway"~"traffic_signals|crossing|stop|bus_stop"]{around};'
+        f'node["railway"="level_crossing"]{around};'
+        f'way["barrier"]{around};'
+        f'way["man_made"~"bridge|pier"]{around};'
         ");out geom;"
     )
 
