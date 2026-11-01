@@ -73,11 +73,11 @@ jobs:
       - name: Report source and review outcomes
         if: always()
         env:
-          CATALOGUE: \${{ steps.catalogue.outcome }}
-          QUEUE: \${{ steps.queue.outcome }}
-          CV: \${{ steps.cv.outcome }}
-          GALLERY: \${{ steps.gallery.outcome }}
-          GLB: \${{ steps.glb.outcome }}
+          CATALOGUE: ${{ steps.catalogue.outcome }}
+          QUEUE: ${{ steps.queue.outcome }}
+          CV: ${{ steps.cv.outcome }}
+          GALLERY: ${{ steps.gallery.outcome }}
+          GLB: ${{ steps.glb.outcome }}
         run: |
           printf 'AMMAN_FACADE_EVIDENCE catalogue=%s queue=%s cv=%s gallery=%s approved_glb=%s\n' "$CATALOGUE" "$QUEUE" "$CV" "$GALLERY" "$GLB"
           for outcome in "$CATALOGUE" "$QUEUE" "$CV" "$GALLERY" "$GLB"; do
