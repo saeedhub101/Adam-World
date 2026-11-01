@@ -781,11 +781,37 @@ const ped=makeAdamCharacter();scene.add(ped);
   // The source photograph supplies facial features; retain the rig, hair and ears.
   [3,4,5,6,7,8].forEach(i=>{if(ped.userData.head.children[i])ped.userData.head.children[i].visible=false;});
   ped.userData.photoFace=photoFace;
+  // Attach expression morphs to the photo-derived face, not the hidden generic head.
+  photoFace.geometry.morphAttributes.position=[];
+  adamMorphNames.forEach(name=>{
+   const base=photoFace.geometry.attributes.position,a=new Float32Array(base.array.length);
+   for(let i=0;i<base.count;i++){
+    const x=base.getX(i),y=base.getY(i),z=base.getZ(i);let dx=0,dy=0,dz=0;
+    const mouth=z>0.12&&y<0.03&&y>-0.17&&Math.abs(x)<0.13;
+    if(name==='smile'&&mouth)dy+=0.035*Math.max(0,1-Math.abs(x)*5);
+    if(name==='frown'&&mouth)dy-=0.03*Math.max(0,1-Math.abs(x)*5);
+    if(name==='mouthOpen'&&mouth)dy-=0.04*Math.max(0,1-Math.abs(x)*6);
+    if(name==='mouthWide'&&mouth)dx+=Math.sign(x)*0.03;
+    if(name==='mouthRound'&&mouth)dx-=x*0.3;
+    if(name==='mouthPucker'&&mouth){dx-=x*0.35;dz+=0.025;}
+    if(name==='cheekRaise'&&z>0.1&&y<0.03&&y>-0.12&&Math.abs(x)>0.1)dy+=0.02;
+    if(name.indexOf('browDown')===0&&z>0.12&&y>0.1&&y<0.22&&Math.abs(x)<0.19)dy-=0.02;
+    if(name==='browInnerUp'&&z>0.12&&y>0.1&&y<0.22&&Math.abs(x)<0.09)dy+=0.025;
+    if(name.indexOf('browOuterUp')===0&&z>0.12&&y>0.1&&y<0.22&&Math.abs(x)>0.1)dy+=0.02;
+    if(name.indexOf('eyeWide')===0&&z>0.14&&y>0.035&&y<0.12&&Math.abs(x)>0.04&&Math.abs(x)<0.16)dy+=0.01;
+    if(name.indexOf('eyeSquint')===0&&z>0.14&&y>0.035&&y<0.12&&Math.abs(x)>0.04&&Math.abs(x)<0.16)dy-=0.01;
+    a[i*3]=x+dx;a[i*3+1]=y+dy;a[i*3+2]=z+dz;
+   }
+   photoFace.geometry.morphAttributes.position.push(new THREE.Float32BufferAttribute(a,3));
+  });
+  photoFace.geometry.morphTargetsRelative=false;photoFace.updateMorphTargets();
+  photoFace.morphTargetDictionary={};adamMorphNames.forEach((n,i)=>photoFace.morphTargetDictionary[n]=i);
+  adamFace=photoFace;
  }catch(error){console.error('Adam photo face could not be loaded:',error);}
 })();
 
 // Facial blendshapes and lip-sync controller for the playable character.
-const adamFace=ped.userData.head.children[0];
+let adamFace=ped.userData.head.children[0];
 adamFace.geometry=adamFace.geometry.clone();
 const adamBase=adamFace.geometry.attributes.position;
 const adamMorphNames=['smile','frown','mouthOpen','mouthWide','mouthRound','mouthPucker','browDownLeft','browDownRight','browInnerUp','browOuterUpLeft','browOuterUpRight','eyeWideLeft','eyeWideRight','eyeSquintLeft','eyeSquintRight','cheekRaise'];
