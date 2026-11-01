@@ -27,6 +27,8 @@ Source pages:
 - [Adult man](https://www.innerscene.com/tools/library/3d-parts/folded-arms-3d-person-standing-b4b904f5)
 - [Boy](https://www.innerscene.com/tools/library/3d-parts/leo-3d-person-child-standing-88a69d44)
 - [Girl](https://www.innerscene.com/tools/library/3d-parts/maya-3d-person-child-standing-bace98fd)
+- [Animated adult man — locomotion collection](https://www.innerscene.com/tools/library/3d-parts/locomotion-collection-jordan-3d-person-animated-911f1584)
+- [Animated adult woman — locomotion collection](https://www.innerscene.com/tools/library/3d-parts/locomotion-collection-maya-3d-person-animated-1499b2fd)
 - [Dog](https://www.innerscene.com/tools/library/3d-parts/standing-dog-bf156da2)
 - [Sedan](https://www.innerscene.com/tools/library/3d-parts/sedan-car-42109739)
 - [Pickup](https://www.innerscene.com/tools/library/3d-parts/pickup-truck-da45aa3f)
