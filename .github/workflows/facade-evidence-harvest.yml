@@ -104,6 +104,13 @@ jobs:
           python3 -m pip install --disable-pip-version-check numpy opencv-python-headless
           python3 tools/facades/visual_verify_facades.py
 
+      - name: Download strict facade candidates into per-city human review galleries
+        id: review_gallery
+        continue-on-error: true
+        run: |
+          python3 -m pip install --disable-pip-version-check Pillow
+          python3 tools/facades/prepare_facade_review.py --git-checkpoint --limit-per-city 80 --hd-limit-per-city 8
+
       - name: Immediately rebuild GLBs from verified facade assignments
         id: glb
         continue-on-error: true
@@ -132,10 +139,11 @@ jobs:
           CATALOG: ${{ steps.catalog.outcome }}
           QUEUE: ${{ steps.queue.outcome }}
           VISUAL_CV: ${{ steps.visual_cv.outcome }}
+          REVIEW_GALLERY: ${{ steps.review_gallery.outcome }}
           GLB: ${{ steps.glb.outcome }}
           COMMIT: ${{ steps.commit.outcome }}
         run: |
-          printf 'Facade harvest outcomes: tests=%s osm=%s catalogue=%s queues=%s visual_cv=%s verified_glb=%s commit=%s\n' "$TESTS" "$OSM" "$CATALOG" "$QUEUE" "$VISUAL_CV" "$GLB" "$COMMIT"
-          for outcome in "$TESTS" "$OSM" "$CATALOG" "$QUEUE" "$VISUAL_CV" "$GLB" "$COMMIT"; do
+          printf 'Facade harvest outcomes: tests=%s osm=%s catalogue=%s queues=%s visual_cv=%s review_gallery=%s verified_glb=%s commit=%s\n' "$TESTS" "$OSM" "$CATALOG" "$QUEUE" "$VISUAL_CV" "$REVIEW_GALLERY" "$GLB" "$COMMIT"
+          for outcome in "$TESTS" "$OSM" "$CATALOG" "$QUEUE" "$VISUAL_CV" "$REVIEW_GALLERY" "$GLB" "$COMMIT"; do
             if [ "$outcome" != "success" ]; then exit 1; fi
           done
