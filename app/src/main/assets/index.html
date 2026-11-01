@@ -482,6 +482,7 @@ function addBuildingArchitecture(P,t,height,id){
   const utilitarian=/garage|garages|shed|hut|carport|warehouse|industrial|storage/.test(kind);
   const balconies=String(t.balcony||t['building:balcony']||'').toLowerCase();
   const allowBalconies=residential||balconies==='yes'||balconies==='true';
+  const robinsonsMall=String(id).replace(/^way\\//,'')==='130532101';
   const layouts=[];
   let buildingWindowCount=0,buildingBalconyCount=0;
   for(let e=0;e<P.length;e++){
@@ -489,11 +490,17 @@ function addBuildingArchitecture(P,t,height,id){
     const len=Math.hypot(dx,dz);if(len<3.2){layouts.push({a,b,floors,floorH,windowsByFloor:[]});continue;}
     const tx=dx/len,tz=dz/len,nx=outwardSign*tz,nz=-outwardSign*tx;
     const ax=[tx,0,tz],ay=[0,1,0],az=[nx,0,nz];
-    const count=clamp(Math.floor(len/3.25),1,18),spacing=len/count;
+    const count=clamp(Math.floor(len/(robinsonsMall?2.55:3.25)),1,robinsonsMall?36:18),spacing=len/count;
     const ww=Math.min(1.45,Math.max(0.72,spacing*0.52));
     const wh=Math.min(1.55,Math.max(0.95,floorH*0.53));
     const mid=[(a[0]+b[0])/2,0,(a[1]+b[1])/2];
     const windowsByFloor=Array.from({length:floors},()=>[]);
+    if(robinsonsMall){
+      for(let fl=1;fl<floors;fl++){
+        const bandCenter=[mid[0],fl*floorH,mid[2]];
+        pushArchBox(archAcc.trim,bandCenter,ax,ay,az,len,0.22,0.24);
+      }
+    }
     for(let fl=0;fl<floors;fl++){
       const base=fl*floorH;
       const cy=base+Math.min(floorH*0.58,Math.max(1.15,floorH*0.56));
@@ -501,7 +508,7 @@ function addBuildingArchitecture(P,t,height,id){
       for(let wi=0;wi<count;wi++){
         // Fair per-building detail budget: later buildings must not become blank when
         // an earlier block consumes a global geometry cap.
-        if(architecturalWindowCount>=24000||buildingWindowCount>=18)break;
+        if(architecturalWindowCount>=24000||buildingWindowCount>=(robinsonsMall?96:18))break;
         if(utilitarian&&kind!=='warehouse'&&kind!=='industrial'&&wi%4!==0)continue;
         if(utilitarian&&(kind==='warehouse'||kind==='industrial')&&wi%3!==0)continue;
         const along=-len/2+(wi+0.5)*spacing;
@@ -809,7 +816,7 @@ function addBurjKhalifa(P,baseY){
       dummy.position.y=fl*floorH+0.16;dummy.scale.set(width+0.45,0.18,length+0.45);dummy.updateMatrix();bands.setMatrixAt(bi++,dummy.matrix);
     }
   }
-  wings.count=wi;bands.count=bi;group.add(wings);group.add(bands);
+  wings.count=wi;bands.count=bi;wings.instanceMatrix.needsUpdate=true;bands.instanceMatrix.needsUpdate=true;group.add(wings);group.add(bands);
   const central=new THREE.Mesh(new THREE.CylinderGeometry(2.1,13.5,690,12),core);central.position.y=345;group.add(central);
   const upper=new THREE.Mesh(new THREE.CylinderGeometry(0.45,3.2,108,10),glass);upper.position.y=744;group.add(upper);
   const spire=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.52,52,8),band);spire.position.y=799;group.add(spire);
