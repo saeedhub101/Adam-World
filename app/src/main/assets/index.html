@@ -237,6 +237,43 @@ applyTime(0);
 let LAT0=31.9516,LON0=35.9394,KX=111320*Math.cos(LAT0*Math.PI/180);const KY=111132;
 function proj(lat,lon){return [(lon-LON0)*KX,-(lat-LAT0)*KY];}
 function unproj(x,z){return [LAT0-z/KY,LON0+x/KX];}
+let terrainGrid=null;
+function terrainHeight(x,z){
+  const g=terrainGrid;if(!g||!g.elevations_m)return 0;
+  const b=g.bounds,rows=g.rows,cols=g.cols;
+  const westX=(b.west-LON0)*KX,eastX=(b.east-LON0)*KX;
+  const northZ=-(b.north-LAT0)*KY,southZ=-(b.south-LAT0)*KY;
+  const fx=clamp((x-westX)/(eastX-westX)*(cols-1),0,cols-1);
+  const fz=clamp((z-northZ)/(southZ-northZ)*(rows-1),0,rows-1);
+  const x0=Math.floor(fx),z0=Math.floor(fz),x1=Math.min(cols-1,x0+1),z1=Math.min(rows-1,z0+1);
+  const a=g.elevations_m[z0][x0],b0=g.elevations_m[z0][x1],c=g.elevations_m[z1][x0],d=g.elevations_m[z1][x1];
+  const vals=[a,b0,c,d];if(vals.some(v=>!Number.isFinite(v)))return 0;
+  const tx=fx-x0,tz=fz-z0;
+  const v=(a*(1-tx)+b0*tx)*(1-tz)+(c*(1-tx)+d*tx)*tz;
+  return v-Number(g.base_elevation_m||0);
+}
+function addTerrainSurface(g){
+  if(!g||!g.elevations_m)return;
+  const pos=[],colors=[],indices=[],rows=g.rows,cols=g.cols,b=g.bounds,base=Number(g.base_elevation_m||0);
+  const x0=(b.west-LON0)*KX,x1=(b.east-LON0)*KX,z0=-(b.north-LAT0)*KY,z1=-(b.south-LAT0)*KY;
+  const valid=[];
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const e=g.elevations_m[r][c],x=x0+(x1-x0)*c/(cols-1),z=z0+(z1-z0)*r/(rows-1);
+    pos.push(x,Number.isFinite(e)?e-base:0,z);valid.push(Number.isFinite(e));
+    const h=Number.isFinite(e)?e:base;
+    const t=clamp((h-650)/500,0,1);
+    const low=[0.48,0.43,0.32],high=[0.66,0.62,0.52];
+    colors.push(low[0]*(1-t)+high[0]*t,low[1]*(1-t)+high[1]*t,low[2]*(1-t)+high[2]*t);
+  }
+  for(let r=0;r<rows-1;r++)for(let c=0;c<cols-1;c++){
+    const a=r*cols+c,b0=a+1,d=(r+1)*cols+c,e=d+1;
+    if(valid[a]&&valid[d]&&valid[b0])indices.push(a,d,b0);
+    if(valid[b0]&&valid[d]&&valid[e])indices.push(b0,d,e);
+  }
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();
+  const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));mesh.userData.terrain=true;cityGroup.add(mesh);
+  ground.visible=false;
+}
 
 /* ---------- أدوات هندسية ---------- */
 function polyArea(P){let a=0;for(let i=0;i<P.length;i++){const p=P[i],q=P[(i+1)%P.length];a+=p[0]*q[1]-q[0]*p[1];}return a/2;}
@@ -326,9 +363,14 @@ async function loadOfflineArea(lat, lon, radiusMeters) {
     if (Array.isArray(data.elements)) elements.push(...data.elements);
   }
   if (!elements.length) throw new Error('قطاعات المدينة المحلية لا تحتوي على مبانٍ');
+  let terrain=null;
+  if(manifest.elevation_grid){
+    try{terrain=await readOfflineJson('cities/'+selected.slug+'/'+manifest.elevation_grid);}
+    catch(e){console.warn('Optional city terrain unavailable:',e.message);}
+  }
   console.info('Adam World offline stream:', selected.slug, 'tiles:', chosen.length,
                'buildings:', elements.length, 'center distance:', Math.round(nearest) + 'm');
-  return { elements: elements, city: selected, tileCount: chosen.length };
+  return { elements: elements, city: selected, tileCount: chosen.length, terrain: terrain };
 }
 
 /* ---------- نماذج ---------- */
@@ -541,13 +583,13 @@ function ribbon(pts,w,y,acc,uw,vs){
   }
   for(let i=0;i<n-1;i++){
     const l0=L[i],r0=R[i],l1=L[i+1],r1=R[i+1];
-    acc.pos.push(l0[0],y,l0[1],r0[0],y,r0[1],l1[0],y,l1[1], r0[0],y,r0[1],r1[0],y,r1[1],l1[0],y,l1[1]);
+    acc.pos.push(l0[0],y+terrainHeight(l0[0],l0[1]),l0[1],r0[0],y+terrainHeight(r0[0],r0[1]),r0[1],l1[0],y+terrainHeight(l1[0],l1[1]),l1[1], r0[0],y+terrainHeight(r0[0],r0[1]),r0[1],r1[0],y+terrainHeight(r1[0],r1[1]),r1[1],l1[0],y+terrainHeight(l1[0],l1[1]),l1[1]);
     acc.uv.push(0,V[i],uw,V[i],0,V[i+1], uw,V[i],uw,V[i+1],0,V[i+1]);
   }
 }
 function flatPoly(P,y,acc){
   const tr=triangulate(P);
-  for(const t of tr){for(const k of t){acc.pos.push(P[k][0],y,P[k][1]);acc.uv.push(0,0);}}
+  for(const t of tr){for(const k of t){acc.pos.push(P[k][0],y+terrainHeight(P[k][0],P[k][1]),P[k][1]);acc.uv.push(0,0);}}
 }
 
 function disposeGroup(g){
@@ -694,7 +736,9 @@ async function loadArea(lat,lon,spawn){
     S.px-=o[0];S.pz-=o[1];S.cx-=o[0];S.cz-=o[1];camera.position.x-=o[0];camera.position.z-=o[1];
   }
   LAT0=lat;LON0=lon;KX=111320*Math.cos(lat*Math.PI/180);
+  terrainGrid=data.terrain||null;ground.visible=!terrainGrid;
   disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];
+  if(terrainGrid)addTerrainSurface(terrainGrid);
   for(const key of Object.keys(archAcc))archAcc[key]=[];
   bldgs=[];grid=new Map();carPaths=[];pedPaths=[];
   const B=newAcc(),G=newAcc(),RWd=newAcc(),RNr=newAcc(),SW=newAcc();
@@ -726,6 +770,9 @@ async function loadArea(lat,lon,spawn){
       const osmWayId=String(el.id).replace(/^way\//,'');
       const facadeItems=facadeAssignments.get(osmWayId)||[];
       for(const facadeAssignment of facadeItems)addFacadePhotoProjection(facadeAssignment,P,h);
+      const cx=P.reduce((v,p)=>v+p[0],0)/P.length,cz=P.reduce((v,p)=>v+p[1],0)/P.length;
+      const baseY=terrainHeight(cx,cz),bStart=B.pos.length,archStarts={};
+      for(const key of Object.keys(archAcc))archStarts[key]=archAcc[key].length;
       const facadeLayouts=addBuildingArchitecture(P,t,h,el.id);
       const acc=B;
       const col=parseColor(t,el.id);
@@ -743,7 +790,9 @@ async function loadArea(lat,lon,spawn){
       }
       const tr=triangulate(P);
       for(const tri of tr)for(const k of tri){acc.pos.push(P[k][0],h,P[k][1]);acc.uv.push(0.01,0.99);acc.col.push(roofC.r,roofC.g,roofC.b);}
-      const cx=P.reduce((v,p)=>v+p[0],0)/P.length,cz=P.reduce((v,p)=>v+p[1],0)/P.length;const ll=unproj(cx,cz);const bb={id:el.id,tags:t,height:h,lat:ll[0],lon:ll[1],name:t.name||t["addr:housenumber"]||("OSM building "+el.id),pts:P,minx:minx,maxx:maxx,minz:minz,maxz:maxz};bldgs.push(bb);gridAdd(bb);
+      for(let i=bStart+1;i<B.pos.length;i+=3)B.pos[i]+=baseY;
+      for(const key of Object.keys(archAcc)){const arr=archAcc[key];for(let i=archStarts[key]+1;i<arr.length;i+=3)arr[i]+=baseY;}
+      const ll=unproj(cx,cz);const bb={id:el.id,tags:t,height:h,baseY:baseY,lat:ll[0],lon:ll[1],name:t.name||t["addr:housenumber"]||("OSM building "+el.id),pts:P,minx:minx,maxx:maxx,minz:minz,maxz:maxz};bldgs.push(bb);gridAdd(bb);
     }else if(t.highway&&RW[t.highway]){
       const w=RW[t.highway];
       const P=[];for(const p of raw){const q=P[P.length-1];if(!q||Math.hypot(p[0]-q[0],p[1]-q[1])>0.3)P.push(p);}
