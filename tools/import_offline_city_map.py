@@ -94,15 +94,20 @@ def main():
         slug = city["slug"]
         target_dir = OUTPUT / slug
         target = target_dir / "elements.json"
-        if target.is_file():
+        metadata_path = target_dir / "metadata.json"
+        if target.is_file() and metadata_path.is_file():
             try:
                 existing = json.loads(target.read_text(encoding="utf-8"))
-                if existing.get("elements"):
-                    print(f"{city['name']}: already stored ({len(existing['elements'])} elements); skip")
+                metadata_existing = json.loads(metadata_path.read_text(encoding="utf-8"))
+                existing_count = len(existing.get("elements") or [])
+                if existing_count > 0 and existing_count == int(metadata_existing.get("element_count", -1)):
+                    print(f"{city['name']}: already stored ({existing_count} elements); skip")
                     succeeded += 1
                     continue
             except Exception:
-                print(f"{city['name']}: existing file is invalid; re-importing")
+                print(f"{city['name']}: existing city data or metadata is invalid; re-importing")
+        elif target.is_file():
+            print(f"{city['name']}: legacy data has no validated metadata; re-importing")
         try:
             print(f"{city['name']}: fetching OSM layers for {city.get('discovery_radius_m', 650)} m window")
             data = fetch_city(city)
@@ -112,6 +117,7 @@ def main():
                             encoding="utf-8")
             temp.replace(target)
             metadata = {
+                "schema_version": 2,
                 "city": city["name"],
                 "slug": slug,
                 "source": "OpenStreetMap Overpass",
@@ -120,6 +126,7 @@ def main():
                 "center": city["center"],
                 "radius_m": city.get("discovery_radius_m", 650),
                 "element_count": len(data["elements"]),
+                "geometry_layers": ["buildings", "roads", "parks", "landcover", "water", "trees", "street_lamps"],
                 "stored_as": f"data/offline-world/{slug}/elements.json",
             }
             (target_dir / "metadata.json").write_text(
