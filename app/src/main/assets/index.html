@@ -195,6 +195,7 @@ const matSw=new THREE.MeshLambertMaterial({map:swTex,side:DS});
 const matPark=new THREE.MeshLambertMaterial({color:0x6f8f4e,side:DS});
 const matWater=new THREE.MeshLambertMaterial({color:0x4a7fa5,side:DS});
 const matLampHead=new THREE.MeshBasicMaterial({color:0x666666});
+const matStreetPole=new THREE.MeshLambertMaterial({color:0x555b62}),matBusSign=new THREE.MeshLambertMaterial({color:0x1675b9}),matBusMark=new THREE.MeshBasicMaterial({color:0xffffff}),matShelter=new THREE.MeshLambertMaterial({color:0x606a73}),matStopSign=new THREE.MeshLambertMaterial({color:0xc92828}),matStopCenter=new THREE.MeshLambertMaterial({color:0xffffff}),matCrosswalk=new THREE.MeshBasicMaterial({color:0xf3f2e9,side:THREE.DoubleSide,depthWrite:false});
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(8000,8000),new THREE.MeshLambertMaterial({map:groundTex}));
 ground.rotation.x=-Math.PI/2;ground.position.y=-0.02;scene.add(ground);
 
@@ -399,6 +400,8 @@ function disposeGroup(g){
   for(let i=g.children.length-1;i>=0;i--){
     const o=g.children[i];g.remove(o);
     if(o.geometry)o.geometry.dispose();
+    if(o.userData&&o.userData.ownedTexture)o.userData.ownedTexture.dispose();
+    if(o.userData&&o.userData.ownedMaterial&&o.material)o.material.dispose();
   }
 }
 
@@ -469,7 +472,7 @@ async function loadArea(lat,lon,spawn){
   disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];
   bldgs=[];grid=new Map();carPaths=[];pedPaths=[];
   const B=newAcc(),G=newAcc(),RWd=newAcc(),RNr=newAcc(),SW=newAcc(),PK=newAcc(),WT=newAcc();
-  const trees=[],lamps=[],signals=[];let bcount=0;
+  const trees=[],lamps=[],signals=[],busStops=[],stopSigns=[],crossings=[];const roadLabels=[],roadLabelKeys=new Set();let bcount=0;
   const wallV=3.4*4;
   for(const el of data.elements){
     const t=el.tags||{};
@@ -477,6 +480,9 @@ async function loadArea(lat,lon,spawn){
       if(t.natural==='tree'&&trees.length<1200){trees.push(proj(el.lat,el.lon));}
       else if(t.highway==='street_lamp'&&lamps.length<500){lamps.push(proj(el.lat,el.lon));}
       else if(t.highway==='traffic_signals'&&signals.length<300){signals.push(proj(el.lat,el.lon));}
+      else if(t.highway==='bus_stop'&&busStops.length<250){busStops.push({p:proj(el.lat,el.lon),tags:t});}
+      else if(t.highway==='stop'&&stopSigns.length<250){stopSigns.push(proj(el.lat,el.lon));}
+      else if(t.highway==='crossing'&&crossings.length<300){crossings.push(proj(el.lat,el.lon));}
       continue;
     }
     if(el.type!=='way'||!el.geometry||el.geometry.length<2)continue;
@@ -520,7 +526,19 @@ async function loadArea(lat,lon,spawn){
         ribbon(P,w,0.07,SW,w/2,2);
       }
       const path=makePath(P);
-      if(path.total>20){if(veh)carPaths.push({path:path,w:w});pedPaths.push({path:path,w:w,veh:veh});}
+      if(path.total>20){
+        if(veh)carPaths.push({path:path,w:w});
+        pedPaths.push({path:path,w:w,veh:veh});
+        const roadName=String(t['name:ar']||t.name||t['name:en']||t.ref||'').trim();
+        if(roadName&&roadLabels.length<120){
+          const copies=Math.min(3,Math.max(1,Math.ceil(path.total/140)));
+          for(let li=0;li<copies;li++){
+            const distance=path.total*(li+1)/(copies+1),p=posAt(path,distance,0);
+            const key=roadName.toLocaleLowerCase()+'|'+Math.round(p.x/60)+','+Math.round(p.z/60);
+            if(!roadLabelKeys.has(key)){roadLabelKeys.add(key);roadLabels.push({name:roadName,path:path,distance:distance});}
+          }
+        }
+      }
     }else if((t.leisure&&/park|garden|pitch|playground/.test(t.leisure))||(t.landuse&&/grass|forest|recreation_ground|village_green|meadow/.test(t.landuse))||(t.natural&&/wood|scrub/.test(t.natural))){
       const P=raw.slice();if(P.length>2&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[P.length-1][1])<0.05)P.pop();
       if(P.length<3)continue;flatPoly(P,0.03,PK);
@@ -532,6 +550,24 @@ async function loadArea(lat,lon,spawn){
   }
   const adds=[[accMesh(B,matB)],[accMesh(G,matG)],[accMesh(RWd,matRoadW)],[accMesh(RNr,matRoadN)],[accMesh(SW,matSw)],[accMesh(PK,matPark)],[accMesh(WT,matWater)]];
   for(const a of adds)if(a[0])cityGroup.add(a[0]);
+
+  /* أسماء الشوارع: نصوص مرسومة مباشرة على سطح الطريق وباتجاه مساره */
+  for(const item of roadLabels){
+    const canvas=cv(512,112),ctx=canvas.getContext('2d');
+    const label=String(item.name).replace(/\s+/g,' ').trim();
+    ctx.clearRect(0,0,512,112);ctx.font='bold 52px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.direction=/[\u0600-\u06FF]/.test(label)?'rtl':'ltr';ctx.lineJoin='round';ctx.lineWidth=12;
+    ctx.strokeStyle='rgba(8,12,16,0.96)';ctx.strokeText(label,256,56,480);
+    ctx.fillStyle='rgba(255,255,255,0.98)';ctx.fillText(label,256,56,480);
+    const measured=Math.min(480,ctx.measureText(label).width),width=clamp(measured/512*22,7.5,22);
+    const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=aniso;
+    const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-3});
+    const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,2.5),material);
+    const p=posAt(item.path,item.distance,0);let yaw=Math.atan2(-p.dz,p.dx);
+    if(yaw>Math.PI/2)yaw-=Math.PI;if(yaw< -Math.PI/2)yaw+=Math.PI;
+    mesh.rotation.order='YXZ';mesh.rotation.set(-Math.PI/2,yaw,0);mesh.position.set(p.x,0.125,p.z);
+    mesh.renderOrder=4;mesh.userData.ownedTexture=texture;mesh.userData.ownedMaterial=true;cityGroup.add(mesh);
+  }
 
   /* أشجار */
   if(trees.length){
@@ -561,6 +597,45 @@ async function loadArea(lat,lon,spawn){
     const d=new THREE.Object3D();
     lamps.forEach((p,i)=>{d.position.set(p[0],3.5,p[1]);d.updateMatrix();pole.setMatrixAt(i,d.matrix);d.position.set(p[0],7.1,p[1]);d.updateMatrix();head.setMatrixAt(i,d.matrix);});
     cityGroup.add(pole);cityGroup.add(head);
+  }
+
+  /* مواقف الحافلات وعلامات التوقف من عقد OSM الفعلية */
+  for(const item of busStops){
+    const g=new THREE.Group(),pole=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.06,2.7,6),matStreetPole);
+    pole.position.y=1.35;g.add(pole);
+    const sign=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.72,0.09),matBusSign);sign.position.set(0,2.55,0);g.add(sign);
+    const mark=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.42,0.025),matBusMark);mark.position.set(0,2.55,0.06);g.add(mark);
+    if(item.tags&&item.tags.shelter==='yes'){
+      const roof=new THREE.Mesh(new THREE.BoxGeometry(2.6,0.12,1.25),matShelter);roof.position.set(0,2.3,0.55);g.add(roof);
+      for(const x of [-1.15,1.15]){const post=new THREE.Mesh(new THREE.BoxGeometry(0.08,2.1,0.08),matShelter);post.position.set(x,1.1,0.55);g.add(post);}
+    }
+    g.position.set(item.p[0],0,item.p[1]);cityGroup.add(g);
+  }
+  for(const p of stopSigns){
+    const g=new THREE.Group(),pole=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.06,2.5,6),matStreetPole);pole.position.y=1.25;g.add(pole);
+    const sign=new THREE.Mesh(new THREE.CylinderGeometry(0.43,0.43,0.09,8),matStopSign);sign.rotation.x=Math.PI/2;sign.position.set(0,2.25,0);g.add(sign);
+    const center=new THREE.Mesh(new THREE.CylinderGeometry(0.31,0.31,0.095,8),matStopCenter);center.rotation.x=Math.PI/2;center.position.set(0,2.25,0.055);g.add(center);
+    g.position.set(p[0],0,p[1]);cityGroup.add(g);
+  }
+
+  /* معابر المشاة عند عقد OSM: خطوط بيضاء تتعامد مع محور الطريق */
+  for(const p of crossings){
+    let best=null;
+    for(const road of pedPaths){
+      const pts=road.path.pts;
+      for(let i=1;i<pts.length;i++){
+        const a=pts[i-1],b=pts[i],dx=b[0]-a[0],dz=b[1]-a[1],l2=dx*dx+dz*dz||1;
+        const t=clamp(((p[0]-a[0])*dx+(p[1]-a[1])*dz)/l2,0,1),x=a[0]+dx*t,z=a[1]+dz*t,d=Math.hypot(p[0]-x,p[1]-z);
+        if(!best||d<best.d)best={x:x,z:z,dx:dx/Math.sqrt(l2),dz:dz/Math.sqrt(l2),d:d,w:road.w,veh:road.veh};
+      }
+    }
+    if(!best||best.d>14||!best.veh)continue;
+    const roadYaw=Math.atan2(-best.dz,best.dx),stripeYaw=roadYaw+Math.PI/2;
+    for(let k=-3;k<=3;k++){
+      const stripe=new THREE.Mesh(new THREE.PlaneGeometry(Math.max(4.5,best.w*0.9),0.34),matCrosswalk);
+      stripe.rotation.order='YXZ';stripe.rotation.set(-Math.PI/2,stripeYaw,0);
+      stripe.position.set(best.x+best.dx*k*0.78,0.112,best.z+best.dz*k*0.78);stripe.renderOrder=3;cityGroup.add(stripe);
+    }
   }
 
   /* إشارات المرور: توضع فقط عند عقد OSM المرسومة كإشارات فعلية */
