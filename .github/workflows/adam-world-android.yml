@@ -33,6 +33,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -87,7 +89,9 @@ jobs:
           print('WEB_UPDATE_BUNDLE_OK bytes=', Path('app/build/updates/adam-world-web-update.zip').stat().st_size)
           PY
           NATIVE_REQUIRED=false
-          if git show --format= --name-only HEAD | grep -Eq '^(app/src/main/java/|app/src/main/AndroidManifest.xml|app/build.gradle|data/offline-world/)'; then NATIVE_REQUIRED=true; fi
+          PREVIOUS_RELEASE=$(git tag --list 'adam-world-v*' --sort=-version:refname | head -n 1)
+          if [ -n "$PREVIOUS_RELEASE" ]; then CHANGED_FILES=$(git diff --name-only "$PREVIOUS_RELEASE"...HEAD); else CHANGED_FILES=$(git show --format= --name-only HEAD); fi
+          if printf '%s\\n' "$CHANGED_FILES" | grep -Eq '^(app/src/main/java/|app/src/main/AndroidManifest.xml|app/build.gradle|data/offline-world/|data/facades/cities/[^/]+/buildings\\.geojson$)'; then NATIVE_REQUIRED=true; fi
           echo "NATIVE_REQUIRED=$NATIVE_REQUIRED" >> "$GITHUB_ENV"
           echo "Native APK update required: $NATIVE_REQUIRED"
 
