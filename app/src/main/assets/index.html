@@ -743,83 +743,81 @@ function addRomanTheatre(){
   const dark=new THREE.MeshLambertMaterial({color:0x30291f});
   const seatPos=[],wallPos=[];
   const a0=0.10,a1=Math.PI-0.10,segments=112,rows=32;
-  function band(inner,outer,y,thick,lo,hi){
+  const groundAt=(x,z)=>terrainHeight(anchor[0]+x,anchor[1]+z)-base;
+  function band(inner,outer,extraY,thick,lo,hi){
     const steps=Math.max(1,Math.ceil((hi-lo)/(Math.PI/segments)));
     for(let j=0;j<steps;j++){
       const aa=lo+(hi-lo)*j/steps,bb=lo+(hi-lo)*(j+1)/steps;
-      const p=(r,a,Y)=>[r*Math.cos(a),Y,-r*Math.sin(a)];
-      const p0=p(inner,aa,y),p1=p(outer,aa,y),p2=p(outer,bb,y),p3=p(inner,bb,y);
+      const p=(r,a,Y)=>{const x=r*Math.cos(a),z=r*Math.sin(a);return [x,groundAt(x,z)+Y,z];};
+      const p0=p(inner,aa,extraY),p1=p(outer,aa,extraY),p2=p(outer,bb,extraY),p3=p(inner,bb,extraY);
       seatPos.push(...p0,...p1,...p2,...p0,...p2,...p3);
-      const q0=p(inner,aa,y-thick),q1=p(inner,bb,y-thick);
+      const q0=p(inner,aa,extraY-thick),q1=p(inner,bb,extraY-thick);
       wallPos.push(...q0,...q1,...p3,...q0,...p3,...p0);
     }
   }
   const aisles=[[0.43,0.49],[0.94,1.00],[2.14,2.20],[2.65,2.71]];
   for(let row=0;row<rows;row++){
     const inner=13.5+row*1.08,outer=inner+0.92;
-    const y=0.28+row*0.43+(row>=10?0.85:0)+(row>=21?0.85:0);
+    const y=0.28+row*0.12+(row>=10?0.55:0)+(row>=21?0.55:0);
     let cursor=a0;
     for(const gap of aisles){if(gap[0]>cursor)band(inner,outer,y,0.42,cursor,gap[0]);cursor=gap[1];}
     if(cursor<a1)band(inner,outer,y,0.42,cursor,a1);
   }
-  // The two diazomata are broad horizontal circulation terraces separating
-  // the lower, middle and upper seating tiers.
+  // Two diazomata terraces divide the cavea into the three documented seating tiers.
   for(const row of [10,21]){
-    const r=13.5+row*1.08,y=0.28+row*0.43+(row>=21?0.85:0);
+    const r=13.5+row*1.08,y=0.28+row*0.12+(row>=21?0.55:0);
     band(r-0.08,r+1.72,y+0.08,0.18,a0,a1);
   }
   function meshFrom(pos,mat){const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.computeVertexNormals();g.add(new THREE.Mesh(geo,mat));}
   meshFrom(seatPos,stone);meshFrom(wallPos,cutStone);
-  // Individual cut-stone seating blocks (instanced for mobile performance).
+  // Individual cut-stone seats follow the actual hillside height field.
   let seatTotal=0;
-  for(let row=0;row<rows;row++){
-    const r=13.5+row*1.08+0.46,arc=(a1-a0)*r;
-    seatTotal+=Math.floor(arc/0.50);
-  }
-  const seatMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(0.48,0.34,0.86),stone,seatTotal);
+  for(let row=0;row<rows;row++){const r=13.5+row*1.08+0.46;seatTotal+=Math.floor((a1-a0)*r/0.45);}
+  const seatMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(0.44,0.34,0.86),stone,seatTotal);
   const seatDummy=new THREE.Object3D();let seatIndex=0;
   for(let row=0;row<rows;row++){
-    const r=13.5+row*1.08+0.46;
-    const y=0.28+row*0.43+(row>=10?0.85:0)+(row>=21?0.85:0);
-    const count=Math.floor((a1-a0)*r/0.50);
+    const r=13.5+row*1.08+0.46,y=0.28+row*0.12+(row>=10?0.55:0)+(row>=21?0.55:0);
+    const count=Math.floor((a1-a0)*r/0.45);
     for(let k=0;k<count;k++){
       const angle=a0+(k+0.5)*(a1-a0)/count;
       if(aisles.some(gap=>angle>gap[0]-0.018&&angle<gap[1]+0.018))continue;
-      seatDummy.position.set(r*Math.cos(angle),y+0.18,-r*Math.sin(angle));
+      const x=r*Math.cos(angle),z=r*Math.sin(angle);
+      seatDummy.position.set(x,groundAt(x,z)+y+0.18,z);
       seatDummy.rotation.set(0,angle+Math.PI/2,0);seatDummy.updateMatrix();
       seatMesh.setMatrixAt(seatIndex++,seatDummy.matrix);
     }
   }
   seatMesh.count=seatIndex;seatMesh.instanceMatrix.needsUpdate=true;g.add(seatMesh);
-  // Outer retaining wall and the lower orchestra semicircle.
+  // The cavea rises into the southern hillside; the stage and orchestra face north.
   const outerWall=new THREE.Mesh(new THREE.CylinderGeometry(48.2,48.2,5.5,112,1,true,0,Math.PI),cutStone);
-  outerWall.rotation.y=Math.PI;outerWall.position.set(0,7.0,0);g.add(outerWall);
-  const orchestra=new THREE.Mesh(new THREE.CircleGeometry(13.2,96,0,Math.PI),stone);
-  orchestra.rotation.x=-Math.PI/2;orchestra.rotation.z=Math.PI;orchestra.position.set(0,0.18,0);g.add(orchestra);
-  // Four radial stair aisles with visible treads, kept open between seating banks.
+  outerWall.position.set(0,groundAt(0,47)+2.75,0);g.add(outerWall);
+  const orchestra=new THREE.Mesh(new THREE.CircleGeometry(13.2,96),stone);
+  orchestra.rotation.x=-Math.PI/2;orchestra.position.set(0,groundAt(0,0)+0.18,0);g.add(orchestra);
+  // Four radial stair aisles with stone treads.
   for(const angle of [0.46,0.97,2.17,2.68]){
     for(let k=0;k<24;k++){
-      const r=14+k*1.38,y=0.35+k*0.55;
+      const r=14+k*1.38,x=Math.cos(angle)*r,z=Math.sin(angle)*r;
+      const y=groundAt(x,z)+0.35+k*0.12;
       const step=new THREE.Mesh(new THREE.BoxGeometry(1.35,0.22,1.18),cutStone);
-      step.position.set(Math.cos(angle)*r,y,-Math.sin(angle)*r);step.rotation.y=-angle;g.add(step);
+      step.position.set(x,y,z);step.rotation.y=Math.PI/2-angle;g.add(step);
     }
   }
-  // Scaenae frons: three-storey stage facade, podium, columns and entablature.
-  const stage=new THREE.Mesh(new THREE.BoxGeometry(39,15,3.2),stone);stage.position.set(0,7.5,32);g.add(stage);
-  const podium=new THREE.Mesh(new THREE.BoxGeometry(43,1.5,5),cutStone);podium.position.set(0,0.75,31.5);g.add(podium);
+  // North-facing scaenae frons: podium, three-storey stage wall, columns and entablature.
+  const stageGround=groundAt(0,-32);
+  const stage=new THREE.Mesh(new THREE.BoxGeometry(39,15,3.2),stone);stage.position.set(0,stageGround+7.5,-32);g.add(stage);
+  const podium=new THREE.Mesh(new THREE.BoxGeometry(43,1.5,5),cutStone);podium.position.set(0,stageGround+0.75,-31.5);g.add(podium);
   for(let i=0;i<11;i++){
     const x=-18+i*3.6;
-    const col=new THREE.Mesh(new THREE.CylinderGeometry(0.48,0.62,12.2,12),stone);col.position.set(x,7.8,29.9);g.add(col);
-    const cap=new THREE.Mesh(new THREE.BoxGeometry(1.35,0.55,1.35),cutStone);cap.position.set(x,14.0,29.9);g.add(cap);
+    const col=new THREE.Mesh(new THREE.CylinderGeometry(0.48,0.62,12.2,12),stone);col.position.set(x,stageGround+7.8,-29.9);g.add(col);
+    const cap=new THREE.Mesh(new THREE.BoxGeometry(1.35,0.55,1.35),cutStone);cap.position.set(x,stageGround+14.0,-29.9);g.add(cap);
   }
-  const entablature=new THREE.Mesh(new THREE.BoxGeometry(42,1.1,4.1),cutStone);entablature.position.set(0,14.9,30.5);g.add(entablature);
+  const entablature=new THREE.Mesh(new THREE.BoxGeometry(42,1.1,4.1),cutStone);entablature.position.set(0,stageGround+14.9,-30.5);g.add(entablature);
   for(const x of [-12,0,12]){
-    const door=new THREE.Mesh(new THREE.BoxGeometry(3.4,6.4,0.18),dark);door.position.set(x,4.2,28.35);g.add(door);
-    const lintel=new THREE.Mesh(new THREE.BoxGeometry(4.1,0.65,0.5),cutStone);lintel.position.set(x,7.55,28.25);g.add(lintel);
+    const door=new THREE.Mesh(new THREE.BoxGeometry(3.4,6.4,0.18),dark);door.position.set(x,stageGround+4.2,-28.35);g.add(door);
+    const lintel=new THREE.Mesh(new THREE.BoxGeometry(4.1,0.65,0.5),cutStone);lintel.position.set(x,stageGround+7.55,-28.25);g.add(lintel);
   }
-  // Side retaining wings tie the stage to the semicircular cavea.
   for(const side of [-1,1]){
-    const wing=new THREE.Mesh(new THREE.BoxGeometry(7,10,16),stone);wing.position.set(side*23,5,24);wing.rotation.y=side*0.18;g.add(wing);
+    const wing=new THREE.Mesh(new THREE.BoxGeometry(7,10,16),stone);wing.position.set(side*23,stageGround+5,-24);wing.rotation.y=side*0.18;g.add(wing);
   }
 }
 function addBurjKhalifa(P,baseY){
