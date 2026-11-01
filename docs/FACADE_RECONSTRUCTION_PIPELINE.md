@@ -86,7 +86,9 @@ matched. Never fill it automatically with the nearest OSM building.
 ## Phase 2 validation commands
 
 ```sh
+python3 -m py_compile tools/facades/*.py tools/facades/tests/*.py
 python3 -m unittest discover -s tools/facades/tests -v
+python3 tools/facades/fetch_catalogue_metadata.py
 python3 tools/facades/build_review_queue.py
 python3 tools/facades/validate_manifest.py
 ```
