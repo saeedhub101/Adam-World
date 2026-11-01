@@ -48,17 +48,21 @@ jobs:
       - name: Prepare production signing keystore
         env:
           ADAM_WORLD_KEYSTORE_BASE64: ${{ secrets.ADAM_WORLD_KEYSTORE_BASE64 }}
+          ADAM_WORLD_KEYSTORE_PASSWORD: ${{ secrets.ADAM_WORLD_KEYSTORE_PASSWORD }}
+          ADAM_WORLD_KEY_ALIAS: ${{ secrets.ADAM_WORLD_KEY_ALIAS }}
+          ADAM_WORLD_KEY_PASSWORD: ${{ secrets.ADAM_WORLD_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -z "${ADAM_WORLD_KEYSTORE_BASE64}" ]; then
-            echo "::error::Missing GitHub Secret: ADAM_WORLD_KEYSTORE_BASE64"
-            exit 1
-          fi
+          : "${ADAM_WORLD_KEYSTORE_BASE64:?Missing GitHub Secret: ADAM_WORLD_KEYSTORE_BASE64}"
+          : "${ADAM_WORLD_KEYSTORE_PASSWORD:?Missing GitHub Secret: ADAM_WORLD_KEYSTORE_PASSWORD}"
+          : "${ADAM_WORLD_KEY_ALIAS:?Missing GitHub Secret: ADAM_WORLD_KEY_ALIAS}"
+          : "${ADAM_WORLD_KEY_PASSWORD:?Missing GitHub Secret: ADAM_WORLD_KEY_PASSWORD}"
           KEYSTORE_PATH="$RUNNER_TEMP/adam-world-release.jks"
           printf '%s' "$ADAM_WORLD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
           test -s "$KEYSTORE_PATH"
+          keytool -list -keystore "$KEYSTORE_PATH" -storepass "$ADAM_WORLD_KEYSTORE_PASSWORD" -alias "$ADAM_WORLD_KEY_ALIAS" >/dev/null
           echo "ADAM_WORLD_KEYSTORE_FILE=$KEYSTORE_PATH" >> "$GITHUB_ENV"
-          echo "Release keystore decoded successfully."
+          echo "Release keystore and alias validated."
 
       - name: Vendor the pinned Three.js runtime for offline startup
         run: |
@@ -101,12 +105,6 @@ jobs:
           ADAM_WORLD_KEY_PASSWORD: ${{ secrets.ADAM_WORLD_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          for secret_name in ADAM_WORLD_KEYSTORE_PASSWORD ADAM_WORLD_KEY_ALIAS ADAM_WORLD_KEY_PASSWORD; do
-            if [ -z "${!secret_name:-}" ]; then
-              echo "::error::Missing GitHub Secret: $secret_name"
-              exit 1
-            fi
-          done
           gradle --no-daemon -PVERSION_CODE=${{ github.run_number }} assembleRelease bundleRelease
 
       - name: Verify outputs and release signatures
@@ -116,7 +114,9 @@ jobs:
           AAB="app/build/outputs/bundle/release/app-release.aab"
           test -s "$APK"
           test -s "$AAB"
-          apksigner verify --verbose "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
           jarsigner -verify -verbose -certs "$AAB" >/tmp/adam-world-aab-signature.txt
           grep -q 'assets/vendor/three.min.js' <(unzip -l "$APK")
           grep -q 'assets/cities/catalog.json' <(unzip -l "$APK")
