@@ -264,8 +264,10 @@ def aerial_candidates(building: dict[str, Any], items: list[dict[str, Any]]) -> 
 def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
     buildings_fc = read_fc(city_dir / "buildings.geojson")
     photos_fc = read_fc(city_dir / "panoramax-items.geojson", required=False)
+    kartaview_fc = read_fc(city_dir / "kartaview-items.geojson", required=False)
     aerial_fc = read_fc(city_dir / "aerial-items.geojson", required=False)
-    photos = [photo_metadata(f) | {"_geometry": f.get("geometry")} for f in photos_fc["features"]]
+    photo_features = photos_fc["features"] + kartaview_fc["features"]
+    photos = [photo_metadata(f) | {"_geometry": f.get("geometry"), "source": (f.get("properties") or {}).get("source", "panoramax")} for f in photo_features]
     queue = []
     seen = set()
     for b in buildings_fc["features"]:
@@ -332,7 +334,7 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
         })
     queue.sort(key=lambda x: int(x["osm_way_id"]))
     source_hash = hashlib.sha256()
-    for name in ("buildings.geojson", "panoramax-items.geojson", "aerial-items.geojson"):
+    for name in ("buildings.geojson", "panoramax-items.geojson", "kartaview-items.geojson", "aerial-items.geojson"):
         path = city_dir / name
         source_hash.update(name.encode())
         if path.exists():
