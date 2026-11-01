@@ -6,10 +6,10 @@
       "slug": "amman",
       "name": "Amman",
       "center": {
-        "lat": 31.9516,
-        "lon": 35.9394
+        "lat": 31.997579,
+        "lon": 35.940358
       },
-      "discovery_radius_m": 650
+      "discovery_radius_m": 1800
     },
     {
       "slug": "manila",
