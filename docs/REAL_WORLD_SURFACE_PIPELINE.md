@@ -65,3 +65,35 @@ accepted as finished work.
 Do not mark a phase complete merely because metadata was downloaded, a candidate
 was found, or a generic material was rendered. Report verified counts and failed
 coverage explicitly.
+
+
+## Amman terrain and named landmark geometry — 2026-11-01
+
+- Amman now has a locally stored 201 × 201 elevation grid derived from the
+  Copernicus DEM GLO-30 COG, sampled over a 6 km × 6 km window centred on the
+  Roman Theatre start area. The source resolution is 30 m; the grid reports
+  elevations from 705.75 m to 929.27 m in the sampled window. It is a terrain
+  surface model, not a building-height model or street-level LiDAR.
+- The Android packager copies the elevation grid into the Amman offline asset
+  folder. The renderer interpolates elevation for the terrain mesh and conforms
+  building bases, road ribbons and mapped land-cover polygons to the local
+  height field. Other cities retain their flat local ground until they receive
+  their own DEM.
+- The Roman Theatre is constructed as a dedicated three-dimensional amphitheatre
+  asset in the game scene: 32 curved seating rows, four stair aisles, orchestra,
+  stage facade, columns and side retaining wings. Its location is tied to the
+  Amman theatre start coordinate. This is a dimensioned procedural reconstruction,
+  not a surveyed photogrammetry scan; final matching still requires comparison
+  against licensed reference photographs and measured site dimensions.
+- Burj Khalifa is handled as a named landmark rather than a generic OSM extrusion.
+  Its Y-shaped three-wing massing, 163 floor bands, stepped taper and spire are
+  built from its OSM footprint and mapped 828 m height.
+- Robinsons Place Manila's OSM retail footprint (way 130532101, 7 levels / 25 m)
+  remains the building anchor; the current game adds a mall sign and enhanced
+  per-floor facade geometry. No verified street photograph has yet been assigned
+  to this exact mall footprint, so its exterior colour/sign placement must not
+  be represented as photo-verified.
+
+The Amman offline OSM importer is re-triggered when the city registry radius is
+updated to 2.5 km. It checkpoints completed city extracts to main; Android
+packaging runs after the offline-city import completes.
