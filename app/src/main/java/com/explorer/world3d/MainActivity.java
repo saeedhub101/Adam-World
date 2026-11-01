@@ -109,6 +109,59 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void checkForUpdates() { MainActivity.this.checkForUpdates(false); }
 
         // Native networking avoids WebView cross-origin restrictions for file:// pages.
+        // Public, keyless imagery catalogues only. Limit hosts and response size.
+        @JavascriptInterface public void requestSourceJson(String sourceUrl, String requestId) {
+            executor.execute(() -> {
+                String payload = null;
+                String failure = "تعذر الوصول إلى مصدر الصور";
+                HttpURLConnection c = null;
+                try {
+                    URL parsed = new URL(sourceUrl);
+                    String host = parsed.getHost();
+                    if (!"api.imagery.hotosm.org".equals(host) && !"api.panoramax.xyz".equals(host)) {
+                        throw new SecurityException("مصدر غير مسموح");
+                    }
+                    if (!"https".equalsIgnoreCase(parsed.getProtocol())) {
+                        throw new SecurityException("يلزم اتصال HTTPS");
+                    }
+                    c = (HttpURLConnection) parsed.openConnection();
+                    c.setRequestMethod("GET");
+                    c.setConnectTimeout(12000);
+                    c.setReadTimeout(18000);
+                    c.setRequestProperty("Accept", "application/geo+json, application/json");
+                    c.setRequestProperty("User-Agent", "AdamWorld/1.0 (open imagery metadata)");
+                    int status = c.getResponseCode();
+                    if (status != HttpURLConnection.HTTP_OK) throw new Exception("HTTP " + status);
+                    try (InputStream in = c.getInputStream();
+                         BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"))) {
+                        StringBuilder out = new StringBuilder();
+                        char[] buffer = new char[8192];
+                        int n;
+                        while ((n = reader.read(buffer)) != -1) {
+                            out.append(buffer, 0, n);
+                            if (out.length() > 4 * 1024 * 1024) throw new Exception("استجابة مصدر الصور كبيرة جداً");
+                        }
+                        payload = out.toString();
+                    }
+                } catch (Exception ex) {
+                    failure = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+                } finally {
+                    if (c != null) c.disconnect();
+                }
+                final String result = payload;
+                final String error = result == null ? failure : null;
+                runOnUiThread(() -> {
+                    if (webView != null) {
+                        String script = "window.onNativeSourceResult("
+                                + JSONObject.quote(requestId) + ","
+                                + (result == null ? "null" : JSONObject.quote(result)) + ","
+                                + (error == null ? "null" : JSONObject.quote(error)) + ")";
+                        webView.evaluateJavascript(script, null);
+                    }
+                });
+            });
+        }
+
         @JavascriptInterface public void requestOverpass(String query, String requestId) {
             executor.execute(() -> {
                 String result = null;
