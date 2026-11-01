@@ -77,7 +77,7 @@ jobs:
             python3 tools/facades/fetch_catalogue_metadata.py --git-checkpoint
           fi
 
-      - name: Discover public KartaView street photos around Tabarbour
+      - name: Discover public KartaView street photos around the selected Amman district
         run: python3 tools/facades/fetch_kartaview_metadata.py --city amman --git-checkpoint
 
       - name: Build per-city facade review queues with strict geometry and licensing gates
