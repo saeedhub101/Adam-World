@@ -1476,7 +1476,7 @@ async function loadArea(lat,lon,spawn){
     for(let i=0;i<22;i++){
       const cp=carPaths[Math.floor(Math.random()*carPaths.length)];
       const m=makeCar(colors[Math.floor(Math.random()*colors.length)]);agentGroup.add(m);
-      agents.push({kind:'car',path:cp.path,off:cp.w/4,s:Math.random()*cp.path.total,dir:Math.random()<0.5?1:-1,sp:7+Math.random()*7,m:m,ph:0});
+      agents.push({kind:'car',path:cp.path,roadWidth:cp.w,off:cp.w/4,s:Math.random()*cp.path.total,dir:Math.random()<0.5?1:-1,sp:7+Math.random()*7,m:m,ph:0});
     }
   }
   if(pedPaths.length){
@@ -1702,7 +1702,7 @@ function frame(now){
       for(const signal of activeTrafficSignals){
         const vx=signal.p[0]-p0.x,vz=signal.p[1]-p0.z;
         const ahead=vx*dirX+vz*dirZ,lateral=Math.abs(vx*dirZ-vz*dirX);
-        if(ahead>0&&ahead<12&&lateral<Math.max(3.5,(a.path.roadWidth||6)*0.55)&&signal.phaseFn(signal,now)!=='green') {moveSpeed=0;break;}
+        if(ahead>0&&ahead<12&&lateral<Math.max(3.5,(a.roadWidth||6)*0.55)&&signal.phaseFn(signal,now)!=='green') {moveSpeed=0;break;}
       }
     }
     a.s+=a.dir*moveSpeed*dt;
