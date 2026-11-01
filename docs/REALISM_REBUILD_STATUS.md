@@ -87,11 +87,13 @@ Relevant commits:
 The corrected workflow rerun completed successfully:
 https://github.com/saeedhub101/Adam-World/actions/runs/41344416095
 
-The Android workflow was triggered by that completion (run 203), and a later
-build was also triggered by the nodata-sampling correction (run 204). Run 204 is
-the build that must be checked for all ten packaged elevation grids before the
-terrain phase is called release-verified:
-https://github.com/saeedhub101/Adam-World/actions/runs/41344476917
+The Android workflow was triggered by that completion (run 203). Android
+build 205 then passed the stricter APK verification, including an explicit check
+that all ten city folders contain both `elevation-grid.json` and an
+`elevation_grid` manifest entry. The signed release is available here:
+https://github.com/saeedhub101/Adam-World/releases/tag/adam-world-v205
+Build workflow:
+https://github.com/saeedhub101/Adam-World/actions/runs/41344531910
 
 The runtime sampler was additionally corrected to treat JSON null cells as DEM
 nodata, not as 0 metres; the nearest-valid sample fallback now handles those
@@ -140,7 +142,7 @@ architectural checklist, not as proof that the current procedural mesh is exact:
 
 ## Acceptance checks
 
-- [ ] All ten cities have valid committed elevation grids and appear in APK city manifests.
+- [x] All ten cities have valid committed elevation grids; Android build 205 passed the APK checks for every city's manifest, tile and elevation-grid asset.
 - [ ] On sloped Amman roads, road surfaces, building bases, player, NPCs and vehicles remain on the DEM surface with no y=0 drop.
 - [ ] The Roman Theatre is visually compared with official reference photos from front, side and upper seating views.
 - [ ] Facade photos are assigned only to the exact verified OSM building/facade and baked into that building's GLB/local mesh.
