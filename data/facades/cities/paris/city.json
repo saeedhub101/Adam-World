@@ -1,0 +1,10 @@
+{
+  "slug": "paris",
+  "name": "Paris",
+  "center": {
+    "lat": 48.8584,
+    "lon": 2.2945
+  },
+  "discovery_radius_m": 650,
+  "notes": "Initial discovery area follows the current in-game city destination radius. Expand the city coverage by adding further area footprints; this is not a claim of complete municipal coverage."
+}
