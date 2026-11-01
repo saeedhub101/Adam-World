@@ -174,7 +174,7 @@ def process_tile(url, city, existing_cells, seen_ids, lat0, lon0, radius):
                         digest=hashlib.sha1(json.dumps(canonical,separators=(",",":")).encode()).hexdigest()
                         if digest in seen_ids: continue
                         seen_ids.add(digest)
-                        source_id=int(digest[:13],16)
+                        source_id=int(digest[:12],16)
                         tags={"building":"yes","source":"Microsoft Global ML Building Footprints","source:license":"CDLA-Permissive-2.0","source:id":digest[:16]}
                         try:
                             height=float(props.get("height",-1))
@@ -184,7 +184,7 @@ def process_tile(url, city, existing_cells, seen_ids, lat0, lon0, radius):
                             pass
                         if conf>=0: tags["source:confidence"]=f"{conf:.3f}"
                         geometry=[{"lat":p[2],"lon":p[3]} for p in pts]
-                        yield {"type":"way","id":9000000000000000+source_id,"tags":tags,"geometry":geometry}
+                        yield {"type":"way","id":8000000000000000+source_id,"tags":tags,"geometry":geometry}
 
 def git(*args,check=True):
     return subprocess.run(["git",*args],cwd=ROOT,check=check,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
