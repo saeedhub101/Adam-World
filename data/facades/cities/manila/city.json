@@ -2,9 +2,9 @@
   "slug": "manila",
   "name": "Manila",
   "center": {
-    "lat": 14.5547,
-    "lon": 121.0244
+    "lat": 14.57655,
+    "lon": 120.98105
   },
-  "discovery_radius_m": 650,
-  "notes": "Priority discovery area centred on Makati CBD / Ayala Triangle, selected for its dense real high-rise urban fabric. Discovery radius is a data-harvest window, not a claim of complete Metro Manila coverage."
+  "discovery_radius_m": 900,
+  "notes": "Priority gameplay spawn: Pedro Gil Street at A. Mabini Street, Ermita/Malate, Manila. Robinsons Place Manila is nearby at Pedro Gil and Adriatico; the 900 m window is for importing local OSM footprints and imagery evidence."
 }
