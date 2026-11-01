@@ -19,6 +19,7 @@ on:
       - "Adam World Offline City Data Import"
       - "Adam World Copernicus Terrain Import"
       - "Adam World Free 3D Asset Import"
+      - "Adam World Transport Infrastructure Import"
     types: [completed]
   workflow_dispatch:
 
