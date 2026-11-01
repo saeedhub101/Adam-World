@@ -16,8 +16,7 @@ paid API or runtime remote map/model dependency is introduced.
   `data/offline-world/<city>/elements.json`.
 - Amman already has a Copernicus DEM GLO-30 grid at
   `data/facades/cities/amman/elevation-grid.json`.
-- The other nine cities did not have committed elevation grids at the start of
-  this checkpoint.
+- The other nine cities initially lacked elevation grids; all nine were generated and committed during this rebuild.
 - The verified facade manifest is intentionally empty. The existing facade
   workflow may discover candidate photographs, but proximity is not proof that a
   photograph depicts a particular building.
@@ -52,7 +51,7 @@ Relevant implementation commits:
 - `2de98a1cd15358784affac53685b5fe8a6305700` — limestone theatre texture, water interaction, traffic signal cycles and mapped waterfalls.
 - `7a845c8bbc15ec8b57941029502112ee92398773` — car road-width data for signal approach detection.
 
-## All-city elevation import — running
+## All-city elevation import — completed
 
 A free, no-key Copernicus DEM importer and GitHub Actions workflow have been added:
 
