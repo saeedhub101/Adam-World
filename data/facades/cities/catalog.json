@@ -42,8 +42,8 @@
       "slug": "paris",
       "name": "Paris",
       "center": {
-        "lat": 48.8606,
-        "lon": 2.3376
+        "lat": 48.8584,
+        "lon": 2.2945
       },
       "discovery_radius_m": 650
     },
