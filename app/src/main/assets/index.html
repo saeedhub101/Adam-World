@@ -743,7 +743,8 @@ function makeAdamCharacter(){
   }
   // Expose a named bone skeleton for future weapon sockets, gestures and animation clips.
   const skeleton=new THREE.Skeleton(bones);
-  root.userData={legs:legs,arms:arms,fingers:fingers,eyes:eyes,head:head,skeleton:skeleton,bones:bones};
+  root.name='adam-fullbody-character';
+  root.userData={characterId:'adam',legs:legs,arms:arms,fingers:fingers,eyes:eyes,head:head,skeleton:skeleton,bones:bones};
   return root;
 }
 function swing(g,ph,amp){
