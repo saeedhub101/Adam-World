@@ -459,6 +459,77 @@ candidates.slice(0,12).forEach(c=>{const row=document.createElement("div");row.c
 if(!candidates.length){const p=document.createElement("p");p.className="muted";p.textContent="لم تُعثر على صور Panoramax قريبة بما يكفي من مباني OSM في هذا التحميل، أو لا تتوفر بيانات اتجاه/صور مصغرة. لا توجد مطابقة واجهات مؤكدة.";out.appendChild(p);}}
 async function loadImageryEvidence(lat,lon){currentImageryCenter={lat,lon};renderImageryLinks(lat,lon);$("imageryStatus").textContent="جارٍ البحث حول "+lat.toFixed(5)+", "+lon.toFixed(5)+"…";const d=0.008,bbox=[lon-d,lat-d,lon+d,lat+d].map(v=>v.toFixed(6)).join(",");const oamUrl="https://api.imagery.hotosm.org/stac/search?bbox="+encodeURIComponent(bbox)+"&limit=30",panUrl="https://api.panoramax.xyz/api/search?bbox="+encodeURIComponent(bbox)+"&limit=100";const results=await Promise.allSettled([sourceJson(oamUrl),sourceJson(panUrl)]);const oam=results[0].status==="fulfilled"?results[0].value:{features:[]},pan=results[1].status==="fulfilled"?results[1].value:{features:[]},errors=[];if(results[0].status==="rejected")errors.push("OpenAerialMap: "+results[0].reason.message);if(results[1].status==="rejected")errors.push("Panoramax: "+results[1].reason.message);$("imageryStatus").textContent=errors.length?"تعذر جلب بعض المصادر: "+errors.join(" | "):"اكتمل البحث الجغرافي. النتائج لا تعني تلقائياً أن الصورة تخص واجهة مبنى.";renderImageryResults(oam,pan);}
 $("imageryToggle").onclick=()=>{const p=$("imageryPanel"),show=p.style.display!=="block";p.style.display=show?"block":"none";if(show&&$("imageryResults").children.length===0)loadImageryEvidence(currentImageryCenter.lat,currentImageryCenter.lon);};
+/* ---------- إسقاط صور الواجهات على سطح المبنى نفسه ---------- */
+const facadeTextureLoader=new THREE.TextureLoader();
+function addFacadePhotoProjection(item, footprint, height) {
+  try {
+    const edge=Number(item.facade_edge_index),cam=item.camera||{};
+    if(!Number.isInteger(edge)||edge<0||edge>=footprint.length||!cam.capture_lat||!cam.capture_lon) return;
+    const next=(edge+1)%footprint.length,a=footprint[edge],b=footprint[next];
+    const hFov=Number(cam.horizontal_fov_deg),pitch=Number(cam.pitch_deg||0),az=Number(cam.azimuth_deg);
+    if(!(hFov>10&&hFov<150)||!Number.isFinite(az)) return;
+    const aspect=Number(item.image_width||500)/Math.max(1,Number(item.image_height||375));
+    const tanH=Math.tan(hFov*Math.PI/360),tanV=tanH/Math.max(0.2,aspect);
+    const cp=proj(Number(cam.capture_lat),Number(cam.capture_lon));
+    const camera=[cp[0],Number(cam.capture_height_m||1.5),cp[1]];
+    const ar=az*Math.PI/180,pr=pitch*Math.PI/180;
+    const forward=[Math.sin(ar)*Math.cos(pr),Math.sin(pr),-Math.cos(ar)*Math.cos(pr)];
+    const right=[Math.cos(ar),0,Math.sin(ar)];
+    const up=[right[1]*forward[2]-right[2]*forward[1],right[2]*forward[0]-right[0]*forward[2],right[0]*forward[1]-right[1]*forward[0]];
+    const dot=(u,v)=>u[0]*v[0]+u[1]*v[1]+u[2]*v[2];
+    const rel=p=>[p[0]-camera[0],p[1]-camera[1],p[2]-camera[2]];
+    const depth=p=>dot(rel(p),forward),sx=p=>dot(rel(p),right),sy=p=>dot(rel(p),up);
+    let poly=[[a[0],0,a[1]],[b[0],0,b[1]],[b[0],height,b[1]],[a[0],height,a[1]]];
+    const planes=[
+      p=>depth(p)-0.05,
+      p=>sx(p)+depth(p)*tanH,
+      p=>depth(p)*tanH-sx(p),
+      p=>sy(p)+depth(p)*tanV,
+      p=>depth(p)*tanV-sy(p)
+    ];
+    for(const plane of planes){
+      const out=[];
+      for(let i=0;i<poly.length;i++){
+        const cur=poly[i],nxt=poly[(i+1)%poly.length],dc=plane(cur),dn=plane(nxt),inc=dc>=0,inn=dn>=0;
+        if(inc)out.push(cur);
+        if(inc!==inn){const t=dc/(dc-dn);out.push([cur[0]+(nxt[0]-cur[0])*t,cur[1]+(nxt[1]-cur[1])*t,cur[2]+(nxt[2]-cur[2])*t]);}
+      }
+      poly=out;if(poly.length<3)return;
+    }
+    const texCoords=poly.map(p=>[0.5+0.5*sx(p)/(depth(p)*tanH),0.5+0.5*sy(p)/(depth(p)*tanV)]);
+    let nx=b[1]-a[1],nz=-(b[0]-a[0]),nl=Math.hypot(nx,nz)||1;nx/=nl;nz/=nl;
+    const mid=[(a[0]+b[0])/2,0,(a[1]+b[1])/2],toward=[camera[0]-mid[0],0,camera[2]-mid[2]];
+    if(nx*toward[0]+nz*toward[2]<0){nx=-nx;nz=-nz;}
+    const positions=[],uvs=[],indices=[];
+    for(let i=0;i<poly.length;i++){positions.push(poly[i][0]+nx*0.045,poly[i][1],poly[i][2]+nz*0.045);uvs.push(texCoords[i][0],texCoords[i][1]);}
+    for(let i=1;i<poly.length-1;i++)indices.push(0,i,i+1);
+    const geometry=new THREE.BufferGeometry();
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+    geometry.setIndex(indices);geometry.computeVertexNormals();
+    const source='facades/'+String(item.local_image||'').replace(/^\\/+/, '');
+    if(!source.startsWith('facades/verified/')){geometry.dispose();return;}
+    const texture=facadeTextureLoader.load(source,()=>{},undefined,()=>{});
+    texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=aniso;texture.wrapS=THREE.ClampToEdgeWrapping;texture.wrapT=THREE.ClampToEdgeWrapping;
+    const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,transparent:false,depthWrite:true,polygonOffset:true,polygonOffsetFactor:-4});
+    const mesh=new THREE.Mesh(geometry,material);mesh.renderOrder=4;mesh.userData.ownedTexture=texture;mesh.userData.ownedMaterial=true;cityGroup.add(mesh);
+  } catch(e) { console.warn('Facade projection skipped',item&&item.osm_way_id,e); }
+}
+function loadVerifiedFacadeAssignments(){
+  const result=new Map();
+  try{
+    if(window.Android&&typeof Android.readAssetText==='function'){
+      const raw=Android.readAssetText('facades/verified_facades.json');
+      const parsed=JSON.parse(raw||'{}');
+      for(const item of (parsed.buildings||[])){
+        if(!item||!item.osm_way_id||!item.local_image)continue;
+        if(!['human_verified','ai_visual_verified'].includes(String(item.review&&item.review.status||'')))continue;
+        result.set(String(item.osm_way_id),item);
+      }
+    }
+  }catch(e){console.warn('Verified facade manifest unavailable',e);}
+  return result;
+}
 /* ---------- بناء المدينة ---------- */
 async function loadArea(lat,lon,spawn){
   const data=(window.Android&&typeof Android.readAssetText==='function')
@@ -473,6 +544,7 @@ async function loadArea(lat,lon,spawn){
   bldgs=[];grid=new Map();carPaths=[];pedPaths=[];
   const B=newAcc(),G=newAcc(),RWd=newAcc(),RNr=newAcc(),SW=newAcc(),PK=newAcc(),WT=newAcc();
   const trees=[],lamps=[],signals=[],busStops=[],stopSigns=[],crossings=[];const roadLabels=[],roadLabelKeys=new Set();let bcount=0;
+  const facadeAssignments=loadVerifiedFacadeAssignments();
   const wallV=3.4*4;
   for(const el of data.elements){
     const t=el.tags||{};
@@ -494,6 +566,9 @@ async function loadArea(lat,lon,spawn){
       if(P.length<3||Math.abs(polyArea(P))<10)continue;
       bcount++;
       const h=bHeight(t,el.id);
+      const osmWayId=String(el.id).replace(/^way\\//,'');
+      const facadeAssignment=facadeAssignments.get(osmWayId);
+      if(facadeAssignment)addFacadePhotoProjection(facadeAssignment,P,h);
       const acc=B;
       const col=parseColor(t,el.id);
       const roofRaw=t['roof:colour']||t['roof:color'];
