@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "import_profile_version": 3,
+  "import_profile_version": 4,
   "city": "Bangkok",
   "slug": "bangkok",
   "source": "OpenStreetMap Overpass",
@@ -11,7 +11,7 @@
     "lon": 100.5347
   },
   "radius_m": 650,
-  "element_count": 1632,
+  "element_count": 1640,
   "geometry_layers": [
     "buildings",
     "roads",
