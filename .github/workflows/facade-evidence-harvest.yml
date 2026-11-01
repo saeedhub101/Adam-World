@@ -118,7 +118,7 @@ jobs:
           node --check /tmp/adam-world-inline.js
 
       - name: Build APK and AAB
-        run: gradle --no-daemon -PVERSION_CODE=${{ 1000 + github.run_number }} assembleDebug bundleDebug
+        run: gradle --no-daemon -PVERSION_CODE=1041 assembleDebug bundleDebug
 
       - name: Verify outputs
         run: |
@@ -135,7 +135,7 @@ jobs:
             **App:** Adam World
             **Publisher:** Saeed Mansour
             **Build outputs:** APK and AAB (debug-signed testing build).
-            **Version code:** ${{ 1000 + github.run_number }}.
+            **Version code:** 1041.
             **Evidence status:** OSM building footprints and public imagery catalogues were processed by the preceding harvest job. Facade imagery remains candidate-only unless explicitly human-verified.
             **Note:** A private production signing key is required for Google Play production upload.
           files: |
