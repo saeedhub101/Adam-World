@@ -726,6 +726,116 @@ function loadVerifiedFacadeAssignments(){
   }catch(e){console.warn('Verified facade manifest unavailable',e);}
   return result;
 }
+
+/* Landmark geometry: purpose-built forms tied to the mapped footprint, not generic blocks. */
+function addRomanTheatre(){
+  const anchor=proj(31.95165805,35.93939340),base=terrainHeight(anchor[0],anchor[1]);
+  const g=new THREE.Group();g.position.set(anchor[0],base,anchor[1]);cityGroup.add(g);
+  const stone=new THREE.MeshLambertMaterial({color:0xb7a17c,side:THREE.DoubleSide});
+  const cutStone=new THREE.MeshLambertMaterial({color:0x8f795c,side:THREE.DoubleSide});
+  const dark=new THREE.MeshLambertMaterial({color:0x30291f});
+  const seatPos=[],wallPos=[];
+  const a0=0.10,a1=Math.PI-0.10,segments=112,rows=32;
+  function band(inner,outer,y,thick,lo,hi){
+    const steps=Math.max(1,Math.ceil((hi-lo)/(Math.PI/segments)));
+    for(let j=0;j<steps;j++){
+      const aa=lo+(hi-lo)*j/steps,bb=lo+(hi-lo)*(j+1)/steps;
+      const p=(r,a,Y)=>[r*Math.cos(a),Y,-r*Math.sin(a)];
+      const p0=p(inner,aa,y),p1=p(outer,aa,y),p2=p(outer,bb,y),p3=p(inner,bb,y);
+      seatPos.push(...p0,...p1,...p2,...p0,...p2,...p3);
+      const q0=p(inner,aa,y-thick),q1=p(inner,bb,y-thick);
+      wallPos.push(...q0,...q1,...p3,...q0,...p3,...p0);
+    }
+  }
+  const aisles=[[0.43,0.49],[0.94,1.00],[2.14,2.20],[2.65,2.71]];
+  for(let row=0;row<rows;row++){
+    const inner=13.5+row*1.08,outer=inner+0.92,y=0.28+row*0.43;
+    let cursor=a0;
+    for(const gap of aisles){if(gap[0]>cursor)band(inner,outer,y,0.42,cursor,gap[0]);cursor=gap[1];}
+    if(cursor<a1)band(inner,outer,y,0.42,cursor,a1);
+  }
+  function meshFrom(pos,mat){const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.computeVertexNormals();g.add(new THREE.Mesh(geo,mat));}
+  meshFrom(seatPos,stone);meshFrom(wallPos,cutStone);
+  // Outer retaining wall and the lower orchestra semicircle.
+  const outerWall=new THREE.Mesh(new THREE.CylinderGeometry(48.2,48.2,5.5,112,1,true,0,Math.PI),cutStone);
+  outerWall.rotation.y=Math.PI;outerWall.position.set(0,7.0,0);g.add(outerWall);
+  const orchestra=new THREE.Mesh(new THREE.CircleGeometry(13.2,96,0,Math.PI),stone);
+  orchestra.rotation.x=-Math.PI/2;orchestra.rotation.z=Math.PI;orchestra.position.set(0,0.18,0);g.add(orchestra);
+  // Four radial stair aisles with visible treads, kept open between seating banks.
+  for(const angle of [0.46,0.97,2.17,2.68]){
+    for(let k=0;k<24;k++){
+      const r=14+k*1.38,y=0.35+k*0.55;
+      const step=new THREE.Mesh(new THREE.BoxGeometry(1.35,0.22,1.18),cutStone);
+      step.position.set(Math.cos(angle)*r,y,-Math.sin(angle)*r);step.rotation.y=-angle;g.add(step);
+    }
+  }
+  // Scaenae frons: three-storey stage facade, podium, columns and entablature.
+  const stage=new THREE.Mesh(new THREE.BoxGeometry(39,15,3.2),stone);stage.position.set(0,7.5,32);g.add(stage);
+  const podium=new THREE.Mesh(new THREE.BoxGeometry(43,1.5,5),cutStone);podium.position.set(0,0.75,31.5);g.add(podium);
+  for(let i=0;i<11;i++){
+    const x=-18+i*3.6;
+    const col=new THREE.Mesh(new THREE.CylinderGeometry(0.48,0.62,12.2,12),stone);col.position.set(x,7.8,29.9);g.add(col);
+    const cap=new THREE.Mesh(new THREE.BoxGeometry(1.35,0.55,1.35),cutStone);cap.position.set(x,14.0,29.9);g.add(cap);
+  }
+  const entablature=new THREE.Mesh(new THREE.BoxGeometry(42,1.1,4.1),cutStone);entablature.position.set(0,14.9,30.5);g.add(entablature);
+  for(const x of [-12,0,12]){
+    const door=new THREE.Mesh(new THREE.BoxGeometry(3.4,6.4,0.18),dark);door.position.set(x,4.2,28.35);g.add(door);
+    const lintel=new THREE.Mesh(new THREE.BoxGeometry(4.1,0.65,0.5),cutStone);lintel.position.set(x,7.55,28.25);g.add(lintel);
+  }
+  // Side retaining wings tie the stage to the semicircular cavea.
+  for(const side of [-1,1]){
+    const wing=new THREE.Mesh(new THREE.BoxGeometry(7,10,16),stone);wing.position.set(side*23,5,24);wing.rotation.y=side*0.18;g.add(wing);
+  }
+}
+function addBurjKhalifa(P,baseY){
+  const cx=P.reduce((s,p)=>s+p[0],0)/P.length,cz=P.reduce((s,p)=>s+p[1],0)/P.length;
+  const group=new THREE.Group();group.position.set(cx,baseY,cz);cityGroup.add(group);
+  const glass=new THREE.MeshLambertMaterial({color:0x7897a8,side:THREE.DoubleSide});
+  const band=new THREE.MeshLambertMaterial({color:0xb8c6c9,side:THREE.DoubleSide});
+  const core=new THREE.MeshLambertMaterial({color:0x647985});
+  const dummy=new THREE.Object3D(),floorH=4.5,floors=163;
+  const wingGeo=new THREE.BoxGeometry(1,1,1),bandGeo=new THREE.BoxGeometry(1,1,1);
+  const wings=new THREE.InstancedMesh(wingGeo,glass,floors*3);
+  const bands=new THREE.InstancedMesh(bandGeo,band,floors*3);
+  let wi=0,bi=0;
+  const profile=[[0,1],[90,.96],[180,.87],[270,.75],[360,.62],[450,.49],[540,.36],[630,.24],[710,.14],[770,.07],[828,.018]];
+  function taper(y){for(let i=1;i<profile.length;i++){if(y<=profile[i][0]){const a=profile[i-1],b=profile[i],t=(y-a[0])/(b[0]-a[0]);return a[1]*(1-t)+b[1]*t;}}return .018;}
+  for(let fl=0;fl<floors;fl++){
+    const y=fl*floorH+floorH/2,scale=taper(y),width=Math.max(2.2,25*scale),length=Math.max(4,77*scale),radial=Math.max(3,22*scale);
+    for(let wing=0;wing<3;wing++){
+      const angle=wing*Math.PI*2/3;
+      dummy.position.set(Math.sin(angle)*radial,y,Math.cos(angle)*radial);
+      dummy.rotation.set(0,angle,0);dummy.scale.set(width,floorH*0.94,length);dummy.updateMatrix();wings.setMatrixAt(wi++,dummy.matrix);
+      dummy.position.y=fl*floorH+0.16;dummy.scale.set(width+0.45,0.18,length+0.45);dummy.updateMatrix();bands.setMatrixAt(bi++,dummy.matrix);
+    }
+  }
+  wings.count=wi;bands.count=bi;group.add(wings);group.add(bands);
+  const central=new THREE.Mesh(new THREE.CylinderGeometry(2.1,13.5,690,12),core);central.position.y=345;group.add(central);
+  const upper=new THREE.Mesh(new THREE.CylinderGeometry(0.45,3.2,108,10),glass);upper.position.y=744;group.add(upper);
+  const spire=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.52,72,8),band);spire.position.y=818;group.add(spire);
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(0.18,12,8),band);tip.position.y=860;group.add(tip);
+  // Three projecting wing tips and a continuous crown make the distinctive Y plan legible.
+  for(let i=0;i<3;i++){
+    const angle=i*Math.PI*2/3;
+    const fin=new THREE.Mesh(new THREE.BoxGeometry(1.25,520,1.2),band);
+    fin.position.set(Math.sin(angle)*15,260,Math.cos(angle)*15);fin.rotation.y=angle;group.add(fin);
+  }
+}
+function addRobinsonsPlaceSign(P,baseY,height){
+  let best=null;
+  for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],len=Math.hypot(b[0]-a[0],b[1]-a[1]);if(!best||len>best.len)best={a,b,len};}
+  if(!best)return;
+  const dx=(best.b[0]-best.a[0])/best.len,dz=(best.b[1]-best.a[1])/best.len;
+  const nx=-dz,nz=dx,cx=(best.a[0]+best.b[0])/2,cz=(best.a[1]+best.b[1])/2;
+  const canvas=cv(1024,180),ctx=canvas.getContext('2d');ctx.fillStyle='#f5f2e8';ctx.fillRect(0,0,1024,180);
+  ctx.fillStyle='#c92732';ctx.font='bold 92px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('ROBINSONS PLACE',512,88);
+  ctx.fillStyle='#4b5055';ctx.font='bold 30px sans-serif';ctx.fillText('MANILA',512,151);
+  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+  const mat=new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide});
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(22,best.len*.72),3.8),mat);
+  mesh.position.set(cx+nx*.18,baseY+height*.72,cz+nz*.18);mesh.rotation.y=Math.atan2(nx,nz);mesh.userData.ownedTexture=tex;mesh.userData.ownedMaterial=true;cityGroup.add(mesh);
+}
+
 /* ---------- بناء المدينة ---------- */
 async function loadArea(lat,lon,spawn){
   const data=(window.Android&&typeof Android.readAssetText==='function')
@@ -768,12 +878,18 @@ async function loadArea(lat,lon,spawn){
       bcount++;
       const h=bHeight(t,el.id);
       const osmWayId=String(el.id).replace(/^way\//,'');
+      if(osmWayId==='446646206'){
+        const bx=P.reduce((v,p)=>v+p[0],0)/P.length,bz=P.reduce((v,p)=>v+p[1],0)/P.length;
+        addBurjKhalifa(P,terrainHeight(bx,bz));
+        const ll=unproj(bx,bz),bb={id:el.id,tags:t,height:828,lat:ll[0],lon:ll[1],name:'Burj Khalifa',pts:P,minx:Math.min(...P.map(p=>p[0])),maxx:Math.max(...P.map(p=>p[0])),minz:Math.min(...P.map(p=>p[1])),maxz:Math.max(...P.map(p=>p[1]))};bldgs.push(bb);gridAdd(bb);continue;
+      }
       const facadeItems=facadeAssignments.get(osmWayId)||[];
       for(const facadeAssignment of facadeItems)addFacadePhotoProjection(facadeAssignment,P,h);
       const cx=P.reduce((v,p)=>v+p[0],0)/P.length,cz=P.reduce((v,p)=>v+p[1],0)/P.length;
       const baseY=terrainHeight(cx,cz),bStart=B.pos.length,archStarts={};
       for(const key of Object.keys(archAcc))archStarts[key]=archAcc[key].length;
       const facadeLayouts=addBuildingArchitecture(P,t,h,el.id);
+      if(osmWayId==='130532101')addRobinsonsPlaceSign(P,baseY,h);
       const acc=B;
       const col=parseColor(t,el.id);
       const roofRaw=t['roof:colour']||t['roof:color'];
@@ -841,6 +957,7 @@ async function loadArea(lat,lon,spawn){
       if(target)flatPoly(P,0.03,target);
     }
   }
+  if(data.city&&data.city.slug==='amman')addRomanTheatre();
   const adds=[[accMesh(B,matB)],[accMesh(G,matG)],[accMesh(RWd,matRoadW)],[accMesh(RNr,matRoadN)],[accMesh(SW,matSw)],
     [accMesh(LC.grass,matGrass)],[accMesh(LC.forest,matForest)],[accMesh(LC.scrub,matScrub)],
     [accMesh(LC.crops,matCrops)],[accMesh(LC.bare,matBare)],[accMesh(LC.sand,matSand)],
