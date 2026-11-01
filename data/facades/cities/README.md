@@ -26,7 +26,43 @@ and unchanged queues are not rewritten. The queue is an evidence/review worklist
 not an approved texture manifest. Nearby photos and camera-cone matches are only
 candidates; no photo is automatically attached to a building.
 
-Keep large imagery files outside Git unless a reviewed, licence-compatible texture
-is actually needed by a final local GLB. Store the compact metadata, source hashes,
-review queue and final provenance in the repository. Never check in a photo if its
-licence does not permit redistribution.
+## Mandatory evidence-to-GLB policy
+
+Finding a photo is not a deliverable. A nearby photo, a camera-bearing match, a valid
+JPEG, or a high quality score is only a discovery candidate. It is not proof that
+the image depicts the target building or the intended facade.
+
+1. Discover photo metadata for every configured city; do not privilege one country.
+2. Before downloading an image, reject records without an explicit reusable licence,
+   a real visual image asset, capture coordinates, camera azimuth, usable field of
+   view, acceptable capture accuracy, and a camera ray that intersects the target
+   footprint facade within the strict distance/angle limits.
+3. Download candidate image bytes only to temporary workflow storage for image
+   decoding, dimensions, blur/exposure checks and visual inspection. Do not commit
+   candidate photos or bulk review galleries to the repository.
+4. Verify exact building identity and facade side against the footprint, capture
+   position, camera direction and visible architectural details. Reject interiors,
+   unrelated objects, distant buildings, sky/ground-only views, wrong floors,
+   wrong facades, duplicates and ambiguous matches. Proximity alone must never
+   approve an image.
+5. Only an explicitly verified, correctly licensed, high-resolution image may be
+   copied into app assets. Record photo ID, source, licence, image hash, OSM way ID,
+   facade edge, camera calibration, verification method and timestamp.
+6. In the same workflow run, immediately rebuild the target building mesh and
+   textured GLB from its footprint and verified image. Apply the image as a
+   perspective-correct facade texture on the building surface itself, not as a
+   separate floating image or overlay. Validate GLB bounds, orientation, scale,
+   texture embedding and target coordinates before committing it.
+7. If exact identity or camera calibration cannot be established, do not texture
+   the building and do not store the image as a project asset. Keep only compact
+   metadata/rejection reason so a later pass can retry.
+
+The current GLB builder deliberately accepts only human_verified assignments in
+app/src/main/assets/facades/verified_facades.json. Automated geometric and image
+quality gates can reject bad candidates, but they cannot honestly prove exact visual
+building identity by themselves. Until a visual identity verifier is implemented
+and validated, ambiguous candidates must remain unapproved; never fabricate an
+approval or label a neutral footprint shell as a photo-real building.
+
+Keep compact metadata, source hashes, review decisions and final GLB provenance in
+the repository. Never check in a photo if its licence does not permit redistribution.
