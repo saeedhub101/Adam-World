@@ -338,6 +338,12 @@ function posAt(path,s,off){
   const dx=(b[0]-a[0])/L,dz=(b[1]-a[1])/L;
   return {x:a[0]+(b[0]-a[0])*t-dz*off,z:a[1]+(b[1]-a[1])*t+dx*off,dx:dx,dz:dz};
 }
+function nearestPathDistance(path,point,step=4){
+  let best={distance:Infinity,s:0};
+  for(let s=0;s<=path.total;s+=step){const p=posAt(path,s,0),d=Math.hypot(p.x-point[0],p.z-point[1]);if(d<best.distance)best={distance:d,s};}
+  const p=posAt(path,path.total,0),d=Math.hypot(p.x-point[0],p.z-point[1]);if(d<best.distance)best={distance:d,s:path.total};
+  return best;
+}
 
 /* ---------- ذاكرة تخزين قطاعات المدينة المحلية ---------- */
 const offlineTileCache=new Map();
@@ -427,7 +433,7 @@ const cityGroup=new THREE.Group();scene.add(cityGroup);
 const agentGroup=new THREE.Group();scene.add(agentGroup);
 let bldgs=[],grid=new Map(),CELL=40;
 
-let carPaths=[],pedPaths=[],railPaths=[],agents=[];
+let carPaths=[],pedPaths=[],railPaths=[],agents=[],railStations=[];
 const WORLD_MODEL_FILES={
   adult_man:'models/people/adult-man.glb',
   adult_woman:'models/people/adult-woman.glb',
@@ -1436,12 +1442,12 @@ async function loadArea(lat,lon,spawn){
   disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];
   if(terrainGrid)addTerrainSurface(terrainGrid);
   for(const key of Object.keys(archAcc))archAcc[key]=[];
-  bldgs=[];grid=new Map();carPaths=[];pedPaths=[];railPaths=[];
+  bldgs=[];grid=new Map();carPaths=[];pedPaths=[];railPaths=[];railStations=[];
   const B=newAcc(),G=newAcc(),RWd=newAcc(),RNr=newAcc(),SW=newAcc();
   const roadSurfaceAcc={concrete:newAcc(),pavers:newAcc(),gravel:newAcc(),dirt:newAcc()};
   const LC={grass:newAcc(),forest:newAcc(),scrub:newAcc(),crops:newAcc(),bare:newAcc(),sand:newAcc(),wetland:newAcc()};
   const WT=newAcc(),WTLine=newAcc();
-  const trees=[],lamps=[],signals=[],busStops=[],stopSigns=[],crossings=[],waterfalls=[],potholes=[],speedBumps=[];const roadLabels=[],roadLabelKeys=new Set();let bcount=0;
+  const trees=[],lamps=[],signals=[],busStops=[],railStations=[],stopSigns=[],crossings=[],waterfalls=[],potholes=[],speedBumps=[];const roadLabels=[],roadLabelKeys=new Set();let bcount=0;
   const facadeAssignments=loadVerifiedFacadeAssignments();
   const wallV=3.4*4;
   for(const el of data.elements){
@@ -1452,6 +1458,7 @@ async function loadArea(lat,lon,spawn){
       else if(t.highway==='street_lamp'&&lamps.length<500){lamps.push(proj(el.lat,el.lon));}
       else if(t.highway==='traffic_signals'&&signals.length<300){signals.push(proj(el.lat,el.lon));}
       else if(t.highway==='bus_stop'&&busStops.length<250){busStops.push({p:proj(el.lat,el.lon),tags:t});}
+      else if(((t.railway&&['station','halt','tram_stop','platform','subway_entrance'].includes(String(t.railway)))||(t.public_transport&&['station','platform','stop_position'].includes(String(t.public_transport))))&&railStations.length<300){railStations.push({p:proj(el.lat,el.lon),tags:t});}
       else if(t.highway==='stop'&&stopSigns.length<250){stopSigns.push(proj(el.lat,el.lon));}
       else if(t.highway==='crossing'&&crossings.length<300){crossings.push(proj(el.lat,el.lon));}
       else if(t.hazard==='pothole'&&potholes.length<500){potholes.push(proj(el.lat,el.lon));}
@@ -1681,6 +1688,15 @@ async function loadArea(lat,lon,spawn){
     }
     g.position.set(item.p[0],terrainHeight(item.p[0],item.p[1]),item.p[1]);cityGroup.add(g);
   }
+  /* Platforms placed against mapped rail alignments, not free-floating station props. */
+  for(const station of railStations){
+    let nearest=null;
+    for(const rail of railPaths){const hit=nearestPathDistance(rail.path,station.p,3);if(!nearest||hit.distance<nearest.hit.distance)nearest={rail,hit};}
+    if(!nearest||nearest.hit.distance>32)continue;
+    const p=posAt(nearest.rail.path,nearest.hit.s,2.4),yaw=Math.atan2(p.dx,p.dz),y=terrainHeight(p.x,p.z)+(nearest.rail.heightOffset||0);
+    const platform=new THREE.Mesh(new THREE.BoxGeometry(15,0.34,3.2),new THREE.MeshLambertMaterial({color:0x858b91}));platform.position.set(p.x,y+0.18,p.z);platform.rotation.y=yaw;cityGroup.add(platform);
+    const sign=new THREE.Mesh(new THREE.BoxGeometry(2.1,1.05,0.12),new THREE.MeshLambertMaterial({color:0x176b91}));sign.position.set(p.x,y+2.15,p.z);sign.rotation.y=yaw;cityGroup.add(sign);
+  }
   for(const p of stopSigns){
     const g=new THREE.Group(),pole=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.06,2.5,6),matStreetPole);pole.position.y=1.25;g.add(pole);
     const sign=new THREE.Mesh(new THREE.CylinderGeometry(0.43,0.43,0.09,8),matStopSign);sign.rotation.x=Math.PI/2;sign.position.set(0,2.25,0);g.add(sign);
@@ -1758,12 +1774,26 @@ async function loadArea(lat,lon,spawn){
   if(railPaths.length){
     try{
       await loadWorldModel('metro_car');
-      const usableRails=railPaths.filter(r=>r.path.total>35);
+      const usableRails=railPaths.filter(r=>r.path.total>35).sort((a,b)=>b.path.total-a.path.total);
       for(const rail of usableRails.slice(0,2)){
         const m=await loadWorldModel('metro_car');agentGroup.add(m);
-        agents.push({kind:'train',path:rail.path,heightOffset:rail.heightOffset||0,off:0,s:Math.random()*rail.path.total,dir:Math.random()<0.5?1:-1,sp:9,m:m,ph:0});
+        const stops=railStations.map(st=>nearestPathDistance(rail.path,st.p,3)).filter(hit=>hit.distance<28).map(hit=>hit.s).sort((a,b)=>a-b);
+        agents.push({kind:'train',path:rail.path,heightOffset:rail.heightOffset||0,off:0,s:Math.random()*rail.path.total,dir:1,sp:10,m:m,stopDistances:stops,dwellUntil:0,stoppedAt:-1,ph:0});
       }
     }catch(e){console.warn('Metro GLB or railway data unavailable',e);}
+  }
+  /* GLB buses run along mapped streets and stop at nearby mapped OSM stops. */
+  if(carPaths.length&&busStops.length){
+    try{
+      await loadWorldModel('bus');
+      const roads=carPaths.filter(r=>r.path.total>90).sort((a,b)=>b.path.total-a.path.total);
+      for(const road of roads.slice(0,3)){
+        const stops=busStops.map(st=>nearestPathDistance(road.path,st.p,4)).filter(hit=>hit.distance<18).map(hit=>hit.s).sort((a,b)=>a-b);
+        if(!stops.length)continue;
+        const m=await loadWorldModel('bus');agentGroup.add(m);
+        agents.push({kind:'bus',path:road.path,heightOffset:road.heightOffset||0,roadWidth:road.w,off:Math.min(road.w/4,1.1),s:stops[0],dir:1,sp:6.5,m:m,stopDistances:stops,dwellUntil:0,stoppedAt:-1,ph:0});
+      }
+    }catch(e){console.warn('Bus GLB or mapped stops unavailable',e);}
   }
   await addStaticPedestrians(citySlug);
 
@@ -1982,6 +2012,13 @@ function frame(now){
   }
   for(const a of agents){
     let moveSpeed=a.sp;
+    if((a.kind==='bus'||a.kind==='train')&&a.stopDistances&&a.stopDistances.length){
+      let nearestStop=-1,nearestDelta=Infinity;
+      for(let si=0;si<a.stopDistances.length;si++){const delta=Math.abs(a.stopDistances[si]-a.s);if(delta<nearestDelta){nearestDelta=delta;nearestStop=si;}}
+      if(nearestDelta>12)a.stoppedAt=-1;
+      if(nearestStop>=0&&nearestDelta<4.5&&a.stoppedAt!==nearestStop){a.stoppedAt=nearestStop;a.dwellUntil=now+(a.kind==='train'?5200:3200);}
+      if(now<a.dwellUntil)moveSpeed=0;
+    }
     if(a.kind==='car'){
       if(['bad','very_bad','horrible','very_horrible','impassable'].includes(a.roadCondition))moveSpeed*=0.62;
       else if(['intermediate','rough'].includes(a.roadCondition))moveSpeed*=0.82;
@@ -1994,9 +2031,9 @@ function frame(now){
     }
     a.s+=a.dir*moveSpeed*dt;
     if(a.s>a.path.total){a.s=a.path.total;a.dir=-1;}else if(a.s<0){a.s=0;a.dir=1;}
-    const o=a.off*(a.kind==='car'?a.dir:1);
-    const p=posAt(a.path,a.s,a.kind==='car'?o:(a.dir>0?a.off:a.off));
-    const rideHeight=a.kind==='car'?0.04:a.kind==='train'?0.3:0;
+    const o=a.off*((a.kind==='car'||a.kind==='bus')?a.dir:1);
+    const p=posAt(a.path,a.s,(a.kind==='car'||a.kind==='bus')?o:a.off);
+    const rideHeight=a.kind==='car'?0.04:a.kind==='train'?0.34:a.kind==='bus'?0.08:0;
     a.m.position.set(p.x,terrainHeight(p.x,p.z)+rideHeight+(a.heightOffset||0),p.z);a.m.rotation.y=Math.atan2(p.dx*a.dir,p.dz*a.dir)+(a.m.userData.headingOffset||0);if(a.m.userData.wheels)for(const w of a.m.userData.wheels)w.rotation.x+=a.dir*moveSpeed*dt/0.34;
     if(a.kind==='ped'){if(a.m.userData.mixer)a.m.userData.mixer.update(dt);else{a.ph+=a.sp*dt*2.2;swing(a.m,a.ph,0.6);}}
   }
