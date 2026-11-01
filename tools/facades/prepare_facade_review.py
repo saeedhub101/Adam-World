@@ -131,8 +131,7 @@ def main():
         result = process_city(city, args.limit_per_city)
         for key in totals: totals[key] += result.get(key, 0)
         if args.git_checkpoint:
-            paths = [str((city / "facade-review").relative_to(ROOT))]
-            subprocess.run(["git", "add", *paths], cwd=ROOT, check=True)
+            subprocess.run(["git", "add", "-A", "data/facades/cities"], cwd=ROOT, check=True)
             changed = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0
             if changed:
                 subprocess.run(["git", "commit", "-m", f"Checkpoint {city.name} facade image review gallery"], cwd=ROOT, check=True)
