@@ -9,7 +9,8 @@
         "lat": 31.95165805,
         "lon": 35.9393934
       },
-      "discovery_radius_m": 2500
+      "discovery_radius_m": 2500,
+      "import_profile_version": 5
     },
     {
       "slug": "manila",
