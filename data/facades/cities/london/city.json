@@ -1,0 +1,10 @@
+{
+  "slug": "london",
+  "name": "London",
+  "center": {
+    "lat": 51.5007,
+    "lon": -0.1246
+  },
+  "discovery_radius_m": 650,
+  "notes": "Initial discovery area follows the current in-game city destination radius. Expand the city coverage by adding further area footprints; this is not a claim of complete municipal coverage."
+}
