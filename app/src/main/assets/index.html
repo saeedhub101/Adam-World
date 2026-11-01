@@ -443,7 +443,9 @@ async function loadImageryEvidence(lat,lon){currentImageryCenter={lat,lon};rende
 $("imageryToggle").onclick=()=>{const p=$("imageryPanel"),show=p.style.display!=="block";p.style.display=show?"block":"none";if(show&&$("imageryResults").children.length===0)loadImageryEvidence(currentImageryCenter.lat,currentImageryCenter.lon);};
 /* ---------- بناء المدينة ---------- */
 async function loadArea(lat,lon,spawn){
-  const data=await loadOfflineArea(lat,lon,650);
+  const data=(window.Android&&typeof Android.readAssetText==='function')
+    ? await loadOfflineArea(lat,lon,650)
+    : await overpass(buildQuery(lat,lon,650));
   if(!spawn){ // نقل الأصل مع الحفاظ على مواقع اللاعب
     const o=proj(lat,lon);
     S.px-=o[0];S.pz-=o[1];S.cx-=o[0];S.cz-=o[1];camera.position.x-=o[0];camera.position.z-=o[1];
