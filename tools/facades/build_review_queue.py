@@ -124,7 +124,7 @@ def reusable_photo_license(value: Any) -> bool:
     elif "creativecommons.org/licenses/by/" in text: text = "cc-by"
     if any(token in text for token in ("noncommercial", "non-commercial", "-nc", "no-derivatives", "-nd", "all-rights-reserved", "proprietary")):
         return False
-    return any(token in text for token in ("cc0", "public-domain", "cc-by", "cc-by-sa"))
+    return any(token in text for token in ("cc0", "public-domain", "cc-by", "cc-by-sa", "etalab-2.0"))
 
 def photo_quality_gate(photo: dict[str, Any], distance_m: float, delta: float | None) -> tuple[bool, list[str], int]:
     reasons = []
