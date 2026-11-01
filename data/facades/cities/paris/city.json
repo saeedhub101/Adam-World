@@ -2,9 +2,9 @@
   "slug": "paris",
   "name": "Paris",
   "center": {
-    "lat": 48.8584,
-    "lon": 2.2945
+    "lat": 48.8606,
+    "lon": 2.3376
   },
   "discovery_radius_m": 650,
-  "notes": "Initial discovery area follows the current in-game city destination radius. Expand the city coverage by adding further area footprints; this is not a claim of complete municipal coverage."
+  "notes": "Priority discovery area centred on the Louvre / central historic Paris, selected for dense continuous real urban fabric and detailed historic buildings."
 }
