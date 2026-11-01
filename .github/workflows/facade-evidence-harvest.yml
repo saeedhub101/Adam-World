@@ -127,8 +127,7 @@ jobs:
           IMAGES: ${{ steps.images.outcome }}
           COMMIT: ${{ steps.commit.outcome }}
         run: |
-          printf 'Facade harvest outcomes: tests=%s osm=%s catalogue=%s kartaview=%s queues=%s images=%s commit=%s\\n' \\
-            "$TESTS" "$OSM" "$CATALOG" "$KARTAVIEW" "$QUEUE" "$IMAGES" "$COMMIT"
+          printf 'Facade harvest outcomes: tests=%s osm=%s catalogue=%s kartaview=%s queues=%s images=%s commit=%s\n' "$TESTS" "$OSM" "$CATALOG" "$KARTAVIEW" "$QUEUE" "$IMAGES" "$COMMIT"
           for outcome in "$TESTS" "$OSM" "$CATALOG" "$KARTAVIEW" "$QUEUE" "$IMAGES" "$COMMIT"; do
             if [ "$outcome" != "success" ]; then exit 1; fi
           done
