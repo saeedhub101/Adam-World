@@ -156,10 +156,14 @@ def checkpoint(path: Path, city: Path) -> None:
         subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT, check=True)
 
 
-def valid_existing(path: Path) -> bool:
+def valid_existing(path: Path, bbox: tuple[float, float, float, float]) -> bool:
     try:
         obj = json.loads(path.read_text(encoding="utf-8"))
-        return obj.get("type") == "FeatureCollection" and isinstance(obj.get("features"), list)
+        return (
+            obj.get("type") == "FeatureCollection"
+            and isinstance(obj.get("features"), list)
+            and obj.get("source_query_bbox_wsen") == list(bbox)
+        )
     except (OSError, json.JSONDecodeError, AttributeError):
         return False
 
@@ -182,11 +186,17 @@ def main() -> None:
         if not (city / "city.json").exists():
             print(f"SKIP {city.name}: city.json missing", flush=True)
             continue
-        if output.exists() and not args.refresh and valid_existing(output):
-            print(f"KEEP {city.name}: existing buildings.geojson ({len(json.loads(output.read_text(encoding='utf-8')).get('features', []))} features)", flush=True)
-            continue
         try:
             bbox = bbox_from_city(city)
+        except Exception as exc:
+            print(f"ERROR {city.name}: cannot determine discovery bounds: {exc}", flush=True)
+            continue
+        if output.exists() and not args.refresh:
+            if valid_existing(output, bbox):
+                print(f"KEEP {city.name}: existing buildings.geojson ({len(json.loads(output.read_text(encoding='utf-8')).get('features', []))} features; bounds unchanged)", flush=True)
+                continue
+            print(f"REFRESH {city.name}: discovery bounds changed; fetching the updated footprint window", flush=True)
+        try:
             payload = request_overpass(overpass_query(bbox))
             fc = make_feature_collection(payload, bbox)
             if not fc["features"]:
