@@ -256,8 +256,9 @@ function terrainHeight(x,z){
   const fz=(z-northZ)/(southZ-northZ)*(rows-1);
   const x0=Math.min(cols-2,Math.floor(fx)),z0=Math.min(rows-2,Math.floor(fz));
   const tx=fx-x0,tz=fz-z0;
-  const a=Number(g.elevations_m[z0][x0]),b0=Number(g.elevations_m[z0][x0+1]);
-  const c=Number(g.elevations_m[z0+1][x0]),d=Number(g.elevations_m[z0+1][x0+1]);
+  const sampleElevation=v=>v===null||v===undefined?NaN:Number(v);
+  const a=sampleElevation(g.elevations_m[z0][x0]),b0=sampleElevation(g.elevations_m[z0][x0+1]);
+  const c=sampleElevation(g.elevations_m[z0+1][x0]),d=sampleElevation(g.elevations_m[z0+1][x0+1]);
   const base=Number(g.base_elevation_m||0);
   // Terrain is rendered as two explicit triangles (a-d-b and b-d-e).
   // Sample that same triangle exactly. A single nodata corner must not force
