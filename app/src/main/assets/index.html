@@ -249,7 +249,12 @@ function terrainHeight(x,z){
   const a=g.elevations_m[z0][x0],b0=g.elevations_m[z0][x1],c=g.elevations_m[z1][x0],d=g.elevations_m[z1][x1];
   const vals=[a,b0,c,d];if(vals.some(v=>!Number.isFinite(v)))return 0;
   const tx=fx-x0,tz=fz-z0;
-  const v=(a*(1-tx)+b0*tx)*(1-tz)+(c*(1-tx)+d*tx)*tz;
+  // Match the exact diagonal used by addTerrainSurface (a-d-b / b-d-e).
+  // Bilinear interpolation here used to disagree with the rendered terrain
+  // triangles, making roads and vehicles float or sink between DEM samples.
+  const v=(tx+tz<=1)
+    ? a*(1-tx-tz)+b0*tx+c*tz
+    : b0*(1-tz)+c*(1-tx)+d*(tx+tz-1);
   return v-Number(g.base_elevation_m||0);
 }
 function addTerrainSurface(g){
@@ -578,7 +583,21 @@ function accMesh(acc,mat){
   g.computeVertexNormals();g.computeBoundingSphere();
   return new THREE.Mesh(g,mat);
 }
+function resamplePolyline(pts,maxStep=4){
+  if(pts.length<2)return pts;
+  const out=[pts[0]];
+  for(let i=1;i<pts.length;i++){
+    const a=pts[i-1],b=pts[i],len=Math.hypot(b[0]-a[0],b[1]-a[1]);
+    const steps=Math.max(1,Math.ceil(len/maxStep));
+    for(let k=1;k<=steps;k++){
+      const t=k/steps;
+      out.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);
+    }
+  }
+  return out;
+}
 function ribbon(pts,w,y,acc,uw,vs){
+  pts=resamplePolyline(pts,4);
   const n=pts.length;if(n<2)return;
   let cum=0;const L=[],R=[],V=[];
   for(let i=0;i<n;i++){
@@ -941,13 +960,20 @@ async function loadArea(lat,lon,spawn){
       }
       const tr=triangulate(P);
       for(const tri of tr)for(const k of tri){acc.pos.push(P[k][0],h,P[k][1]);acc.uv.push(0.01,0.99);acc.col.push(roofC.r,roofC.g,roofC.b);}
-      for(let i=bStart+1;i<B.pos.length;i+=3)B.pos[i]+=baseY;
-      for(const key of Object.keys(archAcc)){const arr=archAcc[key];for(let i=archStarts[key]+1;i<arr.length;i+=3)arr[i]+=baseY;}
+      // Conform every facade/roof vertex to the local terrain, not the
+      // building-centroid elevation. This prevents uphill walls and first
+      // floors from being buried while keeping the roof level above grade.
+      for(let i=bStart;i<B.pos.length;i+=3)B.pos[i+1]+=terrainHeight(B.pos[i],B.pos[i+2]);
+      for(const key of Object.keys(archAcc)){
+        const arr=archAcc[key];
+        for(let i=archStarts[key];i<arr.length;i+=3)arr[i+1]+=terrainHeight(arr[i],arr[i+2]);
+      }
       const ll=unproj(cx,cz);const bb={id:el.id,tags:t,height:h,baseY:baseY,lat:ll[0],lon:ll[1],name:t.name||t["addr:housenumber"]||("OSM building "+el.id),pts:P,minx:minx,maxx:maxx,minz:minz,maxz:maxz};bldgs.push(bb);gridAdd(bb);
     }else if(t.highway&&RW[t.highway]){
       const w=RW[t.highway];
-      const P=[];for(const p of raw){const q=P[P.length-1];if(!q||Math.hypot(p[0]-q[0],p[1]-q[1])>0.3)P.push(p);}
+      let P=[];for(const p of raw){const q=P[P.length-1];if(!q||Math.hypot(p[0]-q[0],p[1]-q[1])>0.3)P.push(p);}
       if(P.length<2)continue;
+      P=resamplePolyline(P,4);
       const veh=w>=4.5&&t.highway!=='pedestrian';
       if(w>=6||t.highway==='service'){
         ribbon(P,w+4.2,0.05,SW,(w+4.2)/2,2);
@@ -1042,7 +1068,7 @@ async function loadArea(lat,lon,spawn){
       const h=Number.isFinite(taggedHeight)&&taggedHeight>1?clamp(taggedHeight,2,35):6;
       const taggedCrown=parseFloat(tags.diameter_crown);
       const crown=Number.isFinite(taggedCrown)&&taggedCrown>0?clamp(taggedCrown/2,0.8,9):Math.max(1.4,h*0.28);
-      d.position.set(p[0],h/2,p[1]);d.scale.set(1,h,1);d.updateMatrix();tm.setMatrixAt(i,d.matrix);
+      d.position.set(p[0],terrainHeight(p[0],p[1])+h/2,p[1]);d.scale.set(1,h,1);d.updateMatrix();tm.setMatrixAt(i,d.matrix);
     });
     let bi=0,ci=0;
     for(const tree of trees){
@@ -1128,7 +1154,7 @@ async function loadArea(lat,lon,spawn){
       const lamp=new THREE.Mesh(new THREE.SphereGeometry(0.125,8,6),new THREE.MeshBasicMaterial({color}));
       lamp.position.set(0,4.0-i*0.34,0.19);g.add(lamp);
     });
-    g.position.set(p[0],0,p[1]);cityGroup.add(g);
+    g.position.set(p[0],terrainHeight(p[0],p[1]),p[1]);cityGroup.add(g);
   }
 
   /* وكلاء: سيارات ومشاة */
@@ -1341,14 +1367,16 @@ function frame(now){
     if(performance.now()-S.lastLook>2500)S.camYaw+=angDiff(S.camYaw,S.cyaw)*Math.min(1,dt*2.5);
   }
   if(S.mode==='walk')$('hud').style.display='none';
-  pcar.position.set(S.cx,terrainHeight(S.cx,S.cz),S.cz);pcar.rotation.y=S.cyaw;
+  // Vehicle wheels sit slightly above the mapped road surface (+0.09 m).
+  pcar.position.set(S.cx,terrainHeight(S.cx,S.cz)+0.13,S.cz);pcar.rotation.y=S.cyaw;
 
   for(const a of agents){
     a.s+=a.dir*a.sp*dt;
     if(a.s>a.path.total){a.s=a.path.total;a.dir=-1;}else if(a.s<0){a.s=0;a.dir=1;}
     const o=a.off*(a.kind==='car'?a.dir:1);
     const p=posAt(a.path,a.s,a.kind==='car'?o:(a.dir>0?a.off:a.off));
-    a.m.position.set(p.x,terrainHeight(p.x,p.z),p.z);a.m.rotation.y=Math.atan2(p.dx*a.dir,p.dz*a.dir);
+    const rideHeight=a.kind==='car'?0.13:0;
+    a.m.position.set(p.x,terrainHeight(p.x,p.z)+rideHeight,p.z);a.m.rotation.y=Math.atan2(p.dx*a.dir,p.dz*a.dir);
     if(a.kind==='ped'){a.ph+=a.sp*dt*2.2;swing(a.m,a.ph,0.6);}
   }
 
