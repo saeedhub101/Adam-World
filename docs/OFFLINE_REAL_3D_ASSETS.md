@@ -8,10 +8,12 @@ The initial imported set is from Innerscene's Free Parts Library. Each selected 
 
 | Asset | Local file | Use / limitation |
 |---|---|---|
-| Adult woman | `people/adult-woman.glb` | Textured standing figure; static, no armature |
-| Adult man | `people/adult-man.glb` | Textured standing figure; static, no armature |
-| Child boy | `people/child-boy.glb` | Textured standing figure; static, no armature |
-| Child girl | `people/child-girl.glb` | Textured standing figure; static, no armature |
+| Adult woman | `people/adult-woman.glb` | Textured standing figure; static |
+| Adult man | `people/adult-man.glb` | Textured standing figure; static |
+| Child boy | `people/child-boy.glb` | Textured standing figure; static |
+| Child girl | `people/child-girl.glb` | Textured standing figure; static |
+| Animated adult man | `people/adult-man-walk.glb` | Rigged, seven looping locomotion clips (idle/walk/run etc.) |
+| Animated adult woman | `people/adult-woman-walk.glb` | Rigged, seven looping locomotion clips (idle/walk/run etc.) |
 | Dog | `animals/dog.glb` | Textured static dog |
 | Sedan | `vehicles/sedan.glb` | Unbranded sedan exterior |
 | Pickup | `vehicles/pickup.glb` | Unbranded pickup exterior |
@@ -37,9 +39,11 @@ Source pages:
 
 - Road traffic now loads sedan, pickup and motorcycle GLBs from local assets.
 - The player vehicle uses the local sedan GLB.
-- Static adult, child and dog GLB figures are placed beside mapped roads.
+- Rigged adult man and woman GLBs use embedded looping walk clips; instances are independently cloned with SkeletonUtils and advanced by AnimationMixer.
+- Static adult and child GLB figures and static dogs are also placed beside mapped roads.
 - GLB geometry and textures are reused between instances; city-stream cleanup does not dispose shared source geometry.
-- The current human models are static poses. They are not walking/idle animated. Do not pretend that translation of a static pose is a walking animation.
+- Adult male/female walking animations are imported from CC0 models and play in place while the character follows mapped pedestrian paths.
+- Child boy/girl models remain static standing figures because a suitable free, redistributable animated child GLB has not yet been verified.
 - Bus, metro and water-taxi files are imported, but they are not yet spawned as moving public transport. That requires matching mapped bus/rail/water routes.
 
 ## City-specific work still required
@@ -49,7 +53,7 @@ Source pages:
 - **Amman:** old, worn local sedans and taxis have not yet been sourced; current sedan/pickup/motorcycle assets are generic.
 - **Manila:** jeepney and Philippine sidecar tricycle are not yet imported. A candidate Jeepney page was found, but the downloadable model and redistribution package were not verified. Paid/editorial tricycle models and workshop-only assets were rejected.
 - **Bangkok:** a verified local tuk-tuk asset has not yet been imported.
-- All cities: add more real, licensed vehicle variants, women/men/children in varied everyday clothing, and animated rigged characters only after verifying the actual rig and animation clips.
+- All cities: add more real, licensed vehicle variants, women/men/children in varied everyday clothing, and more than the current two adult locomotion models.
 
 ## Resumable import
 
