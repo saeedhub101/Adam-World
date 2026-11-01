@@ -57,19 +57,31 @@ def main():
     top = max(0, int((y0-pad_y)*image.height))
     right = min(image.width, int((x1+pad_x)*image.width))
     bottom = min(image.height, int((y1+pad_y)*image.height))
-    crop = image.crop((left, top, right, bottom)).resize((1024, 1024), Image.Resampling.LANCZOS)
+    # Square crop preserves facial proportions and keeps UV coordinates undistorted.
+    side = max(right-left, bottom-top)
+    cx, cy = (left+right)//2, (top+bottom)//2
+    square_left, square_top = cx-side//2, cy-side//2
+    square = Image.new("RGB", (side, side), (110, 100, 95))
+    source_left, source_top = max(0, square_left), max(0, square_top)
+    source_right, source_bottom = min(image.width, square_left+side), min(image.height, square_top+side)
+    patch = image.crop((source_left, source_top, source_right, source_bottom))
+    square.paste(patch, (source_left-square_left, source_top-square_top))
+    crop = square.resize((1024, 1024), Image.Resampling.LANCZOS)
     crop.save(output / "adam_face_texture.png", optimize=True)
 
     vertices, uvs = [], []
     for point in landmarks:
         vertices.append([(point.x-0.5)*0.46, (0.5-point.y)*0.54, -point.z*0.34])
-        u = (point.x*image.width-left)/max(1, right-left)
-        v = 1.0-(point.y*image.height-top)/max(1, bottom-top)
+        u = (point.x*image.width-square_left)/max(1, side)
+        v = 1.0-(point.y*image.height-square_top)/max(1, side)
         uvs.append([float(np.clip(u, 0, 1)), float(np.clip(v, 0, 1))])
 
-    # MediaPipe's published FaceMesh tessellation gives a connected front-face topology.
-    triangles = sorted({tuple(sorted(face)) for face in mp.solutions.face_mesh.FACEMESH_TESSELATION})
-    faces = [list(face) for face in triangles]
+    # Keep each triangle's original winding; only deduplicate by unordered vertex key.
+    unique = {}
+    for face in mp.solutions.face_mesh.FACEMESH_TESSELATION:
+        key = tuple(sorted(face))
+        unique[key] = tuple(face)
+    faces = [list(face) for face in unique.values()]
     mesh = trimesh.Trimesh(vertices=np.asarray(vertices), faces=np.asarray(faces), process=False)
     material = trimesh.visual.material.PBRMaterial(
         baseColorTexture=crop, metallicFactor=0.0, roughnessFactor=0.85, doubleSided=True
