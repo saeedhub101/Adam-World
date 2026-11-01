@@ -648,7 +648,8 @@ async function loadArea(lat,lon,spawn){
     S.px-=o[0];S.pz-=o[1];S.cx-=o[0];S.cz-=o[1];camera.position.x-=o[0];camera.position.z-=o[1];
   }
   LAT0=lat;LON0=lon;KX=111320*Math.cos(lat*Math.PI/180);
-  disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];\n  for(const key of Object.keys(archAcc))archAcc[key]=[];
+  disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];
+  for(const key of Object.keys(archAcc))archAcc[key]=[];
   bldgs=[];grid=new Map();carPaths=[];pedPaths=[];
   const B=newAcc(),G=newAcc(),RWd=newAcc(),RNr=newAcc(),SW=newAcc();
   const LC={grass:newAcc(),forest:newAcc(),scrub:newAcc(),crops:newAcc(),bare:newAcc(),sand:newAcc(),wetland:newAcc()};
@@ -679,7 +680,8 @@ async function loadArea(lat,lon,spawn){
       const osmWayId=String(el.id).replace(/^way\//,'');
       const facadeItems=facadeAssignments.get(osmWayId)||[];
       for(const facadeAssignment of facadeItems)addFacadePhotoProjection(facadeAssignment,P,h);
-      addBuildingArchitecture(P,t,h,el.id);\n      const acc=B;
+      addBuildingArchitecture(P,t,h,el.id);
+      const acc=B;
       const col=parseColor(t,el.id);
       const roofRaw=t['roof:colour']||t['roof:color'];
       let roofC=new THREE.Color('#9a9388');
@@ -751,7 +753,12 @@ async function loadArea(lat,lon,spawn){
     [accMesh(LC.grass,matGrass)],[accMesh(LC.forest,matForest)],[accMesh(LC.scrub,matScrub)],
     [accMesh(LC.crops,matCrops)],[accMesh(LC.bare,matBare)],[accMesh(LC.sand,matSand)],
     [accMesh(LC.wetland,matWetland)],[accMesh(WT,matWater)]];
-  for(const a of adds)if(a[0])cityGroup.add(a[0]);\n  addArchitecturalMesh(archAcc.glass,archMats.glass);\n  addArchitecturalMesh(archAcc.frame,archMats.frame);\n  addArchitecturalMesh(archAcc.sill,archMats.sill);\n  addArchitecturalMesh(archAcc.balcony,archMats.balcony);\n  addArchitecturalMesh(archAcc.trim,archMats.trim);
+  for(const a of adds)if(a[0])cityGroup.add(a[0]);
+  addArchitecturalMesh(archAcc.glass,archMats.glass);
+  addArchitecturalMesh(archAcc.frame,archMats.frame);
+  addArchitecturalMesh(archAcc.sill,archMats.sill);
+  addArchitecturalMesh(archAcc.balcony,archMats.balcony);
+  addArchitecturalMesh(archAcc.trim,archMats.trim);
 
   /* أسماء الشوارع: نصوص مرسومة مباشرة على سطح الطريق وباتجاه مساره */
   for(const item of roadLabels){
