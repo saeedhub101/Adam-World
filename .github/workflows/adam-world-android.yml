@@ -177,6 +177,8 @@ jobs:
               p=Path('app/src/main/assets/models')/model['file'].split('models/',1)[-1]
               if not p.is_file() or p.read_bytes()[:4] != b'glTF':
                   raise SystemExit(f"Missing or invalid GLB: {p}")
+              if model.get('animated') and (int(model.get('animation_count', 0)) < 1 or int(model.get('skin_count', 0)) < 1):
+                  raise SystemExit(f"Animated character lacks verified clips/skin: {p}")
           print('LOCAL_3D_ASSET_MANIFEST_OK', len(manifest.get('models', [])))
           PY
           grep -q 'assets/cities/catalog.json' <(unzip -l "$APK")
