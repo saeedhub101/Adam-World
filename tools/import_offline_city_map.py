@@ -24,9 +24,10 @@ ENDPOINTS = [
 ]
 
 
-def query_for(city):
-    lat, lon = city["center"]["lat"], city["center"]["lon"]
-    radius = int(city.get("discovery_radius_m", 650))
+def query_for(city, lat=None, lon=None, radius=None):
+    lat = city["center"]["lat"] if lat is None else lat
+    lon = city["center"]["lon"] if lon is None else lon
+    radius = int(city.get("discovery_radius_m", 650) if radius is None else radius)
     around = f"(around:{radius},{lat},{lon})"
     return (
         "[out:json][timeout:55];("
@@ -49,28 +50,64 @@ def query_for(city):
 
 
 def fetch_city(city):
-    body = urlencode({"data": query_for(city)}).encode("utf-8")
-    errors = []
-    for endpoint in ENDPOINTS:
-        for attempt in range(2):
+    """
+    Split large city requests into eight overlapping circles. The union covers
+    the requested discovery circle while keeping each Overpass response smaller.
+    Merge by OSM type/id so overlaps never create duplicate elements.
+    """
+    import math
+
+    lat0 = float(city["center"]["lat"])
+    lon0 = float(city["center"]["lon"])
+    target_radius = float(city.get("discovery_radius_m", 650))
+    chunk_offset = min(1000.0, target_radius * 0.4)
+    chunk_radius = max(700, int(target_radius * 0.72))
+    merged = {}
+    chunk_errors = []
+
+    for chunk_index in range(8):
+        angle = math.radians(chunk_index * 45.0)
+        north_m = math.cos(angle) * chunk_offset
+        east_m = math.sin(angle) * chunk_offset
+        lat = lat0 + north_m / 111320.0
+        lon = lon0 + east_m / (111320.0 * max(0.2, math.cos(math.radians(lat0))))
+        body = urlencode({"data": query_for(city, lat, lon, chunk_radius)}).encode("utf-8")
+        errors = []
+        endpoints = ENDPOINTS[chunk_index % len(ENDPOINTS):] + ENDPOINTS[:chunk_index % len(ENDPOINTS)]
+        data = None
+        for endpoint in endpoints:
             try:
                 request = Request(endpoint, data=body, headers={
                     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "User-Agent": "AdamWorldOfflineImporter/1.0 (repository data build)",
+                    "User-Agent": "AdamWorldOfflineImporter/1.1 (repository data build)",
                     "Accept": "application/json",
                 })
                 with urlopen(request, timeout=75) as response:
                     payload = response.read()
-                data = json.loads(payload.decode("utf-8"))
-                elements = data.get("elements") or []
-                if not elements:
-                    raise RuntimeError("Overpass returned no elements")
-                return data
+                candidate = json.loads(payload.decode("utf-8"))
+                if "elements" not in candidate:
+                    raise RuntimeError("Overpass response has no elements array")
+                data = candidate
+                break
             except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as exc:
-                errors.append(f"{endpoint} attempt {attempt + 1}: {exc}")
-                time.sleep(2 + attempt * 3)
-    raise RuntimeError("; ".join(errors[-6:]))
+                errors.append(f"{endpoint}: {exc}")
+                time.sleep(2)
+        if data is None:
+            chunk_errors.append(f"chunk {chunk_index + 1}/8: " + "; ".join(errors))
+            print(f"{city['name']}: chunk {chunk_index + 1}/8 failed; continuing retries")
+            continue
+        for element in data.get("elements") or []:
+            key = (element.get("type"), element.get("id"))
+            if key[0] is not None and key[1] is not None:
+                merged[key] = element
+        print(f"{city['name']}: chunk {chunk_index + 1}/8 saved in memory ({len(merged)} unique elements)")
 
+    if chunk_errors:
+        raise RuntimeError("One or more spatial chunks failed; refusing partial city replacement: " + " | ".join(chunk_errors))
+    if not merged:
+        raise RuntimeError("Overpass returned no elements across all spatial chunks")
+    return {"version": 0.6, "generator": "Adam World resumable chunked Overpass importer",
+            "elements": list(merged.values())}
 
 def git(*args, check=True):
     return subprocess.run(["git", *args], cwd=ROOT, check=check,
@@ -132,7 +169,7 @@ def main():
                 same_radius = float(metadata_existing.get("radius_m", -1)) == float(city.get("discovery_radius_m", 650))
                 if (existing_count > 0
                         and existing_count == int(metadata_existing.get("element_count", -1))
-                        and int(metadata_existing.get("import_profile_version", 0)) == IMPORT_PROFILE_VERSION
+                        and int(metadata_existing.get("import_profile_version", 0)) == int(city.get("import_profile_version", IMPORT_PROFILE_VERSION))
                         and same_center and same_radius):
                     print(f"{city['name']}: already stored with import profile {IMPORT_PROFILE_VERSION} and matching area ({existing_count} elements); skip")
                     succeeded += 1
@@ -153,7 +190,7 @@ def main():
             temp.replace(target)
             metadata = {
                 "schema_version": 2,
-                "import_profile_version": IMPORT_PROFILE_VERSION,
+                "import_profile_version": int(city.get("import_profile_version", IMPORT_PROFILE_VERSION)),
                 "city": city["name"],
                 "slug": slug,
                 "source": "OpenStreetMap Overpass",
