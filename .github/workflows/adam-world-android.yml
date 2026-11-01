@@ -39,13 +39,13 @@ jobs:
           from pathlib import Path
           import re
           html = Path("app/src/main/assets/index.html").read_text(encoding="utf-8")
-          scripts = re.findall(r'<script(?![^>]*\\bsrc=)[^>]*>(.*?)</script>', html, re.I | re.S)
-          if not scripts:
+          scripts = re.findall(r'<script([^>]*)>(.*?)</script>', html, re.I | re.S)
+          inline = [body for attrs, body in scripts if "src=" not in attrs.lower() and body.strip()]
+          if not inline:
               raise SystemExit("No inline game JavaScript found")
-          Path("/tmp/adam-world-inline.js").write_text("\\n".join(scripts), encoding="utf-8")
+          Path("/tmp/adam-world-inline.js").write_text("\n".join(inline), encoding="utf-8")
           PY
           node --check /tmp/adam-world-inline.js
-
       - name: Build APK and AAB
         run: gradle --no-daemon -PVERSION_CODE=${{ github.run_number }} assembleDebug bundleDebug
 
