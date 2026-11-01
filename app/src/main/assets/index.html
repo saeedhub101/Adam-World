@@ -166,10 +166,8 @@ const swTex=mkTex(sidewalkCanvas());
 const groundTex=mkTex(groundCanvas(),600,600);
 
 const DS=THREE.DoubleSide;
-// Building surfaces use OSM colour/material tags; no procedurally invented
-// windows, facade patterns or night lights are painted onto real footprints.
-const matB=new THREE.MeshLambertMaterial({vertexColors:true,side:DS});
-const matG=matB;
+const matB=new THREE.MeshLambertMaterial({map:facadeTex,emissiveMap:facadeEm,emissive:0xffffff,emissiveIntensity:0,vertexColors:true,side:DS});
+const matG=new THREE.MeshLambertMaterial({map:glassTex,emissiveMap:glassEm,emissive:0xffffff,emissiveIntensity:0,vertexColors:true,side:DS});
 const matRoadW=new THREE.MeshLambertMaterial({map:roadTexW,side:DS});
 const matRoadN=new THREE.MeshLambertMaterial({map:roadTexN,side:DS});
 const matSw=new THREE.MeshLambertMaterial({map:swTex,side:DS});
@@ -230,7 +228,7 @@ function posAt(path,s,off){
 
 /* ---------- بيانات OSM ---------- */
 const RW={motorway:14,trunk:12,primary:11,secondary:9,tertiary:8,unclassified:6,residential:6,living_street:5,service:4.5,motorway_link:7,trunk_link:7,primary_link:7,secondary_link:6,tertiary_link:6,pedestrian:6,footway:2.5,path:2,steps:2,cycleway:2.5,track:3.5};
-const PALETTE=['#c9c4b8'];
+const PALETTE=['#d9c9a8','#cfcfcf','#c4876b','#ece6d8','#c2a27a','#aeb8c2','#d8b98e','#e3dccb'];
 const nativeOverpassPending = new Map();
 let nativeOverpassSequence = 0;
 window.onNativeOverpassResult = function(id, payload, error) {
@@ -294,26 +292,19 @@ function hitPoint(x,z){
 function blocked(x,z,r){return hitPoint(x,z)||hitPoint(x+r,z)||hitPoint(x-r,z)||hitPoint(x,z+r)||hitPoint(x,z-r);}
 
 function bHeight(t,id){
-  const h=parseFloat(t.height||t['building:height']);
-  if(Number.isFinite(h)&&h>0)return Math.max(2.5,h);
-  const lv=parseFloat(t['building:levels']);
-  if(Number.isFinite(lv)&&lv>0)return Math.max(2.5,lv*3.2);
-  // OSM has no measured height for this building: use a conservative,
-  // deterministic massing estimate rather than inventing random storeys.
-  const b=t.building||'yes';
-  if(['garage','garages','shed','hut','carport'].includes(b))return 3.2;
-  if(['house','detached','semidetached_house','bungalow','residential'].includes(b))return 6.5;
-  if(['apartments','commercial','office','hotel','retail','hospital','university'].includes(b))return 10;
-  return 7;
+  let h=parseFloat(t.height);if(isFinite(h))return Math.max(3,h);
+  const lv=parseFloat(t['building:levels']);if(isFinite(lv))return Math.max(3,lv*3.3+1);
+  const b=t.building,r=rnd(id);
+  if(b==='roof'||b==='carport')return 3;
+  if(['house','detached','garage','garages','shed','hut','cabin','semidetached_house','bungalow'].indexOf(b)>=0)return 4+r*3;
+  if(['apartments','commercial','office','hotel','retail','hospital','university'].indexOf(b)>=0)return 14+r*24;
+  return 7+r*14;
 }
 function parseColor(t,id){
-  const raw=t['building:colour']||t['building:color']||t['building:material'];
-  if(raw){
-    const value=String(raw).toLowerCase();
-    const known={limestone:'#c9b99b',stone:'#c9b99b',sandstone:'#c8ad86',brick:'#ad765d',concrete:'#bdbbb5',plaster:'#d4cbb9',stucco:'#d4cbb9',wood:'#98734f',glass:'#718b9b',metal:'#858b90'};
-    try{const c=new THREE.Color();c.set(known[value]||raw);return c;}catch(e){}
-  }
-  return new THREE.Color('#c9c4b8');
+  const s=t['building:colour']||t['building:color'];
+  if(s){try{const c=new THREE.Color();c.set(s);return c;}catch(e){}}
+  const c=new THREE.Color(PALETTE[Math.floor(rnd(id,3)*PALETTE.length)]);
+  const v=0.92+rnd(id,5)*0.14;c.multiplyScalar(v);return c;
 }
 function newAcc(){return {pos:[],uv:[],col:[]};}
 function accMesh(acc,mat){
@@ -392,7 +383,7 @@ const S={px:0,pz:0,pyaw:0,cx:0,cz:0,cyaw:0,cv:0,mode:'walk',phase:0,camYaw:0,cam
 
 /* ---------- بناء المدينة ---------- */
 async function loadArea(lat,lon,spawn){
-  const data=await overpass(buildQuery(lat,lon,650));
+  const data=await overpass(buildQuery(lat,lon,spawn?430:430));
   if(!spawn){ // نقل الأصل مع الحفاظ على مواقع اللاعب
     const o=proj(lat,lon);
     S.px-=o[0];S.pz-=o[1];S.cx-=o[0];S.cz-=o[1];camera.position.x-=o[0];camera.position.z-=o[1];
@@ -419,11 +410,10 @@ async function loadArea(lat,lon,spawn){
       if(P.length<3||Math.abs(polyArea(P))<10)continue;
       bcount++;
       const h=bHeight(t,el.id);
-      const acc=B;
-      const col=parseColor(t,el.id);
-      const roofRaw=t['roof:colour']||t['roof:color'];
-      let roofC=new THREE.Color('#9a9388');
-      if(roofRaw){try{roofC.set(roofRaw);}catch(e){}}
+      const glass=h>=40||(['office','commercial','hotel'].indexOf(t.building)>=0&&h>=24&&rnd(el.id,9)<0.6);
+      const acc=glass?G:B;
+      const col=glass?new THREE.Color().setHSL(0.55,0.15,0.75+rnd(el.id,4)*0.15):parseColor(t,el.id);
+      const roofC=new THREE.Color(0x6e6e6e).multiplyScalar(0.8+rnd(el.id,6)*0.4);
       const nF=Math.max(1,Math.round(h/3.4));
       let minx=1e9,maxx=-1e9,minz=1e9,maxz=-1e9;
       for(let i=0;i<P.length;i++){
@@ -547,18 +537,11 @@ async function loadCity(lat,lon){
     loading=false;
   }
 }
-let reloadRetryAfter=0;
 async function reloadHere(){
-  if(loading||Date.now()<reloadRetryAfter)return;
-  loading=true;
+  if(loading)return;loading=true;
   const ll=unproj(S.mode==='drive'?S.cx:S.px,S.mode==='drive'?S.cz:S.pz);
-  try{
-    await loadArea(ll[0],ll[1],false);
-    toast('تم تحميل المنطقة الجديدة');
-  }catch(e){
-    reloadRetryAfter=Date.now()+15000;
-    toast('تعذر تحميل المنطقة الجديدة: '+(e&&e.message?e.message:'خطأ اتصال')+' — ستتم إعادة المحاولة');
-  }finally{loading=false;}
+  try{await loadArea(ll[0],ll[1],false);}catch(e){}
+  loading=false;
 }
 
 /* ---------- واجهة ---------- */
@@ -685,7 +668,7 @@ function frame(now){
   sky.position.copy(camera.position);
   ground.position.x=Math.round(camera.position.x/13.3333)*13.3333;ground.position.z=Math.round(camera.position.z/13.3333)*13.3333;
 
-  if(now-lastCheck>1200){lastCheck=now;if(!loading&&Math.hypot(tx,tz)>480)reloadHere();}
+  if(now-lastCheck>1500){lastCheck=now;if(!loading&&Math.hypot(tx,tz)>260)reloadHere();}
   renderer.render(scene,camera);
 }
 
