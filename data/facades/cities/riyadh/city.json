@@ -1,0 +1,10 @@
+{
+  "slug": "riyadh",
+  "name": "Riyadh",
+  "center": {
+    "lat": 24.7136,
+    "lon": 46.6753
+  },
+  "discovery_radius_m": 650,
+  "notes": "Initial discovery area follows the current in-game city destination radius. Expand the city coverage by adding further area footprints; this is not a claim of complete municipal coverage."
+}
