@@ -34,6 +34,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.ExecutorService;
@@ -47,6 +52,8 @@ public class MainActivity extends Activity {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private DownloadManager downloadManager;
     private long updateDownloadId = -1;
+    private long webUpdateDownloadId = -1;
+    private int pendingWebVersion = 0;
     private String downloadedApkPath;
     private boolean updateCheckRunning = false;
 
@@ -54,7 +61,9 @@ public class MainActivity extends Activity {
         @Override public void onReceive(Context context, Intent intent) {
             if (DownloadManager.ACTION_DOWNLOAD_COMPLETE.equals(intent.getAction())) {
                 long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
-                if (id == updateDownloadId) {
+                if (id == webUpdateDownloadId) {
+                    applyDownloadedWebUpdate();
+                } else if (id == updateDownloadId) {
                     DownloadManager.Query query = new DownloadManager.Query().setFilterById(id);
                     try (android.database.Cursor cursor = downloadManager.query(query)) {
                         if (cursor != null && cursor.moveToFirst()) {
@@ -94,7 +103,7 @@ public class MainActivity extends Activity {
         webView.setWebChromeClient(new WebChromeClient());
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         webView.addJavascriptInterface(new Bridge(), "Android");
-        webView.loadUrl("file:///android_asset/index.html");
+        loadGamePage();
 
         downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
@@ -111,10 +120,10 @@ public class MainActivity extends Activity {
 
         // Read prepackaged offline city tiles from APK assets. No network is used.
         @JavascriptInterface public String readAssetText(String relativePath) {
-            if (relativePath == null || !relativePath.startsWith("cities/")
+            if (relativePath == null || !(relativePath.startsWith("cities/") || relativePath.startsWith("facades/"))
                     || relativePath.contains("..") || relativePath.startsWith("/")
                     || relativePath.length() > 180) return null;
-            try (InputStream in = getAssets().open(relativePath);
+            try (InputStream in = openOfflineAsset(relativePath);
                  ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 byte[] buffer = new byte[8192];
                 int n;
@@ -126,6 +135,12 @@ public class MainActivity extends Activity {
             } catch (Exception ignored) {
                 return null;
             }
+        }
+
+        private InputStream openOfflineAsset(String relativePath) throws Exception {
+            File override = new File(new File(getFilesDir(), "web-update"), relativePath);
+            if (override.isFile() && override.length() <= 4L * 1024 * 1024) return new FileInputStream(override);
+            return getAssets().open(relativePath);
         }
 
         // Native networking avoids WebView cross-origin restrictions for file:// pages.
@@ -215,16 +230,17 @@ public class MainActivity extends Activity {
                 String assetUrl = null;
                 String assetName = null;
                 long assetSize = 0;
+                String webZipUrl = null;
+                long webZipSize = 0;
                 org.json.JSONArray assets = release.optJSONArray("assets");
                 if (assets != null) {
                     for (int i = 0; i < assets.length(); i++) {
                         JSONObject asset = assets.getJSONObject(i);
                         String name = asset.optString("name", "");
-                        if (name.toLowerCase().endsWith(".apk")) {
-                            assetName = name;
-                            assetUrl = asset.optString("browser_download_url", null);
-                            assetSize = asset.optLong("size", 0);
-                            if ("app-debug.apk".equals(name)) break;
+                        if (name.toLowerCase().endsWith(".apk") && !"app-debug.apk".equals(name)) {
+                            assetName = name; assetUrl = asset.optString("browser_download_url", null); assetSize = asset.optLong("size", 0);
+                        } else if ("adam-world-web-update.zip".equals(name)) {
+                            webZipUrl = asset.optString("browser_download_url", null); webZipSize = asset.optLong("size", 0);
                         }
                     }
                 }
@@ -232,11 +248,16 @@ public class MainActivity extends Activity {
                 final String url = assetUrl;
                 final String name = assetName;
                 final long size = assetSize;
-                final boolean hasUpdate = latestCode > BuildConfig.VERSION_CODE && url != null;
+                final String webUrl = webZipUrl;
+                final long webSize = webZipSize;
+                final boolean nativeRequired = release.optString("body", "").contains("Native-Required: true");
+                final boolean hasNativeUpdate = nativeRequired && latestCode > BuildConfig.VERSION_CODE && url != null;
+                final boolean hasWebUpdate = latestCode > readInstalledWebVersion() && webUrl != null;
                 runOnUiThread(() -> {
                     updateCheckRunning = false;
-                    if (hasUpdate) showUpdateDialog(version, url, name, size);
-                    else if (!automatic) notifyPage("التطبيق محدث بالفعل. الإصدار الحالي: " + BuildConfig.VERSION_NAME);
+                    if (hasNativeUpdate) showUpdateDialog(version, url, name, size);
+                    else if (hasWebUpdate) showWebUpdateDialog(version, webUrl, webSize, latestCode);
+                    else if (!automatic) notifyPage("التطبيق ومحتوى اللعبة محدثان بالفعل. الإصدار: " + BuildConfig.VERSION_NAME);
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> {
@@ -246,6 +267,68 @@ public class MainActivity extends Activity {
             } finally {
                 if (connection != null) connection.disconnect();
             }
+        });
+    }
+
+    private File webUpdateDirectory() { return new File(getFilesDir(), "web-update"); }
+    private int readInstalledWebVersion() {
+        int version = BuildConfig.VERSION_CODE;
+        File marker = new File(webUpdateDirectory(), "version.txt");
+        if (marker.isFile()) try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(marker), StandardCharsets.UTF_8))) {
+            version = Math.max(version, Integer.parseInt(reader.readLine().trim()));
+        } catch (Exception ignored) {}
+        return version;
+    }
+    private void loadGamePage() {
+        if (webView == null) return;
+        File override = new File(webUpdateDirectory(), "index.html");
+        if (override.isFile() && override.length() > 0 && override.length() < 8L * 1024 * 1024) {
+            try (InputStream in = new FileInputStream(override); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[16384]; int n; while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
+                webView.loadDataWithBaseURL("file:///android_asset/", out.toString("UTF-8"), "text/html", "UTF-8", null); return;
+            } catch (Exception ignored) {}
+        }
+        webView.loadUrl("file:///android_asset/index.html");
+    }
+    private void showWebUpdateDialog(String version, String url, long size, int latestCode) {
+        String sizeText = size > 0 ? String.format(java.util.Locale.US, "%.1f KB", size / 1024.0) : "صغير الحجم";
+        new AlertDialog.Builder(this).setTitle("تحديث سريع لـ Adam World")
+            .setMessage("الإصدار: " + version + "\\nالحجم: " + sizeText + "\\n\\nسيتم تحديث ملفات اللعبة فقط دون تنزيل APK أو إعادة تثبيت التطبيق، وستبقى بياناتك محفوظة.")
+            .setNegativeButton("لاحقاً", (d, w) -> notifyPage("يوجد تحديث سريع لمحتوى اللعبة."))
+            .setPositiveButton("تحديث الآن", (d, w) -> downloadWebUpdate(url, latestCode)).show();
+    }
+    private void downloadWebUpdate(String url, int versionCode) {
+        try {
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+            request.setTitle("Adam World - تحديث سريع"); request.setDescription("تنزيل ملفات اللعبة المعدلة فقط");
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "adam-world-web-update.zip");
+            request.setMimeType("application/zip"); webUpdateDownloadId = downloadManager.enqueue(request);
+            pendingWebVersion = versionCode; notifyPage("جارٍ تنزيل تحديث اللعبة الصغير؛ لن تحتاج إلى تثبيت APK.");
+        } catch (Exception e) { notifyPage("تعذر بدء التحديث السريع."); }
+    }
+    private void applyDownloadedWebUpdate() {
+        executor.execute(() -> {
+            try {
+                File zip = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "adam-world-web-update.zip");
+                File dir = webUpdateDirectory(); if (!dir.exists() && !dir.mkdirs()) throw new Exception("تعذر إنشاء مجلد التحديث");
+                File temp = new File(dir, "index.html.tmp"); long total = 0; boolean found = false;
+                try (ZipInputStream input = new ZipInputStream(new FileInputStream(zip)); FileOutputStream output = new FileOutputStream(temp)) {
+                    ZipEntry entry;
+                    while ((entry = input.getNextEntry()) != null) {
+                        String name = entry.getName();
+                        if (entry.isDirectory() || name.contains("..") || name.startsWith("/") || !"index.html".equals(name)) { input.closeEntry(); continue; }
+                        byte[] buffer = new byte[16384]; int n;
+                        while ((n = input.read(buffer)) != -1) { total += n; if (total > 8L*1024*1024) throw new Exception("حزمة التحديث أكبر من الحد المسموح"); output.write(buffer,0,n); }
+                        found = true; input.closeEntry();
+                    }
+                }
+                if (!found || temp.length() == 0) throw new Exception("حزمة التحديث لا تحتوي على ملف لعبة صالح");
+                File target = new File(dir, "index.html"); if (target.exists() && !target.delete()) throw new Exception("تعذر استبدال ملف اللعبة");
+                if (!temp.renameTo(target)) throw new Exception("تعذر تثبيت ملفات التحديث");
+                try (FileOutputStream marker = new FileOutputStream(new File(dir, "version.txt"))) { marker.write(String.valueOf(pendingWebVersion).getBytes(StandardCharsets.UTF_8)); }
+                zip.delete(); runOnUiThread(() -> { loadGamePage(); notifyPage("تم تحديث اللعبة مباشرة. لم يتم حذف التطبيق أو بياناتك."); });
+            } catch (Exception e) { runOnUiThread(() -> notifyPage("فشل تطبيق التحديث السريع: " + e.getMessage())); }
         });
     }
 
