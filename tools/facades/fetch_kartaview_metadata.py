@@ -32,6 +32,8 @@ def post(lat:float,lon:float,radius:int,timeout:int)->dict:
         obj=json.loads(res.read().decode("utf-8"))
     status=obj.get("status") or {}
     code=status.get("apiCode")
+    if code in (601,"601"):
+        return {"result":{"data":[]}}
     if code not in (None,600,"600"):
         raise RuntimeError(f"KartaView API code {code}: {status.get('apiMessage')}")
     return obj
