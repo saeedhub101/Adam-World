@@ -8,6 +8,7 @@ from pathlib import Path
 import mediapipe as mp
 import numpy as np
 import trimesh
+from scipy.spatial import Delaunay
 from PIL import Image
 
 TASK_URL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
