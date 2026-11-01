@@ -671,29 +671,69 @@ const carGeoWheel=new THREE.CylinderGeometry(0.36,0.36,0.3,10);carGeoWheel.rotat
 const matCab=new THREE.MeshLambertMaterial({color:0x232d38}),matWheel=new THREE.MeshLambertMaterial({color:0x111111});
 const matTail=new THREE.MeshBasicMaterial({color:0xcc1111}),matHead=new THREE.MeshBasicMaterial({color:0xfff2c0});
 const lightGeo=new THREE.BoxGeometry(0.4,0.15,0.08);
-function makeCar(color){
-  const g=new THREE.Group();
-  const body=new THREE.Mesh(carGeoBody,new THREE.MeshLambertMaterial({color:color}));body.position.y=0.65;g.add(body);
-  const cab=new THREE.Mesh(carGeoCab,matCab);cab.position.set(0,1.25,-0.2);g.add(cab);
-  for(const sx of [-0.95,0.95])for(const sz of [-1.4,1.4]){const w=new THREE.Mesh(carGeoWheel,matWheel);w.position.set(sx,0.36,sz);g.add(w);}
-  for(const sx of [-0.65,0.65]){
-    const h=new THREE.Mesh(lightGeo,matHead);h.position.set(sx,0.7,2.16);g.add(h);
-    const t=new THREE.Mesh(lightGeo,matTail);t.position.set(sx,0.7,-2.16);g.add(t);
+function makeCar(color,variant=0){
+  // Three distinct road-car silhouettes with glazing, bumpers, mirrors, lights,
+  // wheel arches and hub details; no flat billboard vehicle sprites.
+  const g=new THREE.Group(),bodyMat=new THREE.MeshLambertMaterial({color});
+  const glass=new THREE.MeshLambertMaterial({color:0x263b49}),rubber=new THREE.MeshLambertMaterial({color:0x151719});
+  const chrome=new THREE.MeshLambertMaterial({color:0x89939a}),lamp=new THREE.MeshBasicMaterial({color:0xfff1c8}),tail=new THREE.MeshBasicMaterial({color:0xd51f25});
+  const suv=variant===1,van=variant===2;
+  const length=van?4.7:suv?4.45:4.25,width=van?1.92:suv?1.96:1.86;
+  const bodyH=suv?0.82:van?0.88:0.64,baseY=bodyH/2+0.28;
+  const body=new THREE.Mesh(new THREE.BoxGeometry(width,bodyH,length),bodyMat);body.position.y=baseY;g.add(body);
+  const hood=new THREE.Mesh(new THREE.BoxGeometry(width*0.96,0.22,length*0.27),bodyMat);hood.position.set(0,baseY+bodyH*0.38,length*0.34);g.add(hood);
+  const trunk=new THREE.Mesh(new THREE.BoxGeometry(width*0.94,0.20,length*0.20),bodyMat);trunk.position.set(0,baseY+bodyH*0.34,-length*0.39);g.add(trunk);
+  const cabH=van?1.02:suv?0.78:0.62,cabL=van?2.45:suv?2.28:2.08;
+  const cab=new THREE.Mesh(new THREE.BoxGeometry(width*0.82,cabH,cabL),bodyMat);cab.position.set(0,baseY+bodyH*0.56,-0.16);g.add(cab);
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(width*0.78,0.10,cabL*0.88),bodyMat);roof.position.set(0,cab.position.y+cabH/2,-0.16);g.add(roof);
+  const windshield=new THREE.Mesh(new THREE.BoxGeometry(width*0.72,0.40,0.055),glass);windshield.position.set(0,cab.position.y+0.03,cabL/2-0.16);windshield.rotation.x=-0.22;g.add(windshield);
+  const rearGlass=new THREE.Mesh(new THREE.BoxGeometry(width*0.70,0.34,0.05),glass);rearGlass.position.set(0,cab.position.y+0.01,-cabL/2-0.16);rearGlass.rotation.x=0.2;g.add(rearGlass);
+  for(const side of [-1,1]){
+    const sideWindow=new THREE.Mesh(new THREE.BoxGeometry(0.045,cabH*0.56,cabL*0.72),glass);sideWindow.position.set(side*(width*0.415),cab.position.y,-0.16);g.add(sideWindow);
+    const mirror=new THREE.Mesh(new THREE.BoxGeometry(0.20,0.12,0.16),bodyMat);mirror.position.set(side*(width*0.54),baseY+bodyH*0.66,0.55);g.add(mirror);
+    for(const z of [-length*0.31,length*0.31]){
+      const wheel=new THREE.Group();wheel.position.set(side*(width*0.51),0.38,z);g.add(wheel);
+      const tyre=new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.36,0.25,16),rubber);tyre.rotation.z=Math.PI/2;wheel.add(tyre);
+      const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.19,0.265,12),chrome);hub.rotation.z=Math.PI/2;wheel.add(hub);
+    }
+  }
+  const bumperF=new THREE.Mesh(new THREE.BoxGeometry(width*0.98,0.18,0.18),chrome);bumperF.position.set(0,0.32,length/2+0.03);g.add(bumperF);
+  const bumperR=bumperF.clone();bumperR.position.z=-length/2-0.03;g.add(bumperR);
+  const grille=new THREE.Mesh(new THREE.BoxGeometry(width*0.36,0.18,0.045),new THREE.MeshLambertMaterial({color:0x252a2e}));grille.position.set(0,baseY-0.02,length/2+0.025);g.add(grille);
+  for(const side of [-1,1]){
+    const headlight=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.16,0.06),lamp);headlight.position.set(side*width*0.34,baseY+0.05,length/2+0.035);g.add(headlight);
+    const taillight=new THREE.Mesh(new THREE.BoxGeometry(0.30,0.18,0.06),tail);taillight.position.set(side*width*0.34,baseY+0.04,-length/2-0.035);g.add(taillight);
   }
   return g;
 }
-// NPCs keep the lightweight crowd model. The playable Adam character below
-// is a separate articulated, bone-driven model with facial features and fingers.
-const pGeo={torso:new THREE.BoxGeometry(0.5,0.7,0.3),head:new THREE.SphereGeometry(0.15,8,6),leg:new THREE.BoxGeometry(0.2,0.78,0.22),arm:new THREE.BoxGeometry(0.12,0.62,0.14)};
-const matSkin=new THREE.MeshLambertMaterial({color:0xd9a67f}),matPants=new THREE.MeshLambertMaterial({color:0x2c3e50});
-function makePerson(shirt){
-  const g=new THREE.Group();
-  const t=new THREE.Mesh(pGeo.torso,new THREE.MeshLambertMaterial({color:shirt}));t.position.y=1.2;g.add(t);
-  const h=new THREE.Mesh(pGeo.head,matSkin);h.position.y=1.72;g.add(h);
-  const legs=[],arms=[];
-  for(const sx of [-0.13,0.13]){
-    const p=new THREE.Group();p.position.set(sx,0.82,0);const m=new THREE.Mesh(pGeo.leg,matPants);m.position.y=-0.39;p.add(m);g.add(p);legs.push(p);
-    const q=new THREE.Group();q.position.set(sx*2.2,1.5,0);const a=new THREE.Mesh(pGeo.arm,new THREE.MeshLambertMaterial({color:shirt}));a.position.y=-0.3;q.add(a);g.add(q);arms.push(q);
+// Articulated NPC silhouettes use rounded torso/head forms, tapered limbs,
+// joints, footwear and varied skin/clothing palettes instead of box people.
+function makePerson(shirt,variant=0){
+  const g=new THREE.Group(),legs=[],arms=[];
+  const skinPalette=[0x9a6245,0xb77b58,0xd09a72,0xe0b28c,0x80543e];
+  const pantsPalette=[0x26384a,0x30343c,0x5b5548,0x343f35,0x4a5261];
+  const skin=new THREE.MeshLambertMaterial({color:skinPalette[variant%skinPalette.length]});
+  const pants=new THREE.MeshLambertMaterial({color:pantsPalette[variant%pantsPalette.length]});
+  const top=new THREE.MeshLambertMaterial({color:shirt});
+  const hair=new THREE.MeshLambertMaterial({color:[0x171719,0x30251f,0x4b3022,0x181d22][variant%4]});
+  const sphere=new THREE.SphereGeometry(1,14,10);
+  const limb=(parent,mat,len,rTop,rBottom)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(rTop,rBottom,len,10),mat);m.position.y=-len/2;parent.add(m);return m;};
+  const torso=new THREE.Mesh(sphere,top);torso.position.set(0,1.16,0);torso.scale.set(0.27,0.39,0.17);g.add(torso);
+  const hips=new THREE.Mesh(sphere,pants);hips.position.set(0,0.82,0);hips.scale.set(0.23,0.18,0.16);g.add(hips);
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.085,0.14,10),skin);neck.position.y=1.48;g.add(neck);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.145,16,12),skin);head.position.set(0,1.69,0.015);head.scale.set(0.88,1.12,0.9);g.add(head);
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(0.15,14,8,0,Math.PI*2,0,Math.PI*0.52),hair);cap.position.set(0,1.73,-0.01);g.add(cap);
+  for(const side of [-1,1]){
+    const eye=new THREE.Mesh(new THREE.SphereGeometry(0.018,8,6),new THREE.MeshBasicMaterial({color:0x171717}));eye.position.set(side*0.045,1.70,0.142);g.add(eye);
+    const legRoot=new THREE.Group();legRoot.position.set(side*0.115,0.78,0);g.add(legRoot);limb(legRoot,pants,0.37,0.075,0.105);
+    const knee=new THREE.Mesh(new THREE.SphereGeometry(0.075,10,8),pants);knee.position.y=-0.37;legRoot.add(knee);
+    const shin=limb(legRoot,pants,0.36,0.055,0.072);shin.position.y=-0.55;
+    const shoe=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.09,0.25),new THREE.MeshLambertMaterial({color:0x202226}));shoe.position.set(0,-0.91,0.055);legRoot.add(shoe);legs.push(legRoot);
+    const armRoot=new THREE.Group();armRoot.position.set(side*0.29,1.42,0);g.add(armRoot);
+    limb(armRoot,top,0.30,0.075,0.09);
+    const elbow=new THREE.Mesh(new THREE.SphereGeometry(0.07,10,8),top);elbow.position.y=-0.30;armRoot.add(elbow);
+    const forearm=limb(armRoot,top,0.29,0.05,0.065);forearm.position.y=-0.53;
+    const hand=new THREE.Mesh(new THREE.SphereGeometry(0.055,9,7),skin);hand.position.y=-0.70;armRoot.add(hand);arms.push(armRoot);
   }
   g.userData={legs:legs,arms:arms};return g;
 }
@@ -1476,7 +1516,7 @@ async function loadArea(lat,lon,spawn){
   if(carPaths.length){
     for(let i=0;i<22;i++){
       const cp=carPaths[Math.floor(Math.random()*carPaths.length)];
-      const m=makeCar(colors[Math.floor(Math.random()*colors.length)]);agentGroup.add(m);
+      const m=makeCar(colors[Math.floor(Math.random()*colors.length)],i%3);agentGroup.add(m);
       agents.push({kind:'car',path:cp.path,roadWidth:cp.w,off:cp.w/4,s:Math.random()*cp.path.total,dir:Math.random()<0.5?1:-1,sp:7+Math.random()*7,m:m,ph:0});
     }
   }
@@ -1484,7 +1524,7 @@ async function loadArea(lat,lon,spawn){
     const sh=[0x3498db,0xe67e22,0x1abc9c,0x9b59b6,0xecf0f1,0xf39c12,0x95a5a6];
     for(let i=0;i<24;i++){
       const pp=pedPaths[Math.floor(Math.random()*pedPaths.length)];
-      const m=makePerson(sh[Math.floor(Math.random()*sh.length)]);agentGroup.add(m);
+      const m=makePerson(sh[Math.floor(Math.random()*sh.length)],i%4);agentGroup.add(m);
       const off=pp.veh?(pp.w/2+1.6)*(Math.random()<0.5?1:-1):(Math.random()-0.5)*0.8;
       agents.push({kind:'ped',path:pp.path,off:off,s:Math.random()*pp.path.total,dir:Math.random()<0.5?1:-1,sp:1.1+Math.random()*0.7,m:m,ph:Math.random()*6});
     }
