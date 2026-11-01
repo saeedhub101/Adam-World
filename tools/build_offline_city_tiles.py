@@ -93,7 +93,7 @@ def main():
                 geometry = [{"lat": lat, "lon": lon} for lon, lat in valid]
                 buckets[(ix, iz)].append({
                     "type": "way",
-                    "id": way_id if part_index == 0 else way_id * 100 + part_index,
+                    "id": way_id,
                     "tags": tags,
                     "geometry": geometry,
                 })
