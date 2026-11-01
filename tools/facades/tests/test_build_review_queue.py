@@ -102,6 +102,14 @@ class CandidateQueueTests(unittest.TestCase):
         self.assertEqual(photo["preview_url"], "https://example.org/thumbnail.jpg")
         self.assertEqual(photo["image_url"], "https://example.org/visual.jpg")
 
+    def test_federated_panoramax_uuid_falls_back_to_real_image_endpoints(self):
+        feature = {"id": "cafb0ec8-51dd-43ac-836c-8cd1f7cb8725",
+                   "geometry": {"type": "Point", "coordinates": [35.9, 31.9]},
+                   "properties": {"license": "CC-BY-SA-4.0"}, "assets": {}}
+        photo = mod.photo_metadata(feature)
+        self.assertEqual(photo["preview_url"], "https://api.panoramax.xyz/api/pictures/cafb0ec8-51dd-43ac-836c-8cd1f7cb8725/thumb.jpg")
+        self.assertEqual(photo["image_url"], "https://api.panoramax.xyz/api/pictures/cafb0ec8-51dd-43ac-836c-8cd1f7cb8725/hd.jpg")
+
     def test_distance_uses_nearest_footprint_edge_not_centroid(self):
         geom = {"type": "Polygon", "coordinates": [[[0.0, 0.0], [0.001, 0.0], [0.001, 0.001], [0.0, 0.001], [0.0, 0.0]]]}
         distance, point = mod.nearest_footprint_point((-0.0001, 0.0005), geom)
