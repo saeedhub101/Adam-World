@@ -60,6 +60,8 @@ def valid_grid(path: Path, center: dict) -> bool:
             and data.get("cols") == GRID_SIZE
             and len(data.get("elevations_m", [])) == GRID_SIZE
             and all(len(row) == GRID_SIZE for row in data["elevations_m"])
+            and all(value is not None and math.isfinite(float(value))
+                    for row in data["elevations_m"] for value in row)
         )
     except Exception:
         return False
@@ -134,10 +136,27 @@ def sample_city(city: dict) -> dict:
         raise RuntimeError(
             f"{city['slug']}: DEM grid coverage only {coverage:.1%}; refusing to commit incomplete terrain"
         )
-    finite = values[valid]
+    raw_coverage = coverage
+    # Fill the few residual voids with the nearest valid 30 m neighbour.
+    # This avoids holes in the rendered terrain mesh while retaining the
+    # original source coverage metric for quality reporting.
+    for row, col in np.argwhere(~valid):
+        filled = False
+        for radius in range(1, 9):
+            r0, r1 = max(0, row-radius), min(GRID_SIZE, row+radius+1)
+            c0, c1 = max(0, col-radius), min(GRID_SIZE, col+radius+1)
+            patch = values[r0:r1, c0:c1]
+            good = patch[np.isfinite(patch)]
+            if good.size:
+                values[row, col] = float(np.median(good))
+                valid[row, col] = True
+                filled = True
+                break
+        if not filled:
+            raise RuntimeError(f"{city['slug']}: could not fill DEM nodata at {row},{col}")
+    finite = values[np.isfinite(values)]
     base = float(np.median(finite))
-    rows = [[round(float(v), 2) if ok else None for v, ok in zip(row, mask)]
-            for row, mask in zip(values, valid)]
+    rows = [[round(float(v), 2) for v in row] for row in values]
     return {
         "schema_version": 1,
         "source": "Copernicus DEM GLO-30",
@@ -151,7 +170,7 @@ def sample_city(city: dict) -> dict:
         "base_elevation_m": round(base, 2),
         "min_elevation_m": round(float(finite.min()), 2),
         "max_elevation_m": round(float(finite.max()), 2),
-        "coverage_fraction": round(coverage, 5),
+        "coverage_fraction": round(raw_coverage, 5),
         "elevations_m": rows,
     }
 
