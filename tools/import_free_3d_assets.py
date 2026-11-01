@@ -48,7 +48,6 @@ ASSETS = {
             "license": "CC0-1.0", "pose": "standing", "animated": False,
             "height_m": 1.16, "description": "Girl, approximately ten years old; static pose."
         },
-    ],
         {
             "id": "adult_man_walk", "file": "people/adult-man-walk.glb",
             "url": "https://files.innerscene.com/library/locomotion-collection-jordan-3d-person-animated-911f1584/a153a7018a159efb583a/locomotion-collection-jordan-3d-person-animated.glb",
@@ -63,6 +62,7 @@ ASSETS = {
             "license": "CC0-1.0", "pose": "rigged", "animated": True,
             "height_m": 1.70, "description": "Adult woman with rig and seven looping locomotion clips."
         },
+    ],
     "animals": [
         {
             "id": "dog", "file": "animals/dog.glb",
