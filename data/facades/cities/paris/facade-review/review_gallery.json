@@ -2,9 +2,34 @@
   "schema_version": 1,
   "city": "paris",
   "policy": "Image decode, minimum dimensions, camera geometry and licence are machine-filtered. Exact depicted-building identity remains unverified until visual inspection.",
-  "eligible_building_candidates": 0,
-  "downloaded_valid_images": 0,
+  "eligible_building_candidates": 1,
+  "downloaded_valid_images": 1,
   "failed_or_rejected_images": 0,
-  "items": [],
+  "items": [
+    {
+      "osm_way_id": "5013364",
+      "building_name": "Tour Eiffel",
+      "photo_id": "3c211ec5-64ff-4d9a-aa57-daacf4dd2549",
+      "image": "images/3c211ec5-64ff-4d9a-aa57-daacf4dd2549.jpg",
+      "width": 500,
+      "height": 281,
+      "distance_m": 15.81,
+      "azimuth_delta_deg": 6.28,
+      "quality_score": 65,
+      "license": "etalab-2.0",
+      "capture_datetime": "2025-10-10T08:15:43.522000+00:00",
+      "camera": {
+        "azimuth_deg": 315.0,
+        "field_of_view_deg": 76.0,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": 51.0,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "metadata_url": "https://api.panoramax.xyz/api/collections/ac1777b2-0eaa-433b-9210-72d0a95b17d4/items/3c211ec5-64ff-4d9a-aa57-daacf4dd2549",
+      "full_image_url": "https://panoramax.ign.fr/api/pictures/3c211ec5-64ff-4d9a-aa57-daacf4dd2549/sd.jpg",
+      "identity_status": "requires_visual_identity_review"
+    }
+  ],
   "rejected": []
 }
