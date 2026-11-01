@@ -23,6 +23,8 @@
   #hud{position:absolute;right:18px;bottom:260px;z-index:5;color:#fff;font-size:18px;font-weight:bold;text-shadow:0 0 4px #000;display:none}
   #credit{position:absolute;left:8px;bottom:6px;z-index:4;color:#fff;font-size:10px;opacity:.75;text-shadow:0 0 3px #000}
   #loading{position:absolute;inset:0;z-index:10;background:rgba(10,12,20,.88);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;text-align:center;padding:20px}
+  #imageryPanel{position:absolute;z-index:8;left:8px;right:8px;top:112px;max-height:58vh;overflow:auto;background:rgba(12,18,28,.96);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:12px;display:none;box-shadow:0 8px 28px rgba(0,0,0,.4)}
+  #imageryPanel h3{font-size:15px;margin:0 0 8px}#imageryPanel p{font-size:12px;line-height:1.55;margin:5px 0;color:#d8e0e9}#imageryPanel a{color:#9bd0ff}#imageryPanel .sourceLinks{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}#imageryPanel .sourceLinks a{background:#25364a;padding:7px 9px;border-radius:8px;text-decoration:none;font-size:12px}#imageryPanel .photo{display:flex;gap:9px;padding:8px 0;border-top:1px solid #344253;align-items:flex-start}#imageryPanel .photo img{width:96px;height:72px;object-fit:cover;border-radius:7px;background:#303944}#imageryPanel .photo div{min-width:0;font-size:12px;line-height:1.45}#imageryPanel .muted{color:#b7c1cc}#imageryToggle{background:#245b83}
 </style>
 </head>
 <body>
@@ -33,6 +35,7 @@
     <button class="btn" id="loc">📍</button>
     <button class="btn" id="time">☀️</button>
     <button class="btn" id="update">تحديث</button>
+    <button class="btn" id="imageryToggle">📷 الصور</button>
   </div>
   <div class="chips">
     <button class="btn" data-c="31.9516,35.9394">عمّان</button>
@@ -47,6 +50,7 @@
     <button class="btn" data-c="30.0444,31.2357">القاهرة</button>
   </div>
 </div>
+<section id="imageryPanel" aria-label="مصادر الصور الجغرافية"><h3>مصادر الصور المرتبطة بموقع المدينة</h3><p id="imageryStatus">سيتم البحث عن صور جوية وصور شوارع حول الموقع الحالي.</p><div class="sourceLinks" id="imageryLinks"></div><div id="imageryResults"></div><p class="muted">الصور القريبة مرشّحة للمراجعة فقط. لا تُسند إلى واجهة مبنى ولا تُستخدم كخامة ثلاثية الأبعاد إلا بعد التحقق من اتجاه التصوير ومطابقة المبنى والترخيص.</p></section>
 <div id="stick"><div id="knob"></div></div>
 <div id="acts">
   <button class="act" id="sprint">🏃</button>
@@ -390,6 +394,23 @@ const ped=makePerson(0xe74c3c);scene.add(ped);
 const pcar=makeCar(0xc0392b);scene.add(pcar);
 const S={px:0,pz:0,pyaw:0,cx:0,cz:0,cyaw:0,cv:0,mode:'walk',phase:0,camYaw:0,camPitch:0.38,lastLook:0,sx:0,sy:0,sprint:false};
 
+/* ---------- صور جوية وصور شوارع ذات إسناد جغرافي ---------- */
+const sourcePending=new Map();let sourceSequence=0;let currentImageryCenter={lat:31.9516,lon:35.9394};
+window.onNativeSourceResult=function(id,payload,error){const pending=sourcePending.get(id);if(!pending)return;sourcePending.delete(id);if(error){pending.reject(new Error(error));return;}try{pending.resolve(JSON.parse(payload));}catch(e){pending.reject(new Error("استجابة مصدر الصور غير صالحة"));}};
+function sourceJson(url){return new Promise((resolve,reject)=>{const id="img-"+(++sourceSequence);sourcePending.set(id,{resolve,reject});if(window.Android&&typeof Android.requestSourceJson==="function"){try{Android.requestSourceJson(url,id);}catch(e){sourcePending.delete(id);reject(e);}return;}fetch(url,{headers:{Accept:"application/geo+json, application/json"}}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}).then(resolve).catch(e=>{sourcePending.delete(id);reject(e);});});}
+function geoDistance(a,b){const rad=Math.PI/180,dLat=(b.lat-a.lat)*rad,dLon=(b.lon-a.lon)*rad;const q=Math.sin(dLat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLon/2)**2;return 6371000*2*Math.atan2(Math.sqrt(q),Math.sqrt(1-q));}
+function angleDelta(a,b){return Math.abs(((a-b+540)%360)-180);}
+function safeHttpUrl(value){try{const u=new URL(value);return u.protocol==="https:"?u.href:null;}catch(e){return null;}}
+function sourceLink(label,url){const a=document.createElement("a");a.textContent=label;a.href=url;a.target="_blank";a.rel="noopener noreferrer";return a;}
+function renderImageryLinks(lat,lon){const box=$("imageryLinks");box.innerHTML="";const cop="https://browser.dataspace.copernicus.eu/?zoom=15&lat="+lat.toFixed(6)+"&lng="+lon.toFixed(6)+"&themeId=DEFAULT-THEME";box.appendChild(sourceLink("OpenAerialMap","https://openaerialmap.org/"));box.appendChild(sourceLink("Panoramax","https://api.panoramax.xyz/"));box.appendChild(sourceLink("Copernicus Browser",cop));}
+function getPhotoAsset(feature){const a=feature&&feature.assets||{};for(const key of ["thumbnail","visual","small","preview"]){if(a[key]&&safeHttpUrl(a[key].href))return safeHttpUrl(a[key].href);}const p=feature&&feature.properties||{};return safeHttpUrl(p["geovisio:thumbnail"]||p.thumbnail);}
+function getFeatureLatLon(feature){const c=feature&&feature.geometry&&feature.geometry.coordinates;if(!c||feature.geometry.type!=="Point"||!Number.isFinite(c[0])||!Number.isFinite(c[1]))return null;return {lon:c[0],lat:c[1]};}
+function renderImageryResults(oam,panoramax){const out=$("imageryResults");out.innerHTML="";const oamItems=(oam&&oam.features)||[],photos=(panoramax&&panoramax.features)||[];const heading=document.createElement("p");heading.textContent="OpenAerialMap: "+oamItems.length+" نتيجة ضمن النطاق. Panoramax: "+photos.length+" صورة/عنصر ضمن النطاق.";out.appendChild(heading);oamItems.slice(0,5).forEach(item=>{const p=item.properties||{},title=p.title||item.id||"صورة جوية",link=(item.links||[]).find(x=>x.rel==="self");const row=document.createElement("p");row.className="muted";row.textContent="صورة جوية: "+title+" — "+(p.datetime||p.created||"تاريخ الالتقاط غير متاح")+" ";const href=link&&safeHttpUrl(link.href);if(href)row.appendChild(sourceLink("بيانات الصورة",href));out.appendChild(row);});
+const candidates=[];for(const photo of photos){const loc=getFeatureLatLon(photo),thumb=getPhotoAsset(photo);if(!loc)continue;let nearest=null,dist=Infinity;for(const b of bldgs){const d=geoDistance(loc,{lat:b.lat,lon:b.lon});if(d<dist){dist=d;nearest=b;}}if(!nearest||dist>70)continue;const props=photo.properties||{},az=Number(props["view:azimuth"]??props["pers:azimuth"]??props.azimuth);let headingNote="اتجاه التصوير غير متاح؛ يلزم فحص يدوي";if(Number.isFinite(az)){const bearing=(Math.atan2(nearest.lon-loc.lon,nearest.lat-loc.lat)*180/Math.PI+360)%360,delta=angleDelta(az,bearing);headingNote=delta<=65?"اتجاه التصوير متوافق مبدئياً":"اتجاه التصوير لا يطابق واجهة المبنى غالباً";if(delta>100)continue;}candidates.push({photo,nearest,dist,thumb,headingNote,props});}candidates.sort((a,b)=>a.dist-b.dist);
+candidates.slice(0,12).forEach(c=>{const row=document.createElement("div");row.className="photo";if(c.thumb){const img=document.createElement("img");img.loading="lazy";img.src=c.thumb;img.alt="صورة Panoramax";row.appendChild(img);}const info=document.createElement("div"),title=document.createElement("strong");title.textContent=c.nearest.name;info.appendChild(title);const meta=document.createElement("p");meta.textContent="OSM ID: "+c.nearest.id+" • المسافة: "+Math.round(c.dist)+" م • "+c.headingNote;info.appendChild(meta);const date=document.createElement("p");date.textContent="التاريخ: "+(c.props.datetime||c.props.datetimetz||"غير متاح")+" • راجع سجل الصورة لمعرفة الترخيص";info.appendChild(date);const self=(c.photo.links||[]).find(x=>x.rel==="self"),href=self&&safeHttpUrl(self.href);if(href)info.appendChild(sourceLink("فتح سجل الصورة والترخيص",href));row.appendChild(info);out.appendChild(row);});
+if(!candidates.length){const p=document.createElement("p");p.className="muted";p.textContent="لم تُعثر على صور Panoramax قريبة بما يكفي من مباني OSM في هذا التحميل، أو لا تتوفر بيانات اتجاه/صور مصغرة. لا توجد مطابقة واجهات مؤكدة.";out.appendChild(p);}}
+async function loadImageryEvidence(lat,lon){currentImageryCenter={lat,lon};renderImageryLinks(lat,lon);$("imageryStatus").textContent="جارٍ البحث حول "+lat.toFixed(5)+", "+lon.toFixed(5)+"…";const d=0.008,bbox=[lon-d,lat-d,lon+d,lat+d].map(v=>v.toFixed(6)).join(",");const oamUrl="https://api.imagery.hotosm.org/stac/search?bbox="+encodeURIComponent(bbox)+"&limit=30",panUrl="https://api.panoramax.xyz/api/search?bbox="+encodeURIComponent(bbox)+"&limit=100";const results=await Promise.allSettled([sourceJson(oamUrl),sourceJson(panUrl)]);const oam=results[0].status==="fulfilled"?results[0].value:{features:[]},pan=results[1].status==="fulfilled"?results[1].value:{features:[]},errors=[];if(results[0].status==="rejected")errors.push("OpenAerialMap: "+results[0].reason.message);if(results[1].status==="rejected")errors.push("Panoramax: "+results[1].reason.message);$("imageryStatus").textContent=errors.length?"تعذر جلب بعض المصادر: "+errors.join(" | "):"اكتمل البحث الجغرافي. النتائج لا تعني تلقائياً أن الصورة تخص واجهة مبنى.";renderImageryResults(oam,pan);}
+$("imageryToggle").onclick=()=>{const p=$("imageryPanel"),show=p.style.display!=="block";p.style.display=show?"block":"none";if(show&&$("imageryResults").children.length===0)loadImageryEvidence(currentImageryCenter.lat,currentImageryCenter.lon);};
 /* ---------- بناء المدينة ---------- */
 async function loadArea(lat,lon,spawn){
   const data=await overpass(buildQuery(lat,lon,650));
@@ -438,7 +459,7 @@ async function loadArea(lat,lon,spawn){
       }
       const tr=triangulate(P);
       for(const tri of tr)for(const k of tri){acc.pos.push(P[k][0],h,P[k][1]);acc.uv.push(0.01,0.99);acc.col.push(roofC.r,roofC.g,roofC.b);}
-      const bb={pts:P,minx:minx,maxx:maxx,minz:minz,maxz:maxz};bldgs.push(bb);gridAdd(bb);
+      const cx=P.reduce((v,p)=>v+p[0],0)/P.length,cz=P.reduce((v,p)=>v+p[1],0)/P.length;const ll=unproj(cx,cz);const bb={id:el.id,tags:t,height:h,lat:ll[0],lon:ll[1],name:t.name||t["addr:housenumber"]||("OSM building "+el.id),pts:P,minx:minx,maxx:maxx,minz:minz,maxz:maxz};bldgs.push(bb);gridAdd(bb);
     }else if(t.highway&&RW[t.highway]){
       const w=RW[t.highway];
       const P=[];for(const p of raw){const q=P[P.length-1];if(!q||Math.hypot(p[0]-q[0],p[1]-q[1])>0.3)P.push(p);}
@@ -531,6 +552,7 @@ async function loadArea(lat,lon,spawn){
     camera.position.set(S.px,3,S.pz);
   }
   $('loading').style.display='none';
+  loadImageryEvidence(lat,lon);
 }
 
 let loading=false;
