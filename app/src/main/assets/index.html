@@ -736,7 +736,7 @@ function loadVerifiedFacadeAssignments(){
 
 /* Landmark geometry: purpose-built forms tied to the mapped footprint, not generic blocks. */
 function addRomanTheatre(){
-  const anchor=proj(31.95165805,35.93939340),base=terrainHeight(anchor[0],anchor[1]);
+  const anchor=proj(31.951367,35.939400),base=terrainHeight(anchor[0],anchor[1]);
   const g=new THREE.Group();g.position.set(anchor[0],base,anchor[1]);cityGroup.add(g);
   const stone=new THREE.MeshLambertMaterial({color:0xb7a17c,side:THREE.DoubleSide});
   const cutStone=new THREE.MeshLambertMaterial({color:0x8f795c,side:THREE.DoubleSide});
@@ -783,7 +783,7 @@ function addRomanTheatre(){
       if(aisles.some(gap=>angle>gap[0]-0.018&&angle<gap[1]+0.018))continue;
       const x=r*Math.cos(angle),z=r*Math.sin(angle);
       seatDummy.position.set(x,groundAt(x,z)+y+0.18,z);
-      seatDummy.rotation.set(0,angle+Math.PI/2,0);seatDummy.updateMatrix();
+      seatDummy.rotation.set(0,-Math.PI/2-angle,0);seatDummy.updateMatrix();
       seatMesh.setMatrixAt(seatIndex++,seatDummy.matrix);
     }
   }
