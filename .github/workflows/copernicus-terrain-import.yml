@@ -1,0 +1,59 @@
+name: Adam World Copernicus Terrain Import
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/import_copernicus_terrain.py"
+      - ".github/workflows/copernicus-terrain-import.yml"
+      - "data/facades/cities/catalog.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adam-world-offline-city-import-refresh
+  cancel-in-progress: false
+
+jobs:
+  terrain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout main with history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install free raster tools
+        run: python -m pip install --disable-pip-version-check numpy rasterio
+
+      - name: Import and checkpoint each city's Copernicus DEM grid
+        run: python3 tools/import_copernicus_terrain.py
+
+      - name: Validate terrain grid coverage and city count
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          catalog=json.loads(Path('data/facades/cities/catalog.json').read_text())
+          missing=[]
+          for city in catalog['cities']:
+              path=Path('data/facades/cities')/city['slug']/'elevation-grid.json'
+              if not path.exists():
+                  missing.append(city['slug'])
+                  continue
+              grid=json.loads(path.read_text())
+              assert grid['rows']==201 and grid['cols']==201, city['slug']
+              assert grid['coverage_fraction']>=0.98, city['slug']
+          print('TERRAIN_CITY_VALIDATION_OK cities=',len(catalog['cities']),'missing=',missing)
+          if missing:
+              raise SystemExit('Terrain grids still missing: '+', '.join(missing))
+          PY
