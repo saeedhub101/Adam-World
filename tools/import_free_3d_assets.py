@@ -96,7 +96,7 @@ ASSETS = {
         },
         {
             "id": "water_taxi", "file": "vehicles/water-taxi.glb",
-            "url": "https://files.innerscene.com/library/water-taxi-boat-925a8345/CHANGE_ME/water-taxi-boat.glb",
+            "url": "https://files.innerscene.com/library/water-taxi-boat-925a8345/cf96e45adc3742d9db2b/water-taxi-boat.glb",
             "page": "https://www.innerscene.com/tools/library/3d-parts/water-taxi-boat-925a8345",
             "license": "CC0-1.0", "length_m": 9.9, "animated": False,
             "description": "Water taxi boat; requires mapped navigable water and dock."
