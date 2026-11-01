@@ -72,7 +72,7 @@ def main():
 
     vertices, uvs = [], []
     for point in landmarks:
-        vertices.append([(point.x-0.5)*0.46, (0.5-point.y)*0.54, -point.z*0.34])
+        vertices.append([((point.x-(x0+x1)/2)/max(1e-6,x1-x0))*0.46, (((y0+y1)/2-point.y)/max(1e-6,y1-y0))*0.54, -point.z*0.34])
         u = (point.x*image.width-square_left)/max(1, side)
         v = 1.0-(point.y*image.height-square_top)/max(1, side)
         uvs.append([float(np.clip(u, 0, 1)), float(np.clip(v, 0, 1))])
