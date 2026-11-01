@@ -154,8 +154,11 @@ The `prepare_facade_review.py` workflow downloads only the highest-ranked eligib
 preview per building (up to 50 unique photos per city), verifies that the response
 is an actual decodable image with minimum dimensions, and saves it locally with a
 review gallery and provenance fields. It rejects HTML placeholders, non-image
-responses, tiny images and oversized files. Each city review pack is checkpointed
-to `main` as it is completed.
+responses, tiny images and oversized files. It also downloads the ten highest-ranked
+HD Panoramax images per city (when the source serves at least 800×600 pixels), saving
+them under each city's `facade-review/full/` folder for texture baking. Each city
+review pack is checkpointed to `main` as it is completed. Candidate records now
+include the exact OSM facade edge, camera capture coordinates and target point.
 
 **Important:** this gate verifies file validity, source licence metadata and
 geometric camera suitability. It cannot determine from metadata alone whether the
