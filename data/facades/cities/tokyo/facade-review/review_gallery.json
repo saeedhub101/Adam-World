@@ -2,9 +2,82 @@
   "schema_version": 1,
   "city": "tokyo",
   "policy": "Image decode, minimum dimensions, camera geometry and licence are machine-filtered. Exact depicted-building identity remains unverified until visual inspection.",
-  "eligible_building_candidates": 0,
-  "downloaded_valid_images": 0,
+  "eligible_building_candidates": 3,
+  "downloaded_valid_images": 3,
   "failed_or_rejected_images": 0,
-  "items": [],
+  "items": [
+    {
+      "osm_way_id": "136691387",
+      "building_name": "Mega Don Quijote",
+      "photo_id": "b9f347de-c484-43a9-8814-d0e6ae26abad",
+      "image": "images/b9f347de-c484-43a9-8814-d0e6ae26abad.jpg",
+      "width": 500,
+      "height": 281,
+      "distance_m": 10.74,
+      "azimuth_delta_deg": 0.13,
+      "quality_score": 67,
+      "license": "CC-BY-SA-4.0",
+      "capture_datetime": "2026-10-15T13:49:28.998100+00:00",
+      "camera": {
+        "azimuth_deg": 24.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "metadata_url": "https://api.panoramax.xyz/api/collections/0af83954-7e00-4d24-b2fa-53cffd71eb1c/items/b9f347de-c484-43a9-8814-d0e6ae26abad",
+      "full_image_url": "https://panoramax.openstreetmap.fr/derivates/b9/f3/47/de/c484-43a9-8814-d0e6ae26abad/sd.jpg",
+      "identity_status": "requires_visual_identity_review"
+    },
+    {
+      "osm_way_id": "136691358",
+      "building_name": null,
+      "photo_id": "06137ec2-9d67-432f-8007-7102fdf40345",
+      "image": "images/06137ec2-9d67-432f-8007-7102fdf40345.jpg",
+      "width": 500,
+      "height": 281,
+      "distance_m": 10.88,
+      "azimuth_delta_deg": 4.3,
+      "quality_score": 62,
+      "license": "CC-BY-SA-4.0",
+      "capture_datetime": "2026-10-15T13:49:46.376200+00:00",
+      "camera": {
+        "azimuth_deg": 23.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "metadata_url": "https://api.panoramax.xyz/api/collections/0af83954-7e00-4d24-b2fa-53cffd71eb1c/items/06137ec2-9d67-432f-8007-7102fdf40345",
+      "full_image_url": "https://panoramax.openstreetmap.fr/derivates/06/13/7e/c2/9d67-432f-8007-7102fdf40345/sd.jpg",
+      "identity_status": "requires_visual_identity_review"
+    },
+    {
+      "osm_way_id": "148780542",
+      "building_name": "Annex渋谷三善第3ビル",
+      "photo_id": "f39876d9-d203-482a-869a-53865b3b5ed3",
+      "image": "images/f39876d9-d203-482a-869a-53865b3b5ed3.jpg",
+      "width": 500,
+      "height": 888,
+      "distance_m": 24.54,
+      "azimuth_delta_deg": 17.03,
+      "quality_score": 27,
+      "license": "CC-BY-SA-4.0",
+      "capture_datetime": "2026-10-15T13:50:19.820700+00:00",
+      "camera": {
+        "azimuth_deg": 358.0,
+        "field_of_view_deg": null,
+        "horizontal_accuracy_m": 5.0,
+        "horizontal_pixel_density": null,
+        "pitch_deg": null,
+        "roll_deg": null
+      },
+      "metadata_url": "https://api.panoramax.xyz/api/collections/170f8cdc-37eb-4ed1-9e72-4e834f87b580/items/f39876d9-d203-482a-869a-53865b3b5ed3",
+      "full_image_url": "https://panoramax.openstreetmap.fr/derivates/f3/98/76/d9/d203-482a-869a-53865b3b5ed3/sd.jpg",
+      "identity_status": "requires_visual_identity_review"
+    }
+  ],
   "rejected": []
 }
