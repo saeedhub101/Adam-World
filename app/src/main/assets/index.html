@@ -1574,7 +1574,7 @@ async function loadArea(lat,lon,spawn){
     }
   }
   for(const p of potholes)addPothole(p);
-  for(const item of speedBumps){const p=proj(item.p[0],item.p[1]);addSpeedBump([p[0],p[1],0]);}
+  for(const item of speedBumps)addSpeedBump([item.p[0],item.p[1],0]);
   if(data.city&&data.city.slug==='amman')addRomanTheatre();
   const adds=[[accMesh(B,matB)],[accMesh(G,matG)],[accMesh(RWd,matRoadW)],[accMesh(RNr,matRoadN)],[accMesh(SW,matSw)],
     [accMesh(LC.grass,matGrass)],[accMesh(LC.forest,matForest)],[accMesh(LC.scrub,matScrub)],
