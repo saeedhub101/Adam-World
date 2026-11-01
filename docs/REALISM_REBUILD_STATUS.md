@@ -63,15 +63,29 @@ The workflow generates a 201 × 201 grid per city, samples a 30 m DEM over a
 and skips valid existing checkpoints on rerun. It uses public Copernicus COG
 objects, not a paid API.
 
-Run started by commit:
-`b42abff9be044824f5b202bdceaab730c282b7ca`
+All ten grids are now present in the repository. The importer reported 10/10
+successful cities; nine new city grids were committed incrementally. Verified
+coverage from the stored arrays is 99.5% for Manila and New York and 100% for
+Amman, Bangkok, Paris, Dubai, Tokyo, London, Riyadh and Cairo.
 
-GitHub Actions run:
+Initial run:
 https://github.com/saeedhub101/Adam-World/actions/runs/41344282260
 
-**Do not mark the nine missing grids complete until that run has committed them
-and the validation step reports all ten cities.** If a tile/source fails, the
-workflow continues to the next city and a rerun resumes from valid saved grids.
+That run's import step succeeded and committed all ten grids. Its final validation
+step initially failed only because the pre-existing Amman grid predates the new
+`coverage_fraction` metadata field. The validation was corrected to calculate
+coverage directly from the elevation array, and the Android workflow now triggers
+a new release build after terrain import completes.
+
+Relevant commits:
+- `91736796edf02c1e15ea9c324feef0ba3bf83c7d` — resumable DEM importer.
+- `b42abff9be044824f5b202bdceaab730c282b7ca` — terrain import workflow.
+- `f6e676105128e29b1d961742d649815dd6761c03` — validation compatible with the existing Amman grid.
+- `96ca6601449c3399c229a203176a1cb9d16dab1d` — Android release is triggered after terrain import.
+
+The corrected workflow rerun must finish successfully, and the resulting Android
+release must include all ten grids, before the terrain phase is called
+release-verified.
 
 ## Work still required before claiming the requested final realism
 
