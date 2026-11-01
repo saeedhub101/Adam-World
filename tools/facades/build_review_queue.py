@@ -97,11 +97,11 @@ def exterior_rings(geom: dict[str, Any] | None) -> list[list[tuple[float, float]
         return [[(float(p[0]), float(p[1])) for p in (poly[0] if poly else []) if len(p) >= 2] for poly in coords]
     return []
 
-def nearest_footprint_point(capture: tuple[float, float], geom: dict[str, Any]) -> tuple[float, tuple[float, float]]:
+def nearest_footprint_point(capture: tuple[float, float], geom: dict[str, Any]) -> tuple[float, tuple[float, float], int]:
     """Distance and nearest exterior point in local metres, not centroid distance."""
     sx = 111320.0 * math.cos(math.radians(capture[1]))
     sy = 111132.0
-    best_d, best_point = float("inf"), capture
+    best_d, best_point, best_edge = float("inf"), capture, -1
     for ring in exterior_rings(geom):
         if len(ring) < 2: continue
         for i, a in enumerate(ring):
@@ -113,8 +113,8 @@ def nearest_footprint_point(capture: tuple[float, float], geom: dict[str, Any]) 
             x, y = ax + t * dx, ay + t * dy
             dist = math.hypot(x, y)
             if dist < best_d:
-                best_d, best_point = dist, (capture[0] + x / sx, capture[1] + y / sy)
-    return best_d, best_point
+                best_d, best_point, best_edge = dist, (capture[0] + x / sx, capture[1] + y / sy), i
+    return best_d, best_point, best_edge
 
 def reusable_photo_license(value: Any) -> bool:
     if isinstance(value, dict): value = value.get("id") or value.get("name") or value.get("license")
@@ -283,7 +283,7 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
             loc = photo.get("capture_lonlat") or []
             if len(loc) != 2:
                 continue
-            dist, target_point = nearest_footprint_point((loc[0], loc[1]), b.get("geometry") or {})
+            dist, target_point, edge_index = nearest_footprint_point((loc[0], loc[1]), b.get("geometry") or {})
             if dist > max_distance:
                 continue
             az = photo.get("azimuth_deg")
@@ -299,6 +299,9 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
             candidates.append({
                 "photo_id": photo["photo_id"],
                 "distance_m": round(dist, 2),
+                "capture_lonlat": [round(loc[0], 7), round(loc[1], 7)],
+                "target_point_lonlat": [round(target_point[0], 7), round(target_point[1], 7)],
+                "facade_edge_index": edge_index,
                 "target_bearing_deg": round(target_bearing, 2),
                 "azimuth_delta_deg": round(delta, 2) if delta is not None else None,
                 "direction_status": direction,
