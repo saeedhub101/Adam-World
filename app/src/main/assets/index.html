@@ -863,12 +863,14 @@ function addRobinsonsPlaceSign(P,baseY,height){
   const dx=(best.b[0]-best.a[0])/best.len,dz=(best.b[1]-best.a[1])/best.len;
   const nx=-dz,nz=dx,cx=(best.a[0]+best.b[0])/2,cz=(best.a[1]+best.b[1])/2;
   const canvas=cv(1024,180),ctx=canvas.getContext('2d');ctx.fillStyle='#f5f2e8';ctx.fillRect(0,0,1024,180);
-  ctx.fillStyle='#c92732';ctx.font='bold 92px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('ROBINSONS PLACE',512,88);
-  ctx.fillStyle='#4b5055';ctx.font='bold 30px sans-serif';ctx.fillText('MANILA',512,151);
+  ctx.fillStyle='#b61f37';ctx.fillRect(38,34,112,112);
+  ctx.fillStyle='#fff';ctx.font='bold 96px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('R',94,91);
+  ctx.fillStyle='#c92732';ctx.font='bold 88px sans-serif';ctx.textAlign='left';ctx.fillText('ROBINSONS',180,89);
+  ctx.fillStyle='#4b5055';ctx.font='bold 28px sans-serif';ctx.fillText('PLACE MANILA',184,145);
   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
   const mat=new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide});
   const mesh=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(22,best.len*.72),3.8),mat);
-  mesh.position.set(cx+nx*.18,baseY+height*.72,cz+nz*.18);mesh.rotation.y=Math.atan2(nx,nz);mesh.userData.ownedTexture=tex;mesh.userData.ownedMaterial=true;cityGroup.add(mesh);
+  mesh.position.set(cx+nx*.18,baseY+height-2.1,cz+nz*.18);mesh.rotation.y=Math.atan2(nx,nz);mesh.userData.ownedTexture=tex;mesh.userData.ownedMaterial=true;cityGroup.add(mesh);
 }
 
 /* ---------- بناء المدينة ---------- */
@@ -926,7 +928,7 @@ async function loadArea(lat,lon,spawn){
       const facadeLayouts=addBuildingArchitecture(P,t,h,el.id);
       if(osmWayId==='130532101')addRobinsonsPlaceSign(P,baseY,h);
       const acc=B;
-      const col=parseColor(t,el.id);
+      const col=parseColor(t,el.id);if(osmWayId==='130532101')col.set('#d8d4c9');
       const roofRaw=t['roof:colour']||t['roof:color'];
       let roofC=new THREE.Color('#9a9388');
       if(roofRaw){try{roofC.set(roofRaw);}catch(e){}}
