@@ -688,7 +688,8 @@ function makeAdamCharacter(){
     if(parent)parent.add(b);else root.add(b);bones.push(b);return b;
   };
   const torso=bone('hips',null,[0,0.91,0]);
-  adamMesh(torso,new THREE.SphereGeometry(1,16,12),adamMats.hoodie,[0,0.17,0],[0.34,0.43,0.22]);
+  const chest=adamMesh(torso,new THREE.SphereGeometry(1,24,18),adamMats.hoodie,[0,0.17,0],[0.315,0.405,0.205]);
+  chest.name='adam-hoodie-body';
   // Hoodie hem, hood and drawstrings are real geometry, not a flat character image.
   adamMesh(torso,new THREE.CylinderGeometry(0.31,0.34,0.12,16),adamMats.hoodie,[0,-0.17,0]);
   adamMesh(torso,new THREE.SphereGeometry(0.24,14,10),adamMats.hood,[0,0.39,-0.17],[1,1,0.62]);
