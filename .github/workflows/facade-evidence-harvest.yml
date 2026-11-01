@@ -38,10 +38,25 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Validate facade tooling and tests
+        run: |
+          python3 -m py_compile tools/facades/*.py tools/facades/tests/*.py
+          python3 -m unittest discover -s tools/facades/tests -v
+
       - name: Configure checkpoint commits
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch OSM building footprints with incremental city checkpoints
+        env:
+          REFRESH: ${{ inputs.refresh }}
+        run: |
+          if [ "$REFRESH" = "true" ]; then
+            python3 tools/facades/fetch_osm_buildings.py --refresh --git-checkpoint
+          else
+            python3 tools/facades/fetch_osm_buildings.py --git-checkpoint
+          fi
 
       - name: Harvest global city imagery metadata with incremental repository saves
         env:
