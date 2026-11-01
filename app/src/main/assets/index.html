@@ -747,7 +747,7 @@ function ribbon(pts,w,y,acc,uw,vs,heightOffset=0){
   }
   for(let i=0;i<n-1;i++){
     const l0=L[i],r0=R[i],l1=L[i+1],r1=R[i+1];
-    acc.pos.push(l0[0],y+terrainHeight(l0[0],l0[1])+heightOffset,l0[1],r0[0],y+terrainHeight(r0[0],r0[1])+heightOffset,r0[1],l1[0],y+terrainHeight(l1[0],l1[1])+heightOffset,l1[1], r0[0],y+terrainHeight(r0[0],r0[1]),r0[1],r1[0],y+terrainHeight(r1[0],r1[1])+heightOffset,r1[1],l1[0],y+terrainHeight(l1[0],l1[1]),l1[1]);
+    acc.pos.push(l0[0],y+terrainHeight(l0[0],l0[1])+heightOffset,l0[1],r0[0],y+terrainHeight(r0[0],r0[1])+heightOffset,r0[1],l1[0],y+terrainHeight(l1[0],l1[1])+heightOffset,l1[1], r0[0],y+terrainHeight(r0[0],r0[1])+heightOffset,r0[1],r1[0],y+terrainHeight(r1[0],r1[1])+heightOffset,r1[1],l1[0],y+terrainHeight(l1[0],l1[1])+heightOffset,l1[1]);
     acc.uv.push(0,V[i],uw,V[i],0,V[i+1], uw,V[i],uw,V[i+1],0,V[i+1]);
   }
 }
@@ -1513,32 +1513,7 @@ async function loadArea(lat,lon,spawn){
       const P=raw.filter((p,i)=>!i||Math.hypot(p[0]-raw[i-1][0],p[1]-raw[i-1][1])>0.4);
       if(P.length>=2)addRailwayTrack(P,t);
     }
-      const w=RW[t.highway];
-      let P=[];for(const p of raw){const q=P[P.length-1];if(!q||Math.hypot(p[0]-q[0],p[1]-q[1])>0.3)P.push(p);}
-      if(P.length<2)continue;
-      P=resamplePolyline(P,4);
-      const veh=w>=4.5&&t.highway!=='pedestrian';
-      if(w>=6||t.highway==='service'){
-        ribbon(P,w+4.2,0.05,SW,(w+4.2)/2,2);
-        ribbon(P,w,0.09,w>=7?RWd:RNr,1,w>=7?12:6);
-      }else{
-        ribbon(P,w,0.07,SW,w/2,2);
-      }
-      const path=makePath(P);
-      if(path.total>20){
-        if(veh)carPaths.push({path:path,w:w});
-        pedPaths.push({path:path,w:w,veh:veh});
-        const roadName=String(t['name:ar']||t['name:en']||t.name||t.official_name||t.loc_name||t.ref||'').trim();
-        if(roadName&&roadLabels.length<240){
-          const copies=Math.min(3,Math.max(1,Math.ceil(path.total/140)));
-          for(let li=0;li<copies;li++){
-            const distance=path.total*(li+1)/(copies+1),p=posAt(path,distance,0);
-            const key=roadName.toLocaleLowerCase()+'|'+Math.round(p.x/60)+','+Math.round(p.z/60);
-            if(!roadLabelKeys.has(key)){roadLabelKeys.add(key);roadLabels.push({name:roadName,path:path,distance:distance});}
-          }
-        }
-      }
-    }else{
+    else{
       const waterway=String(t.waterway||'').toLowerCase();
       if(['river','stream','canal','ditch','drain'].includes(waterway)){
         const line=raw.filter((p,i)=>!i||Math.hypot(p[0]-raw[i-1][0],p[1]-raw[i-1][1])>0.3);
