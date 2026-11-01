@@ -112,9 +112,10 @@ class CandidateQueueTests(unittest.TestCase):
 
     def test_distance_uses_nearest_footprint_edge_not_centroid(self):
         geom = {"type": "Polygon", "coordinates": [[[0.0, 0.0], [0.001, 0.0], [0.001, 0.001], [0.0, 0.001], [0.0, 0.0]]]}
-        distance, point = mod.nearest_footprint_point((-0.0001, 0.0005), geom)
+        distance, point, edge = mod.nearest_footprint_point((-0.0001, 0.0005), geom)
         self.assertAlmostEqual(distance, 11.13, delta=0.5)
         self.assertAlmostEqual(point[0], 0.0, delta=1e-7)
+        self.assertEqual(edge, 3)
 
 
 if __name__ == "__main__":
