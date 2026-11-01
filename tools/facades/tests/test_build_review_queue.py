@@ -86,6 +86,22 @@ class CandidateQueueTests(unittest.TestCase):
         self.assertFalse(eligible)
         self.assertIn("no_downloadable_photo_asset", reasons)
 
+    def test_panoramax_asset_roles_resolve_real_preview_and_visual_image(self):
+        feature = {
+            "id": "photo-roles",
+            "geometry": {"type": "Point", "coordinates": [35.9, 31.9]},
+            "properties": {"view:azimuth": 90, "pers:interior_orientation": {"field_of_view": 75},
+                           "license": "CC-BY-SA-4.0"},
+            "assets": {
+                "file-1": {"href": "https://example.org/thumbnail.jpg", "roles": ["thumbnail"], "type": "image/jpeg"},
+                "file-2": {"href": "https://example.org/visual.jpg", "roles": ["visual"], "type": "image/jpeg"},
+                "tiles": {"href": "https://example.org/tiles/{z}/{x}/{y}.jpg", "roles": ["data"]},
+            },
+        }
+        photo = mod.photo_metadata(feature)
+        self.assertEqual(photo["preview_url"], "https://example.org/thumbnail.jpg")
+        self.assertEqual(photo["image_url"], "https://example.org/visual.jpg")
+
     def test_distance_uses_nearest_footprint_edge_not_centroid(self):
         geom = {"type": "Polygon", "coordinates": [[[0.0, 0.0], [0.001, 0.0], [0.001, 0.001], [0.0, 0.001], [0.0, 0.0]]]}
         distance, point = mod.nearest_footprint_point((-0.0001, 0.0005), geom)
