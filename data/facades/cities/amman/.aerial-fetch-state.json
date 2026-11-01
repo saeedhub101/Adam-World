@@ -2,16 +2,18 @@
   "next_url": null,
   "seen_ids": [
     "Copernicus_DSM_COG_10_N31_00_E035_00_DEM",
-    "Copernicus_DSM_COG_10_N32_00_E035_00_DEM"
+    "Copernicus_DSM_COG_10_N31_00_E036_00_DEM",
+    "Copernicus_DSM_COG_10_N32_00_E035_00_DEM",
+    "Copernicus_DSM_COG_10_N32_00_E036_00_DEM"
   ],
   "pages": 1,
   "complete": true,
-  "last_page_added": 0,
+  "last_page_added": 4,
   "bbox": [
-    35.89324971768472,
-    31.912621098850163,
-    35.98512978231528,
-    31.990484501149837
+    35.82760968970986,
+    31.85692580600072,
+    36.05076981029014,
+    32.04617979399928
   ],
   "source": "https://api.imagery.hotosm.org/stac/search"
 }
