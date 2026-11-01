@@ -131,24 +131,48 @@ CITY_PROFILES = {
     "cairo": {"road": ["sedan", "pickup", "motorcycle"], "transit": ["bus", "metro_car"]},
 }
 
-def valid_glb(path: Path) -> bool:
+def read_glb_json(raw: bytes) -> dict:
+    if len(raw) < 20 or raw[:4] != b"glTF":
+        raise RuntimeError("invalid GLB header")
+    offset = 12
+    while offset + 8 <= len(raw):
+        chunk_len = int.from_bytes(raw[offset:offset+4], "little")
+        chunk_type = int.from_bytes(raw[offset+4:offset+8], "little")
+        offset += 8
+        chunk = raw[offset:offset+chunk_len]
+        if len(chunk) != chunk_len:
+            raise RuntimeError("truncated GLB chunk")
+        if chunk_type == 0x4E4F534A:
+            return json.loads(chunk.decode("utf-8").rstrip("\x00 \t\r\n"))
+        offset += chunk_len
+    raise RuntimeError("GLB JSON chunk missing")
+
+def valid_glb(path: Path, animated: bool = False) -> bool:
     try:
-        with path.open("rb") as f:
-            header = f.read(12)
-        if len(header) != 12 or header[:4] != b"glTF":
+        raw = path.read_bytes()
+        if len(raw) < 20 or raw[:4] != b"glTF":
             return False
-        version = int.from_bytes(header[4:8], "little")
-        declared = int.from_bytes(header[8:12], "little")
-        return version == 2 and declared == path.stat().st_size and declared > 1000
-    except OSError:
+        version = int.from_bytes(raw[4:8], "little")
+        declared = int.from_bytes(raw[8:12], "little")
+        if version != 2 or declared != len(raw) or declared <= 1000:
+            return False
+        if animated:
+            doc = read_glb_json(raw)
+            return bool(doc.get("animations")) and bool(doc.get("skins"))
+        return True
+    except (OSError, ValueError, RuntimeError, UnicodeDecodeError):
         return False
 
 def download(item: dict) -> dict:
     path = ASSET_ROOT / item["file"]
     path.parent.mkdir(parents=True, exist_ok=True)
-    if valid_glb(path):
+    if valid_glb(path, bool(item.get("animated"))):
         raw = path.read_bytes()
-        return {"status": "kept", "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+        result = {"status": "kept", "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+        if item.get("animated"):
+            doc = read_glb_json(raw)
+            result.update({"animation_count": len(doc.get("animations", [])), "skin_count": len(doc.get("skins", []))})
+        return result
     if "CHANGE_ME" in item["url"]:
         raise RuntimeError("download URL has not been verified")
     req = Request(item["url"], headers={"User-Agent": "AdamWorld-FreeAssetImporter/1.0", "Accept": "model/gltf-binary,*/*"})
@@ -159,10 +183,16 @@ def download(item: dict) -> dict:
     declared = int.from_bytes(raw[8:12], "little")
     if declared != len(raw) or int.from_bytes(raw[4:8], "little") != 2:
         raise RuntimeError("invalid GLB v2 header/length")
+    animation_info = {}
+    if item.get("animated"):
+        doc = read_glb_json(raw)
+        if not doc.get("animations") or not doc.get("skins"):
+            raise RuntimeError("animated character GLB must contain both skins and animation clips")
+        animation_info = {"animation_count": len(doc.get("animations", [])), "skin_count": len(doc.get("skins", []))}
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_bytes(raw)
     tmp.replace(path)
-    return {"status": "downloaded", "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+    return {"status": "downloaded", "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest(), **animation_info}
 
 def git(*args: str, check: bool = True):
     return subprocess.run(["git", *args], cwd=ROOT, check=check, text=True,
