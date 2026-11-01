@@ -9,6 +9,9 @@ on:
       - "tools/facades/build_review_queue.py"
       - "tools/facades/fetch_kartaview_metadata.py"
       - "tools/facades/prepare_facade_review.py"
+      - "tools/facades/build_verified_glbs.py"
+      - "app/src/main/assets/facades/verified_facades.json"
+      - ".github/workflows/facade-evidence-harvest.yml"
       - "tools/facades/tests/**"
       - "data/facades/cities/**/city.json"
   workflow_run:
@@ -104,12 +107,20 @@ jobs:
           python3 -m pip install --disable-pip-version-check Pillow
           python3 tools/facades/prepare_facade_review.py --limit-per-city 50 --git-checkpoint
 
-      - name: Commit generated review queues
+      - name: Build textured GLBs from human-verified facade assignments
+        id: glb
+        continue-on-error: true
+        run: |
+          python3 -m pip install --disable-pip-version-check numpy trimesh Pillow shapely
+          python3 tools/facades/validate_manifest.py
+          python3 tools/facades/build_verified_glbs.py
+
+      - name: Commit generated review queues and verified GLBs
         id: commit
         if: always()
         continue-on-error: true
         run: |
-          git add -A data/facades/cities
+          git add -A data/facades/cities app/src/main/assets/facades/glb
           if ! git diff --cached --quiet; then
             git commit -m "Build global city facade evidence review queues"
             git pull --rebase origin main
@@ -125,9 +136,10 @@ jobs:
           KARTAVIEW: ${{ steps.kartaview.outcome }}
           QUEUE: ${{ steps.queue.outcome }}
           IMAGES: ${{ steps.images.outcome }}
+          GLB: ${{ steps.glb.outcome }}
           COMMIT: ${{ steps.commit.outcome }}
         run: |
-          printf 'Facade harvest outcomes: tests=%s osm=%s catalogue=%s kartaview=%s queues=%s images=%s commit=%s\n' "$TESTS" "$OSM" "$CATALOG" "$KARTAVIEW" "$QUEUE" "$IMAGES" "$COMMIT"
-          for outcome in "$TESTS" "$OSM" "$CATALOG" "$KARTAVIEW" "$QUEUE" "$IMAGES" "$COMMIT"; do
+          printf 'Facade harvest outcomes: tests=%s osm=%s catalogue=%s kartaview=%s queues=%s images=%s glb=%s commit=%s\n' "$TESTS" "$OSM" "$CATALOG" "$KARTAVIEW" "$QUEUE" "$IMAGES" "$GLB" "$COMMIT"
+          for outcome in "$TESTS" "$OSM" "$CATALOG" "$KARTAVIEW" "$QUEUE" "$IMAGES" "$GLB" "$COMMIT"; do
             if [ "$outcome" != "success" ]; then exit 1; fi
           done
