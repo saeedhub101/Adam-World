@@ -1,0 +1,514 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "677f90aca140fe0001e9b946",
+      "bbox": [
+        45.977411,
+        24.317502,
+        47.328251,
+        25.179987
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap/items/677f90aca140fe0001e9b946"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/677f8e11a140fe0001e9b942/0/677f8e11a140fe0001e9b943.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "test",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/677f8e11a140fe0001e9b942/0/677f8e11a140fe0001e9b943.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "file:size": 18409817,
+          "proj:bbox": [
+            599160.0,
+            2691330.0,
+            734670.0,
+            2785240.0
+          ],
+          "proj:code": "EPSG:32638",
+          "proj:shape": [
+            9391,
+            13551
+          ],
+          "proj:geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  599160.0,
+                  2691330.0
+                ],
+                [
+                  734670.0,
+                  2691330.0
+                ],
+                [
+                  734670.0,
+                  2785240.0
+                ],
+                [
+                  599160.0,
+                  2785240.0
+                ],
+                [
+                  599160.0,
+                  2691330.0
+                ]
+              ]
+            ]
+          },
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            10.0,
+            0.0,
+            599160.0,
+            0.0,
+            -10.0,
+            2785240.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "metadata": {
+          "href": "https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/677f8e11a140fe0001e9b942/0/677f8e11a140fe0001e9b943_meta.json",
+          "type": "application/json",
+          "roles": [
+            "metadata"
+          ],
+          "title": "metadata",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/677f8e11a140fe0001e9b942/0/677f8e11a140fe0001e9b943_meta.json",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "thumbnail": {
+          "href": "https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/677f8e11a140fe0001e9b942/0/677f8e11a140fe0001e9b943.png",
+          "type": "image/png",
+          "roles": [
+            "thumbnail"
+          ],
+          "title": "thumbnail",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/677f8e11a140fe0001e9b942/0/677f8e11a140fe0001e9b943.png",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                45.984068,
+                25.179987
+              ],
+              [
+                45.977411,
+                24.331974
+              ],
+              [
+                47.312514,
+                24.317502
+              ],
+              [
+                47.328251,
+                25.164942
+              ],
+              [
+                45.984068,
+                25.179987
+              ]
+            ]
+          ]
+        ]
+      },
+      "collection": "openaerialmap",
+      "properties": {
+        "gsd": 10.0,
+        "title": "test",
+        "created": "2025-01-09T09:02:36.807+00:00",
+        "license": "CC-BY-4.0",
+        "providers": [
+          {
+            "name": "razan",
+            "roles": [
+              "producer",
+              "licensor"
+            ],
+            "description": "razan alali,razalali04@gmail.com"
+          }
+        ],
+        "instruments": [
+          "Sentinel-2 "
+        ],
+        "end_datetime": "2025-01-08T22:00:00Z",
+        "start_datetime": "2024-12-31T21:00:00Z",
+        "oam:platform_type": "satellite",
+        "oam:producer_name": "razan"
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
+    },
+    {
+      "id": "677f91eea140fe0001e9b948",
+      "bbox": [
+        45.977411,
+        24.317502,
+        47.328251,
+        25.179987
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap/items/677f91eea140fe0001e9b948"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/677f8f35a140fe0001e9b944/0/677f8f35a140fe0001e9b945.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "test",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/677f8f35a140fe0001e9b944/0/677f8f35a140fe0001e9b945.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "file:size": 18409817,
+          "proj:bbox": [
+            599160.0,
+            2691330.0,
+            734670.0,
+            2785240.0
+          ],
+          "proj:code": "EPSG:32638",
+          "proj:shape": [
+            9391,
+            13551
+          ],
+          "proj:geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  599160.0,
+                  2691330.0
+                ],
+                [
+                  734670.0,
+                  2691330.0
+                ],
+                [
+                  734670.0,
+                  2785240.0
+                ],
+                [
+                  599160.0,
+                  2785240.0
+                ],
+                [
+                  599160.0,
+                  2691330.0
+                ]
+              ]
+            ]
+          },
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            10.0,
+            0.0,
+            599160.0,
+            0.0,
+            -10.0,
+            2785240.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "metadata": {
+          "href": "https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/677f8f35a140fe0001e9b944/0/677f8f35a140fe0001e9b945_meta.json",
+          "type": "application/json",
+          "roles": [
+            "metadata"
+          ],
+          "title": "metadata",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/677f8f35a140fe0001e9b944/0/677f8f35a140fe0001e9b945_meta.json",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "thumbnail": {
+          "href": "https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/677f8f35a140fe0001e9b944/0/677f8f35a140fe0001e9b945.png",
+          "type": "image/png",
+          "roles": [
+            "thumbnail"
+          ],
+          "title": "thumbnail",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/677f8f35a140fe0001e9b944/0/677f8f35a140fe0001e9b945.png",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                45.984068,
+                25.179987
+              ],
+              [
+                45.977411,
+                24.331974
+              ],
+              [
+                47.312514,
+                24.317502
+              ],
+              [
+                47.328251,
+                25.164942
+              ],
+              [
+                45.984068,
+                25.179987
+              ]
+            ]
+          ]
+        ]
+      },
+      "collection": "openaerialmap",
+      "properties": {
+        "gsd": 10.0,
+        "title": "test",
+        "created": "2025-01-09T09:07:58.544+00:00",
+        "license": "CC-BY-4.0",
+        "providers": [
+          {
+            "name": "razan",
+            "roles": [
+              "producer",
+              "licensor"
+            ],
+            "description": "razan alali,razalali04@gmail.com"
+          }
+        ],
+        "instruments": [
+          "Sentinel-2 "
+        ],
+        "end_datetime": "2024-01-01T22:00:00Z",
+        "start_datetime": "2023-12-31T21:00:00Z",
+        "oam:platform_type": "satellite",
+        "oam:producer_name": "razan"
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
+    },
+    {
+      "id": "Copernicus_DSM_COG_10_N24_00_E046_00_DEM",
+      "bbox": [
+        45.99986111111111,
+        24.000138888888888,
+        46.99986111111111,
+        25.000138888888888
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/cop-dem-glo-30"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/cop-dem-glo-30"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/cop-dem-glo-30/items/Copernicus_DSM_COG_10_N24_00_E046_00_DEM"
+        },
+        {
+          "rel": "derived_from",
+          "href": "https://earth-search.aws.element84.com/v1/collections/cop-dem-glo-30/items/Copernicus_DSM_COG_10_N24_00_E046_00_DEM",
+          "type": "application/geo+json"
+        }
+      ],
+      "assets": {
+        "data": {
+          "href": "https://copernicus-dem-30m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_10_N24_00_E046_00_DEM/Copernicus_DSM_COG_10_N24_00_E046_00_DEM.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "Data",
+          "alternate": {
+            "s3": {
+              "href": "s3://copernicus-dem-30m/Copernicus_DSM_COG_10_N24_00_E046_00_DEM/Copernicus_DSM_COG_10_N24_00_E046_00_DEM.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "raster:bands": [
+            {
+              "unit": "meter",
+              "sampling": "point",
+              "data_type": "float32",
+              "spatial_resolution": 30
+            }
+          ],
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              46.99986111111111,
+              24.000138888888888
+            ],
+            [
+              46.99986111111111,
+              25.000138888888888
+            ],
+            [
+              45.99986111111111,
+              25.000138888888888
+            ],
+            [
+              45.99986111111111,
+              24.000138888888888
+            ],
+            [
+              46.99986111111111,
+              24.000138888888888
+            ]
+          ]
+        ]
+      },
+      "collection": "cop-dem-glo-30",
+      "properties": {
+        "gsd": 30,
+        "created": "2023-03-28T15:20:49.756Z",
+        "updated": "2023-04-20T18:10:59.165Z",
+        "datetime": "2021-04-22T00:00:00Z",
+        "platform": "tandem-x",
+        "grid:code": "CDEM-N24E046",
+        "proj:code": "EPSG:4326",
+        "proj:shape": [
+          3600,
+          3600
+        ],
+        "proj:centroid": {
+          "lat": 24.5,
+          "lon": 46.5
+        },
+        "proj:transform": [
+          0.0002777777777777778,
+          0,
+          45.99986111111111,
+          0,
+          -0.0002777777777777778,
+          25.000138888888888
+        ],
+        "storage:region": "eu-central-1",
+        "storage:platform": "AWS",
+        "processing:software": {
+          "cop-dem-glo-to-stac": "2023.03.28"
+        },
+        "earthsearch:payload_id": "cop-dem-glo/workflow-cop-dem-glo-to-stac/4c94ffbd9e7daaccd9c5ecce52c87015",
+        "storage:requester_pays": false
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/storage/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/grid/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/processing/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+      ]
+    }
+  ]
+}
