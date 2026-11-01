@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "city": "Cairo",
+  "slug": "cairo",
+  "source": "OpenStreetMap Overpass",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL 1.0",
+  "center": {
+    "lat": 30.0444,
+    "lon": 31.2357
+  },
+  "radius_m": 650,
+  "element_count": 997,
+  "geometry_layers": [
+    "buildings",
+    "roads",
+    "parks",
+    "landcover",
+    "water",
+    "trees",
+    "street_lamps"
+  ],
+  "stored_as": "data/offline-world/cairo/elements.json"
+}
