@@ -44,6 +44,7 @@ paid API or runtime remote map/model dependency is introduced.
 | Traffic lights | Mapped signal nodes now cycle green/amber/red. | Implemented |
 | Vehicle response | NPC vehicles brake when an active signal is ahead on their road approach and resume on green. | Basic signal response implemented |
 | Vehicle and pedestrian shapes | Replaced box cars and box-bodied people with sedan/SUV/van variants and articulated rounded NPC bodies with varied clothing/skin palettes. | Improved procedural models; not photoreal imported GLBs |
+| Streamed-scene cleanup | Nested landmark geometry and the theatre's owned limestone texture are disposed when the city tile group is replaced. | Implemented |
 
 Relevant implementation commits:
 - `5f0b8e7625cb0795ea12431867f405f419c1da9c` — DEM sampling and larger terrain-aware street labels.
@@ -100,6 +101,10 @@ that all ten city folders contain both `elevation-grid.json` and an
 https://github.com/saeedhub101/Adam-World/releases/tag/adam-world-v205
 Build workflow:
 https://github.com/saeedhub101/Adam-World/actions/runs/41344531910
+
+Latest code, including articulated NPC variants, the visible swimming pose and nested-scene cleanup, passed signed Android build 210:
+https://github.com/saeedhub101/Adam-World/actions/runs/41344811178
+Release: https://github.com/saeedhub101/Adam-World/releases/tag/adam-world-v210
 
 The runtime sampler was additionally corrected to treat JSON null cells as DEM
 nodata, not as 0 metres; the nearest-valid sample fallback now handles those
