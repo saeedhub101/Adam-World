@@ -41,6 +41,14 @@ jobs:
         with:
           gradle-version: "8.5"
 
+      - name: Vendor the pinned Three.js runtime for offline startup
+        run: |
+          mkdir -p app/src/main/assets/vendor
+          curl --fail --location --retry 3 --retry-delay 2 \
+            https://cdnjs.cloudflare.com/ajax/libs/three.js/0.128.0/three.min.js \
+            --output app/src/main/assets/vendor/three.min.js
+          test -s app/src/main/assets/vendor/three.min.js
+
       - name: Package offline city tiles into the APK
         run: python3 tools/build_offline_city_tiles.py
 
@@ -67,13 +75,13 @@ jobs:
           PY
           node --check /tmp/adam-world-inline.js
       - name: Build APK and AAB
-        run: gradle --no-daemon -PVERSION_CODE=${{ github.run_number }} assembleDebug bundleDebug
+        run: gradle --no-daemon -PVERSION_CODE=${{ github.run_number }} assembleRelease bundleRelease
 
       - name: Verify outputs
         run: |
-          test -s app/build/outputs/apk/debug/app-debug.apk
-          test -s app/build/outputs/bundle/debug/app-debug.aab
-          ls -lh app/build/outputs/apk/debug/app-debug.apk app/build/outputs/bundle/debug/app-debug.aab
+          test -s app/build/outputs/apk/release/app-release.apk
+          test -s app/build/outputs/bundle/release/app-release.aab
+          ls -lh app/build/outputs/apk/release/app-release.apk app/build/outputs/bundle/release/app-release.aab
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -83,9 +91,9 @@ jobs:
           body: |
             **App:** Adam World
             **Publisher:** Saeed Mansour
-            **Build outputs:** APK and AAB (debug-signed build for testing).\n            **Version code:** ${{ github.run_number }}. The Android app checks this release automatically and can also check manually.
+            **Build outputs:** release-variant APK and AAB (signed with the Android debug key for sideload testing; not a Google Play production signature).\n            **Version code:** ${{ github.run_number }}. The Android app checks this release automatically and can also check manually.
             **Note:** The AAB is debug-signed and is not ready for Google Play production upload. A private production signing key is required for that.
           files: |
-            app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/bundle/debug/app-debug.aab
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/bundle/release/app-release.aab
           fail_on_unmatched_files: true
