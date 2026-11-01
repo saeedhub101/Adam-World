@@ -467,13 +467,14 @@ async function loadArea(lat,lon,spawn){
   disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];
   bldgs=[];grid=new Map();carPaths=[];pedPaths=[];
   const B=newAcc(),G=newAcc(),RWd=newAcc(),RNr=newAcc(),SW=newAcc(),PK=newAcc(),WT=newAcc();
-  const trees=[],lamps=[];let bcount=0;
+  const trees=[],lamps=[],signals=[];let bcount=0;
   const wallV=3.4*4;
   for(const el of data.elements){
     const t=el.tags||{};
     if(el.type==='node'){
-      if(t.natural==='tree'&&trees.length<800){const p=proj(el.lat,el.lon);trees.push(p);}
-      else if(t.highway==='street_lamp'&&lamps.length<400){lamps.push(proj(el.lat,el.lon));}
+      if(t.natural==='tree'&&trees.length<1200){trees.push(proj(el.lat,el.lon));}
+      else if(t.highway==='street_lamp'&&lamps.length<500){lamps.push(proj(el.lat,el.lon));}
+      else if(t.highway==='traffic_signals'&&signals.length<300){signals.push(proj(el.lat,el.lon));}
       continue;
     }
     if(el.type!=='way'||!el.geometry||el.geometry.length<2)continue;
@@ -521,9 +522,7 @@ async function loadArea(lat,lon,spawn){
     }else if((t.leisure&&/park|garden|pitch|playground/.test(t.leisure))||(t.landuse&&/grass|forest|recreation_ground|village_green|meadow/.test(t.landuse))||(t.natural&&/wood|scrub/.test(t.natural))){
       const P=raw.slice();if(P.length>2&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[P.length-1][1])<0.05)P.pop();
       if(P.length<3)continue;flatPoly(P,0.03,PK);
-      const ar=Math.abs(polyArea(P));let nt=Math.min(40,Math.floor(ar/180));
-      let minx=1e9,maxx=-1e9,minz=1e9,maxz=-1e9;for(const p of P){minx=Math.min(minx,p[0]);maxx=Math.max(maxx,p[0]);minz=Math.min(minz,p[1]);maxz=Math.max(maxz,p[1]);}
-      for(let k=0;nt>0&&k<nt*4&&trees.length<800;k++){const x=minx+Math.random()*(maxx-minx),z=minz+Math.random()*(maxz-minz);if(inPoly(x,z,P)){trees.push([x,z]);nt--;}}
+      // Do not invent park trees: only mapped OSM tree nodes are rendered.
     }else if((t.natural==='water')||t.waterway==='riverbank'){
       const P=raw.slice();if(P.length>2&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[P.length-1][1])<0.05)P.pop();
       if(P.length>=3)flatPoly(P,0.04,WT);
@@ -560,6 +559,21 @@ async function loadArea(lat,lon,spawn){
     const d=new THREE.Object3D();
     lamps.forEach((p,i)=>{d.position.set(p[0],3.5,p[1]);d.updateMatrix();pole.setMatrixAt(i,d.matrix);d.position.set(p[0],7.1,p[1]);d.updateMatrix();head.setMatrixAt(i,d.matrix);});
     cityGroup.add(pole);cityGroup.add(head);
+  }
+
+  /* إشارات المرور: توضع فقط عند عقد OSM المرسومة كإشارات فعلية */
+  for(const p of signals){
+    const g=new THREE.Group();
+    const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.075,3.8,7),new THREE.MeshLambertMaterial({color:0x454b50}));
+    pole.position.y=1.9;g.add(pole);
+    const housing=new THREE.Mesh(new THREE.BoxGeometry(0.42,1.05,0.34),new THREE.MeshLambertMaterial({color:0x20252a}));
+    housing.position.set(0,3.65,0);g.add(housing);
+    const colors=[0xff3030,0xffc928,0x35d46a];
+    colors.forEach((color,i)=>{
+      const lamp=new THREE.Mesh(new THREE.SphereGeometry(0.125,8,6),new THREE.MeshBasicMaterial({color}));
+      lamp.position.set(0,4.0-i*0.34,0.19);g.add(lamp);
+    });
+    g.position.set(p[0],0,p[1]);cityGroup.add(g);
   }
 
   /* وكلاء: سيارات ومشاة */
