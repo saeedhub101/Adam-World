@@ -16,6 +16,7 @@ from urllib.error import HTTPError, URLError
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "data" / "facades" / "cities" / "catalog.json"
 OUTPUT = ROOT / "data" / "offline-world"
+IMPORT_PROFILE_VERSION = 3
 ENDPOINTS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
@@ -125,10 +126,14 @@ def main():
                 existing = json.loads(target.read_text(encoding="utf-8"))
                 metadata_existing = json.loads(metadata_path.read_text(encoding="utf-8"))
                 existing_count = len(existing.get("elements") or [])
-                if existing_count > 0 and existing_count == int(metadata_existing.get("element_count", -1)):
-                    print(f"{city['name']}: already stored ({existing_count} elements); skip")
+                if (existing_count > 0
+                        and existing_count == int(metadata_existing.get("element_count", -1))
+                        and int(metadata_existing.get("import_profile_version", 0)) == IMPORT_PROFILE_VERSION):
+                    print(f"{city['name']}: already stored with import profile {IMPORT_PROFILE_VERSION} ({existing_count} elements); skip")
                     succeeded += 1
                     continue
+                if existing_count > 0:
+                    print(f"{city['name']}: refreshing existing data for import profile {IMPORT_PROFILE_VERSION}")
             except Exception:
                 print(f"{city['name']}: existing city data or metadata is invalid; re-importing")
         elif target.is_file():
@@ -143,6 +148,7 @@ def main():
             temp.replace(target)
             metadata = {
                 "schema_version": 2,
+                "import_profile_version": IMPORT_PROFILE_VERSION,
                 "city": city["name"],
                 "slug": slug,
                 "source": "OpenStreetMap Overpass",
@@ -151,7 +157,7 @@ def main():
                 "center": city["center"],
                 "radius_m": city.get("discovery_radius_m", 650),
                 "element_count": len(data["elements"]),
-                "geometry_layers": ["buildings", "roads", "parks", "landcover", "water", "trees", "street_lamps"],
+                "geometry_layers": ["buildings", "roads", "parks", "landcover", "water", "trees", "street_lamps", "traffic_signals", "crossings", "bus_stops", "level_crossings", "barriers", "bridges"],
                 "stored_as": f"data/offline-world/{slug}/elements.json",
             }
             (target_dir / "metadata.json").write_text(
