@@ -30,6 +30,8 @@
   #cameraControls button.active{background:#176a9c;outline:1px solid #9bd0ff}
   #cameraControls .zoom{font-size:18px;min-width:34px;padding:5px 8px}
   @media(max-width:480px){#cameraControls{bottom:8px;max-width:calc(100vw - 160px);gap:3px;padding:4px}#cameraControls button{font-size:10px;padding:7px 6px}#cameraControls .zoom{min-width:29px}}
+  /* Candidate photos stay in the repository review pipeline; never show detached photo cards in gameplay. */
+  #imageryToggle,#imageryPanel{display:none!important}
 </style>
 </head>
 <body>
