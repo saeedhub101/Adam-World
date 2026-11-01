@@ -38,6 +38,9 @@ jobs:
       - name: Validate verified facade assignments
         run: python3 tools/facades/validate_manifest.py
 
+      - name: Compile facade pipeline tools
+        run: python3 -m py_compile tools/facades/*.py tools/facades/tests/*.py
+
       - name: Test global facade candidate discovery
         run: python3 -m unittest discover -s tools/facades/tests -v
 
