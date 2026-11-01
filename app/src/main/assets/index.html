@@ -755,7 +755,33 @@ function swing(g,ph,amp){
 }
 
 /* اللاعب */
+
 const ped=makeAdamCharacter();scene.add(ped);
+// Load Adam's locally generated photo-derived facial surface over the rigged head.
+(async()=>{
+ try{
+  const base='characters/adam/generated/';
+  const [data,texture]=await Promise.all([
+   fetch(base+'adam_face_mesh.json').then(r=>{if(!r.ok)throw new Error('face mesh JSON '+r.status);return r.json();}),
+   new THREE.TextureLoader().loadAsync(base+'adam_face_texture.png')
+  ]);
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(data.vertices.flat(),3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(data.uvs.flat(),2));
+  geometry.setIndex(data.triangles.flat());
+  geometry.computeVertexNormals();
+  texture.flipY=false;texture.anisotropy=aniso;texture.needsUpdate=true;
+  const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,transparent:false,depthWrite:true});
+  const photoFace=new THREE.Mesh(geometry,material);
+  photoFace.name='adam-photo-derived-face';
+  photoFace.renderOrder=2;
+  ped.userData.head.add(photoFace);
+  // The source photograph supplies facial features; retain the rig, hair and ears.
+  [3,4,5,6,7,8].forEach(i=>{if(ped.userData.head.children[i])ped.userData.head.children[i].visible=false;});
+  ped.userData.photoFace=photoFace;
+ }catch(error){console.error('Adam photo face could not be loaded:',error);}
+})();
+
 // Facial blendshapes and lip-sync controller for the playable character.
 const adamFace=ped.userData.head.children[0];
 adamFace.geometry=adamFace.geometry.clone();
