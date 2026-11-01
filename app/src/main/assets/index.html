@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>مدينة 3D</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/three@0.128.0/build/three.min.js';"></script>
+<script src="vendor/three.min.js"></script>
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
   canvas{display:block;position:absolute;inset:0;touch-action:none}
@@ -66,7 +66,7 @@ const $=id=>document.getElementById(id);
 function startupFailure(message){
   const box=$('loading');
   if(!box)return;
-  box.textContent='تعذر بدء Adam World: '+(message||'حدث خطأ غير متوقع')+' — تحقق من اتصال الإنترنت ثم أعد فتح التطبيق.';
+  box.textContent='تعذر بدء Adam World: '+(message||'حدث خطأ غير متوقع')+' — تحقق من ملفات التطبيق المحلية ثم أعد فتحه.';
   box.style.display='flex';
   box.style.pointerEvents='auto';
   box.onclick=()=>location.reload();
