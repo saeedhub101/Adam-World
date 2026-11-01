@@ -2,9 +2,9 @@
   "slug": "amman",
   "name": "Amman",
   "center": {
-    "lat": 31.9516,
-    "lon": 35.9394
+    "lat": 31.95165805,
+    "lon": 35.9393934
   },
-  "discovery_radius_m": 1800,
-  "notes": "Priority discovery area centred on Downtown Amman (Al-Balad), matching the actual Adam World player spawn at 31.9516, 35.9394. The 1.8 km radius is an evidence-discovery window, not a claim of complete Amman coverage."
+  "discovery_radius_m": 2500,
+  "notes": "Amman pilot centred on the Roman Theatre. Import and render real terrain elevations because the city has pronounced hills, ridges and valleys."
 }
