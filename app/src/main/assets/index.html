@@ -25,6 +25,11 @@
   #loading{position:absolute;inset:0;z-index:10;background:rgba(10,12,20,.88);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;text-align:center;padding:20px}
   #imageryPanel{position:absolute;z-index:8;left:8px;right:8px;top:112px;max-height:58vh;overflow:auto;background:rgba(12,18,28,.96);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:12px;display:none;box-shadow:0 8px 28px rgba(0,0,0,.4)}
   #imageryPanel h3{font-size:15px;margin:0 0 8px}#imageryPanel p{font-size:12px;line-height:1.55;margin:5px 0;color:#d8e0e9}#imageryPanel a{color:#9bd0ff}#imageryPanel .sourceLinks{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}#imageryPanel .sourceLinks a{background:#25364a;padding:7px 9px;border-radius:8px;text-decoration:none;font-size:12px}#imageryPanel .photo{display:flex;gap:9px;padding:8px 0;border-top:1px solid #344253;align-items:flex-start}#imageryPanel .photo img{width:96px;height:72px;object-fit:cover;border-radius:7px;background:#303944}#imageryPanel .photo div{min-width:0;font-size:12px;line-height:1.45}#imageryPanel .muted{color:#b7c1cc}#imageryToggle{background:#245b83}
+  #cameraControls{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:6;display:flex;gap:5px;align-items:center;padding:6px;background:rgba(8,13,22,.78);border:1px solid rgba(255,255,255,.25);border-radius:14px;backdrop-filter:blur(8px);max-width:calc(100vw - 180px)}
+  #cameraControls button{border:0;border-radius:9px;padding:8px 9px;background:#26384b;color:#fff;font-size:12px;white-space:nowrap}
+  #cameraControls button.active{background:#176a9c;outline:1px solid #9bd0ff}
+  #cameraControls .zoom{font-size:18px;min-width:34px;padding:5px 8px}
+  @media(max-width:480px){#cameraControls{bottom:8px;max-width:calc(100vw - 160px);gap:3px;padding:4px}#cameraControls button{font-size:10px;padding:7px 6px}#cameraControls .zoom{min-width:29px}}
 </style>
 </head>
 <body>
@@ -49,6 +54,14 @@
     <button class="btn" data-c="24.7136,46.6753">الرياض</button>
     <button class="btn" data-c="30.0444,31.2357">القاهرة</button>
   </div>
+</div>
+<div id="cameraControls" aria-label="التحكم بالكاميرا">
+  <button data-camera="street" class="active">شارع</button>
+  <button data-camera="near">قريب</button>
+  <button data-camera="high">مرتفع</button>
+  <button data-camera="drone">درون</button>
+  <button class="zoom" id="zoomOut" aria-label="إبعاد">−</button>
+  <button class="zoom" id="zoomIn" aria-label="تقريب">+</button>
 </div>
 <section id="imageryPanel" aria-label="مصادر الصور الجغرافية"><h3>مصادر الصور المرتبطة بموقع المدينة</h3><p id="imageryStatus">سيتم البحث عن صور جوية وصور شوارع حول الموقع الحالي.</p><div class="sourceLinks" id="imageryLinks"></div><div id="imageryResults"></div><p class="muted">الصور القريبة مرشّحة للمراجعة فقط. لا تُسند إلى واجهة مبنى ولا تُستخدم كخامة ثلاثية الأبعاد إلا بعد التحقق من اتجاه التصوير ومطابقة المبنى والترخيص.</p></section>
 <div id="stick"><div id="knob"></div></div>
@@ -422,7 +435,7 @@ function swing(g,ph,amp){const u=g.userData;u.legs[0].rotation.x=Math.sin(ph)*am
 /* اللاعب */
 const ped=makePerson(0xe74c3c);scene.add(ped);
 const pcar=makeCar(0xc0392b);scene.add(pcar);
-const S={px:0,pz:0,pyaw:0,cx:0,cz:0,cyaw:0,cv:0,mode:'walk',phase:0,camYaw:0,camPitch:0.38,lastLook:0,sx:0,sy:0,sprint:false};
+const S={px:0,pz:0,pyaw:0,cx:0,cz:0,cyaw:0,cv:0,mode:'walk',phase:0,camYaw:0,camPitch:0.38,camDistance:5.2,lastLook:0,sx:0,sy:0,sprint:false};
 
 /* ---------- صور جوية وصور شوارع ذات إسناد جغرافي ---------- */
 const sourcePending=new Map();let sourceSequence=0;let currentImageryCenter={lat:31.9516,lon:35.9394};
@@ -569,17 +582,41 @@ async function loadArea(lat,lon,spawn){
   }
 
   if(spawn){
-    let best=null,bd=1e9;
-    for(const cp of carPaths){if(cp.w<6)continue;for(let i=0;i<cp.path.pts.length;i++){const p=cp.path.pts[i];const d=Math.hypot(p[0],p[1]);if(d<bd){bd=d;best={cp:cp,i:i};}}}
+    // Find a genuinely clear walking position beside a mapped street/path.
+    // The old fixed (0,0) fallback could place the player inside a building.
+    let best=null,bd=Infinity;
+    for(const road of pedPaths){
+      const path=road.path,step=Math.max(1,Math.floor(path.pts.length/160));
+      for(let i=0;i<path.pts.length;i+=step){
+        const s=path.cum[i],base=posAt(path,Math.min(s,path.total-0.2),0);
+        const side=road.veh?road.w/2+1.7:0;
+        const offsets=road.veh?[side,-side,side+1.0,-side-1.0]:[0,0.7,-0.7,1.4,-1.4];
+        for(const offset of offsets){
+          const p=posAt(path,Math.min(s,path.total-0.2),offset);
+          if(blocked(p.x,p.z,0.62))continue;
+          const d=Math.hypot(p.x,p.z);
+          if(d<bd){bd=d;best={road:road,s:s,walk:p,roadPoint:base};}
+        }
+      }
+    }
     if(best){
-      const path=best.cp.path;const s=path.cum[best.i];
-      const a=posAt(path,Math.min(s,path.total-1),0);
-      const yaw=Math.atan2(a.dx,a.dz);
-      const rx=-a.dz,rz=a.dx; // يمين الاتجاه
-      const car=posAt(path,Math.min(s,path.total-1),best.cp.w/4);
-      S.cx=car.x;S.cz=car.z;S.cyaw=yaw;
-      S.px=a.x+rx*(best.cp.w/2+1.6);S.pz=a.z+rz*(best.cp.w/2+1.6);S.pyaw=yaw;
-    }else{S.px=0;S.pz=0;S.cx=4;S.cz=0;S.cyaw=0;}
+      const path=best.road.path;
+      const direction=posAt(path,Math.min(best.s,path.total-0.2),0);
+      const yaw=Math.atan2(direction.dx,direction.dz);
+      S.px=best.walk.x;S.pz=best.walk.z;S.pyaw=yaw;
+      S.cx=best.roadPoint.x;S.cz=best.roadPoint.z;S.cyaw=yaw;
+    }else{
+      // Last-resort clear-space search; never place the player at a known building centroid.
+      let safe=null;
+      for(let radius=0;radius<=180&&!safe;radius+=3){
+        for(let a=0;a<Math.PI*2;a+=Math.PI/12){
+          const x=Math.cos(a)*radius,z=Math.sin(a)*radius;
+          if(!blocked(x,z,0.62)){safe={x,z};break;}
+        }
+      }
+      S.px=safe?safe.x:0;S.pz=safe?safe.z:0;
+      S.cx=S.px;S.cz=S.pz;S.pyaw=0;S.cyaw=0;
+    }
     S.mode='walk';S.cv=0;S.camYaw=S.pyaw;
     camera.position.set(S.px,3,S.pz);
   }
@@ -656,11 +693,22 @@ const cvs=renderer.domElement;let lookId=null,lx=0,ly=0;
 cvs.addEventListener('pointerdown',e=>{if(lookId===null){lookId=e.pointerId;lx=e.clientX;ly=e.clientY;cvs.setPointerCapture(e.pointerId);}});
 cvs.addEventListener('pointermove',e=>{
   if(e.pointerId!==lookId)return;
-  S.camYaw-=(e.clientX-lx)*0.006;S.camPitch=clamp(S.camPitch-(e.clientY-ly)*0.004,0.05,1.3);
+  S.camYaw-=(e.clientX-lx)*0.006;S.camPitch=clamp(S.camPitch-(e.clientY-ly)*0.004,0.05,1.52);
   lx=e.clientX;ly=e.clientY;S.lastLook=performance.now();
 });
 const endLook=e=>{if(e.pointerId===lookId)lookId=null;};
 cvs.addEventListener('pointerup',endLook);cvs.addEventListener('pointercancel',endLook);
+const CAMERA_PRESETS={street:{distance:5.2,pitch:0.28},near:{distance:13,pitch:0.52},high:{distance:38,pitch:0.92},drone:{distance:105,pitch:1.48}};
+function setCameraPreset(name){
+  const p=CAMERA_PRESETS[name];if(!p)return;
+  S.camDistance=p.distance;S.camPitch=p.pitch;
+  document.querySelectorAll('[data-camera]').forEach(b=>b.classList.toggle('active',b.dataset.camera===name));
+}
+document.querySelectorAll('[data-camera]').forEach(b=>b.addEventListener('click',()=>setCameraPreset(b.dataset.camera)));
+function changeZoom(factor){S.camDistance=clamp(S.camDistance*factor,3.2,180);}
+$('zoomIn').onclick=()=>changeZoom(0.78);
+$('zoomOut').onclick=()=>changeZoom(1.28);
+cvs.addEventListener('wheel',e=>{e.preventDefault();changeZoom(Math.exp(e.deltaY*0.0012));},{passive:false});
 
 const sp=$('sprint');
 sp.addEventListener('pointerdown',e=>{S.sprint=true;sp.classList.add('p');sp.setPointerCapture(e.pointerId);});
@@ -693,7 +741,7 @@ function frame(now){
   requestAnimationFrame(frame);
   const dt=Math.min((now-last)/1000,0.1);last=now;
   if(!bldgs&&!agents)return;
-  const mag=Math.min(1,Math.hypot(S.sx,S.sy));
+  const mag=loading?0:Math.min(1,Math.hypot(S.sx,S.sy));
 
   if(S.mode==='walk'){
     if(mag>0.08){
@@ -709,7 +757,7 @@ function frame(now){
     }else swing(ped,0,0);
     ped.position.set(S.px,0,S.pz);ped.rotation.y=S.pyaw;
   }else{
-    const thr=S.sy;
+    const thr=loading?0:S.sy;
     if(thr>0.1)S.cv+=thr*14*dt;
     else if(thr<-0.1)S.cv+=thr*(S.cv>0?24:8)*dt;
     else S.cv-=Math.sign(S.cv)*Math.min(Math.abs(S.cv),5*dt);
@@ -737,7 +785,7 @@ function frame(now){
 
   /* الكاميرا */
   const tx=S.mode==='drive'?S.cx:S.px,tz=S.mode==='drive'?S.cz:S.pz;
-  const dist=S.mode==='drive'?9.5:5.2,th=S.mode==='drive'?1.6:1.55;
+  const dist=S.camDistance*(S.mode==='drive'?1.6:1),th=1.55;
   const cp=Math.cos(S.camPitch),spn=Math.sin(S.camPitch);
   const dx=tx-Math.sin(S.camYaw)*dist*cp,dz=tz-Math.cos(S.camYaw)*dist*cp,dy=th+dist*spn;
   const k=1-Math.exp(-dt*14);
