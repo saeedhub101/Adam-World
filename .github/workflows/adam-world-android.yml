@@ -14,7 +14,9 @@ on:
       - "settings.gradle"
       - "gradle.properties"
   workflow_run:
-    workflows: ["Adam World Offline City Data Import"]
+    workflows:
+      - "Adam World Offline City Data Import"
+      - "Adam World Copernicus Terrain Import"
     types: [completed]
   workflow_dispatch:
 
