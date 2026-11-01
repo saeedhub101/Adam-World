@@ -89,38 +89,12 @@ jobs:
             python3 tools/facades/fetch_catalogue_metadata.py --git-checkpoint
           fi
 
-      # Harvest KartaView street-photo metadata for every in-game city before building any review queues.
-      # Each city checkpoints its progress to main; a failed city does not block the remaining cities.
-      - name: Discover public KartaView street photos across all ten cities
-        id: kartaview
-        continue-on-error: true
-        run: |
-          cities=(amman bangkok cairo dubai london manila new-york paris riyadh tokyo)
-          failed=0
-          for city in "${cities[@]}"; do
-            echo "KARTAVIEW_CITY_START city=$city"
-            if python3 tools/facades/fetch_kartaview_metadata.py --city "$city" --git-checkpoint; then
-              echo "KARTAVIEW_CITY_SUCCESS city=$city"
-            else
-              echo "KARTAVIEW_CITY_FAILED city=$city"
-              failed=1
-            fi
-          done
-          exit "$failed"
-
       - name: Build per-city facade review queues with strict geometry and licensing gates
         id: queue
         continue-on-error: true
         run: python3 tools/facades/build_review_queue.py
 
-      - name: Download and validate local review images
-        id: images
-        continue-on-error: true
-        run: |
-          python3 -m pip install --disable-pip-version-check Pillow
-          python3 tools/facades/prepare_facade_review.py --limit-per-city 50 --git-checkpoint
-
-      - name: Build textured GLBs from human-verified facade assignments
+      - name: Immediately rebuild GLBs from verified facade assignments
         id: glb
         continue-on-error: true
         run: |
@@ -146,13 +120,11 @@ jobs:
           TESTS: ${{ steps.tests.outcome }}
           OSM: ${{ steps.osm.outcome }}
           CATALOG: ${{ steps.catalog.outcome }}
-          KARTAVIEW: ${{ steps.kartaview.outcome }}
           QUEUE: ${{ steps.queue.outcome }}
-          IMAGES: ${{ steps.images.outcome }}
           GLB: ${{ steps.glb.outcome }}
           COMMIT: ${{ steps.commit.outcome }}
         run: |
-          printf 'Facade harvest outcomes: tests=%s osm=%s catalogue=%s kartaview=%s queues=%s images=%s glb=%s commit=%s\n' "$TESTS" "$OSM" "$CATALOG" "$KARTAVIEW" "$QUEUE" "$IMAGES" "$GLB" "$COMMIT"
-          for outcome in "$TESTS" "$OSM" "$CATALOG" "$KARTAVIEW" "$QUEUE" "$IMAGES" "$GLB" "$COMMIT"; do
+          printf 'Facade harvest outcomes: tests=%s osm=%s catalogue=%s queues=%s verified_glb=%s commit=%s\n' "$TESTS" "$OSM" "$CATALOG" "$QUEUE" "$GLB" "$COMMIT"
+          for outcome in "$TESTS" "$OSM" "$CATALOG" "$QUEUE" "$GLB" "$COMMIT"; do
             if [ "$outcome" != "success" ]; then exit 1; fi
           done
