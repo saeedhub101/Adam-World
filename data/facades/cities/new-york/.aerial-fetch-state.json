@@ -1,0 +1,17 @@
+{
+  "next_url": null,
+  "seen_ids": [
+    "6643bd989af9850001610aeb",
+    "Copernicus_DSM_COG_10_N40_00_W074_00_DEM"
+  ],
+  "pages": 1,
+  "complete": true,
+  "last_page_added": 2,
+  "bbox": [
+    -73.99320854697702,
+    40.752160977362564,
+    -73.97779145302299,
+    40.76383902263744
+  ],
+  "source": "https://api.imagery.hotosm.org/stac/search"
+}

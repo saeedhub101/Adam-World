@@ -1,0 +1,325 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "6643bd989af9850001610aeb",
+      "bbox": [
+        -75.00024,
+        40.555473,
+        -73.6838,
+        41.551845
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/openaerialmap/items/6643bd989af9850001610aeb"
+        }
+      ],
+      "assets": {
+        "visual": {
+          "href": "https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/6643bbca9af9850001610ae9/0/6643bbca9af9850001610aea.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "newyork_cog_sentine_clean",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/6643bbca9af9850001610ae9/0/6643bbca9af9850001610aea.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "file:size": 20937884,
+          "proj:bbox": [
+            499980.0,
+            4490220.0,
+            609780.0,
+            4600020.0
+          ],
+          "proj:code": "EPSG:32618",
+          "proj:shape": [
+            10980,
+            10980
+          ],
+          "proj:geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  499980.0,
+                  4490220.0
+                ],
+                [
+                  609780.0,
+                  4490220.0
+                ],
+                [
+                  609780.0,
+                  4600020.0
+                ],
+                [
+                  499980.0,
+                  4600020.0
+                ],
+                [
+                  499980.0,
+                  4490220.0
+                ]
+              ]
+            ]
+          },
+          "alternate:name": "HTTPS",
+          "proj:transform": [
+            10.0,
+            0.0,
+            499980.0,
+            0.0,
+            -10.0,
+            4600020.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "metadata": {
+          "href": "https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/6643bbca9af9850001610ae9/0/6643bbca9af9850001610aea_meta.json",
+          "type": "application/json",
+          "roles": [
+            "metadata"
+          ],
+          "title": "metadata",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/6643bbca9af9850001610ae9/0/6643bbca9af9850001610aea_meta.json",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        },
+        "thumbnail": {
+          "href": "https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/6643bbca9af9850001610ae9/0/6643bbca9af9850001610aea.png",
+          "type": "image/png",
+          "roles": [
+            "thumbnail"
+          ],
+          "title": "thumbnail",
+          "alternate": {
+            "s3": {
+              "href": "s3://oin-hotosm-temp/6643bbca9af9850001610ae9/0/6643bbca9af9850001610aea.png",
+              "alternate:name": "S3"
+            }
+          },
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                -75.00024,
+                41.551845
+              ],
+              [
+                -75.000236,
+                40.56275
+              ],
+              [
+                -73.703363,
+                40.555473
+              ],
+              [
+                -73.6838,
+                41.544312
+              ],
+              [
+                -75.00024,
+                41.551845
+              ]
+            ]
+          ]
+        ]
+      },
+      "collection": "openaerialmap",
+      "properties": {
+        "gsd": 10.0,
+        "title": "newyork_cog_sentine_clean",
+        "created": "2024-05-14T19:38:00.412+00:00",
+        "license": "CC-BY-4.0",
+        "providers": [
+          {
+            "name": "Sentinel Project",
+            "roles": [
+              "producer",
+              "licensor"
+            ],
+            "description": "Simeon C,csunoser@gmail.com"
+          }
+        ],
+        "instruments": [
+          "Sentinel Visible Band"
+        ],
+        "end_datetime": "2024-05-14T19:28:21.749Z",
+        "start_datetime": "2024-05-14T04:00:00Z",
+        "oam:platform_type": "satellite",
+        "oam:producer_name": "Sentinel Project"
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+        "https://hotosm.github.io/stactools-hotosm/oam/v0.1.0/schema.json"
+      ]
+    },
+    {
+      "id": "Copernicus_DSM_COG_10_N40_00_W074_00_DEM",
+      "bbox": [
+        -74.00013888888888,
+        40.00013888888889,
+        -73.00013888888888,
+        41.00013888888889
+      ],
+      "type": "Feature",
+      "links": [
+        {
+          "rel": "collection",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/cop-dem-glo-30"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/cop-dem-glo-30"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://api.imagery.hotosm.org/stac/"
+        },
+        {
+          "rel": "self",
+          "type": "application/geo+json",
+          "href": "https://api.imagery.hotosm.org/stac/collections/cop-dem-glo-30/items/Copernicus_DSM_COG_10_N40_00_W074_00_DEM"
+        },
+        {
+          "rel": "derived_from",
+          "href": "https://earth-search.aws.element84.com/v1/collections/cop-dem-glo-30/items/Copernicus_DSM_COG_10_N40_00_W074_00_DEM",
+          "type": "application/geo+json"
+        }
+      ],
+      "assets": {
+        "data": {
+          "href": "https://copernicus-dem-30m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_10_N40_00_W074_00_DEM/Copernicus_DSM_COG_10_N40_00_W074_00_DEM.tif",
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": [
+            "data"
+          ],
+          "title": "Data",
+          "alternate": {
+            "s3": {
+              "href": "s3://copernicus-dem-30m/Copernicus_DSM_COG_10_N40_00_W074_00_DEM/Copernicus_DSM_COG_10_N40_00_W074_00_DEM.tif",
+              "alternate:name": "S3"
+            }
+          },
+          "raster:bands": [
+            {
+              "unit": "meter",
+              "sampling": "point",
+              "data_type": "float32",
+              "spatial_resolution": 30
+            }
+          ],
+          "alternate:name": "HTTPS"
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -73.00013888888888,
+              40.00013888888889
+            ],
+            [
+              -73.00013888888888,
+              41.00013888888889
+            ],
+            [
+              -74.00013888888888,
+              41.00013888888889
+            ],
+            [
+              -74.00013888888888,
+              40.00013888888889
+            ],
+            [
+              -73.00013888888888,
+              40.00013888888889
+            ]
+          ]
+        ]
+      },
+      "collection": "cop-dem-glo-30",
+      "properties": {
+        "gsd": 30,
+        "created": "2023-03-28T15:21:14.977Z",
+        "updated": "2023-04-20T18:11:38.871Z",
+        "datetime": "2021-04-22T00:00:00Z",
+        "platform": "tandem-x",
+        "grid:code": "CDEM-N40W074",
+        "proj:code": "EPSG:4326",
+        "proj:shape": [
+          3600,
+          3600
+        ],
+        "proj:centroid": {
+          "lat": 40.5,
+          "lon": -73.5
+        },
+        "proj:transform": [
+          0.0002777777777777778,
+          0,
+          -74.00013888888888,
+          0,
+          -0.0002777777777777778,
+          41.00013888888889
+        ],
+        "storage:region": "eu-central-1",
+        "storage:platform": "AWS",
+        "processing:software": {
+          "cop-dem-glo-to-stac": "2023.03.28"
+        },
+        "earthsearch:payload_id": "cop-dem-glo/workflow-cop-dem-glo-to-stac/b3e02ea19b1109c90f04e4fc1036e52d",
+        "storage:requester_pays": false
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/grid/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/processing/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/storage/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+      ]
+    }
+  ]
+}
