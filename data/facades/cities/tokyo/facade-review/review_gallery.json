@@ -4,6 +4,7 @@
   "policy": "Image decode, minimum dimensions, camera geometry and licence are machine-filtered. Exact depicted-building identity remains unverified until visual inspection.",
   "eligible_building_candidates": 3,
   "downloaded_valid_images": 3,
+  "downloaded_hd_images": 3,
   "failed_or_rejected_images": 0,
   "items": [
     {
@@ -77,6 +78,7 @@
       "target_bearing_deg": 24.13,
       "photo_id": "b9f347de-c484-43a9-8814-d0e6ae26abad",
       "image": "images/b9f347de-c484-43a9-8814-d0e6ae26abad.jpg",
+      "hd_image": "full/b9f347de-c484-43a9-8814-d0e6ae26abad.jpg",
       "width": 500,
       "height": 281,
       "distance_m": 10.74,
@@ -139,6 +141,7 @@
       "target_bearing_deg": 27.3,
       "photo_id": "06137ec2-9d67-432f-8007-7102fdf40345",
       "image": "images/06137ec2-9d67-432f-8007-7102fdf40345.jpg",
+      "hd_image": "full/06137ec2-9d67-432f-8007-7102fdf40345.jpg",
       "width": 500,
       "height": 281,
       "distance_m": 10.88,
@@ -213,6 +216,7 @@
       "target_bearing_deg": 340.97,
       "photo_id": "f39876d9-d203-482a-869a-53865b3b5ed3",
       "image": "images/f39876d9-d203-482a-869a-53865b3b5ed3.jpg",
+      "hd_image": "full/f39876d9-d203-482a-869a-53865b3b5ed3.jpg",
       "width": 500,
       "height": 888,
       "distance_m": 24.54,
