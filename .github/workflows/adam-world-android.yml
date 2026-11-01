@@ -87,7 +87,7 @@ jobs:
           print('WEB_UPDATE_BUNDLE_OK bytes=', Path('app/build/updates/adam-world-web-update.zip').stat().st_size)
           PY
           NATIVE_REQUIRED=false
-          if git diff --name-only HEAD^ HEAD | grep -Eq '^(app/src/main/java/|app/src/main/AndroidManifest.xml|app/build.gradle|data/offline-world/)'; then NATIVE_REQUIRED=true; fi
+          if git show --format= --name-only HEAD | grep -Eq '^(app/src/main/java/|app/src/main/AndroidManifest.xml|app/build.gradle|data/offline-world/)'; then NATIVE_REQUIRED=true; fi
           echo "NATIVE_REQUIRED=$NATIVE_REQUIRED" >> "$GITHUB_ENV"
           echo "Native APK update required: $NATIVE_REQUIRED"
 
