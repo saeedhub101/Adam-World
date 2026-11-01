@@ -32,6 +32,7 @@
     <button class="btn" id="go">بحث</button>
     <button class="btn" id="loc">📍</button>
     <button class="btn" id="time">☀️</button>
+    <button class="btn" id="update">تحديث</button>
   </div>
   <div class="chips">
     <button class="btn" data-c="31.9516,35.9394">عمّان</button>
@@ -200,6 +201,9 @@ function applyTime(i){
   $('time').textContent=T.n;
 }
 $('time').onclick=()=>applyTime((timeI+1)%TIMES.length);
+$('update').onclick=()=>{if(window.Android&&Android.checkForUpdates)Android.checkForUpdates();else toast('التحقق من التحديثات متاح في تطبيق Android فقط');};
+function onUpdateStatus(message){toast(message,4500);}
+
 applyTime(0);
 
 /* ---------- الإسقاط ---------- */
