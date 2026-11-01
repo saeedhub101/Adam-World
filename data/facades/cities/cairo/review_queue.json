@@ -36201,7 +36201,14 @@
     "automatic_texture_assignment": false,
     "camera_cone_is_candidate_filter_only": true,
     "maximum_discovery_distance_m": 100.0,
-    "proximity_is_not_identity": true
+    "proximity_is_not_identity": true,
+    "strict_visual_review_gate": {
+      "max_azimuth_delta_deg": 25,
+      "max_facade_distance_m": 35,
+      "requires_camera_fov": true,
+      "requires_open_redistributable_license": true,
+      "requires_real_preview_and_image_assets": true
+    }
   },
   "schema_version": 1,
   "source_sha256": "0ecea86105a8499d56823bb4f6c6f3c3fdfbb4ca12e794efcebad52e4870b8c6"
