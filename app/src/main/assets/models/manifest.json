@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "license_policy": "Only individually verified CC0-1.0 assets are imported automatically.",
+  "models": [
+    {
+      "id": "adult_woman",
+      "file": "people/adult-woman.glb",
+      "page": "https://www.innerscene.com/tools/library/3d-parts/amara-3d-person-standing-office-2a16c294",
+      "license": "CC0-1.0",
+      "pose": "standing",
+      "animated": false,
+      "height_m": 1.68,
+      "description": "Adult woman, textured clothing and hair; static pose.",
+      "status": "downloaded",
+      "bytes": 17419340,
+      "sha256": "1ab2cc1ef30faa3018ac4dd7389e49bd491757299ccc4002911ae871db71cc51"
+    },
+    {
+      "id": "adult_man",
+      "file": "people/adult-man.glb",
+      "page": "https://www.innerscene.com/tools/library/3d-parts/folded-arms-3d-person-standing-b4b904f5",
+      "license": "CC0-1.0",
+      "pose": "standing",
+      "animated": false,
+      "height_m": 1.85,
+      "description": "Adult man in clothing; static folded-arms pose.",
+      "status": "downloaded",
+      "bytes": 21742292,
+      "sha256": "95b34ac39e8ddea97bdf10d3641cc4fab7f7c260edbbe067447628e3ba0d4e02"
+    },
+    {
+      "id": "child_boy",
+      "file": "people/child-boy.glb",
+      "page": "https://www.innerscene.com/tools/library/3d-parts/leo-3d-person-child-standing-88a69d44",
+      "license": "CC0-1.0",
+      "pose": "standing",
+      "animated": false,
+      "height_m": 1.11,
+      "description": "Boy, approximately eight years old; static pose.",
+      "status": "downloaded",
+      "bytes": 20928540,
+      "sha256": "24e1d91006c764c0f46032049f4861b9004223fdebbf1726d88ac66ff1104dbd"
+    },
+    {
+      "id": "child_girl",
+      "file": "people/child-girl.glb",
+      "page": "https://www.innerscene.com/tools/library/3d-parts/maya-3d-person-child-standing-bace98fd",
+      "license": "CC0-1.0",
+      "pose": "standing",
+      "animated": false,
+      "height_m": 1.16,
+      "description": "Girl, approximately ten years old; static pose.",
+      "status": "downloaded",
+      "bytes": 20246420,
+      "sha256": "3bd968dfb8a8dbcb84aefa80ab806a582b935566917a561bd423633e271aa046"
+    }
+  ],
+  "city_profiles": {
+    "amman": {
+      "road": [
+        "sedan",
+        "sedan",
+        "pickup",
+        "motorcycle"
+      ],
+      "transit": [
+        "bus"
+      ]
+    },
+    "manila": {
+      "road": [
+        "sedan",
+        "pickup",
+        "motorcycle"
+      ],
+      "transit": [
+        "bus",
+        "metro_car"
+      ],
+      "pending_local": [
+        "jeepney",
+        "philippine_tricycle"
+      ]
+    },
+    "bangkok": {
+      "road": [
+        "sedan",
+        "pickup",
+        "motorcycle"
+      ],
+      "transit": [
+        "bus",
+        "metro_car"
+      ],
+      "pending_local": [
+        "tuk_tuk"
+      ]
+    },
+    "new-york": {
+      "road": [
+        "sedan",
+        "pickup",
+        "motorcycle"
+      ],
+      "transit": [
+        "bus",
+        "metro_car"
+      ]
+    },
+    "paris": {
+      "road": [
+        "sedan",
+        "motorcycle"
+      ],
+      "transit": [
+        "bus",
+        "metro_car"
+      ]
+    },
+    "dubai": {
+      "road": [
+        "sedan",
+        "pickup",
+        "motorcycle"
+      ],
+      "transit": [
+        "bus",
+        "metro_car"
+      ]
+    },
+    "tokyo": {
+      "road": [
+        "sedan",
+        "motorcycle"
+      ],
+      "transit": [
+        "bus",
+        "metro_car"
+      ]
+    },
+    "london": {
+      "road": [
+        "sedan",
+        "motorcycle"
+      ],
+      "transit": [
+        "bus",
+        "metro_car"
+      ]
+    },
+    "riyadh": {
+      "road": [
+        "sedan",
+        "pickup",
+        "motorcycle"
+      ],
+      "transit": [
+        "bus",
+        "metro_car"
+      ]
+    },
+    "cairo": {
+      "road": [
+        "sedan",
+        "pickup",
+        "motorcycle"
+      ],
+      "transit": [
+        "bus",
+        "metro_car"
+      ]
+    }
+  },
+  "pending": [
+    {
+      "id": "jeepney",
+      "city": "manila",
+      "status": "not_imported",
+      "reason": "A free Sketchfab CC-BY model was found, but the downloadable binary and its redistribution package were not independently verified."
+    },
+    {
+      "id": "philippine_tricycle",
+      "city": "manila",
+      "status": "not_imported",
+      "reason": "Search results found paid/editorial or game-workshop assets; no verified free redistributable GLB was accepted."
+    },
+    {
+      "id": "walking_animations",
+      "status": "not_imported",
+      "reason": "The imported human figures are static meshes without armatures; do not fake walking animation."
+    },
+    {
+      "id": "old_jordanian_cars",
+      "city": "amman",
+      "status": "not_imported",
+      "reason": "No verified free, redistributable, sufficiently detailed old Jordanian vehicle model was accepted yet."
+    }
+  ]
+}
