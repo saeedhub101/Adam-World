@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "import_profile_version": 3,
+  "import_profile_version": 4,
   "city": "London",
   "slug": "london",
   "source": "OpenStreetMap Overpass",
@@ -11,7 +11,7 @@
     "lon": -0.1246
   },
   "radius_m": 650,
-  "element_count": 4620,
+  "element_count": 4632,
   "geometry_layers": [
     "buildings",
     "roads",
