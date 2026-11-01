@@ -91,7 +91,7 @@ jobs:
           NATIVE_REQUIRED=false
           PREVIOUS_RELEASE=$(git tag --list 'adam-world-v*' --sort=-version:refname | head -n 1)
           if [ -n "$PREVIOUS_RELEASE" ]; then CHANGED_FILES=$(git diff --name-only "$PREVIOUS_RELEASE"...HEAD); else CHANGED_FILES=$(git show --format= --name-only HEAD); fi
-          if printf '%s\\n' "$CHANGED_FILES" | grep -Eq '^(app/src/main/java/|app/src/main/AndroidManifest.xml|app/build.gradle|data/offline-world/|data/facades/cities/[^/]+/buildings\\.geojson$)'; then NATIVE_REQUIRED=true; fi
+          if printf '%s\n' "$CHANGED_FILES" | grep -Eq '^(app/src/main/java/|app/src/main/AndroidManifest.xml|app/build.gradle|data/offline-world/|data/facades/cities/[^/]+/buildings[.]geojson$)'; then NATIVE_REQUIRED=true; fi
           echo "NATIVE_REQUIRED=$NATIVE_REQUIRED" >> "$GITHUB_ENV"
           echo "Native APK update required: $NATIVE_REQUIRED"
 
