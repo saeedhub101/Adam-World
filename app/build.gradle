@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application'
 }
 
+def appVersionCode = (project.findProperty("VERSION_CODE") ?: "1").toString().toInteger()
+
 android {
     namespace 'com.explorer.world3d'
     compileSdk 34
@@ -10,8 +12,8 @@ android {
         applicationId "com.explorer.world3d"
         minSdk 24
         targetSdk 34
-        versionCode (project.findProperty("VERSION_CODE") ?: "1").toString().toInteger()
-        versionName "1.0.${versionCode}"
+        versionCode appVersionCode
+        versionName "1.0.${appVersionCode}"
     }
 
     buildTypes {
