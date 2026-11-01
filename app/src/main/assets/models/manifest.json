@@ -11,7 +11,7 @@
       "animated": false,
       "height_m": 1.68,
       "description": "Adult woman, textured clothing and hair; static pose.",
-      "status": "downloaded",
+      "status": "kept",
       "bytes": 17419340,
       "sha256": "1ab2cc1ef30faa3018ac4dd7389e49bd491757299ccc4002911ae871db71cc51"
     },
@@ -24,7 +24,7 @@
       "animated": false,
       "height_m": 1.85,
       "description": "Adult man in clothing; static folded-arms pose.",
-      "status": "downloaded",
+      "status": "kept",
       "bytes": 21742292,
       "sha256": "95b34ac39e8ddea97bdf10d3641cc4fab7f7c260edbbe067447628e3ba0d4e02"
     },
@@ -37,7 +37,7 @@
       "animated": false,
       "height_m": 1.11,
       "description": "Boy, approximately eight years old; static pose.",
-      "status": "downloaded",
+      "status": "kept",
       "bytes": 20928540,
       "sha256": "24e1d91006c764c0f46032049f4861b9004223fdebbf1726d88ac66ff1104dbd"
     },
@@ -50,82 +50,9 @@
       "animated": false,
       "height_m": 1.16,
       "description": "Girl, approximately ten years old; static pose.",
-      "status": "downloaded",
+      "status": "kept",
       "bytes": 20246420,
       "sha256": "3bd968dfb8a8dbcb84aefa80ab806a582b935566917a561bd423633e271aa046"
-    },
-    {
-      "id": "dog",
-      "file": "animals/dog.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/standing-dog-bf156da2",
-      "license": "CC0-1.0",
-      "pose": "standing",
-      "animated": false,
-      "height_m": 0.92,
-      "description": "Medium companion dog; static mesh.",
-      "status": "downloaded",
-      "bytes": 4471976,
-      "sha256": "6b0c04a2a95b7c47c50e87462ac984683bc992fc792338792f2b22cfb14597f2"
-    },
-    {
-      "id": "sedan",
-      "file": "vehicles/sedan.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/sedan-car-42109739",
-      "license": "CC0-1.0",
-      "length_m": 4.7,
-      "animated": false,
-      "description": "Unbranded passenger sedan with glazing, lamps, wheels and trim.",
-      "status": "downloaded",
-      "bytes": 641908,
-      "sha256": "187c9935c40f952837fe2d98200b390415e695196d7b1280c9ec3ebb1bf4961b"
-    },
-    {
-      "id": "pickup",
-      "file": "vehicles/pickup.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/pickup-truck-da45aa3f",
-      "license": "CC0-1.0",
-      "length_m": 5.5,
-      "animated": false,
-      "description": "Unbranded pickup with coachwork, glazing, lamps, wheels and trim.",
-      "status": "downloaded",
-      "bytes": 806552,
-      "sha256": "7b308573a285f95935cff99577c74d2640caa9c481a36cf0a7092d391375f226"
-    },
-    {
-      "id": "bus",
-      "file": "vehicles/city-bus.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/low-floor-city-bus-9e7ce899",
-      "license": "CC0-1.0",
-      "length_m": 12.0,
-      "animated": false,
-      "description": "Low-floor urban bus exterior with doors, glazing and wheel assemblies.",
-      "status": "downloaded",
-      "bytes": 803376,
-      "sha256": "955ba087aa04e8138eeb2ef2f20a0d5596a08175ce1483d3f47b1786216cdf9b"
-    },
-    {
-      "id": "metro_car",
-      "file": "vehicles/metro-car.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/metro-car-22a0c19c",
-      "license": "CC0-1.0",
-      "length_m": 19.0,
-      "animated": false,
-      "description": "Metro passenger rail car; requires mapped railway route and track.",
-      "status": "downloaded",
-      "bytes": 6273784,
-      "sha256": "80e848932447715556aa713c286fc0ba89c7f45f161dd6a26b40ec3eab199093"
-    },
-    {
-      "id": "motorcycle",
-      "file": "vehicles/motorcycle.glb",
-      "page": "https://www.innerscene.com/tools/library/3d-parts/race-replica-superbike-fully-faired-badbd83b",
-      "license": "CC0-1.0",
-      "length_m": 2.05,
-      "animated": false,
-      "description": "Detailed sport motorcycle with fairing, wheels, brakes and chain.",
-      "status": "downloaded",
-      "bytes": 21033196,
-      "sha256": "f87fa1c62de724335239b0c20329a6b6102ba70c8a009eea8eae88b16751a7b3"
     }
   ],
   "city_profiles": {
