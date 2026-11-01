@@ -482,7 +482,7 @@ function addBuildingArchitecture(P,t,height,id){
   const utilitarian=/garage|garages|shed|hut|carport|warehouse|industrial|storage/.test(kind);
   const balconies=String(t.balcony||t['building:balcony']||'').toLowerCase();
   const allowBalconies=residential||balconies==='yes'||balconies==='true';
-  const robinsonsMall=String(id).replace(/^way\\//,'')==='130532101';
+  const robinsonsMall=String(id)==='130532101';
   const layouts=[];
   let buildingWindowCount=0,buildingBalconyCount=0;
   for(let e=0;e<P.length;e++){
@@ -756,10 +756,17 @@ function addRomanTheatre(){
   }
   const aisles=[[0.43,0.49],[0.94,1.00],[2.14,2.20],[2.65,2.71]];
   for(let row=0;row<rows;row++){
-    const inner=13.5+row*1.08,outer=inner+0.92,y=0.28+row*0.43;
+    const inner=13.5+row*1.08,outer=inner+0.92;
+    const y=0.28+row*0.43+(row>=10?0.85:0)+(row>=21?0.85:0);
     let cursor=a0;
     for(const gap of aisles){if(gap[0]>cursor)band(inner,outer,y,0.42,cursor,gap[0]);cursor=gap[1];}
     if(cursor<a1)band(inner,outer,y,0.42,cursor,a1);
+  }
+  // The two diazomata are broad horizontal circulation terraces separating
+  // the lower, middle and upper seating tiers.
+  for(const row of [10,21]){
+    const r=13.5+row*1.08,y=0.28+row*0.43+(row>=21?0.85:0);
+    band(r-0.08,r+1.72,y+0.08,0.18,a0,a1);
   }
   function meshFrom(pos,mat){const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.computeVertexNormals();g.add(new THREE.Mesh(geo,mat));}
   meshFrom(seatPos,stone);meshFrom(wallPos,cutStone);
