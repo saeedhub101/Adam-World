@@ -8,6 +8,7 @@ on:
       - "tools/facades/fetch_catalogue_metadata.py"
       - "tools/facades/fetch_osm_buildings.py"
       - "tools/facades/build_review_queue.py"
+      - "tools/facades/fetch_kartaview_metadata.py"
       - "tools/facades/prepare_facade_review.py"
       - "tools/facades/tests/**"
       - "data/facades/cities/**/city.json"
@@ -75,6 +76,9 @@ jobs:
           else
             python3 tools/facades/fetch_catalogue_metadata.py --git-checkpoint
           fi
+
+      - name: Discover public KartaView street photos around Tabarbour
+        run: python3 tools/facades/fetch_kartaview_metadata.py --city amman --git-checkpoint
 
       - name: Build per-city facade review queues with strict geometry and licensing gates
         run: python3 tools/facades/build_review_queue.py
