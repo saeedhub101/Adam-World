@@ -440,7 +440,7 @@ function addBuildingArchitecture(P,t,height,id){
   const layouts=[];
   for(let e=0;e<P.length;e++){
     const a=P[e],b=P[(e+1)%P.length],dx=b[0]-a[0],dz=b[1]-a[1];
-    const len=Math.hypot(dx,dz);if(len<3.2)continue;
+    const len=Math.hypot(dx,dz);if(len<3.2){layouts.push({a,b,floors,floorH,windowsByFloor:[]});continue;}
     const tx=dx/len,tz=dz/len,nx=outwardSign*tz,nz=-outwardSign*tx;
     const ax=[tx,0,tz],ay=[0,1,0],az=[nx,0,nz];
     const count=clamp(Math.floor(len/3.25),1,18),spacing=len/count;
