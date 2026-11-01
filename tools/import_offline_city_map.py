@@ -16,7 +16,7 @@ from urllib.error import HTTPError, URLError
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "data" / "facades" / "cities" / "catalog.json"
 OUTPUT = ROOT / "data" / "offline-world"
-IMPORT_PROFILE_VERSION = 3
+IMPORT_PROFILE_VERSION = 4
 ENDPOINTS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
@@ -33,8 +33,10 @@ def query_for(city):
         f'way["building"]{around};'
         f'way["highway"]{around};'
         f'way["leisure"~"park|garden|pitch|playground"]{around};'
-        f'way["landuse"~"grass|forest|recreation_ground|village_green|meadow"]{around};'
-        f'way["natural"~"water|wood|scrub"]{around};'
+        f'way["landuse"~"grass|forest|recreation_ground|village_green|meadow|farmland|orchard|vineyard|plant_nursery|reservoir|basin|salt_pond"]{around};'
+        f'way["natural"~"water|wood|scrub|sand|beach|desert|bare_rock|scree|shingle|rock|heath|wetland|marsh|mud|grassland"]{around};'
+        f'way["landcover"~"trees|scrub|grass|sand|bare_ground"]{around};'
+        f'way["water"]{around};'
         f'way["waterway"="riverbank"]{around};'
         f'node["natural"="tree"]{around};'
         f'node["highway"="street_lamp"]{around};'
