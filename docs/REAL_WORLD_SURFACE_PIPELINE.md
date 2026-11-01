@@ -97,3 +97,29 @@ coverage explicitly.
 The Amman offline OSM importer is re-triggered when the city registry radius is
 updated to 2.5 km. It checkpoints completed city extracts to main; Android
 packaging runs after the offline-city import completes.
+
+
+## Landmark reference records
+
+- Amman Roman Theatre front view: Wikimedia Commons file
+  https://commons.wikimedia.org/wiki/File:Amman_Roman_Theater_-_Front_View.jpg
+  by Mervat, photographed 27 September 2024, CC BY-SA 4.0. Used as a visual
+  reference for the three seating tiers, stage frontage and stone character;
+  it is not projected as a detached image or claimed to be a full 3D scan.
+- Robinsons Place Manila from Pedro Gil Street: Wikimedia Commons file
+  https://commons.wikimedia.org/wiki/File:Robinsons_Place_Manila_Pedro_Gil.jpg
+  by Mike Gonzalez (TheCoffee), photographed 28 March 2010, CC BY-SA 3.0.
+  Used as a reference for the mall's pale horizontal facade bands and roofline
+  sign. Because it is a perspective photograph from 2010, it is not stretched
+  across the current building mesh as a facade texture.
+- Current mall location and seven-level complex description are cross-checked
+  against the official Robinsons Malls listing:
+  https://robinsonsmalls.com/mall-info/robinsons-place-manila
+- Burj Khalifa's OSM footprint identifies the exact landmark outline and records
+  828 m maximum height, 163 levels and glass construction material. The runtime
+  model uses those mapped measurements and a stepped three-wing Y-shaped tower
+  form; no unlicensed exterior photograph is embedded.
+
+The above references guide geometry and proportions only. A source image becomes
+a facade texture only after the exact building face, camera direction, current
+appearance and redistribution licence have all been verified.
