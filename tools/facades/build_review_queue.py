@@ -118,6 +118,9 @@ def nearest_footprint_point(capture: tuple[float, float], geom: dict[str, Any]) 
 def reusable_photo_license(value: Any) -> bool:
     if isinstance(value, dict): value = value.get("id") or value.get("name") or value.get("license")
     text = str(value or "").strip().lower().replace("_", "-").replace(" ", "-")
+    if "creativecommons.org/publicdomain/zero" in text: text = "cc0"
+    elif "creativecommons.org/licenses/by-sa/" in text: text = "cc-by-sa"
+    elif "creativecommons.org/licenses/by/" in text: text = "cc-by"
     if any(token in text for token in ("noncommercial", "non-commercial", "-nc", "no-derivatives", "-nd", "all-rights-reserved", "proprietary")):
         return False
     return any(token in text for token in ("cc0", "public-domain", "cc-by", "cc-by-sa"))
