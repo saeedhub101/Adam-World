@@ -27,5 +27,20 @@
     "barriers",
     "bridges"
   ],
-  "stored_as": "data/offline-world/manila/elements.json"
+  "stored_as": "data/offline-world/manila/elements.json",
+  "microsoft_footprints_version": "2026-08-13",
+  "microsoft_footprints_complete": true,
+  "microsoft_footprints_status": "imported",
+  "microsoft_footprints_tiles": 1,
+  "microsoft_footprints_added": 55,
+  "microsoft_footprints_license": "CDLA-Permissive-2.0",
+  "microsoft_footprints_imagery_years": "2014-2024",
+  "microsoft_footprints_tile_index": [
+    {
+      "quadkey": "132303122",
+      "location": "Asia",
+      "url": "https://bfppub.z5.web.core.windows.net/2026-08-13/global-buildings.geojsonl/RegionName=Asia/quadkey=132303122/part-00097-110f5303-ff85-4c71-a2bf-c6070024fec8.c000.csv.gz",
+      "upload_date": "2026-08-13"
+    }
+  ]
 }
