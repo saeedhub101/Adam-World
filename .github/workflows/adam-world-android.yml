@@ -106,6 +106,9 @@ jobs:
       - name: Compile facade pipeline tools
         run: python3 -m py_compile tools/facades/*.py tools/facades/tests/*.py
 
+      - name: Install free local computer-vision test dependencies
+        run: python3 -m pip install --disable-pip-version-check numpy opencv-python-headless
+
       - name: Test global facade candidate discovery
         run: python3 -m unittest discover -s tools/facades/tests -v
 
