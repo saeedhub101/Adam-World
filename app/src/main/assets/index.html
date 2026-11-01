@@ -506,7 +506,7 @@ async function addStaticPedestrians(slug){
   const loaded={};
   await Promise.all([...walkingKeys,...standingKeys,'dog'].map(async key=>{try{await loadWorldModel(key);loaded[key]=true;}catch(e){loaded[key]=false;console.warn('Crowd GLB unavailable',key,e);}}));
   const availableWalkers=walkingKeys.filter(k=>loaded[k]);
-  for(let i=0;i<10&&availableWalkers.length;i++){
+  for(let i=0;i<6&&availableWalkers.length;i++){
     const pp=pedPaths[Math.floor(Math.random()*pedPaths.length)];
     const distance=Math.random()*Math.max(0.1,pp.path.total-0.5);
     const side=pp.veh?(pp.w/2+1.5)*(Math.random()<0.5?-1:1):(Math.random()-0.5)*0.8;
@@ -519,7 +519,7 @@ async function addStaticPedestrians(slug){
     }catch(e){console.warn('Could not create animated pedestrian',e);}
   }
   const availableStanding=standingKeys.filter(k=>loaded[k]);
-  for(let i=0;i<8&&availableStanding.length;i++){
+  for(let i=0;i<6&&availableStanding.length;i++){
     const pp=pedPaths[Math.floor(Math.random()*pedPaths.length)];
     const distance=Math.random()*Math.max(0.1,pp.path.total-0.5);
     const side=pp.veh?(pp.w/2+1.5)*(Math.random()<0.5?-1:1):(Math.random()-0.5)*0.8;
@@ -534,7 +534,7 @@ async function addStaticPedestrians(slug){
     }catch(e){console.warn('Could not place standing person',e);}
   }
   if(loaded.dog){
-    for(let i=0;i<2;i++){
+    for(let i=0;i<1;i++){
       const pp=pedPaths[Math.floor(Math.random()*pedPaths.length)];
       const p=posAt(pp.path,Math.random()*Math.max(0.1,pp.path.total-0.5),pp.veh?pp.w/2+2.2:1.1);
       if(blocked(p.x,p.z,0.3))continue;
