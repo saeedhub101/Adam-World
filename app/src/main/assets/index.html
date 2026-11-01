@@ -398,7 +398,8 @@ function addArchitecturalMesh(target,material){
   g.setAttribute('position',new THREE.Float32BufferAttribute(target,3));
   g.computeVertexNormals();cityGroup.add(new THREE.Mesh(g,material));
 }
-let architecturalWindowCount=0,architecturalBalconyCount=0;\nfunction addBuildingArchitecture(P,t,height,id){
+let architecturalWindowCount=0,architecturalBalconyCount=0;
+function addBuildingArchitecture(P,t,height,id){
   const area=polyArea(P),outwardSign=area>=0?1:-1;
   const levelsRaw=parseFloat(t['building:levels']);
   const floors=clamp(Number.isFinite(levelsRaw)&&levelsRaw>0?Math.round(levelsRaw):Math.round(height/3.2),1,24);
@@ -407,8 +408,6 @@ let architecturalWindowCount=0,architecturalBalconyCount=0;\nfunction addBuildin
   const residential=/apartments|residential|house|detached|semidetached|terrace|dormitory/.test(kind);
   const balconies=String(t.balcony||t['building:balcony']||'').toLowerCase();
   const allowBalconies=residential||balconies==='yes'||balconies==='true';
-  const windowRaw=String(t['window:colour']||t['window:color']||'').toLowerCase();
-  const glassColor=windowRaw.includes('green')?0x587f70:windowRaw.includes('brown')?0x806d58:0x557b94;
   // Keep materials stable and reusable; only geometry is unique per building.
   const edgeCount=P.length;
   for(let e=0;e<edgeCount;e++){
@@ -426,6 +425,7 @@ let architecturalWindowCount=0,architecturalBalconyCount=0;\nfunction addBuildin
       const cy=base+Math.min(floorH*0.58,Math.max(1.15,floorH*0.56));
       if(cy+wh/2>height-0.12)continue;
       for(let wi=0;wi<count;wi++){
+        if(architecturalWindowCount>=7000)break;
         const along=-len/2+(wi+0.5)*spacing;
         const c=[mid[0]+tx*along+nx*0.055,cy,mid[2]+tz*along+nz*0.055];
         const fw=0.065,fd=0.10;
@@ -439,14 +439,16 @@ let architecturalWindowCount=0,architecturalBalconyCount=0;\nfunction addBuildin
           const q=[c[0],c[1]+side*(wh/2-fw/2),c[2]];
           pushArchBox(archAcc.frame,q,ax,ay,az,ww,fw,fd);
         }
-        architecturalWindowCount++;\n        const pane=[c[0]+nx*0.035,c[1],c[2]+nz*0.035];
+        architecturalWindowCount++;
+        const pane=[c[0]+nx*0.035,c[1],c[2]+nz*0.035];
         pushArchBox(archAcc.glass,pane,ax,ay,az,Math.max(0.35,ww-2*fw),Math.max(0.45,wh-2*fw),0.035);
         const sill=[c[0]+nx*0.09,c[1]-wh/2-0.035,c[2]+nz*0.09];
         pushArchBox(archAcc.sill,sill,ax,ay,az,ww+0.22,0.10,0.22);
         // Balcony slabs, front rails and vertical balusters are separate 3D geometry.
         const balconyEvery=(count>5?3:2);
         const hasBalcony=allowBalconies&&fl>0&&wi%balconyEvery===0&&ww>=0.95;
-        if(hasBalcony&&architecturalBalconyCount<1800){\n          architecturalBalconyCount++;
+        if(hasBalcony&&architecturalBalconyCount<1800){
+          architecturalBalconyCount++;
           const bc=[c[0]+nx*0.52,base+0.13,c[2]+nz*0.52];
           pushArchBox(archAcc.balcony,bc,ax,ay,az,Math.min(2.15,spacing*0.82),0.16,1.02);
           const bw=Math.min(2.05,spacing*0.78),railY=base+1.12,front=[c[0]+nx*1.00,railY,c[2]+nz*1.00];
