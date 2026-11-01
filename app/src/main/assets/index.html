@@ -772,8 +772,8 @@ function addRomanTheatre(){
   meshFrom(seatPos,stone);meshFrom(wallPos,cutStone);
   // Individual cut-stone seats follow the actual hillside height field.
   let seatTotal=0;
-  for(let row=0;row<rows;row++){const r=13.5+row*1.08+0.46;seatTotal+=Math.floor((a1-a0)*r/0.45);}
-  const seatMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(0.44,0.34,0.86),stone,seatTotal);
+  for(let row=0;row<rows;row++){const r=13.5+row*1.08+0.46;seatTotal+=Math.floor((a1-a0)*r/0.42);}
+  const seatMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(0.40,0.34,0.86),stone,seatTotal);
   const seatDummy=new THREE.Object3D();let seatIndex=0;
   for(let row=0;row<rows;row++){
     const r=13.5+row*1.08+0.46,y=0.28+row*0.12+(row>=10?0.55:0)+(row>=21?0.55:0);
