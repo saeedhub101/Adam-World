@@ -39,7 +39,7 @@ paid API or runtime remote map/model dependency is introduced.
 | Rivers and streams | Renderer supports OSM linear waterway features as terrain-following ribbons and swimming zones. The current OSM import query does not yet fetch river/stream/canal ways (it fetches riverbank polygons), so source coverage is not complete. | Renderer implemented; data pending |
 | Water polygons | OSM water bodies are rendered and recorded for water interaction. | Implemented |
 | Water appearance | Added a tiled moving surface pattern to the water material. | Implemented |
-| Swimming interaction | Player movement slows in mapped water and the rig enters a simple paddling pose. | Basic interaction implemented |
+| Swimming interaction | Player movement slows in mapped water, the rig paddles and the visible full-body Adam cutout tilts into a horizontal floating pose. | Basic interaction implemented |
 | Waterfalls | Renderer supports OSM nodes explicitly tagged `waterway=waterfall` or `natural=waterfall`. The current OSM import query does not yet include those nodes. | Renderer implemented; data pending |
 | Traffic lights | Mapped signal nodes now cycle green/amber/red. | Implemented |
 | Vehicle response | NPC vehicles brake when an active signal is ahead on their road approach and resume on green. | Basic signal response implemented |
@@ -51,6 +51,12 @@ Relevant implementation commits:
 - `e09e4f608ffd5856eae097aa27bb1792434d1c20` — water polygon ring handling.
 - `2de98a1cd15358784affac53685b5fe8a6305700` — limestone theatre texture, water interaction, traffic signal cycles and mapped waterfalls.
 - `7a845c8bbc15ec8b57941029502112ee92398773` — car road-width data for signal approach detection.
+- `40cbbf9e28df10e42eaacfb87f20906cea0a67f1` — fill sparse DEM voids while retaining source coverage.
+- `f82602ce21153ed3512e8a5b4c6a54927988c63d` — validate original DEM coverage after nodata filling.
+- `b91191c6977caa6968b57765f0c9b812aece5d13` — require all ten DEM assets inside the signed APK.
+- `9ae2307f0cb7092724e6a7bd1fb511c6408c5113` — varied sedan/SUV/van geometry and articulated pedestrian variants.
+- `05e708959c667f429422dc83970dc8f9cb688108` — align NPC forearms and hands.
+- `b19b0fb380ba7553ed06f0b47ea69aa6133e4345` — visible Adam cutout swimming pose.
 
 ## All-city elevation import — completed
 
