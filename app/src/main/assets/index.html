@@ -237,6 +237,21 @@ let offlineCityCatalog=null;
 let activeOfflineCity=null;
 const OFFLINE_TILE_RADIUS=2; // 5x5 tiles around the player; only local assets are read.
 const OFFLINE_TILE_SIZE=250;
+const offlineTileCache=new Map();
+const OFFLINE_TILE_CACHE_LIMIT=64;
+async function readOfflineTile(slug,tile){
+  const key=slug+'/'+tile.file;
+  if(offlineTileCache.has(key)){
+    const cached=offlineTileCache.get(key);
+    offlineTileCache.delete(key);offlineTileCache.set(key,cached);
+    return cached;
+  }
+  const payload=await readOfflineJson('cities/'+key);
+  offlineTileCache.set(key,payload);
+  while(offlineTileCache.size>OFFLINE_TILE_CACHE_LIMIT)
+    offlineTileCache.delete(offlineTileCache.keys().next().value);
+  return payload;
+}
 function offlineDistance(a,b){
   const dy=(a.lat-b.lat)*111132;
   const dx=(a.lon-b.lon)*111320*Math.cos((a.lat+b.lat)*Math.PI/360);
@@ -284,7 +299,7 @@ async function loadOfflineArea(lat,lon){
   if(!nearby.length)throw new Error('لا توجد قطاعات مبانٍ محلية حول هذا الموقع في '+selected.name);
   const elements=[];
   for(const tile of nearby){
-    const payload=await readOfflineJson('cities/'+selected.slug+'/'+tile.file);
+    const payload=await readOfflineTile(selected.slug,tile);
     if(payload&&Array.isArray(payload.elements))elements.push(...payload.elements);
   }
   if(!elements.length)throw new Error('القطاعات المحلية فارغة حول الموقع الحالي');
