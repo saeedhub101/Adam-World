@@ -84,6 +84,10 @@ jobs:
             https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/js/loaders/GLTFLoader.js \
             --output app/src/main/assets/vendor/GLTFLoader.js
           test -s app/src/main/assets/vendor/GLTFLoader.js
+          curl --fail --location --retry 3 --retry-delay 2 \
+            https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/js/utils/SkeletonUtils.js \
+            --output app/src/main/assets/vendor/SkeletonUtils.js
+          test -s app/src/main/assets/vendor/SkeletonUtils.js
 
       - name: Package offline city tiles into the APK
         run: python3 tools/build_offline_city_tiles.py
@@ -97,7 +101,7 @@ jobs:
           from pathlib import Path
           with zipfile.ZipFile('app/build/updates/adam-world-web-update.zip', 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as z:
               root = Path('app/src/main/assets')
-              for rel in ['index.html', 'vendor/three.min.js', 'vendor/GLTFLoader.js']:
+              for rel in ['index.html', 'vendor/three.min.js', 'vendor/GLTFLoader.js', 'vendor/SkeletonUtils.js']:
                   z.write(root / rel, rel)
               for p in sorted((root / 'models').rglob('*')):
                   if p.is_file():
@@ -163,6 +167,7 @@ jobs:
           jarsigner -verify -verbose -certs "$AAB" >/tmp/adam-world-aab-signature.txt
           grep -q 'assets/vendor/three.min.js' <(unzip -l "$APK")
           grep -q 'assets/vendor/GLTFLoader.js' <(unzip -l "$APK")
+          grep -q 'assets/vendor/SkeletonUtils.js' <(unzip -l "$APK")
           grep -q 'assets/models/manifest.json' <(unzip -l "$APK")
           python3 - <<'PY'
           import json
