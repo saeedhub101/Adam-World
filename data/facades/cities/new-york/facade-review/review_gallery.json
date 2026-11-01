@@ -4,7 +4,7 @@
   "policy": "Image decode, minimum dimensions, camera geometry and licence are machine-filtered. Exact depicted-building identity remains unverified until visual inspection.",
   "eligible_building_candidates": 15,
   "downloaded_valid_images": 15,
-  "downloaded_hd_images": 10,
+  "downloaded_hd_images": 8,
   "failed_or_rejected_images": 0,
   "items": [
     {
@@ -838,7 +838,7 @@
       "target_bearing_deg": 238.15,
       "photo_id": "76f9d890-27ef-4593-b9a1-7375872a4090",
       "image": "images/76f9d890-27ef-4593-b9a1-7375872a4090.jpg",
-      "hd_image": "full/76f9d890-27ef-4593-b9a1-7375872a4090.jpg",
+      "hd_image": null,
       "width": 500,
       "height": 375,
       "distance_m": 17.88,
@@ -921,7 +921,7 @@
       "target_bearing_deg": 208.95,
       "photo_id": "8d87e316-2bfc-413d-9eb7-688cb7b11d1d",
       "image": "images/8d87e316-2bfc-413d-9eb7-688cb7b11d1d.jpg",
-      "hd_image": "full/8d87e316-2bfc-413d-9eb7-688cb7b11d1d.jpg",
+      "hd_image": null,
       "width": 500,
       "height": 375,
       "distance_m": 10.65,
