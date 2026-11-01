@@ -507,7 +507,7 @@ function addFacadePhotoProjection(item, footprint, height) {
     geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
     geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
     geometry.setIndex(indices);geometry.computeVertexNormals();
-    const source='facades/'+String(item.local_image||'').replace(/^\\/+/, '');
+    const source='facades/'+String(item.local_image||'').replace(/^\/+/, '');
     if(!source.startsWith('facades/verified/')){geometry.dispose();return;}
     const texture=facadeTextureLoader.load(source,()=>{},undefined,()=>{});
     texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=aniso;texture.wrapS=THREE.ClampToEdgeWrapping;texture.wrapT=THREE.ClampToEdgeWrapping;
@@ -566,7 +566,7 @@ async function loadArea(lat,lon,spawn){
       if(P.length<3||Math.abs(polyArea(P))<10)continue;
       bcount++;
       const h=bHeight(t,el.id);
-      const osmWayId=String(el.id).replace(/^way\\//,'');
+      const osmWayId=String(el.id).replace(/^way\//,'');
       const facadeAssignment=facadeAssignments.get(osmWayId);
       if(facadeAssignment)addFacadePhotoProjection(facadeAssignment,P,h);
       const acc=B;
