@@ -157,15 +157,20 @@ def main():
     dirs = [args.cities_root / args.city] if args.city else sorted(p for p in args.cities_root.iterdir() if p.is_dir())
     totals = {"eligible": 0, "downloaded": 0, "hd_downloaded": 0, "failed": 0}
     for city in dirs:
-        result = process_city(city, args.limit_per_city, args.hd_limit_per_city)
-        for key in totals: totals[key] += result.get(key, 0)
-        if args.git_checkpoint:
-            subprocess.run(["git", "add", "-A", "data/facades/cities"], cwd=ROOT, check=True)
-            changed = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0
-            if changed:
-                subprocess.run(["git", "commit", "-m", f"Checkpoint {city.name} facade image review gallery"], cwd=ROOT, check=True)
-                subprocess.run(["git", "pull", "--rebase", "origin", "main"], cwd=ROOT, check=True)
-                subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT, check=True)
+        try:
+            result = process_city(city, args.limit_per_city, args.hd_limit_per_city)
+            for key in totals: totals[key] += result.get(key, 0)
+        except Exception as exc:
+            totals["failed"] += 1
+            print(f"CITY_REVIEW_FAILED {city.name}: {type(exc).__name__}: {exc}")
+        finally:
+            if args.git_checkpoint:
+                subprocess.run(["git", "add", "-A", "data/facades/cities"], cwd=ROOT, check=True)
+                changed = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0
+                if changed:
+                    subprocess.run(["git", "commit", "-m", f"Checkpoint {city.name} facade image review gallery"], cwd=ROOT, check=True)
+                    subprocess.run(["git", "pull", "--rebase", "origin", "main"], cwd=ROOT, check=True)
+                    subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT, check=True)
     print("FACADE_REVIEW_TOTAL " + json.dumps(totals))
 
 if __name__ == "__main__":
