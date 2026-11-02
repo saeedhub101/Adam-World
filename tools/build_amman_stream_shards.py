@@ -119,7 +119,7 @@ def make_elements(feature, layer, part=False):
 class Writer:
     def __init__(self,folder):
         self.folder=folder; folder.mkdir(parents=True,exist_ok=True)
-        self.handles=OrderedDict(); self.cells=set(); self.counts=defaultdict(int)
+        self.handles=OrderedDict(); self.cells=set(); self.counts=defaultdict(int); self.cell_layers=defaultdict(set)
     def add(self,cell,element,layer):
         h=self.handles.pop(cell,None)
         if h is None: h=(self.folder/(cell+".jsonl")).open("a",encoding="utf-8")
@@ -127,7 +127,7 @@ class Writer:
         if len(self.handles)>48:
             _,old=self.handles.popitem(last=False); old.close()
         h.write(json.dumps(element,ensure_ascii=False,separators=(",",":"))+"\n")
-        self.cells.add(cell); self.counts[layer]+=1
+        self.cells.add(cell); self.counts[layer]+=1; self.cell_layers[cell].add(layer)
     def close(self):
         for h in self.handles.values(): h.close()
         self.handles.clear()
@@ -186,6 +186,8 @@ def build():
             print("Processed",layer,path.name,flush=True)
         writer.close()
         if not writer.cells: raise RuntimeError("No renderable Amman features were generated")
+        if "0_0" not in writer.cells or "transport" not in writer.cell_layers["0_0"]:
+            raise RuntimeError("The Roman Theatre start cell (0_0) has no Overture road geometry")
         shard_dir.mkdir(parents=True)
         meta={}
         for cell in sorted(writer.cells,key=lambda q:tuple(map(int,q.split("_")))):
