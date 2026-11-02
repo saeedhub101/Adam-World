@@ -1,0 +1,21 @@
+{
+  "status": "created",
+  "output_path": "data/reference/adam-city/manila/ermita/osm-building-footprints-polygons.geojson",
+  "source_path": "ermita/maps/generated/ermita-building-details.geojson",
+  "source_blob_sha": "7b5ad6fabf0e6e855d2d25ec946f1fdb831ef1ce",
+  "source_feature_count": 1533,
+  "polygon_footprint_count": 1528,
+  "excluded_point_feature_count": 5,
+  "geometry_types": [
+    "Polygon",
+    "MultiPolygon"
+  ],
+  "coordinate_operation": "none; source coordinates preserved verbatim",
+  "attribute_operation": "none; original properties and OSM tags preserved",
+  "license": "OpenStreetMap contributors, ODbL 1.0",
+  "limitations": [
+    "Manila/Ermita coverage only; not an Amman building layer.",
+    "OSM footprints reflect community mapping and may be incomplete or outdated.",
+    "Footprints do not provide facade photographs or measured window/door geometry."
+  ]
+}
