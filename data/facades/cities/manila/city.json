@@ -2,9 +2,9 @@
   "slug": "manila",
   "name": "Manila",
   "center": {
-    "lat": 14.57655,
-    "lon": 120.98105
+    "lat": 14.57394,
+    "lon": 120.98283
   },
   "discovery_radius_m": 900,
-  "notes": "Priority gameplay spawn: Pedro Gil Street at A. Mabini Street, Ermita/Malate, Manila. Robinsons Place Manila is nearby at Pedro Gil and Adriatico; the 900 m window is for importing local OSM footprints and imagery evidence."
+  "notes": "Priority gameplay spawn and import center: the Pedro Gil Street and A. Mabini Street intersection, Barangay 668, Ermita, Manila (14.57394, 120.98283). Robinsons Place Manila is nearby; the 900 m window is for local OSM footprints and imagery evidence."
 }
