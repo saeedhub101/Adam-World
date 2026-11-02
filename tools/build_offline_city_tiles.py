@@ -165,6 +165,37 @@ def _geojson_way_elements(path, only_building_parts=False):
     return output
 
 
+
+def _geojson_transportation_elements(path):
+    """Convert OpenFreeMap/OpenMapTiles road lines and label lines to game ways."""
+    if not path.is_file():
+        return []
+    data=read_json(path)
+    output=[]
+    for feature in data.get("features",[]):
+        props=dict(feature.get("properties") or {})
+        tags=dict(props.get("tags") or {})
+        tags.update({str(k):v for k,v in props.items() if v is not None and k!="tags"})
+        if not tags.get("highway"):
+            continue
+        geom=feature.get("geometry") or {}
+        kind,coords=geom.get("type"),geom.get("coordinates") or []
+        lines=[coords] if kind=="LineString" else (coords if kind=="MultiLineString" else [])
+        raw_id=feature.get("id") or props.get("osm_id") or props.get("osm_way_id") or len(output)
+        seed=str(raw_id)
+        base_id=9_000_000_000+(sum((i+1)*ord(ch) for i,ch in enumerate(seed))%800_000_000)
+        for line_index,line in enumerate(lines):
+            points=[]
+            for point in line:
+                if not isinstance(point,(list,tuple)) or len(point)<2: continue
+                lon,lat=float(point[0]),float(point[1])
+                if math.isfinite(lat) and math.isfinite(lon): points.append({"lat":lat,"lon":lon})
+            if len(points)<2: continue
+            tags_out=dict(tags)
+            tags_out["adam:source_geometry"]="OpenFreeMap/OpenMapTiles"
+            output.append({"type":"way","id":base_id+line_index,"tags":tags_out,"geometry":points})
+    return output
+
 def source_elements(slug):
     # Use the newly imported GeoJSON as the authoritative building geometry.
     # Preserve the rest of the offline OSM world (roads, water, parks, transit),
@@ -217,29 +248,38 @@ def source_elements(slug):
         full = FULL_SOURCE / slug / "elements.json"
         preserved = []
         source_path = f"data/facades/cities/{slug}/building-footprints.geojson"
-        source_kind = "openfreemap-footprints+osm-details"
+        source_kind = "openfreemap-building-footprints+openfreemap-transportation+osm-supplement"
+        transportation_path = SOURCE / slug / "transportation.geojson"
+        primary_roads = _geojson_transportation_elements(transportation_path)
         if full.is_file():
             full_data = read_json(full)
             preserved = [
                 item for item in (full_data.get("elements") or [])
                 if not ((item.get("tags") or {}).get("building") or
-                        (item.get("tags") or {}).get("building:part"))
+                        (item.get("tags") or {}).get("building:part") or
+                        (item.get("type") == "way" and (item.get("tags") or {}).get("highway")))
             ]
             route_file = full.parent / "transit-routes.json"
             if route_file.is_file():
                 route_data = read_json(route_file)
                 preserved.extend(route_data.get("elements") or [])
-                source_kind += "+full-osm-nonbuilding+transit"
+                source_kind += "+osm-nonroad-context+transit"
             else:
-                source_kind += "+full-osm-nonbuilding"
+                source_kind += "+osm-nonroad-context"
             source_path += f" + {full.relative_to(ROOT)}"
+        if transportation_path.is_file():
+            source_path += f" + {transportation_path.relative_to(ROOT)}"
+            source_kind += "+openfreemap-road-geometry-and-labels"
+        else:
+            primary_roads = []
+            source_kind += "+temporary-legacy-osm-road-fallback"
         else:
             # The legacy GeoJSON fallback may contain only buildings; retain
             # it only when there is no complete non-building extract to preserve.
             legacy = SOURCE / slug / "buildings.geojson"
             if legacy.is_file():
                 source_path += f" + {legacy.relative_to(ROOT)}"
-        combined = preserved + footprints + unmatched_buildings + unmatched_parts
+        combined = preserved + primary_roads + footprints + unmatched_buildings + unmatched_parts
         if combined:
             return combined, source_path, source_kind
 
