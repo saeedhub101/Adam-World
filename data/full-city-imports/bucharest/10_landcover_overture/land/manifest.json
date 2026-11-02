@@ -1,0 +1,13 @@
+{
+  "status": "partial",
+  "source": "Overture Maps",
+  "source_type": "land",
+  "parts": [
+    {
+      "file": "part-00001.geojson",
+      "bytes": 32784154,
+      "features": 50802
+    }
+  ],
+  "feature_count": 50802
+}
