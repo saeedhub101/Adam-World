@@ -164,8 +164,7 @@ public class MainActivity extends Activity {
                     c.setConnectTimeout(12000);
                     c.setReadTimeout(18000);
                     c.setRequestProperty("Accept", "application/geo+json, application/json");
-                    c.setRequestProperty("User-Agent", "AdamWorld/1.0 (free OpenStreetMap streaming)");
-                    c.setRequestProperty("User-Agent", "AdamWorld/1.0 (open imagery metadata)");
+                    c.setRequestProperty("User-Agent", "AdamWorld/1.0 (OpenStreetMap and open imagery metadata)");
                     int status = c.getResponseCode();
                     if (status != HttpURLConnection.HTTP_OK) throw new Exception("HTTP " + status);
                     try (InputStream in = c.getInputStream();
@@ -175,7 +174,7 @@ public class MainActivity extends Activity {
                         int n;
                         while ((n = reader.read(buffer)) != -1) {
                             out.append(buffer, 0, n);
-                            if (out.length() > 4 * 1024 * 1024) throw new Exception("استجابة مصدر الصور كبيرة جداً");
+                            if (out.length() > 4 * 1024 * 1024) throw new Exception("استجابة البيانات الجغرافية كبيرة جداً");
                         }
                         payload = out.toString();
                     }
