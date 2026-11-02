@@ -98,8 +98,11 @@ Photorealistic facade texturing remains a separate, evidence-gated production ph
 - Importer: `tools/import_copernicus_terrain.py`; workflow: `.github/workflows/copernicus-terrain-import.yml`; status: `docs/REALISM_REBUILD_STATUS.md`.
 
 
-## Live geographic streaming (2026-11-02)
+## Continuous Libre world with local city replacement (2026-11-02)
 
-- Local APK tiles are preferred whenever the player is inside a stored city coverage area.
-- When the player moves outside stored city coverage, MapLibre continues to render the OpenFreeMap Liberty basemap and its vector-tile roads/labels/buildings. A bounded Overpass request may retrieve building/building-part geometry only as supplementary local 3D content; it does not fetch or replace roads. This requires an internet connection and no API key.
-- Live OSM fallback is strictly building-only. OpenFreeMap/MapLibre remains the road and map base; OSM does not become the road source.
+- OpenFreeMap Liberty / OpenMapTiles is the permanent world base, including outside every locally imported city. It is never treated as a temporary fallback layer.
+- While the player is inside committed local tile coverage, the APK streams the nearby local city tiles into the Three.js world. Local buildings, primary OpenFreeMap/OpenMapTiles roads and labels, and stored non-road context (including mapped water, land cover, trees and transport details) are drawn from those committed assets over the global map. Their rendered local geometry takes precedence wherever it exists; Libre remains visible for features not represented by local assets.
+- The local renderer must not fetch Overpass/OSM geometry to fill missing tiles or to manufacture a second city layer. If a local manifest/tile is absent or unreadable, that sector is Libre-only until committed local data is available. This avoids substituting incomplete live OSM data for the permanent world source.
+- Outside local coverage, the local geometry set is empty and the player continues over the OpenFreeMap Liberty world. Libre supplies roads, water, buildings, labels and all other style layers there.
+- Local coverage is the actual committed tile footprint, not the full municipal boundary. The current city windows are initial imported coverage; expand them by committing additional primary-source/local context tiles, not by broadening a runtime Overpass query.
+- Attribution remains visible: © OpenFreeMap, © OpenMapTiles and © OpenStreetMap contributors (underlying source data).
