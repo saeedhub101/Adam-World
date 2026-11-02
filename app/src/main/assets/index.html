@@ -1662,6 +1662,22 @@ async function loadArea(lat,lon,spawn){
     }
     if(el.type!=='way'||!el.geometry||el.geometry.length<2)continue;
     const raw=el.geometry.map(g=>proj(g.lat,g.lon));
+    if(t['adam:label_only']==='yes'){
+      const line=raw.filter((p,i)=>!i||Math.hypot(p[0]-raw[i-1][0],p[1]-raw[i-1][1])>0.3);
+      if(line.length>=2){
+        const path=makePath(line);
+        const roadName=String(t['name:ar']||t['name:latin']||t['name:en']||t.name||t.ref||'').trim();
+        if(roadName&&path.total>18&&roadLabels.length<600){
+          const copies=Math.min(3,Math.max(1,Math.ceil(path.total/140)));
+          for(let li=0;li<copies;li++){
+            const distance=path.total*(li+1)/(copies+1),p=posAt(path,distance,0);
+            const key=roadName.toLocaleLowerCase()+'|'+Math.round(p.x/60)+','+Math.round(p.z/60);
+            if(!roadLabelKeys.has(key)){roadLabelKeys.add(key);roadLabels.push({name:roadName,path:path,distance:distance,heightOffset:0});}
+          }
+        }
+      }
+      continue;
+    }
     if(t.building&&t.building!=='no'){
       if(bcount>2600)continue;
       const P=[];for(const p of raw){const q=P[P.length-1];if(!q||Math.hypot(p[0]-q[0],p[1]-q[1])>0.05)P.push(p);}
@@ -1743,13 +1759,13 @@ async function loadArea(lat,lon,spawn){
       if(path.total>20&&!isTunnel){
         if(veh)carPaths.push({path:path,w:w,heightOffset:heightOffset,surface:surface,smoothness:smoothness});
         pedPaths.push({path:path,w:w,veh:veh,heightOffset:heightOffset});
-        const roadName=String(t['name:ar']||t['name:en']||t.name||t.official_name||t.loc_name||t.ref||'').trim();
-        if(roadName&&roadLabels.length<240){
+        const roadName=String(t['name:ar']||t['name:latin']||t['name:en']||t.name||t.official_name||t.loc_name||t.ref||'').trim();
+        if(roadName&&roadLabels.length<600){
           const copies=Math.min(3,Math.max(1,Math.ceil(path.total/140)));
           for(let li=0;li<copies;li++){
             const distance=path.total*(li+1)/(copies+1),p=posAt(path,distance,0);
             const key=roadName.toLocaleLowerCase()+'|'+Math.round(p.x/60)+','+Math.round(p.z/60);
-            if(!roadLabelKeys.has(key)){roadLabelKeys.add(key);roadLabels.push({name:roadName,path:path,distance:distance});}
+            if(!roadLabelKeys.has(key)){roadLabelKeys.add(key);roadLabels.push({name:roadName,path:path,distance:distance,heightOffset:heightOffset});}
           }
         }
       }
@@ -1808,21 +1824,21 @@ async function loadArea(lat,lon,spawn){
   addArchitecturalMesh(archAcc.trim,archMats.trim);
   addArchitecturalMesh(archAcc.roof,archMats.roof);
 
-  /* أسماء الشوارع: نصوص مرسومة مباشرة على سطح الطريق وباتجاه مساره */
+  /* أسماء الشوارع من transportation_name: ترفع فوق سطح الطريق لتجنب اختفائها داخل مجسم الطريق */
   for(const item of roadLabels){
     const canvas=cv(512,112),ctx=canvas.getContext('2d');
     const label=String(item.name).replace(/\s+/g,' ').trim();
-    ctx.clearRect(0,0,512,112);ctx.font='bold 64px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.clearRect(0,0,512,112);ctx.font='bold 68px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.direction=/[\u0600-\u06FF]/.test(label)?'rtl':'ltr';ctx.lineJoin='round';ctx.lineWidth=12;
     ctx.strokeStyle='rgba(8,12,16,0.96)';ctx.strokeText(label,256,56,480);
     ctx.fillStyle='rgba(255,255,255,0.98)';ctx.fillText(label,256,56,480);
     const measured=Math.min(480,ctx.measureText(label).width),width=clamp(measured/512*27,9,27);
     const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=aniso;
-    const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-3});
+    const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
     const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,3.1),material);
     const p=posAt(item.path,item.distance,0);let yaw=Math.atan2(-p.dz,p.dx);
     if(yaw>Math.PI/2)yaw-=Math.PI;if(yaw< -Math.PI/2)yaw+=Math.PI;
-    mesh.rotation.order='YXZ';mesh.rotation.set(-Math.PI/2,yaw,0);mesh.position.set(p.x,terrainHeight(p.x,p.z)+0.18,p.z);
+    mesh.rotation.order='YXZ';mesh.rotation.set(-Math.PI/2,yaw,0);mesh.position.set(p.x,terrainHeight(p.x,p.z)+0.48+(item.heightOffset||0),p.z);
     mesh.renderOrder=4;mesh.userData.ownedTexture=texture;mesh.userData.ownedMaterial=true;cityGroup.add(mesh);
   }
 
