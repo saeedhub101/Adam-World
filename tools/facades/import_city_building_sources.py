@@ -237,6 +237,8 @@ def osm_query(b):
   relation["building"]({box});
   way["building:part"]({box});
   relation["building:part"]({box});
+  node["addr:housenumber"]({box});
+  node["addr:housename"]({box});
 );
 out body geom;
 """
@@ -268,16 +270,22 @@ def import_osm_details(city,bbox,refresh,git_checkpoint):
     raw,endpoint=fetch_overpass(osm_query(bbox))
     fc=osm2geojson.json2geojson(raw)
     features=[]
+    address_features=[]
     for f in fc.get("features",[]):
         p=f.get("properties") or {}
         tags=p.get("tags") if isinstance(p.get("tags"),dict) else p
-        if not (tags.get("building") or tags.get("building:part")): continue
-        if not f.get("geometry"): continue
+        geometry=f.get("geometry") or {}
         osm_type=p.get("type") or p.get("osm_type") or "feature"
         osm_id=p.get("id") or p.get("osm_id")
         p=dict(p); p["tags"]=tags
         p["osm_feature_id"]=f"{osm_type}/{osm_id}" if osm_id is not None else f.get("id")
         p["source"]="OpenStreetMap"
+        if geometry.get("type")=="Point" and (tags.get("addr:housenumber") or tags.get("addr:housename")):
+            f["properties"]=p
+            address_features.append(f)
+            continue
+        if not (tags.get("building") or tags.get("building:part")): continue
+        if not geometry: continue
         f["properties"]=p; features.append(f)
     if not features: raise RuntimeError("Overpass returned no building/building-part geometries; old output retained")
     result={"type":"FeatureCollection","name":f"{city.name} OSM building and building-part details",
@@ -287,8 +295,17 @@ def import_osm_details(city,bbox,refresh,git_checkpoint):
         "includes":["building=*","building:part=*","all available OSM tags","polygon geometry"],
         "feature_count":len(features),"features":features}
     atomic_json(out,result)
-    print(f"SAVED {city.name}: {len(features)} OSM building/building-part detail features",flush=True)
+    address_result={
+        "type":"FeatureCollection","name":f"{city.name} OSM address points",
+        "source":"OpenStreetMap Overpass","source_endpoint":endpoint,
+        "source_bounds_wsen":list(bbox),"feature_count":len(address_features),
+        "features":address_features,"attribution":"© OpenStreetMap contributors","license":"ODbL 1.0"
+    }
+    address_out=city/"address-points.geojson"
+    atomic_json(address_out,address_result)
+    print(f"SAVED {city.name}: {len(features)} OSM building/building-part details + {len(address_features)} address points",flush=True)
     if git_checkpoint: checkpoint(out,city)
+    if git_checkpoint: checkpoint(address_out,city)
 
 def main():
     p=argparse.ArgumentParser()
