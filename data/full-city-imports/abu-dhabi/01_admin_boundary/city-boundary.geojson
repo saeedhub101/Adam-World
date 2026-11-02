@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"name": "Abu Dhabi", "source": "configured_bbox_extent (approximate; no exact administrative boundary)", "subtype": null}, "geometry": {"type": "Polygon", "coordinates": [[[54.9, 24.15], [54.9, 24.8], [54.1, 24.8], [54.1, 24.15], [54.9, 24.15]]]}}]}

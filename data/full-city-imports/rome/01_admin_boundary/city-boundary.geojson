@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"name": "Rome", "source": "configured_bbox_extent (approximate; no exact administrative boundary)", "subtype": null}, "geometry": {"type": "Polygon", "coordinates": [[[12.9, 41.7], [12.9, 42.1], [12.15, 42.1], [12.15, 41.7], [12.9, 41.7]]]}}]}

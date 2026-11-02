@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"name": "Petra", "source": "configured_bbox_extent (approximate; no exact administrative boundary)", "subtype": null}, "geometry": {"type": "Polygon", "coordinates": [[[35.62, 30.2], [35.62, 30.5], [35.3, 30.5], [35.3, 30.2], [35.62, 30.2]]]}}]}

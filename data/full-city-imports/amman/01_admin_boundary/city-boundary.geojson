@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"name": "Amman", "source": "configured_bbox_extent (approximate; no exact administrative boundary)", "subtype": null}, "geometry": {"type": "Polygon", "coordinates": [[[36.12, 31.75], [36.12, 32.1], [35.7, 32.1], [35.7, 31.75], [36.12, 31.75]]]}}]}

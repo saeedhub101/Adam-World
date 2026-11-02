@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"name": "Dubai", "source": "configured_bbox_extent (approximate; no exact administrative boundary)", "subtype": null}, "geometry": {"type": "Polygon", "coordinates": [[[55.75, 24.8], [55.75, 25.5], [54.95, 25.5], [54.95, 24.8], [55.75, 24.8]]]}}]}

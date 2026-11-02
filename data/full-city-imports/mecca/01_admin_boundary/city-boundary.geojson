@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"name": "Mecca", "source": "configured_bbox_extent (approximate; no exact administrative boundary)", "subtype": null}, "geometry": {"type": "Polygon", "coordinates": [[[40.1, 21.15], [40.1, 21.8], [39.55, 21.8], [39.55, 21.15], [40.1, 21.15]]]}}]}
