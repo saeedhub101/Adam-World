@@ -131,7 +131,10 @@ final class TileBuilder {
                 addBuilding(td, tags, id, bld, px, pz);
                 int poi = poiCategory(tags);
                 String buildingLabel = poiName(tags);
-                if ((poi > 0) || !buildingLabel.isEmpty())
+                String houseNumber = tg(tags, "addr:housenumber");
+                if (!houseNumber.isEmpty() && !buildingLabel.equals(houseNumber))
+                    buildingLabel = buildingLabel.isEmpty() ? houseNumber : buildingLabel + " · " + houseNumber;
+                if (!buildingLabel.isEmpty())
                     addFacadeLabel(td, px, pz, buildingLabel, bMinHeight(tags, bHeight(tags, id, bld)), poi);
             } else if (!hw.isEmpty() && RW.containsKey(hw)) {
                 String nm = tg(tags, "name:ar");
@@ -781,7 +784,7 @@ final class TileBuilder {
     private static void addWaterUtilityLine(TileData td, JSONObject tags, float[] xs, float[] zs) {
         double west=td.ix*Geo.dLon, east=(td.ix+1)*Geo.dLon;
         double south=td.iz*Geo.D_LAT, north=(td.iz+1)*Geo.D_LAT;
-        ArrayList<float[]> pieces=clipLine(xs,zs,Geo.x(west),Geo.x(east),Geo.z(north),Geo.z(south));
+        ArrayList<ArrayList<float[]>> pieces=clipLine(xs,zs,Geo.x(west),Geo.x(east),Geo.z(north),Geo.z(south));
         String substance=tg(tags,"substance"), utility=tg(tags,"utility"), man=tg(tags,"man_made");
         boolean sewer=substance.matches("sewage|wastewater") || utility.matches("sewer|sanitary");
         float width=man.equals("pipeline")?1.15f:man.equals("pumping_station")?3f:1.7f;
@@ -821,6 +824,7 @@ final class TileBuilder {
         if (name.isEmpty()) name=tg(tags,"name");
         if (name.isEmpty()) name=tg(tags,"name:en");
         if (name.isEmpty()) name=tg(tags,"brand");
+        if (name.isEmpty()) name=tg(tags,"addr:housename");
         if (name.isEmpty()) name=tg(tags,"addr:housenumber");
         return name;
     }
@@ -835,7 +839,7 @@ final class TileBuilder {
         GeoBuf sign=td.bufs[B_SIGN];
         sign.box(x,y-1.0f,z,0.12f,2.0f,0.12f,0.25f,0.25f,0.27f);
         sign.box(x,y+0.20f,z,0.95f,0.48f,0.14f,r,g,b);
-        if(name!=null&&!name.trim().isEmpty()&&td.decals.size()<40){
+        if(name!=null&&!name.trim().isEmpty()&&td.decals.size()<64){
             Decal d=new Decal(); d.text=name.trim(); d.x=x; d.z=z; d.dx=1f; d.dz=0f; d.y=y-0.55f; d.vertical=true;
             td.decals.add(d);
         }
@@ -870,7 +874,7 @@ final class TileBuilder {
         sign.v(rx,y+height,rz,1,0,cr,cg,cb); sign.fixTri();
         sign.v(lx,y,lz,0,1,cr,cg,cb); sign.v(rx,y+height,rz,1,0,cr,cg,cb);
         sign.v(lx,y+height,lz,0,0,cr,cg,cb); sign.fixTri();
-        if(name!=null&&!name.trim().isEmpty()&&td.decals.size()<40){
+        if(name!=null&&!name.trim().isEmpty()&&td.decals.size()<64){
             Decal d=new Decal(); d.text=name.trim(); d.x=x; d.z=z; d.dx=dx; d.dz=dz; d.y=y+0.08f; d.vertical=true;
             td.decals.add(d);
         }
