@@ -109,6 +109,7 @@ jobs:
       - name: Build spatially streamed Manila offline data
         run: |
           set -euo pipefail
+          python -m py_compile tools/build_manila_stream_shards.py
           python -m pip install --disable-pip-version-check mapbox-vector-tile
           ADAM_CITY_MANILA_PBF="$GITHUB_WORKSPACE/Adam-City-source/Manila/vector-tiles" python tools/build_manila_stream_shards.py
           test -s data/offline-city-stream/manila/manifest.json
