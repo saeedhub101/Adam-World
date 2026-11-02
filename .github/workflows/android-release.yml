@@ -11,6 +11,8 @@ on:
       - "gradle.properties"
       - "tools/build_amman_stream_shards.py"
       - "data/offline-city-stream/amman/**"
+      - "data/offline-world/manila/**"
+      - "old_app/src/main/assets/data/**"
       - ".github/workflows/android-release.yml"
   workflow_dispatch:
 
@@ -35,6 +37,8 @@ jobs:
             /data/full-city-imports/amman/
             /data/offline-city-stream/amman/
             /data/offline-world/amman/
+            /data/offline-world/manila/
+            /old_app/src/main/assets/data/
             /tools/build_amman_stream_shards.py
             /build.gradle
             /settings.gradle
