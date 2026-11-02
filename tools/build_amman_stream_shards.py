@@ -306,7 +306,15 @@ def add_existing_osm_context(writer, box, shape):
     for path in sources:
         if not path.is_file():
             continue
-        payload=json.loads(path.read_text(encoding="utf-8"))
+        raw=path.read_text(encoding="utf-8")
+        try:
+            payload=json.loads(raw)
+        except json.JSONDecodeError:
+            # Accept partial checkpoints from the previous writer's literal \\n suffix.
+            if raw.endswith("\\n"):
+                payload=json.loads(raw[:-2])
+            else:
+                raise
         for item in payload.get("elements",[]):
             tags=item.get("tags") or {}
             if tags.get("building") or tags.get("building:part"):
