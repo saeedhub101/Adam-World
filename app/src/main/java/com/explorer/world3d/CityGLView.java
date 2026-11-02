@@ -2,7 +2,8 @@ package com.explorer.world3d;
 
 import android.content.Context;
 import android.opengl.GLSurfaceView;
-import android.view.MotionEvent;\nimport android.view.ScaleGestureDetector;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 
 /** سطح الرسم: السحب على الشاشة يدير الكاميرا. */
 public class CityGLView extends GLSurfaceView {
