@@ -127,7 +127,8 @@ final class TileLoader extends Thread {
             synchronized (Terrain.class) {
                 if (!Terrain.ready()) {
                     try {
-                        Terrain.ensure(Geo.lat0, Geo.lon0);
+                        Terrain.ensureRect(Geo.lat0 - 0.00001, Geo.lon0 - 0.00001,
+                                Geo.lat0 + 0.00001, Geo.lon0 + 0.00001);
                         Terrain.setBaseAt(Geo.lat0, Geo.lon0);
                     } catch (IOException ex) {
                         Terrain.demFails++;
