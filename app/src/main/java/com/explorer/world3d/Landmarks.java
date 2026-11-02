@@ -222,8 +222,9 @@ final class Landmarks {
                 b.quad(x00, Terrain.h(x00, z00) + h, z00, x10, Terrain.h(x10, z10) + h, z10,
                         x11, Terrain.h(x11, z11) + h, z11, x01, Terrain.h(x01, z01) + h, z01, cr, cg, cb);
                 // الحاجز الأمامي
-                b.quad(cx + r0 * s0, h - 0.5f, cz + r0 * c0, cx + r0 * s1, h - 0.5f, cz + r0 * c1,
-                        cx + r0 * s1, h, cz + r0 * c1, cx + r0 * s0, h, cz + r0 * c0, cr * 0.9f, cg * 0.9f, cb * 0.9f);
+                float bx0 = cx + r0 * s0, bz0 = cz + r0 * c0, bx1 = cx + r0 * s1, bz1 = cz + r0 * c1;
+                b.quad(bx0, Terrain.h(bx0, bz0) + h - 0.5f, bz0, bx1, Terrain.h(bx1, bz1) + h - 0.5f, bz1,
+                        bx1, Terrain.h(bx1, bz1) + h, bz1, bx0, Terrain.h(bx0, bz0) + h, bz0, cr * 0.9f, cg * 0.9f, cb * 0.9f);
             }
             // الجدران الجانبية عند طرفي نصف الدائرة
             for (int side = -1; side <= 1; side += 2) {
@@ -236,7 +237,8 @@ final class Landmarks {
             float t0 = (float) ((-90 + 6 * k) * d2r), t1 = (float) ((-90 + 6 * (k + 1)) * d2r);
             float xa = cx + RT_OUT * (float) Math.sin(t0), za = cz + RT_OUT * (float) Math.cos(t0);
             float xb = cx + RT_OUT * (float) Math.sin(t1), zb = cz + RT_OUT * (float) Math.cos(t1);
-            b.quad(xa, 0, za, xb, 0, zb, xb, hTop + 3f, zb, xa, hTop + 3f, za, 0.68f, 0.62f, 0.50f);
+            float ya = Terrain.h(xa, za), yb = Terrain.h(xb, zb);
+            b.quad(xa, ya, za, xb, yb, zb, xb, yb + hTop + 3f, zb, xa, ya + hTop + 3f, za, 0.68f, 0.62f, 0.50f);
         }
         // الأوركسترا
         for (int k = 0; k < SEG; k++) {
