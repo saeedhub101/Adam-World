@@ -233,8 +233,11 @@ def read_context(writer):
     data=json.loads(OSM_CONTEXT.read_text(encoding="utf-8")); n=0
     for e in data.get("elements",[]):
         t=e.get("tags") or {}
-        # OSM supplies transport/POI/infrastructure/context, never primary roads or buildings.
-        if t.get("building") or t.get("building:part") or t.get("highway"): continue
+        # OSM supplements POIs, signals, rail/transit, utilities, water and
+        # pedestrian infrastructure; OpenFreeMap remains the primary road source.
+        if t.get("building") or t.get("building:part"): continue
+        if e.get("type")=="way" and t.get("highway") not in ("footway","path","steps","pedestrian","cycleway","bridleway","track","corridor","platform"): 
+            if t.get("highway"): continue
         if e.get("type")=="node":
             if "lat" in e and "lon" in e:
                 writer.add({"type":"node","id":e.get("id"),"lat":e["lat"],"lon":e["lon"],"tags":t},"osm_context"); n+=1
