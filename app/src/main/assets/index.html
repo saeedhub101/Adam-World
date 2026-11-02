@@ -11,7 +11,7 @@
 <script src="vendor/SkeletonUtils.js"></script>
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
-  #worldMap{position:absolute;inset:0;z-index:0;background:#b8c9d3}canvas{display:block;position:absolute;inset:0;z-index:1;touch-action:none}
+  #worldMap{position:absolute;inset:0;z-index:0;background:#b8c9d3;overflow:hidden}#worldMap canvas{display:block;position:absolute;inset:0;z-index:0;touch-action:none}body>canvas{display:block;position:absolute;inset:0;z-index:1;touch-action:none}
   #ui{position:absolute;left:8px;right:8px;top:8px;z-index:5;display:flex;flex-direction:column;gap:6px;pointer-events:none}
   #ui>*{pointer-events:auto}
   .row{display:flex;gap:6px}
@@ -134,14 +134,19 @@ try{
   worldMap.on('error',e=>console.warn('Global map tile/style issue:',e&&e.error?e.error:e));
 }catch(e){console.warn('Global MapLibre initialization failed:',e);}
 function syncGlobalMap(now){
-  if(!worldMap||!worldMapReady||now-lastWorldMapSync<240)return;
+  if(!worldMap||!worldMapReady||now-lastWorldMapSync<70)return;
   lastWorldMapSync=now;
   const tx=S.mode==='drive'?S.cx:S.px,tz=S.mode==='drive'?S.cz:S.pz;
-  const ll=unproj(tx,tz);
-  const distance=S.camDistance*(S.mode==='drive'?1.6:1);
-  const zoom=clamp(17.35-Math.log2(Math.max(3.2,distance)/5.2),12.2,19.2);
-  const pitch=clamp(66-S.camPitch*42,4,68);
-  const bearing=(((-S.camYaw*180/Math.PI)%360)+360)%360;
+  const targetY=terrainHeight(tx,tz)+1.55,target=new THREE.Vector3(tx,targetY,tz),ll=unproj(tx,tz);
+  // Derive MapLibre view from the actual Three.js camera and shared world axes.
+  const dx=camera.position.x-tx,dy=camera.position.y-targetY,dz=camera.position.z-tz;
+  const distance=Math.max(1,camera.position.distanceTo(target)),horizontal=Math.hypot(dx,dz);
+  const pitch=clamp(Math.atan2(horizontal,Math.max(0.001,dy))*180/Math.PI,0,78);
+  const direction=new THREE.Vector3();camera.getWorldDirection(direction);
+  const bearing=((Math.atan2(direction.x,-direction.z)*180/Math.PI)%360+360)%360;
+  const mpp=2*distance*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/Math.max(1,innerHeight);
+  const worldMetersPerPixel=2*Math.PI*6378137*Math.max(0.01,Math.cos(ll[0]*Math.PI/180))/512;
+  const zoom=clamp(Math.log2(worldMetersPerPixel/Math.max(0.01,mpp)),10,20);
   worldMap.jumpTo({center:[ll[1],ll[0]],zoom,pitch,bearing});
 }
 function showRecoverableError(message,title){
@@ -1424,7 +1429,7 @@ function addRomanTheatre(footprint){
   const spanX=maxX-minX,spanZ=maxZ-minZ;
   // Fit the landmark to the complete mapped OSM footprint instead of
   // constraining it to a generic scale that can push sections outside the site.
-  const scaleX=clamp(spanX/96.4,0.40,2.20),scaleZ=clamp(spanZ/81.8,0.40,2.20);
+  const scaleX=clamp((spanX/96.4)*0.96,0.12,2.20),scaleZ=clamp((spanZ/81.8)*0.96,0.12,2.20);
   const anchor=[cx,cz];
   const groundSamples=footprint.map(p=>terrainHeight(p[0],p[1])).filter(Number.isFinite).sort((a,b)=>a-b);
   const base=groundSamples.length?groundSamples[Math.floor(groundSamples.length/2)]:terrainHeight(cx,cz);
@@ -1434,6 +1439,17 @@ function addRomanTheatre(footprint){
   const cutStone=new THREE.MeshLambertMaterial({color:0xc5b08e,map:limestone,side:THREE.DoubleSide});
   const dark=new THREE.MeshLambertMaterial({color:0x30291f});
   const groundAt=(x,z)=>terrainHeight(anchor[0]+x*scaleX,anchor[1]+z*scaleZ)-base+0.22;
+  function insideSiteLocal(x,z){
+    const wx=anchor[0]+x*scaleX,wz=anchor[1]+z*scaleZ;let inside=false;
+    for(let i=0,j=footprint.length-1;i<footprint.length;j=i++){
+      const a=footprint[i],b=footprint[j];
+      if(((a[1]>wz)!==(b[1]>wz))&&(wx<(b[0]-a[0])*(wz-a[1])/(b[1]-a[1])+a[0]))inside=!inside;
+    }
+    return inside;
+  }
+  function boxInsideSite(x,z,w,d){
+    return [[-1,-1],[-1,1],[1,-1],[1,1]].every(([sx,sz])=>insideSiteLocal(x+sx*w/2,z+sz*d/2));
+  }
   function conformBase(mesh,bottomY,allVertices=false){
     const attr=mesh.geometry&&mesh.geometry.attributes&&mesh.geometry.attributes.position;if(!attr)return;
     const v=new THREE.Vector3();
@@ -1482,18 +1498,26 @@ function addRomanTheatre(footprint){
   orchestra.rotation.x=-Math.PI/2;orchestra.position.set(0,groundAt(0,0)+0.18,0);conformBase(orchestra,0,true);g.add(orchestra);
   for(const angle of [0.46,0.97,2.17,2.68])for(let k=0;k<24;k++){
     const r=14+k*1.38,x=Math.cos(angle)*r,z=Math.sin(angle)*r,y=groundAt(x,z)+0.35+k*0.12;
+    if(!boxInsideSite(x,z,1.35,1.18))continue;
     const step=new THREE.Mesh(new THREE.BoxGeometry(1.35,0.22,1.18),cutStone);
     step.position.set(x,y,z);step.rotation.y=Math.PI/2-angle;conformBase(step,-0.11);g.add(step);
   }
-  const stageGround=groundAt(0,-32),stage=new THREE.Mesh(new THREE.BoxGeometry(39,15,3.2),stone);
-  stage.position.set(0,stageGround+7.5,-32);conformBase(stage,-7.5);g.add(stage);
-  const podiumGround=groundAt(0,-31.5),podium=new THREE.Mesh(new THREE.BoxGeometry(43,1.5,5),cutStone);
-  podium.position.set(0,podiumGround+0.75,-31.5);conformBase(podium,-0.75);g.add(podium);
+  if(boxInsideSite(0,-32,39,3.2)){
+    const stageGround=groundAt(0,-32),stage=new THREE.Mesh(new THREE.BoxGeometry(39,15,3.2),stone);
+    stage.position.set(0,stageGround+7.5,-32);conformBase(stage,-7.5);g.add(stage);
+  }
+  if(boxInsideSite(0,-31.5,43,5)){
+    const podiumGround=groundAt(0,-31.5),podium=new THREE.Mesh(new THREE.BoxGeometry(43,1.5,5),cutStone);
+    podium.position.set(0,podiumGround+0.75,-31.5);conformBase(podium,-0.75);g.add(podium);
+  }
   for(let i=0;i<11;i++){
-    const x=-18+i*3.6,colGround=groundAt(x,-29.9),col=new THREE.Mesh(new THREE.CylinderGeometry(0.48,0.62,12.2,12),stone);
+    const x=-18+i*3.6;if(!insideSiteLocal(x,-29.9))continue;
+    const colGround=groundAt(x,-29.9),col=new THREE.Mesh(new THREE.CylinderGeometry(0.48,0.62,12.2,12),stone);
     col.position.set(x,colGround+7.8,-29.9);conformBase(col,-6.1);g.add(col);
-    const cap=new THREE.Mesh(new THREE.BoxGeometry(1.35,0.55,1.35),cutStone);
-    cap.position.set(x,colGround+14.0,-29.9);conformBase(cap,-0.275);g.add(cap);
+    if(boxInsideSite(x,-29.9,1.35,1.35)){
+      const cap=new THREE.Mesh(new THREE.BoxGeometry(1.35,0.55,1.35),cutStone);
+      cap.position.set(x,colGround+14.0,-29.9);conformBase(cap,-0.275);g.add(cap);
+    }
   }
   const entGround=groundAt(0,-30.5),entablature=new THREE.Mesh(new THREE.BoxGeometry(42,1.1,4.1),cutStone);
   entablature.position.set(0,entGround+14.9,-30.5);conformBase(entablature,-0.55);g.add(entablature);
@@ -1504,6 +1528,7 @@ function addRomanTheatre(footprint){
     lintel.position.set(x,lintelGround+7.55,-28.25);conformBase(lintel,-0.325);g.add(lintel);
   }
   for(const side of [-1,1]){
+    if(!boxInsideSite(side*23,-24,7,16))continue;
     const wingGround=groundAt(side*23,-24),wing=new THREE.Mesh(new THREE.BoxGeometry(7,10,16),stone);
     wing.position.set(side*23,wingGround+5,-24);wing.rotation.y=side*0.18;conformBase(wing,-5);g.add(wing);
   }
@@ -1629,7 +1654,7 @@ async function loadArea(lat,lon,spawn){
       const osmWayId=String(el.id).replace(/^way\//,'');
       if(osmWayId==='608094627'){
         romanTheatreFootprint=P;
-        const tx=P.reduce((v,p)=>v+p[0],0)/P.length,tz=P.reduce((v,p)=>v+p[1],0)/P.length,ll=unproj(tx,tz);
+        const [tx,tz]=polygonCentroid(P),ll=unproj(tx,tz);
         const theatre={id:el.id,tags:t,height:h,lat:ll[0],lon:ll[1],name:'Roman Theatre',pts:P,minx:Math.min(...P.map(p=>p[0])),maxx:Math.max(...P.map(p=>p[0])),minz:Math.min(...P.map(p=>p[1])),maxz:Math.max(...P.map(p=>p[1]))};
         bldgs.push(theatre);gridAdd(theatre);continue;
       }
@@ -2130,7 +2155,6 @@ let last=performance.now(),lastCheck=0;
 function frame(now){
   requestAnimationFrame(frame);
   const dt=Math.min((now-last)/1000,0.1);last=now;
-  syncGlobalMap(now);
   if(!bldgs&&!agents)return;
   const mag=loading?0:Math.min(1,Math.hypot(S.sx,S.sy));
   waterTexture.offset.x=(waterTexture.offset.x+dt*0.012)%1;
@@ -2221,6 +2245,8 @@ function frame(now){
   const k=1-Math.exp(-dt*14);
   camera.position.x+=(dx-camera.position.x)*k;camera.position.y+=(Math.max(0.6,dy)-camera.position.y)*k;camera.position.z+=(dz-camera.position.z)*k;
   camera.lookAt(tx,terrainY+th,tz);
+  camera.updateMatrixWorld(true);
+  syncGlobalMap(now);
   sky.position.copy(camera.position);
   ground.position.x=Math.round(camera.position.x/13.3333)*13.3333;ground.position.z=Math.round(camera.position.z/13.3333)*13.3333;
 
