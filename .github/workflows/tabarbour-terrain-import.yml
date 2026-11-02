@@ -44,10 +44,12 @@ jobs:
           set -euo pipefail
           SOURCE="data/facades/cities/tabarbour/elevation-grid.json"
           TARGET="app/src/main/assets/cities/tabarbour/elevation-grid.json"
+          CATALOG_TARGET="app/src/main/assets/cities/catalog.json"
           test -s "$SOURCE"
-          mkdir -p "$(dirname "$TARGET")"
+          mkdir -p "$(dirname "$TARGET")" "$(dirname "$CATALOG_TARGET")"
           cp "$SOURCE" "$TARGET"
-          git add "$TARGET"
+          cp data/facades/cities/catalog.json "$CATALOG_TARGET"
+          git add "$TARGET" "$CATALOG_TARGET"
           if ! git diff --cached --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
