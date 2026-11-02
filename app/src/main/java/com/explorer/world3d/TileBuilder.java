@@ -432,7 +432,6 @@ final class TileBuilder {
         }
         // Architectural plinth: preserve its mapped height as a distinct stone/concrete base band.
         float plinthHeight = measure(tg(tags, "building:plinth:height"));
-        if (!(plinthHeight > 0f)) plinthHeight = measure(tg(tags, "min_height"));
         plinthHeight = Math.max(0f, Math.min(h * 0.35f, plinthHeight));
         // Floor count is taken from source. Height-based inference is only a fallback when absent.
         float floors = measure(tg(tags, "building:levels"));
@@ -448,7 +447,7 @@ final class TileBuilder {
             if (Poly.contains(px, pz, (ax + bx) * 0.5f + nx, (az + bz) * 0.5f + nz)) { nx = -nx; nz = -nz; }
             // A separate, slightly projecting base course makes the plinth legible.
             if (plinthHeight > 0.15f) {
-                float y0a = ground[edge] + minHeight, y0b = ground[next] + minHeight;
+                float y0a = ground[edge], y0b = ground[next];
                 float y1a = y0a + plinthHeight, y1b = y0b + plinthHeight;
                 float off = 0.045f;
                 float pr = 0.58f, pg = 0.55f, pb = 0.49f;
