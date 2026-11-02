@@ -299,6 +299,9 @@ def add_existing_osm_context(writer, box, shape):
     # Do not duplicate primary building or road geometry from the OSM fallback.
     folder=ROOT/"data/offline-world/amman"
     sources=[folder/"elements.json",folder/"transit-routes.json"]
+    # Consume successfully checkpointed Overpass chunks even when a later chunk timed out.
+    sources.extend(sorted((folder/"transport-progress").glob("chunk-*.json")))
+    sources.extend(sorted((folder/"transit-route-progress").glob("chunk-*.json")))
     allowed=("waterway","railway","public_transport","public_transport_route","route","man_made","utility","substance","bus","highway")
     for path in sources:
         if not path.is_file():
