@@ -240,9 +240,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         loader.offlineAmman = offline;
         loader.offlineManila = "manila".equals(offlineCity);
         loader.offlineCitySlug = loader.offlineManila ? null : offlineCity;
-        loader.offlineCells = null;
-        loader.offlineDatasetVersion = null;
-        synchronized (loader.offlineShardCache) { loader.offlineShardCache.clear(); }
+        loader.resetOfflineShardState();
         loader.requested.clear(); loader.failedAt.clear(); loader.ready.clear();
         for (Tile t : tiles.values()) t.release();
         tiles.clear();
