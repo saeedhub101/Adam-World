@@ -85,8 +85,14 @@ evidence-gated production phase.
 
 ## Elevation and terrain conformance (2026-11-01)
 
-- Every registered city now has a committed `elevation-grid.json` generated from free Copernicus DEM GLO-30 COG data. Each grid is 201 × 201 samples over a 3 km radius, with at least 98% valid coverage.
-- `tools/build_offline_city_tiles.py` copies each city's elevation grid into `app/src/main/assets/cities/<city>/` and writes the `elevation_grid` manifest entry. The Android runtime reads this local asset; no elevation service is requested at runtime.
-- The terrain sampler uses the same triangle interpolation as the rendered DEM mesh. It clamps positions outside the raster bounds to the nearest edge height rather than returning zero, and roads, building geometry, the player, NPCs and cars sample the local terrain surface.
-- Rebuild and verify the APK after terrain import; the presence of source grids alone is not proof that an installed build contains them.
+- Amman is the only destination that receives a terrain grid and rendered terrain surface. All other destinations are deliberately flat; their elevation grids are not packaged or imported.
+- The Amman grid remains local and is used only inside its validated coverage. Road ribbons are lifted slightly above the sampled ground to prevent the road surface being hidden by the coarse 30 m elevation mesh.
+- Rebuild and verify the APK after terrain changes; the presence of the source grid alone is not proof that an installed build contains it.
 - Importer: `tools/import_copernicus_terrain.py`; workflow: `.github/workflows/copernicus-terrain-import.yml`; status: `docs/REALISM_REBUILD_STATUS.md`.
+
+
+## Live geographic streaming (2026-11-02)
+
+- Local APK tiles are preferred whenever the player is inside a stored city coverage area.
+- When the player moves outside stored coverage or a local sector is absent, the game requests a bounded 320 m OpenStreetMap Overpass area (buildings, roads, land cover, water and mapped street objects) and rebuilds the nearby scene around the new player position. This requires an internet connection; no API key is used.
+- Live requests are limited to the official public Overpass host, use a 4 MB response cap and do not replace or modify the repository's offline data. The current live fallback is OSM geometry retrieval, not a full OpenFreeMap vector-tile renderer.
