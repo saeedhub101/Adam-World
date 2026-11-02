@@ -91,6 +91,9 @@ jobs:
             --output app/src/main/assets/vendor/SkeletonUtils.js
           test -s app/src/main/assets/vendor/SkeletonUtils.js
 
+      - name: Install free geometry helpers for source-priority packaging
+        run: python3 -m pip install --disable-pip-version-check shapely
+
       - name: Package offline city tiles into the APK
         run: python3 tools/build_offline_city_tiles.py
 
