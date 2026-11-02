@@ -97,6 +97,11 @@ final class TileLoader extends Thread {
 
     void shutdown() { running = false; interrupt(); }
 
+    void resetOfflineShardState() {
+        synchronized (this) { offlineCells = null; offlineDatasetVersion = null; }
+        synchronized (offlineShardCache) { offlineShardCache.clear(); }
+    }
+
     @Override public void run() {
         while (running) {
             try {
