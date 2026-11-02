@@ -1,0 +1,95 @@
+name: Tabarbour Offline Data Import
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/tabarbour-offline-import.yml"
+      - "data/facades/cities/catalog.json"
+      - "data/facades/cities/tabarbour/city.json"
+      - "tools/facades/import_city_building_sources.py"
+      - "tools/build_offline_city_tiles.py"
+      - "tools/extract_tabarbour_osm_context.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tabarbour-offline-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Tabarbour sources and existing Amman OSM context
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          sparse-checkout: |
+            /app/src/main/assets/cities/
+            /data/facades/cities/catalog.json
+            /data/facades/cities/tabarbour/
+            /data/offline-world/amman/
+            /data/offline-world/tabarbour/
+            /tools/facades/import_city_building_sources.py
+            /tools/build_offline_city_tiles.py
+            /tools/extract_tabarbour_osm_context.py
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install GeoJSON and vector-tile parsers
+        run: python -m pip install --disable-pip-version-check mapbox-vector-tile osm2geojson shapely
+
+      - name: Configure incremental repository checkpoints
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Import OpenFreeMap footprints, road geometry and names, and OSM building details
+        continue-on-error: true
+        run: |
+          python -m py_compile tools/facades/import_city_building_sources.py
+          python tools/facades/import_city_building_sources.py --city tabarbour --git-checkpoint
+
+      - name: Extract mapped trees, water, land cover, traffic and other OSM context
+        continue-on-error: true
+        run: |
+          python -m py_compile tools/extract_tabarbour_osm_context.py
+          python tools/extract_tabarbour_osm_context.py
+          git add data/offline-world/tabarbour/
+          if ! git diff --cached --quiet; then
+            git commit -m "Save Tabarbour offline environmental and transit context"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Build compact Tabarbour-only Android spatial assets
+        run: |
+          python -m py_compile tools/build_offline_city_tiles.py
+          rm -rf app/src/main/assets/cities/tabarbour
+          python tools/build_offline_city_tiles.py --city tabarbour
+          test -s app/src/main/assets/cities/tabarbour/manifest.json
+          test "$(find app/src/main/assets/cities/tabarbour -maxdepth 1 -name 'tile_*.json' | wc -l)" -gt 0
+
+      - name: Save Tabarbour Android assets to main
+        run: |
+          git add app/src/main/assets/cities/tabarbour/
+          if ! git diff --cached --quiet; then
+            git commit -m "Package Tabarbour offline spatial data for Android"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Verify required Tabarbour offline source files
+        if: always()
+        run: |
+          test -s data/facades/cities/tabarbour/building-footprints.geojson
+          test -s data/facades/cities/tabarbour/transportation.geojson
+          test -s data/facades/cities/tabarbour/building-details.geojson
+          test -s app/src/main/assets/cities/tabarbour/manifest.json
