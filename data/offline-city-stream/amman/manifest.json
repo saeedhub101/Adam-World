@@ -11,7 +11,7 @@
     "Overture infrastructure",
     "Overture places and addresses"
   ],
-  "dataset_version": "d7569b2de36cbab0",
+  "dataset_version": "c45c2547a2c9c344",
   "origin": {
     "lat": 31.9522646,
     "lon": 35.9389907
@@ -1062,6 +1062,8 @@
     "0_21",
     "0_22",
     "0_23",
+    "0_24",
+    "0_25",
     "1_-28",
     "1_-27",
     "1_-26",
@@ -1105,6 +1107,7 @@
     "1_20",
     "1_21",
     "1_22",
+    "1_25",
     "2_-28",
     "2_-27",
     "2_-26",
@@ -1148,6 +1151,8 @@
     "2_20",
     "2_21",
     "2_22",
+    "2_25",
+    "2_26",
     "3_-29",
     "3_-28",
     "3_-27",
@@ -1191,6 +1196,8 @@
     "3_20",
     "3_21",
     "3_22",
+    "3_25",
+    "3_26",
     "4_-29",
     "4_-28",
     "4_-27",
@@ -1235,6 +1242,7 @@
     "4_20",
     "4_21",
     "4_22",
+    "4_25",
     "5_-29",
     "5_-28",
     "5_-27",
@@ -3837,11 +3845,11 @@
     },
     "-12_-1": {
       "file": "shards/-12_-1.jsonl.gz",
-      "bytes": 108687
+      "bytes": 109978
     },
     "-12_0": {
       "file": "shards/-12_0.jsonl.gz",
-      "bytes": 124005
+      "bytes": 125620
     },
     "-12_1": {
       "file": "shards/-12_1.jsonl.gz",
@@ -3873,11 +3881,11 @@
     },
     "-12_8": {
       "file": "shards/-12_8.jsonl.gz",
-      "bytes": 59123
+      "bytes": 59651
     },
     "-12_9": {
       "file": "shards/-12_9.jsonl.gz",
-      "bytes": 69415
+      "bytes": 69966
     },
     "-12_10": {
       "file": "shards/-12_10.jsonl.gz",
@@ -4001,11 +4009,11 @@
     },
     "-11_-1": {
       "file": "shards/-11_-1.jsonl.gz",
-      "bytes": 114362
+      "bytes": 116356
     },
     "-11_0": {
       "file": "shards/-11_0.jsonl.gz",
-      "bytes": 133113
+      "bytes": 134991
     },
     "-11_1": {
       "file": "shards/-11_1.jsonl.gz",
@@ -4033,15 +4041,15 @@
     },
     "-11_7": {
       "file": "shards/-11_7.jsonl.gz",
-      "bytes": 57287
+      "bytes": 58062
     },
     "-11_8": {
       "file": "shards/-11_8.jsonl.gz",
-      "bytes": 77916
+      "bytes": 78880
     },
     "-11_9": {
       "file": "shards/-11_9.jsonl.gz",
-      "bytes": 46557
+      "bytes": 47079
     },
     "-11_10": {
       "file": "shards/-11_10.jsonl.gz",
@@ -4133,11 +4141,11 @@
     },
     "-10_-9": {
       "file": "shards/-10_-9.jsonl.gz",
-      "bytes": 190376
+      "bytes": 191447
     },
     "-10_-8": {
       "file": "shards/-10_-8.jsonl.gz",
-      "bytes": 181368
+      "bytes": 182409
     },
     "-10_-7": {
       "file": "shards/-10_-7.jsonl.gz",
@@ -4165,11 +4173,11 @@
     },
     "-10_-1": {
       "file": "shards/-10_-1.jsonl.gz",
-      "bytes": 126620
+      "bytes": 127923
     },
     "-10_0": {
       "file": "shards/-10_0.jsonl.gz",
-      "bytes": 132587
+      "bytes": 133439
     },
     "-10_1": {
       "file": "shards/-10_1.jsonl.gz",
@@ -4189,19 +4197,19 @@
     },
     "-10_5": {
       "file": "shards/-10_5.jsonl.gz",
-      "bytes": 85875
+      "bytes": 86517
     },
     "-10_6": {
       "file": "shards/-10_6.jsonl.gz",
-      "bytes": 86162
+      "bytes": 87470
     },
     "-10_7": {
       "file": "shards/-10_7.jsonl.gz",
-      "bytes": 57387
+      "bytes": 58806
     },
     "-10_8": {
       "file": "shards/-10_8.jsonl.gz",
-      "bytes": 50391
+      "bytes": 51235
     },
     "-10_9": {
       "file": "shards/-10_9.jsonl.gz",
@@ -4297,11 +4305,11 @@
     },
     "-9_-9": {
       "file": "shards/-9_-9.jsonl.gz",
-      "bytes": 176947
+      "bytes": 178980
     },
     "-9_-8": {
       "file": "shards/-9_-8.jsonl.gz",
-      "bytes": 164705
+      "bytes": 166799
     },
     "-9_-7": {
       "file": "shards/-9_-7.jsonl.gz",
@@ -4325,23 +4333,23 @@
     },
     "-9_-2": {
       "file": "shards/-9_-2.jsonl.gz",
-      "bytes": 120770
+      "bytes": 121008
     },
     "-9_-1": {
       "file": "shards/-9_-1.jsonl.gz",
-      "bytes": 98803
+      "bytes": 100101
     },
     "-9_0": {
       "file": "shards/-9_0.jsonl.gz",
-      "bytes": 97646
+      "bytes": 98214
     },
     "-9_1": {
       "file": "shards/-9_1.jsonl.gz",
-      "bytes": 67752
+      "bytes": 68984
     },
     "-9_2": {
       "file": "shards/-9_2.jsonl.gz",
-      "bytes": 37665
+      "bytes": 38527
     },
     "-9_3": {
       "file": "shards/-9_3.jsonl.gz",
@@ -4353,15 +4361,15 @@
     },
     "-9_5": {
       "file": "shards/-9_5.jsonl.gz",
-      "bytes": 91717
+      "bytes": 92741
     },
     "-9_6": {
       "file": "shards/-9_6.jsonl.gz",
-      "bytes": 88078
+      "bytes": 89896
     },
     "-9_7": {
       "file": "shards/-9_7.jsonl.gz",
-      "bytes": 76307
+      "bytes": 78279
     },
     "-9_8": {
       "file": "shards/-9_8.jsonl.gz",
@@ -4461,15 +4469,15 @@
     },
     "-8_-9": {
       "file": "shards/-8_-9.jsonl.gz",
-      "bytes": 140260
+      "bytes": 141835
     },
     "-8_-8": {
       "file": "shards/-8_-8.jsonl.gz",
-      "bytes": 144466
+      "bytes": 147395
     },
     "-8_-7": {
       "file": "shards/-8_-7.jsonl.gz",
-      "bytes": 100807
+      "bytes": 101974
     },
     "-8_-6": {
       "file": "shards/-8_-6.jsonl.gz",
@@ -4489,43 +4497,43 @@
     },
     "-8_-2": {
       "file": "shards/-8_-2.jsonl.gz",
-      "bytes": 122002
+      "bytes": 123484
     },
     "-8_-1": {
       "file": "shards/-8_-1.jsonl.gz",
-      "bytes": 103545
+      "bytes": 105825
     },
     "-8_0": {
       "file": "shards/-8_0.jsonl.gz",
-      "bytes": 109548
+      "bytes": 110492
     },
     "-8_1": {
       "file": "shards/-8_1.jsonl.gz",
-      "bytes": 79684
+      "bytes": 80994
     },
     "-8_2": {
       "file": "shards/-8_2.jsonl.gz",
-      "bytes": 41221
+      "bytes": 42588
     },
     "-8_3": {
       "file": "shards/-8_3.jsonl.gz",
-      "bytes": 46085
+      "bytes": 47503
     },
     "-8_4": {
       "file": "shards/-8_4.jsonl.gz",
-      "bytes": 52252
+      "bytes": 53839
     },
     "-8_5": {
       "file": "shards/-8_5.jsonl.gz",
-      "bytes": 87369
+      "bytes": 89508
     },
     "-8_6": {
       "file": "shards/-8_6.jsonl.gz",
-      "bytes": 96352
+      "bytes": 97834
     },
     "-8_7": {
       "file": "shards/-8_7.jsonl.gz",
-      "bytes": 82940
+      "bytes": 83652
     },
     "-8_8": {
       "file": "shards/-8_8.jsonl.gz",
@@ -4621,23 +4629,23 @@
     },
     "-7_-10": {
       "file": "shards/-7_-10.jsonl.gz",
-      "bytes": 82138
+      "bytes": 82957
     },
     "-7_-9": {
       "file": "shards/-7_-9.jsonl.gz",
-      "bytes": 125207
+      "bytes": 126498
     },
     "-7_-8": {
       "file": "shards/-7_-8.jsonl.gz",
-      "bytes": 119925
+      "bytes": 123175
     },
     "-7_-7": {
       "file": "shards/-7_-7.jsonl.gz",
-      "bytes": 94132
+      "bytes": 96150
     },
     "-7_-6": {
       "file": "shards/-7_-6.jsonl.gz",
-      "bytes": 119148
+      "bytes": 121538
     },
     "-7_-5": {
       "file": "shards/-7_-5.jsonl.gz",
@@ -4653,11 +4661,11 @@
     },
     "-7_-2": {
       "file": "shards/-7_-2.jsonl.gz",
-      "bytes": 121120
+      "bytes": 122530
     },
     "-7_-1": {
       "file": "shards/-7_-1.jsonl.gz",
-      "bytes": 117828
+      "bytes": 119234
     },
     "-7_0": {
       "file": "shards/-7_0.jsonl.gz",
@@ -4677,23 +4685,23 @@
     },
     "-7_4": {
       "file": "shards/-7_4.jsonl.gz",
-      "bytes": 42264
+      "bytes": 43367
     },
     "-7_5": {
       "file": "shards/-7_5.jsonl.gz",
-      "bytes": 66451
+      "bytes": 68827
     },
     "-7_6": {
       "file": "shards/-7_6.jsonl.gz",
-      "bytes": 62628
+      "bytes": 65069
     },
     "-7_7": {
       "file": "shards/-7_7.jsonl.gz",
-      "bytes": 50959
+      "bytes": 52473
     },
     "-7_8": {
       "file": "shards/-7_8.jsonl.gz",
-      "bytes": 34128
+      "bytes": 34985
     },
     "-7_9": {
       "file": "shards/-7_9.jsonl.gz",
@@ -4789,11 +4797,11 @@
     },
     "-6_-10": {
       "file": "shards/-6_-10.jsonl.gz",
-      "bytes": 81361
+      "bytes": 82466
     },
     "-6_-9": {
       "file": "shards/-6_-9.jsonl.gz",
-      "bytes": 116126
+      "bytes": 117259
     },
     "-6_-8": {
       "file": "shards/-6_-8.jsonl.gz",
@@ -4801,35 +4809,35 @@
     },
     "-6_-7": {
       "file": "shards/-6_-7.jsonl.gz",
-      "bytes": 117828
+      "bytes": 118805
     },
     "-6_-6": {
       "file": "shards/-6_-6.jsonl.gz",
-      "bytes": 131287
+      "bytes": 133249
     },
     "-6_-5": {
       "file": "shards/-6_-5.jsonl.gz",
-      "bytes": 133476
+      "bytes": 135465
     },
     "-6_-4": {
       "file": "shards/-6_-4.jsonl.gz",
-      "bytes": 129633
+      "bytes": 130379
     },
     "-6_-3": {
       "file": "shards/-6_-3.jsonl.gz",
-      "bytes": 133484
+      "bytes": 134414
     },
     "-6_-2": {
       "file": "shards/-6_-2.jsonl.gz",
-      "bytes": 125316
+      "bytes": 129309
     },
     "-6_-1": {
       "file": "shards/-6_-1.jsonl.gz",
-      "bytes": 122028
+      "bytes": 128065
     },
     "-6_0": {
       "file": "shards/-6_0.jsonl.gz",
-      "bytes": 111000
+      "bytes": 113964
     },
     "-6_1": {
       "file": "shards/-6_1.jsonl.gz",
@@ -4845,11 +4853,11 @@
     },
     "-6_4": {
       "file": "shards/-6_4.jsonl.gz",
-      "bytes": 77789
+      "bytes": 78207
     },
     "-6_5": {
       "file": "shards/-6_5.jsonl.gz",
-      "bytes": 72835
+      "bytes": 73572
     },
     "-6_6": {
       "file": "shards/-6_6.jsonl.gz",
@@ -4857,11 +4865,11 @@
     },
     "-6_7": {
       "file": "shards/-6_7.jsonl.gz",
-      "bytes": 49975
+      "bytes": 51093
     },
     "-6_8": {
       "file": "shards/-6_8.jsonl.gz",
-      "bytes": 44028
+      "bytes": 45155
     },
     "-6_9": {
       "file": "shards/-6_9.jsonl.gz",
@@ -4953,11 +4961,11 @@
     },
     "-5_-10": {
       "file": "shards/-5_-10.jsonl.gz",
-      "bytes": 65062
+      "bytes": 65856
     },
     "-5_-9": {
       "file": "shards/-5_-9.jsonl.gz",
-      "bytes": 97744
+      "bytes": 99387
     },
     "-5_-8": {
       "file": "shards/-5_-8.jsonl.gz",
@@ -4969,31 +4977,31 @@
     },
     "-5_-6": {
       "file": "shards/-5_-6.jsonl.gz",
-      "bytes": 104264
+      "bytes": 105520
     },
     "-5_-5": {
       "file": "shards/-5_-5.jsonl.gz",
-      "bytes": 139466
+      "bytes": 141959
     },
     "-5_-4": {
       "file": "shards/-5_-4.jsonl.gz",
-      "bytes": 143942
+      "bytes": 146942
     },
     "-5_-3": {
       "file": "shards/-5_-3.jsonl.gz",
-      "bytes": 143690
+      "bytes": 144591
     },
     "-5_-2": {
       "file": "shards/-5_-2.jsonl.gz",
-      "bytes": 123665
+      "bytes": 125645
     },
     "-5_-1": {
       "file": "shards/-5_-1.jsonl.gz",
-      "bytes": 117498
+      "bytes": 121474
     },
     "-5_0": {
       "file": "shards/-5_0.jsonl.gz",
-      "bytes": 102509
+      "bytes": 105583
     },
     "-5_1": {
       "file": "shards/-5_1.jsonl.gz",
@@ -5009,11 +5017,11 @@
     },
     "-5_4": {
       "file": "shards/-5_4.jsonl.gz",
-      "bytes": 119810
+      "bytes": 121148
     },
     "-5_5": {
       "file": "shards/-5_5.jsonl.gz",
-      "bytes": 89397
+      "bytes": 90419
     },
     "-5_6": {
       "file": "shards/-5_6.jsonl.gz",
@@ -5025,31 +5033,31 @@
     },
     "-5_8": {
       "file": "shards/-5_8.jsonl.gz",
-      "bytes": 48949
+      "bytes": 50105
     },
     "-5_9": {
       "file": "shards/-5_9.jsonl.gz",
-      "bytes": 37368
+      "bytes": 38408
     },
     "-5_10": {
       "file": "shards/-5_10.jsonl.gz",
-      "bytes": 30093
+      "bytes": 32064
     },
     "-5_11": {
       "file": "shards/-5_11.jsonl.gz",
-      "bytes": 22094
+      "bytes": 23741
     },
     "-5_12": {
       "file": "shards/-5_12.jsonl.gz",
-      "bytes": 24859
+      "bytes": 25905
     },
     "-5_13": {
       "file": "shards/-5_13.jsonl.gz",
-      "bytes": 30074
+      "bytes": 31100
     },
     "-5_14": {
       "file": "shards/-5_14.jsonl.gz",
-      "bytes": 28039
+      "bytes": 29043
     },
     "-5_15": {
       "file": "shards/-5_15.jsonl.gz",
@@ -5133,7 +5141,7 @@
     },
     "-4_-9": {
       "file": "shards/-4_-9.jsonl.gz",
-      "bytes": 48997
+      "bytes": 49892
     },
     "-4_-8": {
       "file": "shards/-4_-8.jsonl.gz",
@@ -5149,31 +5157,31 @@
     },
     "-4_-5": {
       "file": "shards/-4_-5.jsonl.gz",
-      "bytes": 128591
+      "bytes": 130241
     },
     "-4_-4": {
       "file": "shards/-4_-4.jsonl.gz",
-      "bytes": 117932
+      "bytes": 121608
     },
     "-4_-3": {
       "file": "shards/-4_-3.jsonl.gz",
-      "bytes": 129886
+      "bytes": 131865
     },
     "-4_-2": {
       "file": "shards/-4_-2.jsonl.gz",
-      "bytes": 126118
+      "bytes": 128267
     },
     "-4_-1": {
       "file": "shards/-4_-1.jsonl.gz",
-      "bytes": 122547
+      "bytes": 126743
     },
     "-4_0": {
       "file": "shards/-4_0.jsonl.gz",
-      "bytes": 108177
+      "bytes": 111586
     },
     "-4_1": {
       "file": "shards/-4_1.jsonl.gz",
-      "bytes": 127630
+      "bytes": 129292
     },
     "-4_2": {
       "file": "shards/-4_2.jsonl.gz",
@@ -5181,15 +5189,15 @@
     },
     "-4_3": {
       "file": "shards/-4_3.jsonl.gz",
-      "bytes": 109472
+      "bytes": 110786
     },
     "-4_4": {
       "file": "shards/-4_4.jsonl.gz",
-      "bytes": 95005
+      "bytes": 96527
     },
     "-4_5": {
       "file": "shards/-4_5.jsonl.gz",
-      "bytes": 111925
+      "bytes": 112370
     },
     "-4_6": {
       "file": "shards/-4_6.jsonl.gz",
@@ -5217,19 +5225,19 @@
     },
     "-4_12": {
       "file": "shards/-4_12.jsonl.gz",
-      "bytes": 19058
+      "bytes": 20082
     },
     "-4_13": {
       "file": "shards/-4_13.jsonl.gz",
-      "bytes": 22098
+      "bytes": 23150
     },
     "-4_14": {
       "file": "shards/-4_14.jsonl.gz",
-      "bytes": 25149
+      "bytes": 26216
     },
     "-4_15": {
       "file": "shards/-4_15.jsonl.gz",
-      "bytes": 24223
+      "bytes": 25443
     },
     "-4_16": {
       "file": "shards/-4_16.jsonl.gz",
@@ -5313,11 +5321,11 @@
     },
     "-3_-9": {
       "file": "shards/-3_-9.jsonl.gz",
-      "bytes": 29353
+      "bytes": 30994
     },
     "-3_-8": {
       "file": "shards/-3_-8.jsonl.gz",
-      "bytes": 24156
+      "bytes": 24722
     },
     "-3_-7": {
       "file": "shards/-3_-7.jsonl.gz",
@@ -5325,47 +5333,47 @@
     },
     "-3_-6": {
       "file": "shards/-3_-6.jsonl.gz",
-      "bytes": 47232
+      "bytes": 48198
     },
     "-3_-5": {
       "file": "shards/-3_-5.jsonl.gz",
-      "bytes": 111700
+      "bytes": 113128
     },
     "-3_-4": {
       "file": "shards/-3_-4.jsonl.gz",
-      "bytes": 122599
+      "bytes": 123874
     },
     "-3_-3": {
       "file": "shards/-3_-3.jsonl.gz",
-      "bytes": 142711
+      "bytes": 145065
     },
     "-3_-2": {
       "file": "shards/-3_-2.jsonl.gz",
-      "bytes": 151550
+      "bytes": 154005
     },
     "-3_-1": {
       "file": "shards/-3_-1.jsonl.gz",
-      "bytes": 172188
+      "bytes": 174619
     },
     "-3_0": {
       "file": "shards/-3_0.jsonl.gz",
-      "bytes": 169347
+      "bytes": 174287
     },
     "-3_1": {
       "file": "shards/-3_1.jsonl.gz",
-      "bytes": 218598
+      "bytes": 220410
     },
     "-3_2": {
       "file": "shards/-3_2.jsonl.gz",
-      "bytes": 184835
+      "bytes": 185460
     },
     "-3_3": {
       "file": "shards/-3_3.jsonl.gz",
-      "bytes": 122629
+      "bytes": 123992
     },
     "-3_4": {
       "file": "shards/-3_4.jsonl.gz",
-      "bytes": 105137
+      "bytes": 105979
     },
     "-3_5": {
       "file": "shards/-3_5.jsonl.gz",
@@ -5405,19 +5413,19 @@
     },
     "-3_14": {
       "file": "shards/-3_14.jsonl.gz",
-      "bytes": 35016
+      "bytes": 36027
     },
     "-3_15": {
       "file": "shards/-3_15.jsonl.gz",
-      "bytes": 25116
+      "bytes": 26411
     },
     "-3_16": {
       "file": "shards/-3_16.jsonl.gz",
-      "bytes": 19923
+      "bytes": 20521
     },
     "-3_17": {
       "file": "shards/-3_17.jsonl.gz",
-      "bytes": 20293
+      "bytes": 20821
     },
     "-3_18": {
       "file": "shards/-3_18.jsonl.gz",
@@ -5485,11 +5493,11 @@
     },
     "-2_-9": {
       "file": "shards/-2_-9.jsonl.gz",
-      "bytes": 45517
+      "bytes": 47190
     },
     "-2_-8": {
       "file": "shards/-2_-8.jsonl.gz",
-      "bytes": 17482
+      "bytes": 18401
     },
     "-2_-7": {
       "file": "shards/-2_-7.jsonl.gz",
@@ -5497,47 +5505,47 @@
     },
     "-2_-6": {
       "file": "shards/-2_-6.jsonl.gz",
-      "bytes": 83244
+      "bytes": 84297
     },
     "-2_-5": {
       "file": "shards/-2_-5.jsonl.gz",
-      "bytes": 122436
+      "bytes": 123827
     },
     "-2_-4": {
       "file": "shards/-2_-4.jsonl.gz",
-      "bytes": 158621
+      "bytes": 159864
     },
     "-2_-3": {
       "file": "shards/-2_-3.jsonl.gz",
-      "bytes": 218500
+      "bytes": 219319
     },
     "-2_-2": {
       "file": "shards/-2_-2.jsonl.gz",
-      "bytes": 306383
+      "bytes": 307470
     },
     "-2_-1": {
       "file": "shards/-2_-1.jsonl.gz",
-      "bytes": 251020
+      "bytes": 252687
     },
     "-2_0": {
       "file": "shards/-2_0.jsonl.gz",
-      "bytes": 229893
+      "bytes": 234472
     },
     "-2_1": {
       "file": "shards/-2_1.jsonl.gz",
-      "bytes": 273139
+      "bytes": 276223
     },
     "-2_2": {
       "file": "shards/-2_2.jsonl.gz",
-      "bytes": 164776
+      "bytes": 165512
     },
     "-2_3": {
       "file": "shards/-2_3.jsonl.gz",
-      "bytes": 132279
+      "bytes": 133430
     },
     "-2_4": {
       "file": "shards/-2_4.jsonl.gz",
-      "bytes": 119459
+      "bytes": 120216
     },
     "-2_5": {
       "file": "shards/-2_5.jsonl.gz",
@@ -5585,19 +5593,19 @@
     },
     "-2_16": {
       "file": "shards/-2_16.jsonl.gz",
-      "bytes": 17353
+      "bytes": 17885
     },
     "-2_17": {
       "file": "shards/-2_17.jsonl.gz",
-      "bytes": 22217
+      "bytes": 23567
     },
     "-2_18": {
       "file": "shards/-2_18.jsonl.gz",
-      "bytes": 22114
+      "bytes": 23208
     },
     "-2_19": {
       "file": "shards/-2_19.jsonl.gz",
-      "bytes": 16785
+      "bytes": 17772
     },
     "-2_20": {
       "file": "shards/-2_20.jsonl.gz",
@@ -5657,11 +5665,11 @@
     },
     "-1_-9": {
       "file": "shards/-1_-9.jsonl.gz",
-      "bytes": 48124
+      "bytes": 49189
     },
     "-1_-8": {
       "file": "shards/-1_-8.jsonl.gz",
-      "bytes": 31798
+      "bytes": 34497
     },
     "-1_-7": {
       "file": "shards/-1_-7.jsonl.gz",
@@ -5689,31 +5697,31 @@
     },
     "-1_-1": {
       "file": "shards/-1_-1.jsonl.gz",
-      "bytes": 264698
+      "bytes": 267632
     },
     "-1_0": {
       "file": "shards/-1_0.jsonl.gz",
-      "bytes": 268552
+      "bytes": 273757
     },
     "-1_1": {
       "file": "shards/-1_1.jsonl.gz",
-      "bytes": 265676
+      "bytes": 268631
     },
     "-1_2": {
       "file": "shards/-1_2.jsonl.gz",
-      "bytes": 229184
+      "bytes": 230884
     },
     "-1_3": {
       "file": "shards/-1_3.jsonl.gz",
-      "bytes": 147918
+      "bytes": 150218
     },
     "-1_4": {
       "file": "shards/-1_4.jsonl.gz",
-      "bytes": 138802
+      "bytes": 140599
     },
     "-1_5": {
       "file": "shards/-1_5.jsonl.gz",
-      "bytes": 114237
+      "bytes": 115493
     },
     "-1_6": {
       "file": "shards/-1_6.jsonl.gz",
@@ -5765,27 +5773,27 @@
     },
     "-1_18": {
       "file": "shards/-1_18.jsonl.gz",
-      "bytes": 34385
+      "bytes": 35376
     },
     "-1_19": {
       "file": "shards/-1_19.jsonl.gz",
-      "bytes": 26691
+      "bytes": 27963
     },
     "-1_20": {
       "file": "shards/-1_20.jsonl.gz",
-      "bytes": 36427
+      "bytes": 37510
     },
     "-1_21": {
       "file": "shards/-1_21.jsonl.gz",
-      "bytes": 27483
+      "bytes": 28453
     },
     "-1_22": {
       "file": "shards/-1_22.jsonl.gz",
-      "bytes": 13364
+      "bytes": 14483
     },
     "-1_23": {
       "file": "shards/-1_23.jsonl.gz",
-      "bytes": 303
+      "bytes": 517
     },
     "0_-28": {
       "file": "shards/0_-28.jsonl.gz",
@@ -5833,11 +5841,11 @@
     },
     "0_-9": {
       "file": "shards/0_-9.jsonl.gz",
-      "bytes": 26717
+      "bytes": 29353
     },
     "0_-8": {
       "file": "shards/0_-8.jsonl.gz",
-      "bytes": 37742
+      "bytes": 40439
     },
     "0_-7": {
       "file": "shards/0_-7.jsonl.gz",
@@ -5865,31 +5873,31 @@
     },
     "0_-1": {
       "file": "shards/0_-1.jsonl.gz",
-      "bytes": 172969
+      "bytes": 176074
     },
     "0_0": {
       "file": "shards/0_0.jsonl.gz",
-      "bytes": 247399
+      "bytes": 250322
     },
     "0_1": {
       "file": "shards/0_1.jsonl.gz",
-      "bytes": 202362
+      "bytes": 203137
     },
     "0_2": {
       "file": "shards/0_2.jsonl.gz",
-      "bytes": 237605
+      "bytes": 239002
     },
     "0_3": {
       "file": "shards/0_3.jsonl.gz",
-      "bytes": 166058
+      "bytes": 168133
     },
     "0_4": {
       "file": "shards/0_4.jsonl.gz",
-      "bytes": 145703
+      "bytes": 147462
     },
     "0_5": {
       "file": "shards/0_5.jsonl.gz",
-      "bytes": 100220
+      "bytes": 101476
     },
     "0_6": {
       "file": "shards/0_6.jsonl.gz",
@@ -5949,19 +5957,27 @@
     },
     "0_20": {
       "file": "shards/0_20.jsonl.gz",
-      "bytes": 26723
+      "bytes": 27697
     },
     "0_21": {
       "file": "shards/0_21.jsonl.gz",
-      "bytes": 13444
+      "bytes": 14444
     },
     "0_22": {
       "file": "shards/0_22.jsonl.gz",
-      "bytes": 6951
+      "bytes": 8049
     },
     "0_23": {
       "file": "shards/0_23.jsonl.gz",
-      "bytes": 471
+      "bytes": 1434
+    },
+    "0_24": {
+      "file": "shards/0_24.jsonl.gz",
+      "bytes": 1279
+    },
+    "0_25": {
+      "file": "shards/0_25.jsonl.gz",
+      "bytes": 964
     },
     "1_-28": {
       "file": "shards/1_-28.jsonl.gz",
@@ -6009,11 +6025,11 @@
     },
     "1_-9": {
       "file": "shards/1_-9.jsonl.gz",
-      "bytes": 16617
+      "bytes": 18413
     },
     "1_-8": {
       "file": "shards/1_-8.jsonl.gz",
-      "bytes": 41186
+      "bytes": 42981
     },
     "1_-7": {
       "file": "shards/1_-7.jsonl.gz",
@@ -6037,23 +6053,23 @@
     },
     "1_-2": {
       "file": "shards/1_-2.jsonl.gz",
-      "bytes": 235347
+      "bytes": 237629
     },
     "1_-1": {
       "file": "shards/1_-1.jsonl.gz",
-      "bytes": 192590
+      "bytes": 196540
     },
     "1_0": {
       "file": "shards/1_0.jsonl.gz",
-      "bytes": 183659
+      "bytes": 185974
     },
     "1_1": {
       "file": "shards/1_1.jsonl.gz",
-      "bytes": 118486
+      "bytes": 120079
     },
     "1_2": {
       "file": "shards/1_2.jsonl.gz",
-      "bytes": 142287
+      "bytes": 143012
     },
     "1_3": {
       "file": "shards/1_3.jsonl.gz",
@@ -6065,11 +6081,11 @@
     },
     "1_5": {
       "file": "shards/1_5.jsonl.gz",
-      "bytes": 107614
+      "bytes": 109042
     },
     "1_6": {
       "file": "shards/1_6.jsonl.gz",
-      "bytes": 52254
+      "bytes": 52960
     },
     "1_7": {
       "file": "shards/1_7.jsonl.gz",
@@ -6135,6 +6151,10 @@
       "file": "shards/1_22.jsonl.gz",
       "bytes": 5388
     },
+    "1_25": {
+      "file": "shards/1_25.jsonl.gz",
+      "bytes": 1204
+    },
     "2_-28": {
       "file": "shards/2_-28.jsonl.gz",
       "bytes": 4553
@@ -6181,11 +6201,11 @@
     },
     "2_-9": {
       "file": "shards/2_-9.jsonl.gz",
-      "bytes": 22739
+      "bytes": 28378
     },
     "2_-8": {
       "file": "shards/2_-8.jsonl.gz",
-      "bytes": 35451
+      "bytes": 41045
     },
     "2_-7": {
       "file": "shards/2_-7.jsonl.gz",
@@ -6209,15 +6229,15 @@
     },
     "2_-2": {
       "file": "shards/2_-2.jsonl.gz",
-      "bytes": 211919
+      "bytes": 214160
     },
     "2_-1": {
       "file": "shards/2_-1.jsonl.gz",
-      "bytes": 249336
+      "bytes": 252401
     },
     "2_0": {
       "file": "shards/2_0.jsonl.gz",
-      "bytes": 198124
+      "bytes": 199120
     },
     "2_1": {
       "file": "shards/2_1.jsonl.gz",
@@ -6237,11 +6257,11 @@
     },
     "2_5": {
       "file": "shards/2_5.jsonl.gz",
-      "bytes": 111320
+      "bytes": 112125
     },
     "2_6": {
       "file": "shards/2_6.jsonl.gz",
-      "bytes": 54114
+      "bytes": 54890
     },
     "2_7": {
       "file": "shards/2_7.jsonl.gz",
@@ -6307,6 +6327,14 @@
       "file": "shards/2_22.jsonl.gz",
       "bytes": 10308
     },
+    "2_25": {
+      "file": "shards/2_25.jsonl.gz",
+      "bytes": 1043
+    },
+    "2_26": {
+      "file": "shards/2_26.jsonl.gz",
+      "bytes": 491
+    },
     "3_-29": {
       "file": "shards/3_-29.jsonl.gz",
       "bytes": 4553
@@ -6353,11 +6381,11 @@
     },
     "3_-9": {
       "file": "shards/3_-9.jsonl.gz",
-      "bytes": 28130
+      "bytes": 33613
     },
     "3_-8": {
       "file": "shards/3_-8.jsonl.gz",
-      "bytes": 27925
+      "bytes": 33425
     },
     "3_-7": {
       "file": "shards/3_-7.jsonl.gz",
@@ -6409,15 +6437,15 @@
     },
     "3_5": {
       "file": "shards/3_5.jsonl.gz",
-      "bytes": 88343
+      "bytes": 88973
     },
     "3_6": {
       "file": "shards/3_6.jsonl.gz",
-      "bytes": 60190
+      "bytes": 62094
     },
     "3_7": {
       "file": "shards/3_7.jsonl.gz",
-      "bytes": 80640
+      "bytes": 82077
     },
     "3_8": {
       "file": "shards/3_8.jsonl.gz",
@@ -6479,6 +6507,14 @@
       "file": "shards/3_22.jsonl.gz",
       "bytes": 8991
     },
+    "3_25": {
+      "file": "shards/3_25.jsonl.gz",
+      "bytes": 1447
+    },
+    "3_26": {
+      "file": "shards/3_26.jsonl.gz",
+      "bytes": 566
+    },
     "4_-29": {
       "file": "shards/4_-29.jsonl.gz",
       "bytes": 4553
@@ -6529,15 +6565,15 @@
     },
     "4_-9": {
       "file": "shards/4_-9.jsonl.gz",
-      "bytes": 22934
+      "bytes": 26961
     },
     "4_-8": {
       "file": "shards/4_-8.jsonl.gz",
-      "bytes": 19065
+      "bytes": 23070
     },
     "4_-7": {
       "file": "shards/4_-7.jsonl.gz",
-      "bytes": 13883
+      "bytes": 17948
     },
     "4_-6": {
       "file": "shards/4_-6.jsonl.gz",
@@ -6589,15 +6625,15 @@
     },
     "4_6": {
       "file": "shards/4_6.jsonl.gz",
-      "bytes": 73734
+      "bytes": 75179
     },
     "4_7": {
       "file": "shards/4_7.jsonl.gz",
-      "bytes": 70006
+      "bytes": 71426
     },
     "4_8": {
       "file": "shards/4_8.jsonl.gz",
-      "bytes": 67614
+      "bytes": 69037
     },
     "4_9": {
       "file": "shards/4_9.jsonl.gz",
@@ -6654,6 +6690,10 @@
     "4_22": {
       "file": "shards/4_22.jsonl.gz",
       "bytes": 7369
+    },
+    "4_25": {
+      "file": "shards/4_25.jsonl.gz",
+      "bytes": 1126
     },
     "5_-29": {
       "file": "shards/5_-29.jsonl.gz",
@@ -6717,11 +6757,11 @@
     },
     "5_-8": {
       "file": "shards/5_-8.jsonl.gz",
-      "bytes": 51743
+      "bytes": 55714
     },
     "5_-7": {
       "file": "shards/5_-7.jsonl.gz",
-      "bytes": 80839
+      "bytes": 84804
     },
     "5_-6": {
       "file": "shards/5_-6.jsonl.gz",
@@ -6777,15 +6817,15 @@
     },
     "5_7": {
       "file": "shards/5_7.jsonl.gz",
-      "bytes": 85297
+      "bytes": 86681
     },
     "5_8": {
       "file": "shards/5_8.jsonl.gz",
-      "bytes": 122106
+      "bytes": 123990
     },
     "5_9": {
       "file": "shards/5_9.jsonl.gz",
-      "bytes": 102814
+      "bytes": 104716
     },
     "5_10": {
       "file": "shards/5_10.jsonl.gz",
@@ -6885,11 +6925,11 @@
     },
     "6_-9": {
       "file": "shards/6_-9.jsonl.gz",
-      "bytes": 107985
+      "bytes": 110112
     },
     "6_-8": {
       "file": "shards/6_-8.jsonl.gz",
-      "bytes": 133185
+      "bytes": 137164
     },
     "6_-7": {
       "file": "shards/6_-7.jsonl.gz",
@@ -6953,11 +6993,11 @@
     },
     "6_8": {
       "file": "shards/6_8.jsonl.gz",
-      "bytes": 127060
+      "bytes": 129097
     },
     "6_9": {
       "file": "shards/6_9.jsonl.gz",
-      "bytes": 110555
+      "bytes": 112605
     },
     "6_10": {
       "file": "shards/6_10.jsonl.gz",
@@ -7057,11 +7097,11 @@
     },
     "7_-9": {
       "file": "shards/7_-9.jsonl.gz",
-      "bytes": 163466
+      "bytes": 167603
     },
     "7_-8": {
       "file": "shards/7_-8.jsonl.gz",
-      "bytes": 155588
+      "bytes": 159556
     },
     "7_-7": {
       "file": "shards/7_-7.jsonl.gz",
@@ -7229,7 +7269,7 @@
     },
     "8_-9": {
       "file": "shards/8_-9.jsonl.gz",
-      "bytes": 167442
+      "bytes": 171533
     },
     "8_-8": {
       "file": "shards/8_-8.jsonl.gz",
@@ -7393,7 +7433,7 @@
     },
     "9_-9": {
       "file": "shards/9_-9.jsonl.gz",
-      "bytes": 175091
+      "bytes": 179934
     },
     "9_-8": {
       "file": "shards/9_-8.jsonl.gz",
@@ -7569,11 +7609,11 @@
     },
     "10_-9": {
       "file": "shards/10_-9.jsonl.gz",
-      "bytes": 153908
+      "bytes": 154955
     },
     "10_-8": {
       "file": "shards/10_-8.jsonl.gz",
-      "bytes": 175565
+      "bytes": 176503
     },
     "10_-7": {
       "file": "shards/10_-7.jsonl.gz",
@@ -7749,11 +7789,11 @@
     },
     "11_-9": {
       "file": "shards/11_-9.jsonl.gz",
-      "bytes": 174876
+      "bytes": 176144
     },
     "11_-8": {
       "file": "shards/11_-8.jsonl.gz",
-      "bytes": 160201
+      "bytes": 161422
     },
     "11_-7": {
       "file": "shards/11_-7.jsonl.gz",
@@ -8881,7 +8921,7 @@
     "land_use": 2080,
     "water": 877,
     "infrastructure": 1086,
-    "osm_context": 740
+    "osm_context": 3777
   },
-  "shard_count": 1770
+  "shard_count": 1778
 }
