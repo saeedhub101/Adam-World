@@ -9,7 +9,7 @@ on:
       - "build.gradle"
       - "settings.gradle"
       - "gradle.properties"
-      - "tools/build_amman_stream_shards.py"
+      - "tools/build_amman_stream_shards.py"\n      - "tools/build_manila_stream_shards.py"\n      - "data/facades/cities/manila/**"\n      - "data/reference/adam-city/manila/**"\n      - "data/offline-city-stream/manila/**"
       - "data/offline-city-stream/amman/**"
       - "data/offline-world/manila/**"
       - "old_app/src/main/assets/data/**"
@@ -37,7 +37,7 @@ jobs:
             /data/full-city-imports/amman/
             /data/offline-city-stream/amman/
             /data/offline-world/amman/
-            /data/offline-world/manila/
+            /data/offline-world/manila/\n            /data/facades/cities/manila/\n            /data/reference/adam-city/manila/\n            /data/offline-city-stream/manila/\n            /tools/build_manila_stream_shards.py
             /old_app/src/main/assets/data/
             /tools/build_amman_stream_shards.py
             /build.gradle
@@ -85,6 +85,53 @@ jobs:
           done
           if [ "$PUSHED" != true ]; then
             echo "Could not publish Amman shards after five safe retries" >&2
+            exit 1
+          fi
+
+      - name: Fetch only the existing Manila PBF source tiles from Adam-City
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/saeedhub101/Adam-City.git Adam-City-source
+          git -C Adam-City-source sparse-checkout set Manila/vector-tiles
+          test "$(find Adam-City-source/Manila/vector-tiles -type f -name '*.pbf' | wc -l)" -gt 0
+
+      - name: Build spatially streamed Manila offline data
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check mapbox-vector-tile
+          ADAM_CITY_MANILA_PBF="$GITHUB_WORKSPACE/Adam-City-source/Manila/vector-tiles" python tools/build_manila_stream_shards.py
+          test -s data/offline-city-stream/manila/manifest.json
+          test "$(find data/offline-city-stream/manila -type f -name '*.jsonl.gz' | wc -l)" -gt 0
+
+      - name: Save Manila streaming data to main
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          SNAPSHOT="$RUNNER_TEMP/manila-offline-shards"
+          mkdir -p "$SNAPSHOT"
+          cp -a data/offline-city-stream/manila/. "$SNAPSHOT/"
+          PUSHED=false
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf data/offline-city-stream/manila
+            mkdir -p data/offline-city-stream/manila
+            cp -a "$SNAPSHOT/." data/offline-city-stream/manila/
+            git add data/offline-city-stream/manila
+            if git diff --cached --quiet; then
+              PUSHED=true
+              break
+            fi
+            git commit -m "Build spatially streamed Manila offline data"
+            if git push origin HEAD:main; then
+              PUSHED=true
+              break
+            fi
+            echo "Main advanced during Manila shard publish; retrying (attempt $attempt)"
+          done
+          if [ "$PUSHED" != true ]; then
+            echo "Could not publish Manila shards after five safe retries" >&2
             exit 1
           fi
 
