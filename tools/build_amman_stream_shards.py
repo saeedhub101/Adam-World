@@ -68,6 +68,19 @@ def points(coords, closed=False):
     if closed and len(out)>=3 and (out[0]["lat"]!=out[-1]["lat"] or out[0]["lon"]!=out[-1]["lon"]): out.append(dict(out[0]))
     return out
 
+def poi_tags(category, props):
+    c=(category or "").lower()
+    if c in ("hospital","healthcare","medical_centre"): return {"amenity":"hospital"}
+    if c in ("clinic","doctors","dentist","medical_clinic"): return {"amenity":"clinic"}
+    if c in ("restaurant","fast_food","food_court"): return {"amenity":"restaurant"}
+    if c in ("cafe","coffee_shop","coffee"): return {"amenity":"cafe"}
+    if c in ("hotel","motel","hostel","guest_house"): return {"tourism":"hotel"}
+    if c in ("mall","shopping_mall","shopping_centre"): return {"shop":"mall"}
+    if c in ("supermarket","convenience","department_store","retail","store"): return {"shop":c}
+    for key in ("amenity","shop","tourism","office"):
+        if props.get(key): return {key:val(props[key]).lower()}
+    return {}
+
 def make_elements(feature, layer, part=False):
     p=feature.get("properties") or {}; g=feature.get("geometry") or {}; kind=g.get("type")
     raw=feature.get("id") or p.get("id") or p.get("source_id") or "feature"
@@ -81,6 +94,18 @@ def make_elements(feature, layer, part=False):
                 "facade_material":"building:material","facade_color":"building:colour"}
         for src,dst in fields.items():
             if p.get(src) is not None: tags[dst]=val(p[src])
+        nm=name_value(p.get("names") or p.get("name"))
+        if nm: tags["name"]=nm
+        address=p.get("address") or p.get("addresses")
+        if isinstance(address,dict):
+            number=val(address.get("number") or address.get("house_number") or address.get("houseNumber"))
+            if number: tags["addr:housenumber"]=number
+        # Preserve OSM-derived activity tags embedded in Overture source_tags.
+        for pair in p.get("source_tags") or []:
+            if isinstance(pair,(list,tuple)) and len(pair)>=2 and pair[0] in ("amenity","shop","tourism","office","name","addr:housenumber"):
+                if pair[1] is not None: tags[str(pair[0])]=val(pair[1])
+        for key in ("amenity","shop","tourism","office"):
+            if p.get(key) is not None: tags[key]=val(p[key])
         if p.get("is_underground") is True: tags["location"]="underground"
         return [{"type":"way","id":sid(raw,i),"tags":tags,"geometry":pts}
                 for i,ring in enumerate(polygon_rings(g)) if len(pts:=points(ring,True))>=4]
@@ -103,10 +128,42 @@ def make_elements(feature, layer, part=False):
         return [{"type":"way","id":sid(raw,i),"tags":tags,"geometry":pts}
                 for i,line in enumerate(line_parts(g)) if len(pts:=points(line))>=2]
     value=val(p.get("class") or p.get("subtype") or p.get("value")).lower()
+    source_tags={}
+    for pair in p.get("source_tags") or []:
+        if isinstance(pair,(list,tuple)) and len(pair)>=2: source_tags[str(pair[0])]=val(pair[1]).lower()
+    if layer=="place":
+        category=val(p.get("primary_category") or p.get("category") or p.get("class")).lower()
+        categories=p.get("categories") or []
+        if not category and categories: category=val(categories[0]).lower()
+        tags=poi_tags(category, p)
+        if not tags: return []
+        nm=name_value(p.get("names") or p.get("name"))
+        if nm: tags["name"]=nm
+        if kind=="Point":
+            lon,lat=g.get("coordinates",[None,None])[:2]
+            return [{"type":"node","id":sid(raw),"lon":float(lon),"lat":float(lat),"tags":tags}] if lon is not None and lat is not None else []
+        return [{"type":"way","id":sid(raw,i),"tags":tags,"geometry":pts}
+                for i,ring in enumerate(polygon_rings(g)) if len(pts:=points(ring,True))>=4]
     if layer=="water":
-        tags=({"waterway":value if value in ("river","stream","canal","ditch") else "river","adam:source":"Overture Maps"}
-              if kind in ("LineString","MultiLineString") or value in ("river","stream","canal","ditch")
-              else {"natural":"water","water":value or "water","adam:source":"Overture Maps"})
+        waterway=source_tags.get("waterway",value)
+        if kind in ("LineString","MultiLineString"):
+            if waterway in ("river","stream","canal","ditch","drain","wadi","tidal_channel"):
+                tags={"waterway":waterway,"adam:source":"Overture Maps"}
+            elif value in ("coastline","shoreline"):
+                tags={"natural":"coastline","adam:source":"Overture Maps"}
+            else:
+                return []
+        elif kind=="Point":
+            lon,lat=g.get("coordinates",[None,None])[:2]
+            if lon is None or lat is None: return []
+            if value in ("swimming_pool","pool"):
+                return [{"type":"node","id":sid(raw),"lon":float(lon),"lat":float(lat),
+                         "tags":{"leisure":"swimming_pool","adam:source":"Overture Maps"}}]
+            return []
+        else:
+            water=source_tags.get("water",value) or "water"
+            tags={"natural":"water","water":water,"adam:source":"Overture Maps"}
+            if water in ("reservoir","basin"): tags["landuse"]=water
     elif layer=="infrastructure":
         if value not in ("bridge","pier","breakwater"): return []
         tags={"man_made":value,"adam:source":"Overture Maps"}
@@ -178,6 +235,7 @@ def sources():
       ("land_cover","10_landcover_overture/land_cover",False),
       ("land_use","10_landcover_overture/land_use",False),
       ("water","10_landcover_overture/water",False),
+      ("place","11_places_addresses/place",False),
       ("infrastructure","10_landcover_overture/infrastructure",False)]
     for layer,relative,part in definitions:
         for path in sorted((SOURCE/relative).glob("part-*.geojson")):
@@ -237,7 +295,7 @@ def build():
             raw.unlink()
         version=fingerprint.hexdigest()[:16]
         manifest={"schema_version":1,"city":"Amman","source_directory":"data/full-city-imports/amman",
-          "source_datasets":["Overture buildings","Overture building parts","Overture road segments","Overture land cover","Overture water","Overture infrastructure"],
+          "source_datasets":["Overture buildings","Overture building parts","Overture road segments","Overture land cover","Overture water and waterways","Overture infrastructure","Overture places and addresses"],
           "dataset_version":version,"origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,"cell_halo_m":240,
           "cells":sorted(writer.cells,key=lambda value:tuple(map(int,value.split("_")))),
           "shards":metadata,"element_counts_by_layer":dict(writer.counts),"shard_count":len(metadata)}
