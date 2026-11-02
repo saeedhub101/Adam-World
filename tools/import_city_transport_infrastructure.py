@@ -21,8 +21,7 @@ def query_for(lat: float, lon: float, radius: int) -> str:
     around = f"(around:{radius},{lat:.7f},{lon:.7f})"
     return (
         "[out:json][timeout:90];("
-        # Re-fetch highway ways so surface, lanes, smoothness, bridge/tunnel,
-        # width, traffic-calming and pothole tags are merged into existing roads.
+        # Re-fetch rail, waterways, bridges, tunnels and mapped hazards only.
         f'way["railway"~"rail|light_rail|subway|tram|monorail|narrow_gauge|funicular|preserved"]{around};'
         f'way["waterway"~"river|stream|canal|ditch|drain|weir|dam|lock_gate"]{around};'
         f'way["waterway"="riverbank"]{around};'
@@ -207,12 +206,12 @@ def main():
                 "transport_elements_updated": updated,
                 "transport_completed_chunks": completed,
                 "transport_pending_chunks": [idx for idx in range(8) if idx not in completed],
-                "transport_layers": ["railways", "stations", "subway_entrances", "tram_stops", "bus_stops", "waterway_lines", "waterfalls", "water_pipelines", "sewer_networks", "storm_drains", "water_works", "wastewater_plants", "pumping_stations", "bridges", "tunnels", "road_surface", "smoothness", "lanes", "traffic_calming", "potholes"],
+                "transport_layers": ["railways", "stations", "subway_entrances", "tram_stops", "bus_stops", "waterway_lines", "waterfalls", "water_pipelines", "sewer_networks", "storm_drains", "water_works", "wastewater_plants", "pumping_stations", "bridges", "tunnels", "traffic_calming", "potholes"],
                 "transport_source": "OpenStreetMap via public Overpass endpoints",
             })
             metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             checkpoint(slug)
-            print(f"{slug}: {'SAVED' if complete else 'PARTIAL_CHECKPOINT'} added={added} updated={updated} seen={len(incoming)} completed_chunks={len(completed)}/12 pending_chunks={len(failed)}", flush=True)
+            print(f"{slug}: {'SAVED' if complete else 'PARTIAL_CHECKPOINT'} added={added} updated={updated} seen={len(incoming)} completed_chunks={len(completed)}/8 pending_chunks={len(failed)}", flush=True)
             succeeded += 1
             if failed:
                 pending.append((slug, failed))
