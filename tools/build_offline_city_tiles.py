@@ -223,8 +223,7 @@ def _footprint_signature(points):
     return cx,cy,area
 
 
-def _same_footprint(a,b):
-    sa,sb=_footprint_signature(a),_footprint_signature(b)
+def _same_footprint_signature(sa,sb):
     if not sa or not sb:
         return False
     distance=math.hypot(sa[0]-sb[0],sa[1]-sb[1])
@@ -271,14 +270,28 @@ def source_elements(slug):
         # Some providers can expose the same real footprint under a different
         # feature identifier. Suppress near-identical OSM geometry duplicates
         # before treating OSM as a missing-building source.
-        primary_shapes = [item.get("geometry") or [] for item in footprints]
+        # Spatial hash keeps the geometry-only duplicate guard linear in
+        # the number of source features instead of comparing every OSM polygon
+        # with every OpenFreeMap polygon.
+        primary_cells = defaultdict(list)
+        cell_size = 5.0
+        for item in footprints:
+            signature = _footprint_signature(item.get("geometry") or [])
+            if signature:
+                cell = (math.floor(signature[0]/cell_size), math.floor(signature[1]/cell_size))
+                primary_cells[cell].append(signature)
         unmatched_buildings = []
         for item in detail_buildings:
             source_id = _osm_id((item.get("tags") or {}).get("adam:source_osm_id") or item.get("id"))
             if source_id in footprint_ids:
                 continue
-            points = item.get("geometry") or []
-            duplicate = any(_same_footprint(points, primary) for primary in primary_shapes)
+            signature = _footprint_signature(item.get("geometry") or [])
+            duplicate = False
+            if signature:
+                cx,cy=math.floor(signature[0]/cell_size),math.floor(signature[1]/cell_size)
+                nearby = (candidate for dx in (-1,0,1) for dy in (-1,0,1)
+                          for candidate in primary_cells.get((cx+dx,cy+dy),[]))
+                duplicate = any(_same_footprint_signature(signature,primary) for primary in nearby)
             if not duplicate:
                 unmatched_buildings.append(item)
         unmatched_parts = [
