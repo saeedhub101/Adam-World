@@ -45,7 +45,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-      - name: Import original OpenFreeMap footprints and full OSM building details
+      - name: Import OpenFreeMap building footprints, transportation and supplementary OSM building details
         continue-on-error: true
         env:
           REFRESH: ${{ inputs.refresh }}
@@ -104,7 +104,7 @@ jobs:
           failed = []
           for slug in cities:
               folder = root / slug
-              for name in ("building-footprints.geojson", "building-details.geojson"):
+              for name in ("building-footprints.geojson", "transportation.geojson", "building-details.geojson"):
                   path = folder / name
                   if not path.is_file():
                       print(f"MISSING {slug}/{name}")
@@ -113,6 +113,10 @@ jobs:
                   try:
                       data = json.loads(path.read_text(encoding="utf-8"))
                       print(f"OK {slug}/{name}: {len(data.get('features', []))} features")
+                      if name == "transportation.geojson":
+                          roads = sum(1 for f in data.get("features", []) if (f.get("properties") or {}).get("adam:label_only") != "yes")
+                          labels = sum(1 for f in data.get("features", []) if (f.get("properties") or {}).get("adam:label_only") == "yes")
+                          print(f"  OpenFreeMap roads={roads}; transportation_name labels={labels}")
                   except Exception as exc:
                       print(f"INVALID {slug}/{name}: {exc}")
                       failed.append(f"{slug}/{name}")
