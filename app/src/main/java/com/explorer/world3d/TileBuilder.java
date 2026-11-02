@@ -839,7 +839,7 @@ final class TileBuilder {
         GeoBuf sign=td.bufs[B_SIGN];
         sign.box(x,y-1.0f,z,0.12f,2.0f,0.12f,0.25f,0.25f,0.27f);
         sign.box(x,y+0.20f,z,0.95f,0.48f,0.14f,r,g,b);
-        if(name!=null&&!name.trim().isEmpty()&&td.decals.size()<64){
+        if(name!=null&&!name.trim().isEmpty()){
             Decal d=new Decal(); d.text=name.trim(); d.x=x; d.z=z; d.dx=1f; d.dz=0f; d.y=y-0.55f; d.vertical=true;
             td.decals.add(d);
         }
@@ -874,7 +874,7 @@ final class TileBuilder {
         sign.v(rx,y+height,rz,1,0,cr,cg,cb); sign.fixTri();
         sign.v(lx,y,lz,0,1,cr,cg,cb); sign.v(rx,y+height,rz,1,0,cr,cg,cb);
         sign.v(lx,y+height,lz,0,0,cr,cg,cb); sign.fixTri();
-        if(name!=null&&!name.trim().isEmpty()&&td.decals.size()<64){
+        if(name!=null&&!name.trim().isEmpty()){
             Decal d=new Decal(); d.text=name.trim(); d.x=x; d.z=z; d.dx=dx; d.dz=dz; d.y=y+0.08f; d.vertical=true;
             td.decals.add(d);
         }
