@@ -68,11 +68,11 @@ final class Tile {
             float baseY = Float.isFinite(dc.y) ? dc.y : Float.NaN;
             float u1 = wpx[idx] / 1024f, v0 = idx / 16f + 0.002f, v1 = (idx + 1) / 16f - 0.002f;
             if (dc.vertical && Float.isFinite(baseY)) {
-                float lx = dc.x - dx * len / 2f, lz = dc.z - dz * len / 2f;
-                float rx = dc.x + dx * len / 2f, rz = dc.z + dz * len / 2f;
+                float vlx = dc.x - dx * len / 2f, vlz = dc.z - dz * len / 2f;
+                float vrx = dc.x + dx * len / 2f, vrz = dc.z + dz * len / 2f;
                 float top = baseY + 1.15f;
-                g.v(lx, baseY, lz, 0, v1, 1, 1, 1); g.v(rx, baseY, rz, u1, v1, 1, 1, 1); g.v(rx, top, rz, u1, v0, 1, 1, 1); g.fixTri();
-                g.v(lx, baseY, lz, 0, v1, 1, 1, 1); g.v(rx, top, rz, u1, v0, 1, 1, 1); g.v(lx, top, lz, 0, v0, 1, 1, 1); g.fixTri();
+                g.v(vlx, baseY, vlz, 0, v1, 1, 1, 1); g.v(vrx, baseY, vrz, u1, v1, 1, 1, 1); g.v(vrx, top, vrz, u1, v0, 1, 1, 1); g.fixTri();
+                g.v(vlx, baseY, vlz, 0, v1, 1, 1, 1); g.v(vrx, top, vrz, u1, v0, 1, 1, 1); g.v(vlx, top, vlz, 0, v0, 1, 1, 1); g.fixTri();
             } else {
                 float yBs = Float.isFinite(baseY) ? baseY : Terrain.h(bsx, bsz) + 0.34f;
                 float yBe = Float.isFinite(baseY) ? baseY : Terrain.h(bex, bez) + 0.34f;
