@@ -39,18 +39,19 @@ final class Tile {
     private void buildDecals(TileData d) {
         if (d.decals.isEmpty()) return;
         ArrayList<String> names = new ArrayList<>();
-        for (Decal dc : d.decals) if (!names.contains(dc.text) && names.size() < 16) names.add(dc.text);
-        Bitmap bmp = Bitmap.createBitmap(1024, 1024, Bitmap.Config.ARGB_8888);
+        // 2048px atlas supports 64 distinct labels per tile on GLES2 minimum-size devices.
+        for (Decal dc : d.decals) if (!names.contains(dc.text) && names.size() < 64) names.add(dc.text);
+        Bitmap bmp = Bitmap.createBitmap(1024, 2048, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bmp);
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         p.setColor(0xffffffff);
         p.setTypeface(Typeface.DEFAULT_BOLD);
         float[] wpx = new float[names.size()];
         for (int i = 0; i < names.size(); i++) {
-            p.setTextSize(46f);
+            p.setTextSize(24f);
             float w = p.measureText(names.get(i));
-            if (w > 1000f) { p.setTextSize(46f * 1000f / w); w = 1000f; }
-            c.drawText(names.get(i), 8f, i * 64f + 46f, p);
+            if (w > 1000f) { p.setTextSize(24f * 1000f / w); w = 1000f; }
+            c.drawText(names.get(i), 8f, i * 32f + 25f, p);
             wpx[i] = w + 8f;
         }
         decalTex = Textures.upload(bmp);
@@ -66,7 +67,7 @@ final class Tile {
             float bsx = sx + rx * hw, bsz = sz + rz * hw, bex = ex + rx * hw, bez = ez + rz * hw;
             float tex_ = ex + lx * hw, tez = ez + lz * hw, tsx = sx + lx * hw, tsz = sz + lz * hw;
             float baseY = Float.isFinite(dc.y) ? dc.y : Float.NaN;
-            float u1 = wpx[idx] / 1024f, v0 = idx / 16f + 0.002f, v1 = (idx + 1) / 16f - 0.002f;
+            float u1 = wpx[idx] / 1024f, v0 = idx / 64f + 0.002f, v1 = (idx + 1) / 64f - 0.002f;
             if (dc.vertical && Float.isFinite(baseY)) {
                 float vlx = dc.x - dx * len / 2f, vlz = dc.z - dz * len / 2f;
                 float vrx = dc.x + dx * len / 2f, vrz = dc.z + dz * len / 2f;
