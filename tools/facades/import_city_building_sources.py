@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import independent OpenFreeMap footprints and full OSM building details per city.
+"""Import OpenFreeMap/OpenMapTiles provider footprints and roads, plus OSM building supplements.
 
 Outputs:
   data/facades/cities/<city>/building-footprints.geojson  OpenFreeMap/OpenMapTiles
