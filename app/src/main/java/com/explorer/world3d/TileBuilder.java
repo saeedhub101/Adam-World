@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** يحوّل JSON القادم من OpenStreetMap إلى هندسة ثلاثية الأبعاد لمربع واحد، موضوعة على التضاريس الحقيقية. */
 final class TileBuilder {
@@ -117,9 +119,8 @@ final class TileBuilder {
                 if (P == null) continue;
                 float[] px = P[0], pz = P[1];
                 if (Math.abs(Poly.area(px, pz)) < 10f) continue;
-                float cx = 0, cz = 0;
-                for (int i = 0; i < px.length; i++) { cx += px[i]; cz += pz[i]; }
-                cx /= px.length; cz /= px.length;
+                float[] center = centroid(px, pz);
+                float cx = center[0], cz = center[1];
                 if (cx < xMin || cx >= xMax || cz < zMin || cz >= zMax) continue;
                 if (Landmarks.suppress(cx, cz)) continue;
                 bcount++;
@@ -272,20 +273,53 @@ final class TileBuilder {
         }
     }
 
+    private static float measure(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return Float.NaN;
+        String value = raw.trim().toLowerCase(java.util.Locale.US);
+        Matcher matcher = Pattern.compile("[-+]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)").matcher(value);
+        if (!matcher.find()) return Float.NaN;
+        try {
+            float n = Float.parseFloat(matcher.group());
+            if (value.contains("feet") || value.contains("foot") || value.contains(" ft") || value.endsWith("ft") || value.contains("'")) n *= 0.3048f;
+            return Float.isFinite(n) ? n : Float.NaN;
+        } catch (Exception ignore) { return Float.NaN; }
+    }
+
     private static float bHeight(JSONObject t, long id, String b) {
-        String hs = tg(t, "height");
-        if (!hs.isEmpty()) {
-            try { float h = Float.parseFloat(hs.replaceAll("[^0-9.]", "")); if (h > 0) return Math.max(3f, h); } catch (Exception ignore) {}
+        float h = measure(tg(t, "height"));
+        if (h > 0f) return Math.max(3f, h);
+        float levels = measure(tg(t, "building:levels"));
+        if (levels > 0f) return Math.max(3f, levels * 3.2f + 0.5f);
+        // Conservative, deterministic class fallback; never invent per-building random heights.
+        if (b.equals("roof") || b.equals("carport") || b.equals("garage") || b.equals("garages")) return 3.5f;
+        if (b.matches("house|detached|shed|hut|cabin|semidetached_house|bungalow|residential")) return 6.5f;
+        if (b.matches("apartments|commercial|office|hotel|retail|hospital|university|school")) return 10.5f;
+        if (b.matches("industrial|warehouse|factory")) return 8.5f;
+        return 7.5f;
+    }
+
+    private static float bMinHeight(JSONObject t, float totalHeight) {
+        float value = measure(tg(t, "min_height"));
+        if (!(value > 0f)) return 0f;
+        return Math.max(0f, Math.min(value, totalHeight - 1f));
+    }
+
+    /** True polygon centroid, so footprints crossing a tile edge are assigned by their actual area. */
+    private static float[] centroid(float[] xs, float[] zs) {
+        double crossSum = 0d, cx = 0d, cz = 0d;
+        for (int i = 0; i < xs.length; i++) {
+            int j = (i + 1) % xs.length;
+            double cross = (double) xs[i] * zs[j] - (double) xs[j] * zs[i];
+            crossSum += cross;
+            cx += (xs[i] + xs[j]) * cross;
+            cz += (zs[i] + zs[j]) * cross;
         }
-        String ls = tg(t, "building:levels");
-        if (!ls.isEmpty()) {
-            try { float lv = Float.parseFloat(ls); return Math.max(3f, lv * 3.3f + 1f); } catch (Exception ignore) {}
+        if (Math.abs(crossSum) < 1e-8d) {
+            cx = 0d; cz = 0d;
+            for (int i = 0; i < xs.length; i++) { cx += xs[i]; cz += zs[i]; }
+            return new float[]{(float) (cx / xs.length), (float) (cz / xs.length)};
         }
-        float r = rnd(id, 0);
-        if (b.equals("roof") || b.equals("carport")) return 3f;
-        if (b.matches("house|detached|garage|garages|shed|hut|cabin|semidetached_house|bungalow")) return 4f + r * 3f;
-        if (b.matches("apartments|commercial|office|hotel|retail|hospital|university")) return 14f + r * 24f;
-        return 7f + r * 14f;
+        return new float[]{(float) (cx / (3d * crossSum)), (float) (cz / (3d * crossSum))};
     }
 
     private static float[] buildingColor(JSONObject t, long id) {
@@ -318,7 +352,8 @@ final class TileBuilder {
             hMax = Math.max(hMax, ground[i]);
         }
         float h = bHeight(tags, id, bld);
-        // لكل زاوية قاعدة وارتفاع مستقلان؛ المبنى يتبع ميل الأرض بدل قاعدة/سقف أفقيين قسريًا.
+        float minHeight = bMinHeight(tags, h);
+        // Keep each footprint vertex on its sampled terrain elevation; honour raised building-part bases.
         for (int i = 0; i < n; i++) roofY[i] = ground[i] + h;
         float yTop = hMax + h;
         boolean glass = h >= 40f || (bld.matches("office|commercial|hotel") && h >= 24f && rnd(id, 9) < 0.6f);
@@ -337,7 +372,7 @@ final class TileBuilder {
         else if (rmat.matches("concrete")) { rr = 0.62f; rg = 0.62f; rb = 0.60f; }
         else if (bld.matches("house|detached|semidetached_house|bungalow|residential") && rnd(id, 8) < 0.7f) { rr = 0.60f * rf; rg = 0.30f * rf; rb = 0.22f * rf; }
         String rshape = tg(tags, "roof:shape");
-        float vMax = (yTop - hMin + 0.08f) / 13.6f, lo = 0.78f;
+        float vMax = (yTop - hMin - minHeight + 0.08f) / 13.6f, lo = 0.78f;
         float minx = 1e9f, maxx = -1e9f, minz = 1e9f, maxz = -1e9f;
         for (int i = 0; i < n; i++) {
             int j = (i + 1) % n;
@@ -347,7 +382,7 @@ final class TileBuilder {
             float len = (float) Math.hypot(bx - ax, bz - az);
             if (len < 0.05f) continue;
             float u = Math.max(1, Math.round(len / 4f)) / 4f;
-            float yBotA = ground[i] - 0.08f, yBotB = ground[j] - 0.08f;
+            float yBotA = ground[i] + minHeight - 0.08f, yBotB = ground[j] + minHeight - 0.08f;
             buf.v(ax, yBotA, az, 0, vMax, cr * lo, cg * lo, cb * lo);
             buf.v(bx, yBotB, bz, u, vMax, cr * lo, cg * lo, cb * lo);
             buf.v(bx, roofY[j], bz, u, 0, cr, cg, cb);
