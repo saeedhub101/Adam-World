@@ -294,6 +294,53 @@ def sources():
         for path in sorted((SOURCE/relative).glob("part-*.geojson")):
             yield layer,path,part
 
+def add_existing_osm_context(writer, box, shape):
+    # Merge the already-imported Amman OSM context into the same spatial shards.
+    # Do not duplicate primary building or road geometry from the OSM fallback.
+    folder=ROOT/"data/offline-world/amman"
+    sources=[folder/"elements.json",folder/"transit-routes.json"]
+    allowed=("waterway","railway","public_transport","route","man_made","utility","substance","bus","highway")
+    for path in sources:
+        if not path.is_file():
+            continue
+        payload=json.loads(path.read_text(encoding="utf-8"))
+        for item in payload.get("elements",[]):
+            tags=item.get("tags") or {}
+            if tags.get("building") or tags.get("building:part"):
+                continue
+            if tags.get("highway") and tags.get("highway") not in ("bus_stop",):
+                continue
+            if not any(tags.get(k) for k in allowed):
+                continue
+            typ=item.get("type")
+            geom=None
+            if typ=="node" and item.get("lat") is not None and item.get("lon") is not None:
+                geom={"type":"Point","coordinates":[float(item["lon"]),float(item["lat"])]}
+            elif typ=="way" and item.get("geometry"):
+                coords=[]
+                for point in item["geometry"]:
+                    if point.get("lon") is not None and point.get("lat") is not None:
+                        coords.append([float(point["lon"]),float(point["lat"])])
+                if len(coords)>=2:
+                    geom={"type":"LineString","coordinates":coords}
+            if not geom:
+                continue
+            try:
+                geometry=shape(geom)
+                if geometry.is_empty:
+                    continue
+                element={"type":typ,"id":int(item.get("id") or 0),"tags":tags}
+                if typ=="node":
+                    element["lon"],element["lat"]=geom["coordinates"]
+                else:
+                    element["geometry"]=[{"lon":xy[0],"lat":xy[1]} for xy in geom.coords]
+                for cell in cells_for(geometry,box):
+                    writer.add(cell,element,"osm_context")
+            except Exception:
+                continue
+        print("Merged existing Amman OSM context:",path.name,flush=True)
+
+
 def build():
     import ijson
     from shapely.geometry import box,shape
@@ -331,6 +378,7 @@ def build():
                     except Exception:
                         continue
             print("Processed imported Amman:",layer,path.name,flush=True)
+        add_existing_osm_context(writer,box,shape)
         writer.close()
         if not writer.cells:
             raise RuntimeError("No renderable features found in imported Amman data")
