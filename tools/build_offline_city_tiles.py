@@ -49,10 +49,10 @@ def normalize_osm_element(element, lat0, lon0, kx, cover_bbox=False):
             return None
         ix = math.floor(((lon - lon0) * kx) / TILE_METERS)
         iz = math.floor((-(lat - lat0) * KY) / TILE_METERS)
-        return (ix, iz), {
+        return [((ix, iz), {
             "type": "node", "id": int(element.get("id", 0)),
             "lat": lat, "lon": lon, "tags": tags,
-        }
+        })]
 
     if kind != "way":
         return None
@@ -373,9 +373,10 @@ def main():
     parser.add_argument("--city", help="Build only this city slug")
     args = parser.parse_args()
     catalog = read_json(SOURCE / "catalog.json")
+    selected_cities = list(catalog.get("cities", []))
     if args.city:
-        catalog["cities"] = [city for city in catalog.get("cities", []) if city.get("slug") == args.city]
-        if not catalog["cities"]:
+        selected_cities = [city for city in selected_cities if city.get("slug") == args.city]
+        if not selected_cities:
             raise SystemExit(f"Unknown city slug: {args.city}")
     OUTPUT.mkdir(parents=True, exist_ok=True)
     (OUTPUT / "catalog.json").write_text(
@@ -385,7 +386,7 @@ def main():
     total_elements = 0
     total_tiles = 0
 
-    for city in catalog.get("cities", []):
+    for city in selected_cities:
         slug = city["slug"]
         center = city["center"]
         lat0, lon0 = float(center["lat"]), float(center["lon"])
