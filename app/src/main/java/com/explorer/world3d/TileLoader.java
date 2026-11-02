@@ -67,6 +67,14 @@ final class TileLoader extends Thread {
     volatile String offlineCitySlug = null;
     private JSONObject bundledCityRoot;
     private String bundledCitySlug;
+    private JSONObject bundledCityManifest;
+    private String bundledManifestSlug;
+    private final LinkedHashMap<String, JSONObject> bundledCityTileCache =
+            new LinkedHashMap<String, JSONObject>(80, 0.75f, true) {
+                @Override protected boolean removeEldestEntry(Map.Entry<String, JSONObject> eldest) {
+                    return size() > 64;
+                }
+            };
     private volatile Set<String> offlineCells;
     private volatile String offlineDatasetVersion;
     private final LinkedHashMap<String, JSONObject> offlineShardCache =
@@ -207,34 +215,69 @@ final class TileLoader extends Thread {
         return TileBuilder.build(root, ix, iz);
     }
 
-    /** Read a bundled OSM city extract and select only features intersecting this render tile. */
+    /** Load only the bundled spatial cells intersecting this render tile. */
     private JSONObject loadBundledCityRoot(double south, double west, double north, double east) throws Exception {
         final String slug = offlineCitySlug;
         if (slug == null || slug.trim().isEmpty()) return emptyElements();
-        JSONObject source;
+        JSONObject manifest;
         synchronized (this) {
-            if (bundledCityRoot == null || !slug.equals(bundledCitySlug)) {
-                StringBuilder json = new StringBuilder(2 * 1024 * 1024);
+            if (bundledCityManifest == null || !slug.equals(bundledManifestSlug)) {
+                StringBuilder json = new StringBuilder(8192);
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                        context.getAssets().open("elements.json"), "UTF-8"), 32768)) {
-                    char[] buffer = new char[16384];
+                        context.getAssets().open("cities/" + slug + "/manifest.json"), "UTF-8"), 8192)) {
+                    char[] buffer = new char[8192];
                     int n;
                     while ((n = reader.read(buffer)) != -1) json.append(buffer, 0, n);
                 }
                 JSONObject loaded = new JSONObject(json.toString());
-                if (loaded.optJSONArray("elements") == null) throw new IOException("Invalid bundled OSM city dataset: " + slug);
-                if ("manila".equals(slug)) addRizalParkInventory(loaded);
-                bundledCityRoot = loaded;
+                if (loaded.optJSONObject("center") == null || loaded.optJSONArray("tiles") == null) {
+                    throw new IOException("Invalid bundled offline city manifest: " + slug);
+                }
+                bundledCityManifest = loaded;
+                bundledManifestSlug = slug;
                 bundledCitySlug = slug;
+                synchronized (bundledCityTileCache) { bundledCityTileCache.clear(); }
             }
-            source = bundledCityRoot;
+            manifest = bundledCityManifest;
         }
-        JSONArray all = source.optJSONArray("elements");
+        JSONObject center = manifest.getJSONObject("center");
+        double lat0 = center.getDouble("lat"), lon0 = center.getDouble("lon");
+        double tileSize = manifest.optDouble("tile_size_m", 250.0);
+        double kx = 111320.0 * Math.cos(Math.toRadians(lat0));
+        double ky = 111132.0;
+        int minX = (int) Math.floor(((west - lon0) * kx) / tileSize);
+        int maxX = (int) Math.floor(((east - lon0) * kx) / tileSize);
+        int minZ = (int) Math.floor((-(north - lat0) * ky) / tileSize);
+        int maxZ = (int) Math.floor((-(south - lat0) * ky) / tileSize);
         JSONArray selected = new JSONArray();
-        if (all != null) {
-            for (int i = 0; i < all.length(); i++) {
-                JSONObject element = all.optJSONObject(i);
-                if (element != null && intersectsTile(element, south, west, north, east)) selected.put(element);
+        HashSet<String> seen = new HashSet<>();
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                String tileKey = slug + ":" + x + ":" + z;
+                JSONObject tile;
+                synchronized (bundledCityTileCache) { tile = bundledCityTileCache.get(tileKey); }
+                if (tile == null) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                            context.getAssets().open("cities/" + slug + "/tile_" + x + "_" + z + ".json"), "UTF-8"), 16384)) {
+                        StringBuilder body = new StringBuilder(4096);
+                        char[] buffer = new char[16384];
+                        int n;
+                        while ((n = reader.read(buffer)) != -1) body.append(buffer, 0, n);
+                        tile = new JSONObject(body.toString());
+                        if (tile.optJSONArray("elements") == null) throw new IOException("Invalid offline city tile " + tileKey);
+                        synchronized (bundledCityTileCache) { bundledCityTileCache.put(tileKey, tile); }
+                    } catch (java.io.FileNotFoundException missingCell) {
+                        continue;
+                    }
+                }
+                JSONArray elements = tile.optJSONArray("elements");
+                if (elements == null) continue;
+                for (int i = 0; i < elements.length(); i++) {
+                    JSONObject element = elements.optJSONObject(i);
+                    if (element == null) continue;
+                    String key = element.optString("type", "") + ":" + element.optString("id", "");
+                    if (seen.add(key)) selected.put(element);
+                }
             }
         }
         JSONObject result = new JSONObject();
