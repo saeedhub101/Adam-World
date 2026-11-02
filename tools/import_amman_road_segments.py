@@ -6,6 +6,7 @@ import pathlib
 import subprocess
 import sys
 from datetime import datetime, timezone
+from decimal import Decimal
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CITY_DIR = ROOT / "data/full-city-imports/amman"
@@ -13,6 +14,13 @@ ROAD_DIR = CITY_DIR / "09_transport_overture/segment"
 # Keep the exact Amman extent already configured by the existing importer.
 BBOX = "35.70,31.75,36.12,32.10"
 MAX_PART_BYTES = 35 * 1024 * 1024
+
+def json_default(value):
+    # Overture/Arrow exposes numeric GeoJSON coordinates and properties as Decimal.
+    # Keep them numeric in GeoJSON (not quoted strings).
+    if isinstance(value, Decimal):
+        return int(value) if value == value.to_integral_value() else float(value)
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
 def save(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -78,7 +86,7 @@ def main():
                 if geom.get("type") not in ("LineString", "MultiLineString"):
                     rejected_non_line += 1
                     continue
-                encoded = json.dumps(feature, separators=(",", ":"), ensure_ascii=False).encode()
+                encoded = json.dumps(feature, separators=(",", ":"), ensure_ascii=False, default=json_default).encode()
                 if part and part_bytes + len(encoded) + 1 > MAX_PART_BYTES:
                     flush()
                 part.append(encoded)
