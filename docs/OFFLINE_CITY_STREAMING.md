@@ -107,3 +107,13 @@ Photorealistic facade texturing remains a separate, evidence-gated production ph
 - Outside local coverage, the local geometry set is empty and the player continues over the OpenFreeMap Liberty world. Libre supplies roads, water, buildings, labels and all other style layers there.
 - Local coverage is the actual committed tile footprint, not the full municipal boundary. The current city windows are initial imported coverage; expand them by committing additional primary-source/local context tiles, not by broadening a runtime Overpass query.
 - Attribution remains visible: © OpenFreeMap, © OpenMapTiles and © OpenStreetMap contributors (underlying source data).
+
+
+## Native Android Amman streaming (2026-11-02)
+
+- The destination row keeps the existing online Amman entry and adds a separate **Amman Local** entry.
+- Both Amman entries use the same Roman-Theatre-area origin: latitude `31.9522646`, longitude `35.9389907`. The local entry uses the committed Overture full-city source extracts in `data/full-city-imports/amman/`.
+- Before publishing an Android release, `tools/build_amman_stream_shards.py` converts the Amman building, building-part, road-segment, water, land-cover and land-use extracts into independently downloadable 1 km spatial cells under `data/offline-city-stream/amman/`. Cells are compressed NDJSON; the source GeoJSON files are not packaged into the game or downloaded by the device.
+- On first entry to local Amman, the app downloads a small manifest and only the 1 km cells needed by its nearby 5-by-5 game-tile neighborhood. As the player moves, new cells are downloaded on demand. Downloaded cells are cached on disk; at most ten parsed source cells are retained in the in-memory LRU cache.
+- Rendered game tiles outside the keep radius are released from memory. Offline Amman never falls back to Overpass/OSM when a local cell is absent; missing coverage remains empty. The existing online destinations and online Amman loader remain separate and unchanged.
+- The first visit to an uncached area requires internet access to fetch its cell. Once cached, that area can be reused without downloading the full 2 GB source directory.
