@@ -1,0 +1,13 @@
+{
+  "city": "Riyadh",
+  "boundary": "configured_bbox_extent (approximate; no exact administrative boundary)",
+  "boundary_bbox": [
+    46.3,
+    24.35,
+    47.15,
+    25.1
+  ],
+  "overture_layers": 4,
+  "updated": "2026-11-02T16:51:29.671134+00:00",
+  "imagery_catalogues": "metadata discovery attempted; image downloads pending licence validation"
+}
