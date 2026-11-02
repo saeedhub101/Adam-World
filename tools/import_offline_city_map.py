@@ -187,14 +187,23 @@ def commit_city(slug, element_count):
 def main():
     catalog = json.loads(CATALOG.read_text(encoding="utf-8"))
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    requested = {x.strip().lower() for x in os.environ.get("CITY_SLUGS", "").split(",") if x.strip()}
+    force_refresh = os.environ.get("FORCE_REFRESH", "false").strip().lower() in ("1", "true", "yes")
+    all_cities = catalog.get("cities", [])
+    known = {city["slug"] for city in all_cities}
+    unknown = requested - known
+    if unknown:
+        raise SystemExit("Unknown city slug(s): " + ", ".join(sorted(unknown)))
+    cities = [city for city in all_cities if not requested or city["slug"] in requested]
+    print("IMPORT PLAN: " + str(len(cities)) + " city/cities; force_refresh=" + str(force_refresh), flush=True)
     succeeded = 0
     failed = []
-    for city in catalog.get("cities", []):
+    for city in cities:
         slug = city["slug"]
         target_dir = OUTPUT / slug
         target = target_dir / "elements.json"
         metadata_path = target_dir / "metadata.json"
-        if target.is_file() and metadata_path.is_file():
+        if not force_refresh and target.is_file() and metadata_path.is_file():
             try:
                 existing = json.loads(target.read_text(encoding="utf-8"))
                 metadata_existing = json.loads(metadata_path.read_text(encoding="utf-8"))
