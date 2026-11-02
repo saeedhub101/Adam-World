@@ -373,6 +373,18 @@ final class TileBuilder {
         return new float[]{((c >> 16) & 255) / 255f * v, ((c >> 8) & 255) / 255f * v, (c & 255) / 255f * v};
     }
 
+    private static void facadeQuad(GeoBuf b,
+            float ax, float ay, float az, float bx, float by, float bz,
+            float cx, float cy, float cz, float dx, float dy, float dz,
+            float r, float g, float bl) {
+        b.v(ax, ay, az, 0, 0, r, g, bl);
+        b.v(bx, by, bz, 1, 0, r, g, bl);
+        b.v(cx, cy, cz, 1, 1, r, g, bl); b.fixTri();
+        b.v(ax, ay, az, 0, 0, r, g, bl);
+        b.v(cx, cy, cz, 1, 1, r, g, bl);
+        b.v(dx, dy, dz, 0, 1, r, g, bl); b.fixTri();
+    }
+
     private static void addBuilding(TileData td, JSONObject tags, long id, String bld, float[] px, float[] pz) {
         int n = px.length;
         float hMin = 1e9f, hMax = -1e9f;
@@ -475,6 +487,46 @@ final class TileBuilder {
                 buf.v(ax+nx*off,ya-band,az+nz*off,0,0,cr*shade,cg*shade,cb*shade);
                 buf.v(bx+nx*off,yb,bz+nz*off,1,1,cr*shade,cg*shade,cb*shade);
                 buf.v(ax+nx*off,ya,az+nz*off,0,1,cr*shade,cg*shade,cb*shade); buf.fixTri();
+            }
+        }
+        // Individually modelled recessed-looking window panels and frames.
+        // Density follows the real footprint perimeter and mapped floor count; no facade image is fabricated.
+        int windowBudget = 240;
+        for (int edge = 0; edge < n && windowBudget > 0; edge++) {
+            int next = (edge + 1) % n;
+            float ax = px[edge], az = pz[edge], bx = px[next], bz = pz[next];
+            float dx = bx - ax, dz = bz - az, len = (float) Math.hypot(dx, dz);
+            if (len < 2.8f) continue;
+            float nx = dz / len, nz = -dx / len;
+            if (Poly.contains(px, pz, (ax + bx) * 0.5f + nx, (az + bz) * 0.5f + nz)) { nx = -nx; nz = -nz; }
+            int perFloor = Math.max(1, Math.min(16, (int) (len / 3.0f)));
+            float pitch = len / (perFloor + 1f);
+            float ww = Math.min(1.25f, pitch * 0.58f);
+            float wh = Math.min(1.25f, Math.max(0.72f, floorStep * 0.48f));
+            for (int level = 0; level < (int) floors && windowBudget > 0; level++) {
+                float baseA = ground[edge] + minHeight + floorStep * level + Math.max(0.42f, floorStep * 0.18f);
+                float baseB = ground[next] + minHeight + floorStep * level + Math.max(0.42f, floorStep * 0.18f);
+                float topA = Math.min(baseA + wh, roofY[edge] - 0.18f);
+                float topB = Math.min(baseB + wh, roofY[next] - 0.18f);
+                if (topA - baseA < 0.48f || topB - baseB < 0.48f) continue;
+                for (int wi = 0; wi < perFloor && windowBudget > 0; wi++) {
+                    float t = (wi + 1f) / (perFloor + 1f);
+                    float half = ww * 0.5f / len;
+                    float t0 = Math.max(0.015f, t - half), t1 = Math.min(0.985f, t + half);
+                    float x0 = ax + dx * t0 + nx * 0.075f, z0 = az + dz * t0 + nz * 0.075f;
+                    float x1 = ax + dx * t1 + nx * 0.075f, z1 = az + dz * t1 + nz * 0.075f;
+                    float y0 = baseA + (baseB - baseA) * t0, y1 = baseA + (baseB - baseA) * t1;
+                    float yt0 = topA + (topB - topA) * t0, yt1 = topA + (topB - topA) * t1;
+                    facadeQuad(td.bufs[B_GLASS], x0,y0,z0, x1,y1,z1, x1,yt1,z1, x0,yt0,z0, 0.20f,0.32f,0.39f);
+                    float fr=0.76f, fg=0.75f, fb=0.70f, fw=0.055f;
+                    facadeQuad(buf, x0,y0,z0, x1,y1,z1, x1,y1+fw,z1, x0,y0+fw,z0, fr,fg,fb);
+                    facadeQuad(buf, x0,yt0-fw,z0, x1,yt1-fw,z1, x1,yt1,z1, x0,yt0,z0, fr,fg,fb);
+                    facadeQuad(buf, x0,y0,z0, x0+dx*(t1-t0)*fw/Math.max(0.1f,ww),y1,z0+dz*(t1-t0)*fw/Math.max(0.1f,ww),
+                            x0+dx*(t1-t0)*fw/Math.max(0.1f,ww),yt0,z0+dz*(t1-t0)*fw/Math.max(0.1f,ww), x0,yt0,z0, fr,fg,fb);
+                    facadeQuad(buf, x1-dx*(t1-t0)*fw/Math.max(0.1f,ww),y1,z1-dz*(t1-t0)*fw/Math.max(0.1f,ww),
+                            x1,y1,z1, x1,yt1,z1, x1-dx*(t1-t0)*fw/Math.max(0.1f,ww),yt1,z1-dz*(t1-t0)*fw/Math.max(0.1f,ww), fr,fg,fb);
+                    windowBudget--;
+                }
             }
         }
         // Basement storey joints are modelled below ground and become visible in cutaway mode.
