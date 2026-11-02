@@ -248,9 +248,9 @@ final class Landmarks {
         float stageY = Terrain.h(cx, cz - 6f);
         b.box(cx, stageY + 0.8f, cz - 6f, 50f, 1.6f, 8f, 0.80f, 0.74f, 0.62f);
         float wallY = Terrain.h(cx, cz - 10.5f);
-        b.box(cx - 18.5f, wallY + 6f, cz - 10.5f, 13f, 12f, 1.5f, 0.76f, 0.70f, 0.58f);
+        b.box(cx - 19.5f, wallY + 6f, cz - 10.5f, 11f, 12f, 1.5f, 0.76f, 0.70f, 0.58f);
         b.box(cx, wallY + 6f, cz - 10.5f, 20f, 12f, 1.5f, 0.76f, 0.70f, 0.58f);
-        b.box(cx + 18.5f, wallY + 6f, cz - 10.5f, 13f, 12f, 1.5f, 0.76f, 0.70f, 0.58f);
+        b.box(cx + 19.5f, wallY + 6f, cz - 10.5f, 11f, 12f, 1.5f, 0.76f, 0.70f, 0.58f);
         // عتبات وأكتاف حجرية حول فتحتي الدخول، مع إبقاء الممرين مفتوحين.
         for (float gx : new float[]{-12f, 12f}) {
             b.box(cx + gx, wallY + 11.1f, cz - 10.5f, 4.2f, 1.8f, 1.5f, 0.82f, 0.76f, 0.64f);
@@ -264,9 +264,9 @@ final class Landmarks {
         }
         b.box(cx, wallY + 9.2f, cz - 8.5f, 50f, 1.4f, 1.6f, 0.82f, 0.76f, 0.64f);
         // التصادم يطابق الكتل الصلبة فقط؛ فتحات البوابتين خالية.
-        foot(td, new float[]{cx - 25f, cx - 12f, cx - 12f, cx - 25f}, new float[]{cz - 11.25f, cz - 11.25f, cz - 9.75f, cz - 9.75f});
+        foot(td, new float[]{cx - 25f, cx - 14f, cx - 14f, cx - 25f}, new float[]{cz - 11.25f, cz - 11.25f, cz - 9.75f, cz - 9.75f});
         foot(td, new float[]{cx - 10f, cx + 10f, cx + 10f, cx - 10f}, new float[]{cz - 11.25f, cz - 11.25f, cz - 9.75f, cz - 9.75f});
-        foot(td, new float[]{cx + 12f, cx + 25f, cx + 25f, cx + 12f}, new float[]{cz - 11.25f, cz - 11.25f, cz - 9.75f, cz - 9.75f});
+        foot(td, new float[]{cx + 14f, cx + 25f, cx + 25f, cx + 14f}, new float[]{cz - 11.25f, cz - 11.25f, cz - 9.75f, cz - 9.75f});
         int n = SEG + 1;
         float[] fx = new float[n * 2], fz = new float[n * 2];
         for (int k = 0; k <= SEG; k++) {
