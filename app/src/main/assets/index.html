@@ -671,29 +671,43 @@ function hitPoint(x,z){
 }
 function blocked(x,z,r){return hitPoint(x,z)||hitPoint(x+r,z)||hitPoint(x-r,z)||hitPoint(x,z+r)||hitPoint(x,z-r);}
 
+function osmMetric(value){
+  if(value===undefined||value===null||value==='')return NaN;
+  const raw=String(value).trim().toLowerCase(),n=parseFloat(raw);
+  if(!Number.isFinite(n)||n<=0)return NaN;
+  if(raw.includes('ft')||raw.includes('feet')||raw.includes('foot')||raw.includes("'")||raw.includes('′'))return n*0.3048;
+  return n;
+}
 function bHeight(t,id){
-  // OSM maxheight is the only populated metric for several landmark footprints
-  // (notably Burj Khalifa); honour it before falling back to storey estimates.
-  const h=parseFloat(t.height||t['building:height']||t.maxheight||t['building:maxheight']);
-  if(Number.isFinite(h)&&h>0)return Math.max(2.5,h);
-  const lv=parseFloat(t['building:levels']);
-  if(Number.isFinite(lv)&&lv>0)return Math.max(2.5,lv*3.2);
-  // OSM has no measured height for this building: use a conservative,
-  // deterministic massing estimate rather than inventing random storeys.
-  const b=t.building||'yes';
-  if(['garage','garages','shed','hut','carport'].includes(b))return 3.2;
-  if(['house','detached','semidetached_house','bungalow','residential'].includes(b))return 6.5;
-  if(['apartments','commercial','office','hotel','retail','hospital','university'].includes(b))return 10;
+  // Prefer measured/map-derived heights. OSM heights are metres unless marked in feet.
+  for(const key of ['render_height','height','building:height','maxheight','building:maxheight']){
+    const h=osmMetric(t[key]);if(Number.isFinite(h))return Math.max(2.5,h);
+  }
+  const roofH=osmMetric(t['roof:height']),levels=osmMetric(t['building:levels']);
+  if(Number.isFinite(levels))return Math.max(2.5,levels*3.0+(Number.isFinite(roofH)?roofH:0));
+  // Fallback only when the source has no measured height or storey count.
+  const kind=String(t.building||'yes').toLowerCase();
+  if(['garage','garages','shed','hut','carport','roof'].includes(kind))return 3.2;
+  if(['house','detached','semidetached_house','bungalow','residential','terrace'].includes(kind))return 6.5;
+  if(['apartments','commercial','office','hotel','retail','hospital','university','school','public'].includes(kind))return 10;
+  if(['industrial','warehouse','factory'].includes(kind))return 8;
   return 7;
 }
 function parseColor(t,id){
-  const raw=t['facade:colour']||t['facade:color']||t['building:facade:colour']||t['building:facade:color']||t['building:colour']||t['building:color']||t['facade:material']||t['building:material'];
+  const raw=t['facade:colour']||t['facade:color']||t['building:facade:colour']||t['building:facade:color']||
+    t['building:colour']||t['building:color']||t.building_colour||t.colour||t.facade_colour||
+    t['facade:material']||t['building:material'];
+  const material=String(raw||t['building:material']||t['facade:material']||'').trim().toLowerCase();
+  const known={
+    limestone:'#c9b99b',stone:'#c9b99b',sandstone:'#c8ad86',brick:'#ad765d',
+    concrete:'#bdbbb5',plaster:'#d4cbb9',stucco:'#d4cbb9',wood:'#98734f',
+    glass:'#718b9b',metal:'#858b90',marble:'#d8d2c6',granite:'#918d86',
+    adobe:'#b98b62',render:'#d4cbb9',tile:'#a96f50'
+  };
   if(raw){
-    const value=String(raw).toLowerCase();
-    const known={limestone:'#c9b99b',stone:'#c9b99b',sandstone:'#c8ad86',brick:'#ad765d',concrete:'#bdbbb5',plaster:'#d4cbb9',stucco:'#d4cbb9',wood:'#98734f',glass:'#718b9b',metal:'#858b90'};
-    try{const c=new THREE.Color();c.set(known[value]||raw);return c;}catch(e){}
+    try{const c=new THREE.Color();c.set(known[material]||raw);return c;}catch(e){}
   }
-  return new THREE.Color('#c9c4b8');
+  return new THREE.Color(known[material]||'#c9c4b8');
 }
 function newAcc(){return {pos:[],uv:[],col:[]};}
 
@@ -1615,7 +1629,7 @@ async function loadArea(lat,lon,spawn){
       if(osmWayId==='130532101')addRobinsonsPlaceSign(P,baseY,h);
       const acc=B;
       const col=parseColor(t,el.id);if(osmWayId==='130532101')col.set('#d8d4c9');
-      const roofRaw=t['roof:colour']||t['roof:color'];
+      const roofRaw=t['roof:colour']||t['roof:color']||t.roof_colour;
       let roofC=new THREE.Color('#9a9388');
       if(roofRaw){try{roofC.set(roofRaw);}catch(e){}}
       const nF=Math.max(1,Math.round(h/3.4));
