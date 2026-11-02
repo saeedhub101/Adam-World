@@ -111,6 +111,7 @@ final class TileBuilder {
             long id = el.optLong("id", 0);
 
             String bld = tg(tags, "building");
+            if (bld.isEmpty() && !tg(tags, "building:part").isEmpty()) bld = "yes";
             String hw = tg(tags, "highway");
             String leisure = tg(tags, "leisure"), landuse = tg(tags, "landuse"), natural = tg(tags, "natural");
             String waterway = tg(tags, "waterway");
@@ -383,6 +384,8 @@ final class TileBuilder {
         }
         float h = bHeight(tags, id, bld);
         float minHeight = bMinHeight(tags, h);
+        float partMinLevel = measure(tg(tags, "building:min_level"));
+        if (!(minHeight > 0f) && partMinLevel > 0f) minHeight = Math.min(h - 0.5f, partMinLevel * 3.2f);
         float undergroundDepth = measure(tg(tags, "adam:underground:height"));
         if (!(undergroundDepth > 0f)) {
             float undergroundLevels = measure(tg(tags, "building:levels:underground"));
