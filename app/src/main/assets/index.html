@@ -420,8 +420,13 @@ async function fetchOnlineOsmArea(lat,lon,cityHint,nearestDistance,radiusMeters)
   const north=(lat+dLat).toFixed(6),east=(lon+dLon).toFixed(6);
   const bbox=south+','+west+','+north+','+east;
   const query='[out:json][timeout:25];(way["building"]('+bbox+');way["highway"]('+bbox+');way["natural"]('+bbox+');way["landuse"]('+bbox+');way["waterway"]('+bbox+');node["natural"="tree"]('+bbox+');node["highway"~"traffic_signals|bus_stop|street_lamp|stop|crossing"]('+bbox+'););out body geom;';
-  const url='https://overpass-api.de/api/interpreter?data='+encodeURIComponent(query);
-  const result=await sourceJson(url);
+  const endpoints=['https://overpass-api.de/api/interpreter?data=','https://overpass.kumi.systems/api/interpreter?data='];
+  let result=null,lastError=null;
+  for(const endpoint of endpoints){
+    try{result=await sourceJson(endpoint+encodeURIComponent(query));break;}
+    catch(e){lastError=e;console.warn('Live OSM endpoint failed:',endpoint,e&&e.message?e.message:e);}
+  }
+  if(!result)throw new Error('تعذر الاتصال بخوادم OpenStreetMap العامة: '+(lastError&&lastError.message?lastError.message:'network error'));
   const elements=Array.isArray(result&&result.elements)?result.elements:[];
   if(!elements.length)throw new Error('لم يُرجع OpenStreetMap أي طرق أو مبانٍ في هذا القطاع');
   const nearAmman=cityHint&&cityHint.slug==='amman'&&nearestDistance<=3000;
@@ -1350,14 +1355,18 @@ function addRomanTheatre(footprint){
   if(Math.abs(twiceArea)<1)return;
   cx/=3*twiceArea;cz/=3*twiceArea;
   const spanX=maxX-minX,spanZ=maxZ-minZ;
-  const scaleX=clamp(spanX/96.4,0.75,1.25),scaleZ=clamp(spanZ/81.8,0.70,1.25);
-  const anchor=[cx,cz],base=terrainHeight(cx,cz);
+  // Fit the landmark to the complete mapped OSM footprint instead of
+  // constraining it to a generic scale that can push sections outside the site.
+  const scaleX=clamp(spanX/96.4,0.40,2.20),scaleZ=clamp(spanZ/81.8,0.40,2.20);
+  const anchor=[cx,cz];
+  const groundSamples=footprint.map(p=>terrainHeight(p[0],p[1])).filter(Number.isFinite).sort((a,b)=>a-b);
+  const base=groundSamples.length?groundSamples[Math.floor(groundSamples.length/2)]:terrainHeight(cx,cz);
   const g=new THREE.Group();g.position.set(cx,base,cz);g.scale.set(scaleX,1,scaleZ);cityGroup.add(g);
   const limestone=makeLimestoneTexture();g.userData.ownedTexture=limestone;
   const stone=new THREE.MeshLambertMaterial({color:0xffffff,map:limestone,side:THREE.DoubleSide});
   const cutStone=new THREE.MeshLambertMaterial({color:0xc5b08e,map:limestone,side:THREE.DoubleSide});
   const dark=new THREE.MeshLambertMaterial({color:0x30291f});
-  const groundAt=(x,z)=>terrainHeight(anchor[0]+x*scaleX,anchor[1]+z*scaleZ)-base;
+  const groundAt=(x,z)=>terrainHeight(anchor[0]+x*scaleX,anchor[1]+z*scaleZ)-base+0.22;
   function conformBase(mesh,bottomY,allVertices=false){
     const attr=mesh.geometry&&mesh.geometry.attributes&&mesh.geometry.attributes.position;if(!attr)return;
     const v=new THREE.Vector3();
