@@ -1,0 +1,10 @@
+{
+  "slug": "tabarbour",
+  "name": "Tabarbour",
+  "center": {
+    "lat": 31.997579,
+    "lon": 35.940358
+  },
+  "discovery_radius_m": 3500,
+  "notes": "Dedicated offline playable area centred at the user's home in Tabarbour, Amman. Import OpenFreeMap/OpenMapTiles primary footprints and roads, full available OSM building details, and local environmental/context data for a 3.5 km radius."
+}
