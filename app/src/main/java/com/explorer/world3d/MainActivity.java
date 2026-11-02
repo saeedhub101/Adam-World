@@ -218,11 +218,18 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         basement.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 glView.queueEvent(new Runnable() {
-                    @Override public void run() { renderer.toggleUndergroundCutaway(); }
+                    @Override public void run() {
+                        renderer.toggleUndergroundCutaway();
+                        final boolean enabled = renderer.undergroundCutaway;
+                        runOnUiThread(new Runnable() {
+                            @Override public void run() {
+                                basement.setText(enabled ? "إظهار الأرض" : "كشف تحت الأرض");
+                                Toast.makeText(MainActivity.this, enabled
+                                        ? "وضع كشف الطوابق تحت الأرض" : "تمت إعادة إظهار التضاريس", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
                 });
-                basement.setText(renderer.undergroundCutaway ? "إظهار الأرض" : "كشف تحت الأرض");
-                Toast.makeText(MainActivity.this, renderer.undergroundCutaway
-                        ? "وضع كشف الطوابق تحت الأرض" : "تمت إعادة إظهار التضاريس", Toast.LENGTH_SHORT).show();
             }
         });
         cameraBar.addView(basement);
