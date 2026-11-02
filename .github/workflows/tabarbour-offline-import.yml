@@ -63,6 +63,7 @@ jobs:
               "building-footprints.geojson": 1,
               "transportation.geojson": 1,
               "building-details.geojson": 1,
+            "address-points.geojson": 0,
           }
           for name, minimum in required.items():
               path = root / name
