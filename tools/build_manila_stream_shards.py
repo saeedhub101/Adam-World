@@ -137,6 +137,23 @@ def emit_polygon(writer, source, rawid, rings, tags, layer):
 
 PRIMARY_CENTROIDS = []
 PRIMARY_POLYGONS = []
+PRIMARY_SPATIAL = defaultdict(list)
+PRIMARY_GRID_M = 100.0
+
+def primary_cells(ring):
+    pts=[p for p in ring if len(p)>=2]
+    if not pts: return []
+    gx0=math.floor((min(p[0] for p in pts)-LON0)*KX/PRIMARY_GRID_M)
+    gx1=math.floor((max(p[0] for p in pts)-LON0)*KX/PRIMARY_GRID_M)
+    gy0=math.floor(-(max(p[1] for p in pts)-LAT0)*KY/PRIMARY_GRID_M)
+    gy1=math.floor(-(min(p[1] for p in pts)-LAT0)*KY/PRIMARY_GRID_M)
+    return [(x,y) for x in range(gx0,gx1+1) for y in range(gy0,gy1+1)]
+
+def add_primary_polygon(ring):
+    idx=len(PRIMARY_POLYGONS)
+    PRIMARY_POLYGONS.append(ring)
+    for cell in primary_cells(ring): PRIMARY_SPATIAL[cell].append(idx)
+
 
 def point_in_ring(point, ring):
     x,y=point; inside=False
@@ -156,7 +173,11 @@ def overlaps_primary(ring):
     if len(pts)>1 and pts[0]==pts[-1]: pts=pts[:-1]
     if len(pts)<3: return False
     cx=sum(p[0] for p in pts)/len(pts); cy=sum(p[1] for p in pts)/len(pts)
-    for primary in PRIMARY_POLYGONS:
+    candidate_ids=set()
+    for cell in primary_cells(pts):
+        candidate_ids.update(PRIMARY_SPATIAL.get(cell,()))
+    for idx in candidate_ids:
+        primary=PRIMARY_POLYGONS[idx]
         if not primary: continue
         ppts=[(float(p[0]),float(p[1])) for p in primary if len(p)>=2]
         if len(ppts)>1 and ppts[0]==ppts[-1]: ppts=ppts[:-1]
@@ -288,7 +309,7 @@ def read_pbf(writer, osm_index, building_index):
             outer=rings[0] if rings else []
             if outer:
                 PRIMARY_CENTROIDS.append((sum(p[0] for p in outer)/len(outer),sum(p[1] for p in outer)/len(outer)))
-                PRIMARY_POLYGONS.append(outer)
+                add_primary_polygon(outer)
             count+=1
         # Preserve named facilities and address-number points from the same tiles.
         for lname in ("poi","housenumber"):
@@ -351,7 +372,7 @@ def read_city_footprints(writer):
             if p.get(src) not in (None,""): tags[dst]=text(p[src])
         if p.get("source_feature_id") not in (None,""): tags["adam:source_feature_id"]=text(p["source_feature_id"])
         emit_polygon(writer,"ofm-footprint",f.get("id",i),rings,tags,"openfreemap_building_footprints")
-        PRIMARY_CENTROIDS.append(center); PRIMARY_POLYGONS.append(outer); added+=1
+        PRIMARY_CENTROIDS.append(center); add_primary_polygon(outer); added+=1
     return added
 
 def read_overture_parts(writer):
@@ -411,7 +432,7 @@ def read_osm_details(writer, data, primary_ids):
                 unmatched+=1
             elif rawkey not in primary_ids and not already_covered:
                 emit_polygon(writer,"osm-footprint",osm_id,rings,t,"osm_building_fallback")
-                PRIMARY_POLYGONS.append(outer)
+                add_primary_polygon(outer)
                 unmatched+=1
             else: matched+=1
     return matched,unmatched
