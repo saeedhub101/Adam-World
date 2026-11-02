@@ -9,6 +9,7 @@ on:
       - "build.gradle"
       - "settings.gradle"
       - "gradle.properties"
+      - "tools/build_amman_stream_shards.py"
       - ".github/workflows/android-release.yml"
   workflow_dispatch:
 
