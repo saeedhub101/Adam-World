@@ -1,0 +1,14 @@
+{
+  "next_url": null,
+  "seen_ids": [],
+  "pages": 1,
+  "complete": true,
+  "last_page_added": 0,
+  "bbox": [
+    35.903284559038546,
+    31.966138108875317,
+    35.97743144096146,
+    32.02901989112469
+  ],
+  "source": "https://api.panoramax.xyz/api/search"
+}
