@@ -56,7 +56,6 @@
   </div>
   <div class="chips">
     <button class="btn" data-c="31.9516,35.9394">عمّان</button>
-    <button class="btn" data-c="31.997579,35.940358">طبربور · صيدلية كوبرا</button>
     <button class="btn" data-c="14.58291,120.98029">مانيلا · Rizal Park</button>
     <button class="btn" data-c="13.7466,100.5347">بانكوك</button>
     <button class="btn" data-c="40.7580,-73.9855">نيويورك</button>
@@ -158,7 +157,7 @@ try{
   worldMap=new maplibregl.Map({
     container:'worldMap',
     style:'https://tiles.openfreemap.org/styles/liberty',
-    center:[35.940358,31.997579],
+    center:[120.98283,14.57394],
     zoom:16,
     pitch:54,
     bearing:0,
@@ -384,7 +383,7 @@ function onUpdateStatus(message){toast(message,4500);}
 applyTime(0);
 
 /* ---------- الإسقاط ---------- */
-let LAT0=31.997579,LON0=35.940358,KX=111320*Math.cos(LAT0*Math.PI/180);const KY=111132;
+let LAT0=14.57394,LON0=120.98283,KX=111320*Math.cos(LAT0*Math.PI/180);const KY=111132;
 function proj(lat,lon){return [(lon-LON0)*KX,-(lat-LAT0)*KY];}
 function unproj(x,z){return [LAT0-z/KY,LON0+x/KX];}
 let terrainGrid=null,activeWaterAreas=[],activeWaterways=[],activeTrafficSignals=[];
@@ -531,11 +530,6 @@ function localMetersBetween(lat1, lon1, lat2, lon2) {
   return Math.hypot(x, z);
 }
 async function fetchOnlineOsmArea(lat,lon,cityHint,nearestDistance,radiusMeters){
-  let terrain=null;
-  if(cityHint&&cityHint.slug){
-    try{terrain=await readOfflineJson('cities/'+cityHint.slug+'/elevation-grid.json');}
-    catch(e){console.info('No packaged elevation grid for',cityHint.slug,e.message);}
-  }
   // Libre is the global world. Never substitute a live OSM/Overpass extract
   // when local coverage is absent or a local tile fails: that would create a
   // second, inconsistent source layer. Returning no local geometry leaves the
@@ -547,7 +541,7 @@ async function fetchOnlineOsmArea(lat,lon,cityHint,nearestDistance,radiusMeters)
     elements:[],
     city:{slug:'online',name:'OpenFreeMap / OpenMapTiles'},
     tileCount:0,
-    terrain:terrain,
+    terrain:null,
     online:true
   };
 }
@@ -585,9 +579,9 @@ async function loadOfflineArea(lat, lon, radiusMeters) {
   }catch(e){console.warn('Local tile read failed; using live OpenStreetMap:',e.message);}
   if (!elements.length) return await fetchOnlineOsmArea(lat,lon,selected,nearest,radiusMeters);
   let terrain=null;
-  if(manifest.elevation_grid){
-    try{terrain=await readOfflineJson('cities/'+selected.slug+'/'+manifest.elevation_grid);}
-    catch(e){console.warn('Optional '+selected.name+' terrain unavailable:',e.message);}
+  if(selected.slug==='amman'&&manifest.elevation_grid){
+    try{terrain=await readOfflineJson('cities/amman/'+manifest.elevation_grid);}
+    catch(e){console.warn('Optional Amman terrain unavailable:',e.message);}
   }
   console.info('Adam World offline stream:', selected.slug, 'tiles:', chosen.length,
                'buildings:', elements.length, 'center distance:', Math.round(nearest) + 'm');
@@ -1666,7 +1660,7 @@ async function loadArea(lat,lon,spawn){
     S.px-=o[0];S.pz-=o[1];S.cx-=o[0];S.cz-=o[1];camera.position.x-=o[0];camera.position.z-=o[1];
   }
   LAT0=lat;LON0=lon;KX=111320*Math.cos(lat*Math.PI/180);
-  terrainGrid=data.terrain||null;ground.visible=!terrainGrid&&!worldMapReady;
+  terrainGrid=(data.city&&data.city.slug==='amman')?(data.terrain||null):null;ground.visible=!terrainGrid&&!worldMapReady;
   activeWaterAreas=[];activeWaterways=[];activeTrafficSignals=[];
   disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];
   if(terrainGrid)addTerrainSurface(terrainGrid);
@@ -2130,7 +2124,7 @@ async function loadCity(lat,lon){
   $('errorDialog').style.display='none';
   $('loading').style.display='flex';
   $('loading').style.pointerEvents='none';
-  $('loading').textContent='جاري تحميل الشوارع والمباني والتضاريس للمنطقة…';
+  $('loading').textContent='جاري تحميل بيانات المدينة من التخزين المحلي…';
   try{
     await loadArea(lat,lon,true);
   }catch(e){
@@ -2168,7 +2162,7 @@ async function search(){
       c.name.toLocaleLowerCase().includes(q));
     if(matches.length===1){loadCity(matches[0].center.lat,matches[0].center.lon);return;}
     if(matches.length>1){toast('اكتب اسم المدينة كاملاً لتحديد الوجهة');return;}
-    toast('لم يتم العثور على المدينة في سجل الوجهات');
+    toast('البحث المحلي متاح للمدن العشر الموجودة في بيانات التطبيق');
   }catch(e){toast('تعذر قراءة فهرس المدن المحلي: '+e.message);}
 }
 $('go').onclick=search;
@@ -2342,7 +2336,7 @@ function frame(now){
 }
 
 applyTime(0);
-loadCity(31.997579,35.940358);
+loadCity(14.57394,120.98283);
 requestAnimationFrame(frame);
 </script>
 </body>
