@@ -69,15 +69,15 @@ def points(coords, closed=False):
     return out
 
 def poi_tags(category, props):
-    c=(category or "").lower()
-    if c in ("hospital","healthcare","medical_centre"): return {"amenity":"hospital"}
-    if c in ("clinic","doctors","dentist","medical_clinic"): return {"amenity":"clinic"}
-    if c in ("restaurant","fast_food","food_court"): return {"amenity":"restaurant"}
-    if c in ("cafe","coffee_shop","coffee"): return {"amenity":"cafe"}
-    if c in ("hotel","motel","hostel","guest_house"): return {"tourism":"hotel"}
-    if c in ("mall","shopping_mall","shopping_centre"): return {"shop":"mall"}
-    if c in ("supermarket","convenience","department_store","retail","store"): return {"shop":c}
-    for key in ("amenity","shop","tourism","office"):
+    c=(category or "").lower().replace(" ","_")
+    if any(v in c for v in ("hospital","medical_centre","healthcare.hospital")): return {"amenity":"hospital"}
+    if any(v in c for v in ("clinic","doctor","dentist","medical_clinic")): return {"amenity":"clinic"}
+    if any(v in c for v in ("restaurant","fast_food","food_court")): return {"amenity":"restaurant"}
+    if any(v in c for v in ("cafe","coffee_shop","coffee")): return {"amenity":"cafe"}
+    if any(v in c for v in ("hotel","motel","hostel","guest_house")): return {"tourism":"hotel"}
+    if any(v in c for v in ("mall","shopping_centre","shopping_center")): return {"shop":"mall"}
+    if any(v in c for v in ("supermarket","convenience","department_store","retail","store")): return {"shop":c.split(".")[-1]}
+    for key in ("amenity","shop","tourism","office","healthcare"):
         if props.get(key): return {key:val(props[key]).lower()}
     return {}
 
@@ -108,7 +108,7 @@ def make_elements(feature, layer, part=False):
             if number: tags["addr:housenumber"]=number
         # Preserve OSM-derived activity tags embedded in Overture source_tags.
         for pair in p.get("source_tags") or []:
-            if isinstance(pair,(list,tuple)) and len(pair)>=2 and pair[0] in ("amenity","shop","tourism","office","name","addr:housenumber"):
+            if isinstance(pair,(list,tuple)) and len(pair)>=2 and pair[0] in ("amenity","shop","tourism","office","healthcare","name","addr:housenumber"):
                 if pair[1] is not None: tags[str(pair[0])]=val(pair[1])
         for key in ("amenity","shop","tourism","office"):
             if p.get(key) is not None: tags[key]=val(p[key])
