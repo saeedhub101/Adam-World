@@ -361,7 +361,9 @@ final class TileBuilder {
         }
         float h = bHeight(tags, id, bld);
         float minHeight = bMinHeight(tags, h);
-        // Keep each footprint vertex on its sampled terrain elevation; honour raised building-part bases.
+        float mappedRoofHeight = measure(tg(tags, "roof:height"));
+        if (!(mappedRoofHeight > 0f)) mappedRoofHeight = Float.NaN;
+        // Keep each footprint vertex on its sampled terrain elevation; preserve the mapped base offset.
         for (int i = 0; i < n; i++) roofY[i] = ground[i] + h;
         float yTop = hMax + h;
         boolean glass = h >= 40f || (bld.matches("office|commercial|hotel") && h >= 24f && rnd(id, 9) < 0.6f);
@@ -408,7 +410,9 @@ final class TileBuilder {
             float ax0 = 0, az0 = 0;
             for (int i = 0; i < n; i++) { ax0 += px[i]; az0 += pz[i]; }
             ax0 /= n; az0 /= n;
-            float rh = Math.min(3.2f, (float) Math.sqrt(parea) / 4f);
+            float rh = Float.isFinite(mappedRoofHeight)
+                    ? Math.max(0.25f, Math.min(mappedRoofHeight, Math.max(0.5f, h * 0.45f)))
+                    : Math.min(3.2f, (float) Math.sqrt(parea) / 4f);
             for (int i = 0; i < n; i++) {
                 int j = (i + 1) % n;
                 buf.v(px[i], roofY[i], pz[i], 0.01f, 0.01f, rr, rg, rb);
