@@ -34,7 +34,7 @@ final class Terrain {
 
     static void reset() { baseSet = false; flat = false; demFails = 0; base = 0f; }
 
-    static boolean ready() { return baseSet || flat; }
+    static boolean ready() { return baseSet; }
 
     static double gx(double lon) { return (lon + 180.0) / 360.0 * NPIX; }
     static double gy(double lat) {
@@ -78,8 +78,23 @@ final class Terrain {
         }
     }
 
+    /** يحمّل كل بلاطات DEM التي قد تحتاجها المنطقة، بما فيها بكسل الاستيفاء المجاور. */
     static void ensureRect(double s, double w, double n, double e) throws IOException {
-        ensure(s, w); ensure(s, e); ensure(n, w); ensure(n, e);
+        double x0 = gx(w) - 0.5, x1 = gx(e) - 0.5;
+        double y0 = gy(s) - 0.5, y1 = gy(n) - 0.5;
+        int minTx = (int) Math.floor(Math.min(x0, x1) / 256.0);
+        int maxTx = (int) Math.floor((Math.max(x0, x1) + 1.0) / 256.0);
+        int minTy = (int) Math.floor(Math.min(y0, y1) / 256.0);
+        int maxTy = (int) Math.floor((Math.max(y0, y1) + 1.0) / 256.0);
+        int scale = 1 << Z;
+        for (int ty = minTy; ty <= maxTy; ty++) {
+            for (int tx = minTx; tx <= maxTx; tx++) {
+                double lon = ((tx + 0.5) / scale) * 360.0 - 180.0;
+                double merc = Math.PI - 2.0 * Math.PI * (ty + 0.5) / scale;
+                double lat = Math.toDegrees(Math.atan(Math.sinh(merc)));
+                ensure(lat, lon);
+            }
+        }
     }
 
     private static float pix(int px, int py) {
