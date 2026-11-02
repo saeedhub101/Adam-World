@@ -111,7 +111,7 @@ def make_elements(feature, layer, part=False):
         for pair in p.get("source_tags") or []:
             if isinstance(pair,(list,tuple)) and len(pair)>=2 and pair[0] in ("amenity","shop","tourism","office","healthcare","name","addr:housenumber"):
                 if pair[1] is not None: tags[str(pair[0])]=val(pair[1])
-        for key in ("amenity","shop","tourism","office"):
+        for key in ("amenity","shop","tourism","office","healthcare"):
             if p.get(key) is not None: tags[key]=val(p[key])
         if p.get("is_underground") is True: tags["location"]="underground"
         return [{"type":"way","id":sid(raw,i),"tags":tags,"geometry":pts}
