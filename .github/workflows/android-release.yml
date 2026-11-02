@@ -1,0 +1,76 @@
+name: Adam World Android Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+      - ".github/workflows/android-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adam-world-android-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.5"
+      - name: Prepare the existing production signing key
+        env:
+          ADAM_WORLD_KEYSTORE_BASE64: ${{ secrets.ADAM_WORLD_KEYSTORE_BASE64 }}
+          ADAM_WORLD_KEYSTORE_PASSWORD: ${{ secrets.ADAM_WORLD_KEYSTORE_PASSWORD }}
+          ADAM_WORLD_KEY_ALIAS: ${{ secrets.ADAM_WORLD_KEY_ALIAS }}
+          ADAM_WORLD_KEY_PASSWORD: ${{ secrets.ADAM_WORLD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${ADAM_WORLD_KEYSTORE_BASE64:?Missing ADAM_WORLD_KEYSTORE_BASE64}"
+          : "${ADAM_WORLD_KEYSTORE_PASSWORD:?Missing ADAM_WORLD_KEYSTORE_PASSWORD}"
+          : "${ADAM_WORLD_KEY_ALIAS:?Missing ADAM_WORLD_KEY_ALIAS}"
+          : "${ADAM_WORLD_KEY_PASSWORD:?Missing ADAM_WORLD_KEY_PASSWORD}"
+          KEYSTORE="$RUNNER_TEMP/adam-world-release.jks"
+          printf '%s' "$ADAM_WORLD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          keytool -list -keystore "$KEYSTORE" -storepass "$ADAM_WORLD_KEYSTORE_PASSWORD" -alias "$ADAM_WORLD_KEY_ALIAS" >/dev/null
+          echo "ADAM_WORLD_KEYSTORE_FILE=$KEYSTORE" >> "$GITHUB_ENV"
+      - name: Build signed Android APK
+        env:
+          ADAM_WORLD_KEYSTORE_PASSWORD: ${{ secrets.ADAM_WORLD_KEYSTORE_PASSWORD }}
+          ADAM_WORLD_KEY_ALIAS: ${{ secrets.ADAM_WORLD_KEY_ALIAS }}
+          ADAM_WORLD_KEY_PASSWORD: ${{ secrets.ADAM_WORLD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          gradle --no-daemon -PVERSION_CODE="$GITHUB_RUN_NUMBER" assembleRelease
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
+          cp "$APK" Adam-World.apk
+          sha256sum Adam-World.apk
+      - name: Publish release and APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: adam-world-v${{ github.run_number }}
+          name: Adam World v${{ github.run_number }}
+          make_latest: true
+          generate_release_notes: true
+          files: Adam-World.apk
+          fail_on_unmatched_files: true
