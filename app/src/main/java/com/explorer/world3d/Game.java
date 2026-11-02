@@ -130,6 +130,7 @@ final class Game {
 
     void snapCamera() {
         float tx = focusX(), tz = focusZ();
-        float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);\n        camX = tx - (float) Math.sin(camYaw) * camDistance * cp; camZ = tz - (float) Math.cos(camYaw) * camDistance * cp; camY = py + 1.55f + camDistance * sp;
+        float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);
+        camX = tx - (float) Math.sin(camYaw) * camDistance * cp; camZ = tz - (float) Math.cos(camYaw) * camDistance * cp; camY = py + 1.55f + camDistance * sp;
     }
 }
