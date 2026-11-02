@@ -475,29 +475,20 @@ function localMetersBetween(lat1, lon1, lat2, lon2) {
   return Math.hypot(x, z);
 }
 async function fetchOnlineOsmArea(lat,lon,cityHint,nearestDistance,radiusMeters){
-  const radius=Math.max(220,Math.min(350,Number(radiusMeters)||320));
-  const dLat=radius/111132,dLon=radius/(111320*Math.max(0.2,Math.cos(lat*Math.PI/180)));
-  const south=(lat-dLat).toFixed(6),west=(lon-dLon).toFixed(6);
-  const north=(lat+dLat).toFixed(6),east=(lon+dLon).toFixed(6);
-  const bbox=south+','+west+','+north+','+east;
-  const query='[out:json][timeout:25];(way["building"]('+bbox+');relation["building"]('+bbox+');way["building:part"]('+bbox+');relation["building:part"]('+bbox+'););out body geom;';
-  const endpoints=['https://overpass-api.de/api/interpreter?data=','https://overpass.kumi.systems/api/interpreter?data='];
-  let result=null,lastError=null;
-  for(const endpoint of endpoints){
-    try{result=await sourceJson(endpoint+encodeURIComponent(query));break;}
-    catch(e){lastError=e;console.warn('Live OSM endpoint failed:',endpoint,e&&e.message?e.message:e);}
-  }
-  if(!result)throw new Error('تعذر الاتصال بخوادم OpenStreetMap العامة: '+(lastError&&lastError.message?lastError.message:'network error'));
-  const elements=Array.isArray(result&&result.elements)?result.elements:[];
-  if(!elements.length)throw new Error('لم يُرجع OpenStreetMap مباني إضافية في هذا القطاع');
-  const nearAmman=cityHint&&cityHint.slug==='amman'&&nearestDistance<=3000;
-  let terrain=null;
-  if(nearAmman){
-    try{terrain=await readOfflineJson('cities/amman/elevation-grid.json');}
-    catch(e){console.warn('Amman terrain asset unavailable:',e.message);}
-  }
-  console.info('Adam World supplementary OSM building-only stream:',elements.length,'elements; OpenFreeMap/MapLibre remains the road and map base; radius:',radius,'m');
-  return {elements:elements,city:nearAmman?cityHint:{slug:'online',name:'OpenFreeMap / OpenMapTiles'},tileCount:0,terrain:terrain,online:true};
+  // Libre is the global world. Never substitute a live OSM/Overpass extract
+  // when local coverage is absent or a local tile fails: that would create a
+  // second, inconsistent source layer. Returning no local geometry leaves the
+  // OpenFreeMap/MapLibre world visible, including its roads, water and buildings.
+  console.info('MapLibre-only area: no committed local tile coverage at',lat,lon,
+               'nearest city:',cityHint&&cityHint.slug||'none',
+               'distance:',Math.round(nearestDistance||0),'m');
+  return {
+    elements:[],
+    city:{slug:'online',name:'OpenFreeMap / OpenMapTiles'},
+    tileCount:0,
+    terrain:null,
+    online:true
+  };
 }
 async function loadOfflineArea(lat, lon, radiusMeters) {
   const catalog = await getOfflineCatalog();
