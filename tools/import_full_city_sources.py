@@ -54,29 +54,69 @@ def main():
     print("WARNING",slug,"using configured bbox extent, not official city limits",flush=True)
    bfc={"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":name,"source":boundary_source,"subtype":props.get("subtype")},"geometry":mapping(poly)}]}
    bfile=bd/"city-boundary.geojson";save(bfile,json.dumps(bfc).encode());saved.append(bfile)
+   from ijson import items as json_items
+   MAX_PART_BYTES=35*1024*1024
    for dest,types in TYPES.items():
     for typ in types:
-     out=folder/dest/(typ+".geojson")
-     if out.exists() and not a.refresh:
-      try:
-       if json.loads(out.read_text()).get("source")=="Overture Maps":continue
-      except Exception:pass
-     out.parent.mkdir(parents=True,exist_ok=True)
-     tmp=out.with_suffix(".raw.geojson")
+     layer_dir=folder/dest/typ
+     layer_dir.mkdir(parents=True,exist_ok=True)
+     manifest_path=layer_dir/"manifest.json"
+     manifest={}
+     if manifest_path.exists() and not a.refresh:
+      try: manifest=json.loads(manifest_path.read_text())
+      except Exception: manifest={}
+      if manifest.get("status")=="complete":
+       parts=manifest.get("parts",[])
+       if parts and all((layer_dir/p["file"]).is_file() and (layer_dir/p["file"]).stat().st_size==p["bytes"] for p in parts):
+        print("SKIP COMPLETE",slug,typ,len(parts),"parts",flush=True);continue
+     if a.refresh:
+      for old in layer_dir.glob("part-*.geojson"):old.unlink(missing_ok=True)
+      manifest={"status":"partial","source":"Overture Maps","source_type":typ,"parts":[]}
+     elif not manifest:
+      manifest={"status":"partial","source":"Overture Maps","source_type":typ,"parts":[]}
+     tmp=layer_dir/"download.raw.geojson"
      subprocess.run(["overturemaps","download",f"--bbox={w},{s},{e},{n}","-f","geojson","--type="+typ,"-o",str(tmp)],cwd=ROOT,check=True,timeout=3600)
-     fc=json.loads(tmp.read_text());tmp.unlink(missing_ok=True);features=[]
-     for f in fc.get("features",[]):
-      if not f.get("geometry"):continue
-      try:
-       g=shape(f["geometry"])
-       if g.intersects(poly):
-        g=g.intersection(poly)
-        if not g.is_empty:f["geometry"]=mapping(g);features.append(f)
-      except Exception:pass
-     result={"type":"FeatureCollection","source":"Overture Maps","source_type":typ,"boundary_source":boundary_source,"feature_count":len(features),"features":features}
-     save(out,json.dumps(result,separators=(",",":")).encode());saved.append(out)
-     print("SAVED",slug,typ,len(features),flush=True)
-     checkpoint(saved,slug)
+     known=len(manifest.get("parts",[]));part_index=0;part_features=[];part_size=0;total_features=sum(p.get("features",0) for p in manifest.get("parts",[]))
+     def flush_part():
+      nonlocal_dummy=None
+      global_dummy=None
+      nonlocal_values=None
+      nonlocal part_index,part_features,part_size,total_features,manifest
+      if not part_features:return
+      part_index+=1
+      if part_index<=known:
+       part_features=[];part_size=0;return
+      filename=f"part-{part_index:05d}.geojson"
+      outpart=layer_dir/filename
+      payload=b'{"type":"FeatureCollection","source":"Overture Maps","source_type":'+json.dumps(typ).encode()+b',"features":['+b",".join(part_features)+b']}'
+      if len(payload)>95*1024*1024:raise RuntimeError(f"single GeoJSON chunk exceeds safe GitHub limit: {filename} {len(payload)} bytes")
+      save(outpart,payload)
+      entry={"file":filename,"bytes":len(payload),"features":len(part_features)}
+      manifest.setdefault("parts",[]).append(entry);manifest["status"]="partial";manifest["feature_count"]=sum(p["features"] for p in manifest["parts"])
+      save(manifest_path,json.dumps(manifest,indent=2).encode())
+      total_features+=len(part_features)
+      print("SAVED PART",slug,typ,filename,entry["features"],entry["bytes"],flush=True)
+      checkpoint([outpart,manifest_path],slug)
+      part_features=[];part_size=0
+     try:
+      for feature in json_items(tmp.open("rb"),"features.item"):
+       if not feature.get("geometry"):continue
+       try:
+        geom=shape(feature["geometry"])
+        if not geom.intersects(poly):continue
+        geom=geom.intersection(poly)
+        if geom.is_empty:continue
+        feature["geometry"]=mapping(geom)
+        encoded=json.dumps(feature,separators=(",",":"),ensure_ascii=False).encode()
+        if part_features and part_size+len(encoded)+1>MAX_PART_BYTES:flush_part()
+        part_features.append(encoded);part_size+=len(encoded)+1
+       except Exception:continue
+      flush_part()
+     finally:tmp.unlink(missing_ok=True)
+     manifest["status"]="complete";manifest["feature_count"]=sum(p["features"] for p in manifest["parts"]);manifest["completed_at"]=datetime.now(timezone.utc).isoformat()
+     save(manifest_path,json.dumps(manifest,indent=2).encode());saved.append(manifest_path)
+     checkpoint([manifest_path],slug)
+     print("SAVED",slug,typ,manifest["feature_count"],"features in",len(manifest["parts"]),"parts",flush=True)
    # Public image catalogues: metadata discovery only; image bytes require per-item licence checks.
    for foldername,filename,url in [
     ("05_aerial_openaerialmap","imagery-catalog.json",f"https://api.openaerialmap.org/meta?bbox={w},{s},{e},{n}&limit=100"),
