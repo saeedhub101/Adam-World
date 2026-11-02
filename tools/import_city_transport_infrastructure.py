@@ -89,7 +89,7 @@ def fetch_city(city, folder):
                 fd, tmp = tempfile.mkstemp(prefix="transport-chunk.", suffix=".tmp", dir=progress)
                 with os.fdopen(fd, "w", encoding="utf-8") as handle:
                     json.dump(payload, handle, ensure_ascii=False, separators=(",", ":"))
-                    handle.write("\\n")
+                    handle.write("\n")
                 os.replace(tmp, chunk_path)
                 checkpoint(city["slug"])
                 print(f"{city['slug']}: TRANSPORT_CHUNK_CHECKPOINT {idx+1}/12 saved={len(payload.get('elements', []))}", flush=True)
@@ -183,7 +183,7 @@ def main():
                 fd, tmp = tempfile.mkstemp(prefix="elements.", suffix=".tmp", dir=folder)
                 with os.fdopen(fd, "w", encoding="utf-8") as handle:
                     json.dump(base, handle, ensure_ascii=False, separators=(",", ":"))
-                    handle.write("\\n")
+                    handle.write("\n")
                 os.replace(tmp, elements_path)
                 shutil.rmtree(folder / "transport-progress", ignore_errors=True)
             else:
@@ -200,7 +200,7 @@ def main():
                 "transport_layers": ["railways", "stations", "subway_entrances", "tram_stops", "bus_stops", "waterway_lines", "waterfalls", "water_pipelines", "sewer_networks", "storm_drains", "water_works", "wastewater_plants", "pumping_stations", "bridges", "tunnels", "road_surface", "smoothness", "lanes", "traffic_calming", "potholes"],
                 "transport_source": "OpenStreetMap via public Overpass endpoints",
             })
-            metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+            metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             checkpoint(slug)
             print(f"{slug}: {'SAVED' if complete else 'PARTIAL_CHECKPOINT'} added={added} updated={updated} seen={len(incoming)} completed_chunks={len(completed)}/12 pending_chunks={len(failed)}", flush=True)
             succeeded += 1
