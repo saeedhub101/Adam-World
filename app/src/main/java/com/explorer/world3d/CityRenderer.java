@@ -407,7 +407,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
         TileData td;
         int ups = 0;
-        while (ups < 1 && (td = loader.ready.poll()) != null) {
+        long uploadDeadline = System.nanoTime() + 7000000L;
+        while (ups < 2 && System.nanoTime() < uploadDeadline && (td = loader.ready.poll()) != null) {
             if (td.gen != loader.gen) continue;
             uploadTile(td);
             ups++;
