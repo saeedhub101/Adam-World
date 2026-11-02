@@ -114,7 +114,9 @@ def emit_polygon(writer, source, rawid, rings, tags, layer):
         if len(pts)>=4:
             writer.add({"type":"way","id":sid(source,rawid,i),"tags":dict(tags),"geometry":pts},layer)
 
-PRIMARY_CENTROIDS = []\n\ndef read_osm_detail_index():
+PRIMARY_CENTROIDS = []
+
+def read_osm_detail_index():
     data=json.loads(DETAILS.read_text(encoding="utf-8"))
     index={}
     for f in data.get("features",[]):
@@ -134,7 +136,8 @@ def read_pbf(writer, osm_index):
     count=0
     for path in files:
         try:
-            parts=path.relative_to(PBF_ROOT).parts\n            z=int(parts[-3]); x=int(parts[-2]); y=int(Path(parts[-1]).stem)
+            parts=path.relative_to(PBF_ROOT).parts
+            z=int(parts[-3]); x=int(parts[-2]); y=int(Path(parts[-1]).stem)
         except Exception: continue
         if z!=14: continue
         tile=mapbox_vector_tile.decode(path.read_bytes())
