@@ -1,0 +1,14 @@
+{
+  "last_release": "2026-10-21.0",
+  "last_run": "2026-11-02T14:47:45.910153+00:00",
+  "theme": "divisions",
+  "type": "division_area",
+  "bbox": {
+    "xmin": 7.48,
+    "ymin": 46.65,
+    "xmax": 7.82,
+    "ymax": 46.86
+  },
+  "backend": "geojson",
+  "output": "/home/runner/work/Adam-World/Adam-World/data/full-city-imports/thun/01_admin_boundary/division-area-candidates.geojson"
+}

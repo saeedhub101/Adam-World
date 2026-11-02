@@ -1,0 +1,14 @@
+{
+  "last_release": "2026-10-21.0",
+  "last_run": "2026-11-02T14:47:48.442210+00:00",
+  "theme": "divisions",
+  "type": "division_area",
+  "bbox": {
+    "xmin": 46.3,
+    "ymin": 24.35,
+    "xmax": 47.15,
+    "ymax": 25.1
+  },
+  "backend": "geojson",
+  "output": "/home/runner/work/Adam-World/Adam-World/data/full-city-imports/riyadh/01_admin_boundary/division-area-candidates.geojson"
+}

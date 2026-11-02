@@ -1,0 +1,14 @@
+{
+  "last_release": "2026-10-21.0",
+  "last_run": "2026-11-02T14:47:54.574006+00:00",
+  "theme": "divisions",
+  "type": "division_area",
+  "bbox": {
+    "xmin": 39.55,
+    "ymin": 21.15,
+    "xmax": 40.1,
+    "ymax": 21.8
+  },
+  "backend": "geojson",
+  "output": "/home/runner/work/Adam-World/Adam-World/data/full-city-imports/mecca/01_admin_boundary/division-area-candidates.geojson"
+}
