@@ -16,7 +16,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 CITY = ROOT / "data/facades/cities/tabarbour/city.json"
 OUTPUT = ROOT / "data/offline-world/tabarbour"
-TERRAIN_OUTPUT = ROOT / "app/src/main/assets/cities/tabarbour/terrain"
+TERRAIN_OUTPUT = OUTPUT / "terrain"
 LAT0, LON0, RADIUS_M = 31.997579, 35.940358, 3500.0
 OVERPASS = (
     "https://overpass-api.de/api/interpreter",
