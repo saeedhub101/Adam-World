@@ -39,7 +39,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private CityGLView glView;
     private TextView loading, hud;
     private EditText query;
-    private Button timeBtn;\n    private final String[] CAMERA_LABELS = {\"شارع\", \"قريب\", \"مرتفع\", \"درون\"};\n    private final String[] CAMERA_PRESETS = {\"street\", \"near\", \"high\", \"drone\"};
+    private Button timeBtn;
+    private final String[] CAMERA_LABELS = {"شارع", "قريب", "مرتفع", "درون"};
+    private final String[] CAMERA_PRESETS = {"street", "near", "high", "drone"};
 
     private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density + 0.5f); }
 
