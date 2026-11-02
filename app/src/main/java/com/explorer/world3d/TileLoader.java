@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 final class TileLoader extends Thread {
     interface ErrorCallback { void onError(); }
 
-    static final int LOAD_R = 2;   // 5×5 مربعات: المجال الحالي مع منطقة استباقية حول اللاعب
+    static final int LOAD_R = 3;   // 7×7 مربعات: تحميل أوسع يطابق نطاق الاحتفاظ المرئي
     static final String[] SERVERS = {
             "https://overpass-api.de/api/interpreter",
             "https://overpass.kumi.systems/api/interpreter",
@@ -50,6 +50,9 @@ final class TileLoader extends Thread {
     private static final double AMMAN_KX = 111320.0 * Math.cos(Math.toRadians(AMMAN_LAT0));
     private static final double AMMAN_KY = 111132.0;
     private static final String OFFLINE_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-city-stream/amman";
+    private static final long OFFLINE_CACHE_MAX_BYTES = 512L * 1024L * 1024L;
+    private static final long ONLINE_CACHE_MAX_BYTES = 256L * 1024L * 1024L;
+    private static final long CACHE_MAX_AGE_MS = 3L * 24L * 3600L * 1000L;
     volatile boolean offlineAmman = false;
     private volatile Set<String> offlineCells;
     private volatile String offlineDatasetVersion;
@@ -147,7 +150,7 @@ final class TileLoader extends Thread {
             }
             if (json == null) throw last != null ? last : new IOException("no data");
             if (!json.contains("\"remark\"")) {
-                try { writeFile(f, json); } catch (IOException ignore) {}
+                try { writeFile(f, json); pruneOnlineCache(); } catch (IOException ignore) {}
             }
         }
         root = new JSONObject(json);
@@ -203,6 +206,7 @@ final class TileLoader extends Thread {
                 tmp.delete();
                 throw new IOException("Cannot cache Amman shard " + cell);
             }
+            pruneOfflineCache(shard);
         }
         JSONArray elements = new JSONArray();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
@@ -226,7 +230,7 @@ final class TileLoader extends Thread {
         synchronized (this) {
             if (offlineCells != null && offlineDatasetVersion != null) return;
             File manifestFile = new File(offlineDir, "manifest.json");
-            if (!manifestFile.isFile() || System.currentTimeMillis() - manifestFile.lastModified() > 6L * 3600 * 1000) {
+            if (!manifestFile.isFile() || System.currentTimeMillis() - manifestFile.lastModified() > 1L * 3600 * 1000) {
                 byte[] bytes = downloadBytes(OFFLINE_BASE + "/manifest.json");
                 File tmp = new File(manifestFile.getPath() + ".tmp");
                 try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
@@ -240,8 +244,74 @@ final class TileLoader extends Thread {
             if (list == null || list.length() == 0) throw new IOException("Invalid Amman offline manifest");
             HashSet<String> cells = new HashSet<>();
             for (int i = 0; i < list.length(); i++) cells.add(list.optString(i));
-            offlineDatasetVersion = manifest.optString("dataset_version", "current");
+            String nextVersion = manifest.optString("dataset_version", "current");
+            if (offlineDatasetVersion != null && !offlineDatasetVersion.equals(nextVersion)) {
+                synchronized (offlineShardCache) { offlineShardCache.clear(); }
+            }
+            offlineDatasetVersion = nextVersion;
             offlineCells = cells;
+            pruneOfflineCache(null);
+        }
+    }
+
+    /** Keep offline storage bounded: expire old shards and evict least-recently-used files. */
+    private void pruneOfflineCache(File keep) {
+        File[] versions = offlineDir.listFiles();
+        if (versions == null) return;
+        long now = System.currentTimeMillis(), total = 0L;
+        ArrayList<File> shards = new ArrayList<>();
+        for (File dir : versions) {
+            if (!dir.isDirectory()) continue;
+            if (offlineDatasetVersion != null && !dir.getName().equals(offlineDatasetVersion)) {
+                deleteTree(dir);
+                continue;
+            }
+            File[] files = dir.listFiles();
+            if (files == null) continue;
+            for (File file : files) {
+                if (!file.isFile() || !file.getName().endsWith(".jsonl.gz")) continue;
+                if (now - file.lastModified() > CACHE_MAX_AGE_MS && (keep == null || !file.equals(keep))) {
+                    file.delete(); continue;
+                }
+                total += file.length(); shards.add(file);
+            }
+        }
+        Collections.sort(shards, new Comparator<File>() {
+            @Override public int compare(File a, File b) { return Long.compare(a.lastModified(), b.lastModified()); }
+        });
+        for (File file : shards) {
+            if (total <= OFFLINE_CACHE_MAX_BYTES) break;
+            if (keep != null && file.equals(keep)) continue;
+            long size = file.length();
+            if (file.delete()) total -= size;
+        }
+    }
+
+    private static void deleteTree(File file) {
+        if (file == null || !file.exists()) return;
+        File[] children = file.listFiles();
+        if (children != null) for (File child : children) deleteTree(child);
+        file.delete();
+    }
+
+    /** Online tile JSON is cache-only too; cap it independently from offline shards. */
+    private void pruneOnlineCache() {
+        File[] files = cacheDir.listFiles();
+        if (files == null) return;
+        long now = System.currentTimeMillis(), total = 0L;
+        ArrayList<File> cached = new ArrayList<>();
+        for (File file : files) {
+            if (!file.isFile() || !file.getName().startsWith("t_") || !file.getName().endsWith(".json")) continue;
+            if (now - file.lastModified() > CACHE_MAX_AGE_MS) { file.delete(); continue; }
+            total += file.length(); cached.add(file);
+        }
+        Collections.sort(cached, new Comparator<File>() {
+            @Override public int compare(File a, File b) { return Long.compare(a.lastModified(), b.lastModified()); }
+        });
+        for (File file : cached) {
+            if (total <= ONLINE_CACHE_MAX_BYTES) break;
+            long size = file.length();
+            if (file.delete()) total -= size;
         }
     }
 
