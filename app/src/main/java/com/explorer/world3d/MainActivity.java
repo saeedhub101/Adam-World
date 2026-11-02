@@ -30,11 +30,18 @@ import org.json.JSONObject;
 public class MainActivity extends Activity implements CityRenderer.Listener {
     private static final int REQ_LOC = 77;
     private static final String[] TIME_ICONS = {"☀️", "🌇", "🌙"};
+    // جميع نقاط البداية موضوعة على شوارع/تقاطعـات عامة، لا داخل معالم أو مبانٍ.
     private static final Object[][] CITIES = {
-            {"عمّان", 31.9516, 35.9394}, {"مانيلا", 14.5896, 120.9758}, {"بانكوك", 13.7466, 100.5347},
-            {"نيويورك", 40.7580, -73.9855}, {"باريس", 48.8584, 2.2945}, {"دبي", 25.1972, 55.2744},
-            {"طوكيو", 35.6595, 139.7006}, {"لندن", 51.5007, -0.1246}, {"الرياض", 24.7136, 46.6753},
-            {"القاهرة", 30.0444, 31.2357}};
+            {"عمّان", 31.9522646, 35.9389907},       // شارع الهاشمي قرب الساحة الهاشمية
+            {"مانيلا", 14.57394, 120.98283},          // تقاطع Pedro Gil St وA. Mabini St
+            {"بانكوك", 13.745624, 100.53422},         // Rama I Road
+            {"نيويورك", 40.7573398, -73.986011},      // 7th Avenue وW 44th Street
+            {"باريس", 48.86022, 2.29436},             // Promenade du Quai Branly
+            {"دبي", 25.2012013, 55.2778617},          // Sheikh Mohammed bin Rashid Boulevard
+            {"طوكيو", 35.659495, 139.700498},         // Shibuya Scramble Crossing
+            {"لندن", 51.500948, -0.124857},           // Bridge Street, Westminster
+            {"الرياض", 24.6821, 46.687219},           // King Fahd Road
+            {"القاهرة", 30.05056, 31.24051}};         // Talaat Harb Street
 
     private CityRenderer renderer;
     private CityGLView glView;
