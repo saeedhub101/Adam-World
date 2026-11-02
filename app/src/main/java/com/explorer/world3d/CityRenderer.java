@@ -106,7 +106,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                 long now = System.currentTimeMillis();
                 if (now - lastErrToast > 20000) {
                     lastErrToast = now;
-                    L.onToast("تعذر تحميل بيانات الخريطة، تحقق من الإنترنت");
+                    L.onToast(loader.offlineAmman ? "تعذر تنزيل بيانات عمّان المحلية. تحقق من الإنترنت"
+                            : "تعذر تحميل بيانات الخريطة، تحقق من الإنترنت");
                 }
             }
         });
@@ -200,6 +201,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
         if (!started) {
             started = true;
+            loader.offlineAmman = false;
             Geo.setOrigin(31.997579, 35.940358);
             Terrain.configureForCity(Geo.lat0, Geo.lon0);
             game.reset();
@@ -217,15 +219,18 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         spawned = false;
         spawnDeadline = System.currentTimeMillis() + 25000;
         loader.havePlayer = true;
-        L.onLoading(true, "جاري تحميل المدينة…");
+        L.onLoading(true, loader.offlineAmman ? "جاري تحميل عمّان المحلية…" : "جاري تحميل المدينة…");
     }
 
     /** ينقل اللاعب إلى مدينة/موقع جديد. يُستدعى من خيط الرسم. */
-    public void teleport(double lat, double lon) {
-        loader.gen = loader.gen + 1;
-        loader.requested.clear();
-        loader.failedAt.clear();
-        loader.ready.clear();
+    public void teleport(double lat, double lon) { teleportInternal(lat, lon, false); }
+
+    public void teleportOfflineAmman() { teleportInternal(31.9522646, 35.9389907, true); }
+
+    private void teleportInternal(double lat, double lon, boolean offline) {
+        loader.gen++;
+        loader.offlineAmman = offline;
+        loader.requested.clear(); loader.failedAt.clear(); loader.ready.clear();
         for (Tile t : tiles.values()) t.release();
         tiles.clear();
         for (Mesh m : terrain.values()) m.release();
@@ -427,7 +432,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             Tile c = tiles.get(Geo.key(Geo.tileX(0f), Geo.tileZ(0f)));
             if (c != null || nowMs > spawnDeadline) {
                 doSpawn(c);
-                if (c == null) L.onToast("تعذر تحميل بيانات المدينة. تحقق من الإنترنت");
+                if (c == null) L.onToast(loader.offlineAmman ? "لم تتوفر بيانات محلية عند نقطة البداية" : "تعذر تحميل بيانات المدينة. تحقق من الإنترنت");
             }
         }
 
