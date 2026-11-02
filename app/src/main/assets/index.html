@@ -1425,9 +1425,10 @@ function addBurjKhalifa(P,baseY){
     const y=fl*floorH+floorH/2,scale=taper(y),width=Math.max(2.2,25*scale),length=Math.max(4,77*scale),radial=Math.max(3,22*scale);
     for(let wing=0;wing<3;wing++){
       const angle=wing*Math.PI*2/3;
-      dummy.position.set(Math.sin(angle)*radial,y,Math.cos(angle)*radial);
+      const wingBase=terrainHeight(cx+Math.sin(angle)*22,cz+Math.cos(angle)*22)-baseY;
+      dummy.position.set(Math.sin(angle)*radial,y+wingBase,Math.cos(angle)*radial);
       dummy.rotation.set(0,angle,0);dummy.scale.set(width,floorH*0.94,length);dummy.updateMatrix();wings.setMatrixAt(wi++,dummy.matrix);
-      dummy.position.y=fl*floorH+0.16;dummy.scale.set(width+0.45,0.18,length+0.45);dummy.updateMatrix();bands.setMatrixAt(bi++,dummy.matrix);
+      dummy.position.y=fl*floorH+0.16+wingBase;dummy.scale.set(width+0.45,0.18,length+0.45);dummy.updateMatrix();bands.setMatrixAt(bi++,dummy.matrix);
     }
   }
   wings.count=wi;bands.count=bi;wings.instanceMatrix.needsUpdate=true;bands.instanceMatrix.needsUpdate=true;group.add(wings);group.add(bands);
@@ -1439,7 +1440,8 @@ function addBurjKhalifa(P,baseY){
   for(let i=0;i<3;i++){
     const angle=i*Math.PI*2/3;
     const fin=new THREE.Mesh(new THREE.BoxGeometry(1.25,520,1.2),band);
-    fin.position.set(Math.sin(angle)*15,260,Math.cos(angle)*15);fin.rotation.y=angle;group.add(fin);
+    const finBase=terrainHeight(cx+Math.sin(angle)*15,cz+Math.cos(angle)*15)-baseY;
+    fin.position.set(Math.sin(angle)*15,260+finBase,Math.cos(angle)*15);fin.rotation.y=angle;group.add(fin);
   }
 }
 function addRobinsonsPlaceSign(P,baseY,height){
