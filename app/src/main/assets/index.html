@@ -11,7 +11,7 @@
 <script src="vendor/SkeletonUtils.js"></script>
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
-  #worldMap{position:absolute;inset:0;z-index:0;background:#b8c9d3;overflow:hidden}#worldMap canvas{display:block;position:absolute;inset:0;z-index:0;touch-action:none}body>canvas{display:block;position:absolute;inset:0;z-index:1;touch-action:none}
+  #worldMap{position:absolute;inset:0;z-index:0;background:#b8c9d3;overflow:hidden;pointer-events:none}#worldMap canvas{display:block;position:absolute;inset:0;z-index:0;touch-action:none}body>canvas{display:block;position:absolute;inset:0;z-index:1;touch-action:none}
   #ui{position:absolute;left:8px;right:8px;top:8px;z-index:5;display:flex;flex-direction:column;gap:6px;pointer-events:none}
   #ui>*{pointer-events:auto}
   .row{display:flex;gap:6px}
@@ -103,7 +103,7 @@ try{
   worldMap=new maplibregl.Map({
     container:'worldMap',
     style:'https://tiles.openfreemap.org/styles/liberty',
-    center:[35.93939340,31.95165805],
+    center:[120.98283,14.57394],
     zoom:16,
     pitch:54,
     bearing:0,
@@ -114,6 +114,9 @@ try{
   });
   worldMap.on('load',()=>{
     worldMapReady=true;
+    // The MapLibre map is the continuous world ground beneath the transparent Three.js scene.
+    if(!terrainGrid)ground.visible=false;
+    worldMap.resize();
     // Prefer recorded building colours and mapped metric heights.
     for(const layer of worldMap.getStyle().layers||[]){
       if(layer.type!=='fill-extrusion'||!/building/i.test(layer.id+' '+(layer['source-layer']||'')))continue;
@@ -191,7 +194,7 @@ scene.fog=new THREE.Fog(0xcfe5f5,150,1100);
 const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,0.3,1800);
 const hemi=new THREE.HemisphereLight(0xe6f0ff,0x777060,0.95);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xffffff,0.85);sun.position.set(200,300,120);scene.add(sun);
-addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
+addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();if(worldMap)worldMap.resize();});
 const aniso=Math.min(4,renderer.capabilities.getMaxAnisotropy());
 
 /* ---------- التكستشرات ---------- */
@@ -325,7 +328,7 @@ function onUpdateStatus(message){toast(message,4500);}
 applyTime(0);
 
 /* ---------- الإسقاط ---------- */
-let LAT0=31.9516,LON0=35.9394,KX=111320*Math.cos(LAT0*Math.PI/180);const KY=111132;
+let LAT0=14.57394,LON0=120.98283,KX=111320*Math.cos(LAT0*Math.PI/180);const KY=111132;
 function proj(lat,lon){return [(lon-LON0)*KX,-(lat-LAT0)*KY];}
 function unproj(x,z){return [LAT0-z/KY,LON0+x/KX];}
 let terrainGrid=null,activeWaterAreas=[],activeWaterways=[],activeTrafficSignals=[];
@@ -1610,7 +1613,7 @@ async function loadArea(lat,lon,spawn){
     S.px-=o[0];S.pz-=o[1];S.cx-=o[0];S.cz-=o[1];camera.position.x-=o[0];camera.position.z-=o[1];
   }
   LAT0=lat;LON0=lon;KX=111320*Math.cos(lat*Math.PI/180);
-  terrainGrid=(data.city&&data.city.slug==='amman')?(data.terrain||null):null;ground.visible=!terrainGrid;
+  terrainGrid=(data.city&&data.city.slug==='amman')?(data.terrain||null):null;ground.visible=!terrainGrid&&!worldMapReady;
   activeWaterAreas=[];activeWaterways=[];activeTrafficSignals=[];
   disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];
   if(terrainGrid)addTerrainSurface(terrainGrid);
@@ -2270,7 +2273,7 @@ function frame(now){
 }
 
 applyTime(0);
-loadCity(31.95165805,35.93939340);
+loadCity(14.57394,120.98283);
 requestAnimationFrame(frame);
 </script>
 </body>
