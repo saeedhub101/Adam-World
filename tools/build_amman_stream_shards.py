@@ -91,9 +91,15 @@ def make_elements(feature, layer, part=False):
         fields={"height":"height","min_height":"min_height","num_floors":"building:levels",
                 "num_floors_underground":"building:levels:underground","roof_height":"roof:height",
                 "roof_shape":"roof:shape","roof_material":"roof:material","roof_color":"roof:colour",
-                "facade_material":"building:material","facade_color":"building:colour"}
+                "facade_material":"building:material","facade_color":"building:colour",
+                "facade_type":"building:use","name":"name","address":"addr:full",
+                "housenumber":"addr:housenumber","street":"addr:street"}
         for src,dst in fields.items():
             if p.get(src) is not None: tags[dst]=val(p[src])
+        if p.get("is_underground") is True: tags["location"]="underground"
+        # Keep the original source classification alongside the normalized building tag.
+        if p.get("class") is not None: tags["adam:source:building_class"]=val(p["class"])
+        if p.get("subtype") is not None: tags["adam:source:building_subtype"]=val(p["subtype"])
         nm=name_value(p.get("names") or p.get("name"))
         if nm: tags["name"]=nm
         address=p.get("address") or p.get("addresses")
