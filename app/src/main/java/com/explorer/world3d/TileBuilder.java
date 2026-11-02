@@ -497,6 +497,22 @@ final class TileBuilder {
                 }
             }
         }
+        // Concrete basement slabs make underground storeys readable when terrain cutaway is enabled.
+        if (basementFloors > 0f && undergroundDepth > 0f) {
+            int count = Math.max(1, Math.min(20, Math.round(basementFloors)));
+            int[] basementTriangles = Poly.earClip(px, pz);
+            for (int level = 1; level <= count; level++) {
+                float depth = undergroundDepth * level / count;
+                for (int tri = 0; tri + 2 < basementTriangles.length; tri += 3) {
+                    for (int k = 0; k < 3; k++) {
+                        int vi = basementTriangles[tri + k];
+                        float y = ground[vi] + minHeight - depth;
+                        buf.v(px[vi], y, pz[vi], 0.01f, 0.01f, 0.43f, 0.45f, 0.46f);
+                    }
+                    buf.fixTri();
+                }
+            }
+        }
         float parea = Math.abs(Poly.area(px, pz));
         boolean pyramid = (rshape.equals("pyramidal") || rshape.equals("hipped")
                 || (rshape.isEmpty() && bld.matches("house|detached|semidetached_house|bungalow") && rnd(id, 10) < 0.6f))
