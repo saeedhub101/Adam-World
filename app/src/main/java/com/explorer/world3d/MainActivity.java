@@ -41,7 +41,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             {"طوكيو", 35.659495, 139.700498},         // Shibuya Scramble Crossing
             {"لندن", 51.500948, -0.124857},           // Bridge Street, Westminster
             {"الرياض", 24.6821, 46.687219},           // King Fahd Road
-            {"القاهرة", 30.05056, 31.24051}};         // Talaat Harb Street
+            {"القاهرة", 30.05056, 31.24051},        // Talaat Harb Street
+            {"طبربور", 31.997579, 35.940358}};         // صيدلية كوبرا، طبربور
 
     private CityRenderer renderer;
     private CityGLView glView;
