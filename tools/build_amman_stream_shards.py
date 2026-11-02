@@ -92,8 +92,8 @@ def make_elements(feature, layer, part=False):
                 "num_floors_underground":"building:levels:underground","roof_height":"roof:height",
                 "roof_shape":"roof:shape","roof_material":"roof:material","roof_color":"roof:colour",
                 "facade_material":"building:material","facade_color":"building:colour",
-                "facade_type":"building:use","name":"name","address":"addr:full",
-                "housenumber":"addr:housenumber","street":"addr:street"}
+                "facade_type":"building:use","use":"building:use","name":"name","names":"name",
+                "address":"addr:full","housenumber":"addr:housenumber","street":"addr:street"}
         for src,dst in fields.items():
             if p.get(src) is not None: tags[dst]=val(p[src])
         if p.get("is_underground") is True: tags["location"]="underground"
@@ -131,6 +131,8 @@ def make_elements(feature, layer, part=False):
         flags=json.dumps(p.get("road_flags") or []).lower()
         if "is_bridge" in flags: tags["bridge"]="yes"
         if "is_tunnel" in flags: tags["tunnel"]="yes"
+        for src,dst in (("bridge_height","bridge:height"),("tunnel_height","tunnel:height"),("layer","layer")):
+            if p.get(src) is not None: tags[dst]=val(p[src])
         return [{"type":"way","id":sid(raw,i),"tags":tags,"geometry":pts}
                 for i,line in enumerate(line_parts(g)) if len(pts:=points(line))>=2]
     value=val(p.get("class") or p.get("subtype") or p.get("value")).lower()
