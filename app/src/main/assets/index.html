@@ -1834,7 +1834,7 @@ async function loadArea(lat,lon,spawn){
     ctx.fillStyle='rgba(255,255,255,0.98)';ctx.fillText(label,256,56,480);
     const measured=Math.min(480,ctx.measureText(label).width),width=clamp(measured/512*27,9,27);
     const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=aniso;
-    const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
+    const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthTest:true,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
     const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,3.1),material);
     const p=posAt(item.path,item.distance,0);let yaw=Math.atan2(-p.dz,p.dx);
     if(yaw>Math.PI/2)yaw-=Math.PI;if(yaw< -Math.PI/2)yaw+=Math.PI;
