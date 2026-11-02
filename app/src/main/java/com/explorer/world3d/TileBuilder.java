@@ -311,12 +311,16 @@ final class TileBuilder {
     private static void addBuilding(TileData td, JSONObject tags, long id, String bld, float[] px, float[] pz) {
         int n = px.length;
         float hMin = 1e9f, hMax = -1e9f;
+        float[] ground = new float[n], roofY = new float[n];
         for (int i = 0; i < n; i++) {
-            float hh = Terrain.h(px[i], pz[i]);
-            hMin = Math.min(hMin, hh); hMax = Math.max(hMax, hh);
+            ground[i] = Terrain.h(px[i], pz[i]);
+            hMin = Math.min(hMin, ground[i]);
+            hMax = Math.max(hMax, ground[i]);
         }
         float h = bHeight(tags, id, bld);
-        float yBot = hMin - 0.6f, yTop = hMax + h;
+        // لكل زاوية قاعدة وارتفاع مستقلان؛ المبنى يتبع ميل الأرض بدل قاعدة/سقف أفقيين قسريًا.
+        for (int i = 0; i < n; i++) roofY[i] = ground[i] + h;
+        float yTop = hMax + h;
         boolean glass = h >= 40f || (bld.matches("office|commercial|hotel") && h >= 24f && rnd(id, 9) < 0.6f);
         GeoBuf buf = glass ? td.bufs[B_GLASS] : td.bufs[B_FACADE];
         float cr, cg, cb;
@@ -343,13 +347,14 @@ final class TileBuilder {
             float len = (float) Math.hypot(bx - ax, bz - az);
             if (len < 0.05f) continue;
             float u = Math.max(1, Math.round(len / 4f)) / 4f;
-            buf.v(ax, yBot, az, 0, vMax, cr * lo, cg * lo, cb * lo);
-            buf.v(bx, yBot, bz, u, vMax, cr * lo, cg * lo, cb * lo);
-            buf.v(bx, yTop, bz, u, 0, cr, cg, cb);
+            float yBotA = ground[i] - 0.08f, yBotB = ground[j] - 0.08f;
+            buf.v(ax, yBotA, az, 0, vMax, cr * lo, cg * lo, cb * lo);
+            buf.v(bx, yBotB, bz, u, vMax, cr * lo, cg * lo, cb * lo);
+            buf.v(bx, roofY[j], bz, u, 0, cr, cg, cb);
             buf.fixTri();
-            buf.v(ax, yBot, az, 0, vMax, cr * lo, cg * lo, cb * lo);
-            buf.v(bx, yTop, bz, u, 0, cr, cg, cb);
-            buf.v(ax, yTop, az, 0, 0, cr, cg, cb);
+            buf.v(ax, yBotA, az, 0, vMax, cr * lo, cg * lo, cb * lo);
+            buf.v(bx, roofY[j], bz, u, 0, cr, cg, cb);
+            buf.v(ax, roofY[i], az, 0, 0, cr, cg, cb);
             buf.fixTri();
         }
         float parea = Math.abs(Poly.area(px, pz));
@@ -363,15 +368,21 @@ final class TileBuilder {
             float rh = Math.min(3.2f, (float) Math.sqrt(parea) / 4f);
             for (int i = 0; i < n; i++) {
                 int j = (i + 1) % n;
-                buf.v(px[i], yTop, pz[i], 0.01f, 0.01f, rr, rg, rb);
-                buf.v(px[j], yTop, pz[j], 0.01f, 0.01f, rr, rg, rb);
-                buf.v(ax0, yTop + rh, az0, 0.01f, 0.01f, rr * 1.1f, rg * 1.1f, rb * 1.1f);
+                buf.v(px[i], roofY[i], pz[i], 0.01f, 0.01f, rr, rg, rb);
+                buf.v(px[j], roofY[j], pz[j], 0.01f, 0.01f, rr, rg, rb);
+                float centerGround = 0f;
+                for (int k = 0; k < n; k++) centerGround += ground[k];
+                centerGround /= n;
+                buf.v(ax0, centerGround + h + rh, az0, 0.01f, 0.01f, rr * 1.1f, rg * 1.1f, rb * 1.1f);
                 buf.fixTri();
             }
         } else {
             int[] tr = Poly.earClip(px, pz);
             for (int i = 0; i + 2 < tr.length; i += 3) {
-                for (int k = 0; k < 3; k++) buf.v(px[tr[i + k]], yTop, pz[tr[i + k]], 0.01f, 0.01f, rr, rg, rb);
+                for (int k = 0; k < 3; k++) {
+                    int vi = tr[i + k];
+                    buf.v(px[vi], roofY[vi], pz[vi], 0.01f, 0.01f, rr, rg, rb);
+                }
                 buf.fixTri();
             }
         }
