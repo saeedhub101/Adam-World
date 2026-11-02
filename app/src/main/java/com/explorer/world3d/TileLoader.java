@@ -130,15 +130,15 @@ final class TileLoader extends Thread {
                         Terrain.ensure(Geo.lat0, Geo.lon0);
                         Terrain.setBaseAt(Geo.lat0, Geo.lon0);
                     } catch (IOException ex) {
-                        Terrain.demFails = Terrain.demFails + 1;
-                        if (Terrain.demFails >= 3) Terrain.flat = true; else throw ex;
+                        Terrain.demFails++;
+                        throw ex;
                     }
+                    if (!Terrain.baseSet) throw new IOException("DEM reference elevation unavailable");
                 }
             }
         }
-        try {
-            Terrain.ensureRect(south - 2 * Geo.D_LAT, west - 2 * Geo.dLon, north + 2 * Geo.D_LAT, east + 2 * Geo.dLon);
-        } catch (IOException ignore) {}
+        // لا نبني الطرق أو المباني قبل ضمان توفر جميع بلاطات الارتفاع للمنطقة.
+        Terrain.ensureRect(south - 2 * Geo.D_LAT, west - 2 * Geo.dLon, north + 2 * Geo.D_LAT, east + 2 * Geo.dLon);
         return TileBuilder.build(new JSONObject(json), ix, iz);
     }
 
