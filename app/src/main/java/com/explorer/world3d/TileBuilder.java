@@ -133,7 +133,7 @@ final class TileBuilder {
                 if (nm.isEmpty()) nm = tg(tags, "name");
                 if (nm.isEmpty()) nm = tg(tags, "name:en");
                 addRoad(td, tags, hw, nm, names, xs, zs, xMin, xMax, zMin, zMax);
-            } else if (waterway.matches("river|stream|canal|ditch|drain")) {
+            } else if (waterway.matches("river|stream|canal|ditch|drain|wadi|tidal_channel")) {
                 float w = waterway.equals("river") ? 14f : waterway.equals("canal") ? 8f : 3f;
                 String ws = tg(tags, "width");
                 if (!ws.isEmpty()) { try { w = Math.max(1.5f, Math.min(80f, Float.parseFloat(ws))); } catch (Exception ignore) {} }
@@ -616,8 +616,8 @@ final class TileBuilder {
 
     /** تصنيف الأنشطة التجارية والخدمية من خصائص المكان أو المبنى. */
     private static int poiCategory(JSONObject tags) {
-        String amenity=tg(tags,"amenity"), shop=tg(tags,"shop"), tourism=tg(tags,"tourism"), building=tg(tags,"building");
-        if (amenity.matches("hospital|clinic|doctors|dentist|healthcare")) return 1;
+        String amenity=tg(tags,"amenity"), shop=tg(tags,"shop"), tourism=tg(tags,"tourism"), building=tg(tags,"building"), healthcare=tg(tags,"healthcare");
+        if (amenity.matches("hospital|clinic|doctors|dentist|healthcare") || healthcare.matches("hospital|clinic|doctor|dentist")) return 1;
         if (building.matches("hospital|clinic")) return 1;
         if (amenity.matches("restaurant|fast_food|food_court")) return 2;
         if (amenity.matches("cafe|coffee_shop|bar")) return 3;
