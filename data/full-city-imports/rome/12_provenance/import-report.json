@@ -1,0 +1,13 @@
+{
+  "city": "Rome",
+  "boundary": "configured_bbox_extent (approximate; no exact administrative boundary)",
+  "boundary_bbox": [
+    12.15,
+    41.7,
+    12.9,
+    42.1
+  ],
+  "overture_layers": 4,
+  "updated": "2026-11-02T16:41:35.357581+00:00",
+  "imagery_catalogues": "metadata discovery attempted; image downloads pending licence validation"
+}
