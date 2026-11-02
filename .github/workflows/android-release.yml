@@ -9,7 +9,11 @@ on:
       - "build.gradle"
       - "settings.gradle"
       - "gradle.properties"
-      - "tools/build_amman_stream_shards.py"\n      - "tools/build_manila_stream_shards.py"\n      - "data/facades/cities/manila/**"\n      - "data/reference/adam-city/manila/**"\n      - "data/offline-city-stream/manila/**"
+      - "tools/build_amman_stream_shards.py"
+      - "tools/build_manila_stream_shards.py"
+      - "data/facades/cities/manila/**"
+      - "data/reference/adam-city/manila/**"
+      - "data/offline-city-stream/manila/**"
       - "data/offline-city-stream/amman/**"
       - "data/offline-world/manila/**"
       - "old_app/src/main/assets/data/**"
@@ -37,7 +41,11 @@ jobs:
             /data/full-city-imports/amman/
             /data/offline-city-stream/amman/
             /data/offline-world/amman/
-            /data/offline-world/manila/\n            /data/facades/cities/manila/\n            /data/reference/adam-city/manila/\n            /data/offline-city-stream/manila/\n            /tools/build_manila_stream_shards.py
+            /data/offline-world/manila/
+            /data/facades/cities/manila/
+            /data/reference/adam-city/manila/
+            /data/offline-city-stream/manila/
+            /tools/build_manila_stream_shards.py
             /old_app/src/main/assets/data/
             /tools/build_amman_stream_shards.py
             /build.gradle
