@@ -33,6 +33,7 @@ jobs:
             /app/
             /data/full-city-imports/amman/
             /data/offline-city-stream/amman/
+            /data/offline-world/amman/
             /tools/build_amman_stream_shards.py
             /build.gradle
             /settings.gradle
