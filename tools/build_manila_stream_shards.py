@@ -46,13 +46,16 @@ def tile_lonlat(x,y,z,extent):
 def mvt_geometry(geom, x, y, z, extent):
     typ=geom.get("type"); c=geom.get("coordinates") or []
     def ring(r): return [tile_lonlat(p[0]+x*extent,p[1]+y*extent,z,extent) for p in r]
-    if typ=="Polygon": return [ring(r) for r in c]
-    if typ=="MultiPolygon": return [[ring(r) for r in poly] for poly in c]
+    if typ=="Polygon": return [ring(c[0])] if c else []
+    if typ=="MultiPolygon": return [ring(poly[0]) for poly in c if poly]
     return []
 
 def polygons(g):
-    if g.get("type")=="Polygon": return [g.get("coordinates",[])]
-    if g.get("type")=="MultiPolygon": return g.get("coordinates",[])
+    if g.get("type")=="Polygon":
+        c=g.get("coordinates",[])
+        return c[:1]
+    if g.get("type")=="MultiPolygon":
+        return [poly[0] for poly in g.get("coordinates",[]) if poly]
     return []
 
 def lines(g):
@@ -315,7 +318,7 @@ def read_osm_details(writer, data, primary_ids):
             # prevents it from replacing a matched OMT footprint.
             rawkey=str(t.get("osm_way_id") or t.get("id") or osm_id).split("/")[-1]
             rings=polygons(g)
-            outer=[pt for poly in rings for pt in (poly[0] if poly else [])]
+            outer=rings[0] if rings else []
             center=(sum(p[0] for p in outer)/len(outer),sum(p[1] for p in outer)/len(outer)) if outer else None
             near_primary=center is not None and any(abs(center[0]-x)*KX<4 and abs(center[1]-y)*KY<4 for x,y in PRIMARY_CENTROIDS)
             if rawkey not in primary_ids and not near_primary:
