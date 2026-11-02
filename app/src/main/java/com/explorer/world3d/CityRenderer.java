@@ -516,7 +516,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         boolean coast = false;
         for (Tile t : tiles.values()) {
             if (t.hasCoast) coast = true;
-            if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > 1100) continue;
+            if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > 1750) continue;
             if (t.meshes[TileBuilder.B_WATER] != null) t.meshes[TileBuilder.B_WATER].draw();
         }
         if (coast) {

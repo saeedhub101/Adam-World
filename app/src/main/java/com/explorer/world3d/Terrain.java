@@ -42,7 +42,7 @@ final class Terrain {
         double a = Math.sin(dp / 2) * Math.sin(dp / 2)
                 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) * Math.sin(dl / 2);
         double distance = 6371000.0 * 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
-        return distance <= 22000.0;
+        return distance <= 12000.0;
     }
 
     static void configureForCity(double lat, double lon) {
