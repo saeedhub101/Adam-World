@@ -88,7 +88,7 @@ def import_openfreemap(city,bbox,refresh,git_checkpoint):
     if out.exists() and not refresh:
         try:
             old=json.loads(out.read_text(encoding="utf-8"))
-            if old.get("source_bounds_wsen")==list(bbox) and old.get("source")=="OpenFreeMap/OpenMapTiles vector tiles":
+            if old.get("source_bounds_wsen")==list(bbox) and old.get("source")=="OpenFreeMap/OpenMapTiles vector tiles (complete footprints v2)":
                 print(f"KEEP {city.name}: {len(old.get('features',[]))} OpenFreeMap footprints",flush=True)
                 return
         except Exception: pass
@@ -111,9 +111,10 @@ def import_openfreemap(city,bbox,refresh,git_checkpoint):
                 g=f.get("geometry") or {}
                 if g.get("type") not in ("Polygon","MultiPolygon"): continue
                 p=dict(f.get("properties") or {})
+                # Keep every mapped building polygon. Height is optional and is
+                # enriched from OSM tags or conservatively estimated by the game.
                 try: h=float(p.get("render_height") or 0)
                 except (TypeError,ValueError): h=0
-                if h<=0: continue
                 geom=shape({"type":g["type"],"coordinates":coords_to_lonlat(g.get("coordinates"),x,y,z)})
                 if geom.is_empty: continue
                 fid=p.get("osm_id") or p.get("osm_way_id") or f.get("id")
@@ -132,7 +133,7 @@ def import_openfreemap(city,bbox,refresh,git_checkpoint):
         },"geometry":mapping(geom)})
     if not features: raise RuntimeError("OpenFreeMap returned no usable building polygons; old output retained")
     fc={"type":"FeatureCollection","name":f"{city.name} building footprints",
-        "source":"OpenFreeMap/OpenMapTiles vector tiles",
+        "source":"OpenFreeMap/OpenMapTiles vector tiles (complete footprints v2)",
         "source_url":TILEJSON,"source_bounds_wsen":list(bbox),"zoom":z,"tiles_fetched":fetched,
         "attribution":"OpenFreeMap © OpenMapTiles; data from OpenStreetMap",
         "license":"OpenStreetMap data ODbL 1.0; OpenFreeMap/OpenMapTiles attribution required",
