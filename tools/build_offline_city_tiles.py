@@ -196,13 +196,18 @@ def _geojson_transportation_elements(path):
         geom=feature.get("geometry") or {}
         kind,coords=geom.get("type"),geom.get("coordinates") or []
         lines=[coords] if kind=="LineString" else (coords if kind=="MultiLineString" else [])
-        raw_id=props.get("osm_id") or props.get("osm_way_id") or feature.get("id") or len(output)
+        explicit_osm_id=props.get("osm_id") or props.get("osm_way_id")
+        raw_id=explicit_osm_id or feature.get("id") or len(output)
         source_id=str(raw_id)
         for prefix in ("openfreemap-transportation/", "openfreemap-transportation_name/"):
             if source_id.startswith(prefix):
                 source_id=source_id[len(prefix):]
                 break
-        osm_id=_osm_id(source_id)
+        # A bare vector-tile feature ID is not proof of an OSM way ID.
+        # Preserve an OSM ID only when the source property explicitly provides it
+        # or the feature ID carries an explicit way/<id> path.
+        osm_id=_osm_id(explicit_osm_id) if explicit_osm_id is not None else (
+            _osm_id(source_id) if source_id.startswith("way/") else None)
         if osm_id is not None:
             tags["adam:source_osm_id"]=str(osm_id)
         seed=str(raw_id)
@@ -329,7 +334,97 @@ def _same_footprint_signature(sa,sb):
     area_ratio=min(sa[2],sb[2])/max(sa[2],sb[2])
     return distance<=2.0 and area_ratio>=0.88
 
-def source_elements(slug):
+def _merge_osm_road_attributes(primary_roads, osm_elements, lat0, lon0):
+    """Transfer OSM road names/lanes/width only where road geometries overlap."""
+    try:
+        from shapely.geometry import LineString
+    except Exception:
+        print("WARN shapely unavailable; OSM road-attribute geometry join skipped", flush=True)
+        return 0
+    kx = 111320.0 * math.cos(math.radians(lat0))
+    ky = 111132.0
+    cell_size = 100.0
+    index = defaultdict(list)
+    osm_lines = []
+    for element in osm_elements:
+        tags = element.get("tags") or {}
+        if element.get("type") != "way" or not tags.get("highway"):
+            continue
+        coords = []
+        for point in element.get("geometry") or []:
+            try:
+                coords.append(((float(point["lon"]) - lon0) * kx,
+                               (float(point["lat"]) - lat0) * ky))
+            except (KeyError, TypeError, ValueError):
+                continue
+        if len(coords) < 2:
+            continue
+        try:
+            line = LineString(coords)
+        except Exception:
+            continue
+        if line.is_empty or line.length < 4.0:
+            continue
+        min_x, min_y, max_x, max_y = line.bounds
+        record = (line, tags, str(element.get("id", "")))
+        record_index = len(osm_lines)
+        osm_lines.append(record)
+        for gx in range(math.floor(min_x / cell_size), math.floor(max_x / cell_size) + 1):
+            for gy in range(math.floor(min_y / cell_size), math.floor(max_y / cell_size) + 1):
+                index[(gx, gy)].append(record_index)
+
+    matched_count = 0
+    for road in primary_roads:
+        road_tags = road.setdefault("tags", {})
+        coords = []
+        for point in road.get("geometry") or []:
+            try:
+                coords.append(((float(point["lon"]) - lon0) * kx,
+                               (float(point["lat"]) - lat0) * ky))
+            except (KeyError, TypeError, ValueError):
+                continue
+        if len(coords) < 2:
+            continue
+        try:
+            line = LineString(coords)
+        except Exception:
+            continue
+        if line.is_empty or line.length < 4.0:
+            continue
+        min_x, min_y, max_x, max_y = line.bounds
+        candidate_ids = set()
+        for gx in range(math.floor(min_x / cell_size), math.floor(max_x / cell_size) + 1):
+            for gy in range(math.floor(min_y / cell_size), math.floor(max_y / cell_size) + 1):
+                candidate_ids.update(index.get((gx, gy), []))
+        matches = []
+        corridor = line.buffer(6.0)
+        for candidate_id in candidate_ids:
+            osm_line, osm_tags, osm_id = osm_lines[candidate_id]
+            if line.distance(osm_line) > 6.0:
+                continue
+            overlap = corridor.intersection(osm_line).length
+            if overlap < max(6.0, min(15.0, osm_line.length * 0.45)):
+                continue
+            info = sum(1 for key in ("name:ar", "name", "lanes", "width", "surface")
+                       if osm_tags.get(key) not in (None, ""))
+            matches.append((overlap, info, osm_line.length, osm_tags, osm_id))
+        if not matches:
+            continue
+        # Prefer the best-aligned, most informative OSM segment; do not assign
+        # tags from a crossing road that only touches at an intersection.
+        matches.sort(key=lambda item: (item[0], item[1], item[2]), reverse=True)
+        _, _, _, best_tags, best_id = matches[0]
+        for key, value in best_tags.items():
+            if value not in (None, "") and road_tags.get(key) in (None, ""):
+                road_tags[key] = value
+        road_tags["adam:matched_osm_id"] = best_id
+        road_tags["adam:road_attribute_match"] = "geometry-overlap-6m"
+        matched_count += 1
+    print(f"ENRICHED {matched_count}/{len(primary_roads)} OpenFreeMap road features from matching OSM geometry", flush=True)
+    return matched_count
+
+
+def source_elements(slug, lat0, lon0):
     # OpenFreeMap/OpenMapTiles provide primary building and road geometry.
     # OSM contributes only missing building geometry/attributes; non-road
     # environmental context and transit records are preserved separately.
@@ -410,24 +505,9 @@ def source_elements(slug):
         primary_roads = _geojson_transportation_elements(transportation_path)
         if full.is_file():
             full_data = read_json(full)
-            # Enrich provider road geometry with exact OSM tags when the stable
-            # OSM way ID matches. This recovers real width/lanes/names without
-            # replacing OpenFreeMap's primary road geometry.
-            osm_roads = {}
-            for source_element in full_data.get("elements") or []:
-                source_tags = source_element.get("tags") or {}
-                if source_element.get("type") == "way" and source_tags.get("highway"):
-                    source_id = _osm_id(source_element.get("id"))
-                    if source_id is not None:
-                        osm_roads[source_id] = source_tags
-            for road in primary_roads:
-                road_tags = road.get("tags") or {}
-                road_id = _osm_id(road_tags.get("adam:source_osm_id"))
-                if road_id in osm_roads:
-                    for key, value in osm_roads[road_id].items():
-                        if value not in (None, "") and road_tags.get(key) in (None, ""):
-                            road_tags[key] = value
-                    road["tags"] = road_tags
+            # OpenFreeMap vector-tile IDs are not assumed to be OSM way IDs.
+            # Join supplementary OSM tags by measured geometry overlap instead.
+            _merge_osm_road_attributes(primary_roads, full_data.get("elements") or [], lat0, lon0)
             preserved = [
                 item for item in (full_data.get("elements") or [])
                 if not ((item.get("tags") or {}).get("building") or
@@ -496,7 +576,7 @@ def main():
         center = city["center"]
         lat0, lon0 = float(center["lat"]), float(center["lon"])
         kx = 111320.0 * math.cos(math.radians(lat0))
-        raw_elements, source_path, source_kind = source_elements(slug)
+        raw_elements, source_path, source_kind = source_elements(slug, lat0, lon0)
         buckets = defaultdict(list)
         seen = set()
 
