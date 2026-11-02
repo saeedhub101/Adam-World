@@ -6,6 +6,7 @@ committed and pushed to main immediately; failed cities do not stop later cities
 """
 from __future__ import annotations
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -17,11 +18,13 @@ ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "data" / "facades" / "cities" / "catalog.json"
 OUTPUT = ROOT / "data" / "offline-world"
 IMPORT_PROFILE_VERSION = 4
+HTTP_TIMEOUT_SECONDS = 40
 ENDPOINTS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
 ]
+MAX_ENDPOINT_ATTEMPTS = len(ENDPOINTS)
 
 
 def query_for(city, lat=None, lon=None, radius=None):
@@ -30,7 +33,7 @@ def query_for(city, lat=None, lon=None, radius=None):
     radius = int(city.get("discovery_radius_m", 650) if radius is None else radius)
     around = f"(around:{radius},{lat},{lon})"
     return (
-        "[out:json][timeout:55];("
+        "[out:json][timeout:25];("
         f'way["building"]{around};'
         f'way["highway"]{around};'
         f'way["leisure"~"park|garden|pitch|playground"]{around};'
@@ -92,15 +95,15 @@ def fetch_city(city, checkpoint_dir=None):
         endpoints = ENDPOINTS[chunk_index % len(ENDPOINTS):] + ENDPOINTS[:chunk_index % len(ENDPOINTS)]
         data = None
         # Retry the complete endpoint rotation three times with increasing backoff.
-        for retry_round in range(3):
-            for endpoint in endpoints:
+        for retry_round in range(1):
+            for endpoint in endpoints[:MAX_ENDPOINT_ATTEMPTS]:
                 try:
                     request = Request(endpoint, data=body, headers={
                         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
                         "User-Agent": "AdamWorldOfflineImporter/1.2 (repository data build)",
                         "Accept": "application/json",
                     })
-                    with urlopen(request, timeout=120) as response:
+                    with urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
                         payload = response.read()
                     candidate = json.loads(payload.decode("utf-8"))
                     if "elements" not in candidate:
