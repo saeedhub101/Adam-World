@@ -162,6 +162,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             @Override public void onClick(View v) { teleportOfflineAmman(); }
         });
         chips.addView(localAmman);
+        Button localManila = btn("مانيلا محلي");
+        localManila.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { teleportOfflineManila(); }
+        });
+        chips.addView(localManila);
         for (final Object[] c : CITIES) {
             Button b = btn((String) c[0]);
             b.setOnClickListener(new View.OnClickListener() {
@@ -323,6 +328,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void teleport(final double lat, final double lon) {
         runOnUiThread(new Runnable() { @Override public void run() { loading.setVisibility(View.VISIBLE); } });
         glView.queueEvent(new Runnable() { @Override public void run() { renderer.teleport(lat, lon); } });
+    }
+
+    private void teleportOfflineManila() {
+        runOnUiThread(new Runnable() { @Override public void run() {
+            loading.setText("جاري تحميل بيانات مانيلا المحلية…");
+            loading.setVisibility(View.VISIBLE);
+        }});
+        glView.queueEvent(new Runnable() { @Override public void run() { renderer.teleportOfflineManila(); }});
     }
 
     private void teleportOfflineAmman() {
