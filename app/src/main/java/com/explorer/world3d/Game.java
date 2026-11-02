@@ -17,7 +17,7 @@ final class Game {
 
     float py, px, pz, pyaw, cx, cz, cyaw, cv, phase, swingAmp;
     boolean driving;
-    float camYaw, camPitch = 0.38f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
+    float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
     long lastLookMs;
     volatile float sx, sy;
     volatile boolean sprint;
@@ -39,6 +39,20 @@ final class Game {
 
     float focusX() { return driving ? cx : px; }
     float focusZ() { return driving ? cz : pz; }
+
+    void setCameraPreset(String preset) {
+        switch (preset) {
+            case "street": camDistance = 5.2f; camPitch = 0.28f; break;
+            case "near": camDistance = 13f; camPitch = 0.52f; break;
+            case "high": camDistance = 38f; camPitch = 0.92f; break;
+            case "drone": camDistance = 105f; camPitch = 1.48f; break;
+            default: return;
+        }
+    }
+
+    void zoom(float factor) {
+        if (Float.isFinite(factor) && factor > 0f) camDistance = clamp(camDistance * factor, 3.2f, 180f);
+    }
 
     void look(float dx, float dy) {
         camYaw -= dx * 0.006f;
@@ -104,11 +118,11 @@ final class Game {
 
     private void updateCamera(float dt) {
         float tx = focusX(), tz = focusZ();
-        float dist = driving ? 9.5f : 4.0f, th = driving ? 1.6f : 1.1f;
+        float dist = camDistance * (driving ? 1.6f : 1f), th = driving ? 1.6f : 1.55f;
         float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);
         float dx = tx - (float) Math.sin(camYaw) * dist * cp;
         float dz = tz - (float) Math.cos(camYaw) * dist * cp;
-        float dy = Math.max(py + 0.6f, th + py + dist * sp);
+        float dy = Math.max(py + 0.6f, py + th + dist * sp);
         float k = 1f - (float) Math.exp(-dt * 14f);
         camX += (dx - camX) * k; camY += (dy - camY) * k; camZ += (dz - camZ) * k;
         tgtX = tx; tgtY = th + py; tgtZ = tz;
@@ -116,6 +130,6 @@ final class Game {
 
     void snapCamera() {
         float tx = focusX(), tz = focusZ();
-        camX = tx - (float) Math.sin(camYaw) * 5f; camZ = tz - (float) Math.cos(camYaw) * 5f; camY = py + 3f;
+        float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);\n        camX = tx - (float) Math.sin(camYaw) * camDistance * cp; camZ = tz - (float) Math.cos(camYaw) * camDistance * cp; camY = py + 1.55f + camDistance * sp;
     }
 }
