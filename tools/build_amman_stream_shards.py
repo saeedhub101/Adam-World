@@ -384,6 +384,18 @@ def build():
     temp.mkdir(parents=True)
     writer=Writer(temp)
     fingerprint=hashlib.sha256()
+    # The generated dataset version must change when the builder or imported OSM context changes.
+    fingerprint.update(Path(__file__).read_bytes())
+    context_root=ROOT/"data/offline-world/amman"
+    context_inputs=[context_root/"elements.json",context_root/"transit-routes.json"]
+    context_inputs.extend(sorted((context_root/"transport-progress").glob("chunk-*.json")))
+    context_inputs.extend(sorted((context_root/"transit-route-progress").glob("chunk-*.json")))
+    for context_path in context_inputs:
+        if context_path.is_file():
+            fingerprint.update(context_path.relative_to(ROOT).as_posix().encode())
+            with context_path.open("rb") as context_stream:
+                for block in iter(lambda:context_stream.read(1024*1024),b""):
+                    fingerprint.update(block)
     try:
         for layer,path,is_part in files:
             fingerprint.update(path.relative_to(ROOT).as_posix().encode())
@@ -423,6 +435,10 @@ def build():
                 with gzip.GzipFile(fileobj=dst,mode="wb",compresslevel=6,mtime=0) as gz:
                     shutil.copyfileobj(src,gz,1024*1024)
             metadata[cell]={"file":"shards/"+target.name,"bytes":target.stat().st_size}
+            fingerprint.update(cell.encode())
+            with target.open("rb") as shard_stream:
+                for block in iter(lambda:shard_stream.read(1024*1024),b""):
+                    fingerprint.update(block)
             raw.unlink()
         version=fingerprint.hexdigest()[:16]
         manifest={"schema_version":1,"city":"Amman","source_directory":"data/full-city-imports/amman",
