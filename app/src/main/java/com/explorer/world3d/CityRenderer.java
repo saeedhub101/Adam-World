@@ -22,7 +22,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         void onToast(String s);
     }
 
-    static final int KEEP_R = 2;
+    static final int KEEP_R = 3;
     private static final String VS =
             "uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam;\n"
             + "attribute vec3 aPos; attribute vec3 aNor; attribute vec2 aUV; attribute vec3 aCol;\n"
@@ -71,9 +71,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     // نهار / غروب / ليل
     private static final float[][] TIME = {
             // sunDir(3) sunCol(3) amb(3) fog(3) top(3) hor(3) fogN fogF emisK
-            {0.5f, 0.8f, 0.3f, 0.62f, 0.60f, 0.55f, 0.55f, 0.58f, 0.64f, 0.81f, 0.90f, 0.96f, 0.31f, 0.56f, 0.84f, 0.81f, 0.90f, 0.96f, 150f, 900f, 0f},
-            {0.9f, 0.25f, -0.3f, 0.75f, 0.45f, 0.25f, 0.48f, 0.40f, 0.40f, 0.91f, 0.69f, 0.53f, 0.18f, 0.25f, 0.45f, 0.95f, 0.65f, 0.37f, 120f, 800f, 0.35f},
-            {-0.4f, 0.8f, 0.3f, 0.14f, 0.18f, 0.32f, 0.20f, 0.24f, 0.38f, 0.05f, 0.08f, 0.15f, 0.02f, 0.03f, 0.06f, 0.09f, 0.13f, 0.23f, 60f, 550f, 1f}};
+            {0.5f, 0.8f, 0.3f, 0.62f, 0.60f, 0.55f, 0.55f, 0.58f, 0.64f, 0.81f, 0.90f, 0.96f, 0.31f, 0.56f, 0.84f, 0.81f, 0.90f, 0.96f, 220f, 1900f, 0f},
+            {0.9f, 0.25f, -0.3f, 0.75f, 0.45f, 0.25f, 0.48f, 0.40f, 0.40f, 0.91f, 0.69f, 0.53f, 0.18f, 0.25f, 0.45f, 0.95f, 0.65f, 0.37f, 200f, 1800f, 0.35f},
+            {-0.4f, 0.8f, 0.3f, 0.14f, 0.18f, 0.32f, 0.20f, 0.24f, 0.38f, 0.05f, 0.08f, 0.15f, 0.02f, 0.03f, 0.06f, 0.09f, 0.13f, 0.23f, 150f, 1500f, 1f}};
 
     private final Context ctx;
     private final Listener L;
@@ -201,6 +201,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         if (!started) {
             started = true;
             Geo.setOrigin(31.9522646, 35.9389907);
+            Terrain.configureForCity(Geo.lat0, Geo.lon0);
             game.reset();
             beginSpawn();
         }
@@ -231,6 +232,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         terrain.clear();
         Terrain.reset();
         Geo.setOrigin(lat, lon);
+        Terrain.configureForCity(lat, lon);
         game.reset();
         beginSpawn();
     }
@@ -269,7 +271,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
     /** يبني مربعات الأرض من الارتفاعات الحقيقية حول اللاعب ويحذف البعيد منها. */
     private void updateTerrain(int ptx, int ptz) {
-        if (!Terrain.baseSet) return;
+        if (!Terrain.enabled || !Terrain.baseSet) return;
         Iterator<Map.Entry<Long, Mesh>> it = terrain.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Long, Mesh> en = it.next();
@@ -460,7 +462,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
         Game g = game;
-        Matrix.perspectiveM(proj, 0, 65f, aspect, 0.3f, 1500f);
+        Matrix.perspectiveM(proj, 0, 65f, aspect, 0.3f, 2600f);
         Matrix.setLookAtM(view, 0, g.camX, g.camY, g.camZ, g.tgtX, g.tgtY, g.tgtZ, 0f, 1f, 0f);
         Matrix.multiplyMM(vp, 0, proj, 0, view, 0);
 
@@ -497,7 +499,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
         // المربعات
         for (Tile t : tiles.values()) {
-            if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > 1100) continue;
+            if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > 1750) continue;
             drawMesh(t.meshes[TileBuilder.B_SIDEWALK], tex.sidewalk, tex.black, 0f);
             drawMesh(t.meshes[TileBuilder.B_ROADN], tex.roadN, tex.black, 0f);
             drawMesh(t.meshes[TileBuilder.B_ROADW], tex.roadW, tex.black, 0f);
@@ -517,9 +519,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > 1100) continue;
             if (t.meshes[TileBuilder.B_WATER] != null) t.meshes[TileBuilder.B_WATER].draw();
         }
-        if (coast && Terrain.baseSet) {
+        if (coast) {
             Matrix.setIdentityM(tmp, 0);
-            Matrix.translateM(tmp, 0, g.camX, Terrain.seaY() + 0.05f, g.camZ);
+            Matrix.translateM(tmp, 0, g.camX, (Terrain.enabled && Terrain.baseSet ? Terrain.seaY() : 0f) + 0.05f, g.camZ);
             GLES20.glUniformMatrix4fv(uModel, 1, false, tmp, 0);
             seaMesh.draw();
             GLES20.glUniformMatrix4fv(uModel, 1, false, ident, 0);
@@ -533,7 +535,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform1f(uDecal, 1f);
         for (Tile t : tiles.values()) {
             if (t.decalMesh == null) continue;
-            if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > 500) continue;
+            if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > 850) continue;
             bindTex(t.decalTex, tex.black);
             t.decalMesh.draw();
         }

@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 final class TileLoader extends Thread {
     interface ErrorCallback { void onError(); }
 
-    static final int LOAD_R = 1;   // 3×3 مربعات حول اللاعب
+    static final int LOAD_R = 2;   // 5×5 مربعات: المجال الحالي مع منطقة استباقية حول اللاعب
     static final String[] SERVERS = {
             "https://overpass-api.de/api/interpreter",
             "https://overpass.kumi.systems/api/interpreter",
@@ -122,24 +122,28 @@ final class TileLoader extends Thread {
                 try { writeFile(f, json); } catch (IOException ignore) {}
             }
         }
-        // التضاريس الحقيقية: نقطة المرجع ثم بلاطات الارتفاع حول المربع
-        if (!Terrain.ready()) {
-            synchronized (Terrain.class) {
-                if (!Terrain.ready()) {
-                    try {
-                        Terrain.ensureRect(Geo.lat0 - 0.00001, Geo.lon0 - 0.00001,
-                                Geo.lat0 + 0.00001, Geo.lon0 + 0.00001);
-                        Terrain.setBaseAt(Geo.lat0, Geo.lon0);
-                    } catch (IOException ex) {
-                        Terrain.demFails++;
-                        throw ex;
+        // DEM يُحمّل لعمّان فقط. بقية المدن تُبنى على مستوى ارتفاع صفر دون طلب أي بلاطات تضاريس.
+        if (Terrain.enabled) {
+            if (!Terrain.ready()) {
+                synchronized (Terrain.class) {
+                    if (Terrain.enabled && !Terrain.ready()) {
+                        try {
+                            Terrain.ensureRect(Geo.lat0 - 0.00001, Geo.lon0 - 0.00001,
+                                    Geo.lat0 + 0.00001, Geo.lon0 + 0.00001);
+                            Terrain.setBaseAt(Geo.lat0, Geo.lon0);
+                        } catch (IOException ex) {
+                            Terrain.demFails++;
+                            throw ex;
+                        }
+                        if (!Terrain.baseSet) throw new IOException("DEM reference elevation unavailable");
                     }
-                    if (!Terrain.baseSet) throw new IOException("DEM reference elevation unavailable");
                 }
             }
+            if (Terrain.enabled) {
+                Terrain.ensureRect(south - 2 * Geo.D_LAT, west - 2 * Geo.dLon,
+                        north + 2 * Geo.D_LAT, east + 2 * Geo.dLon);
+            }
         }
-        // لا نبني الطرق أو المباني قبل ضمان توفر جميع بلاطات الارتفاع للمنطقة.
-        Terrain.ensureRect(south - 2 * Geo.D_LAT, west - 2 * Geo.dLon, north + 2 * Geo.D_LAT, east + 2 * Geo.dLon);
         return TileBuilder.build(new JSONObject(json), ix, iz);
     }
 

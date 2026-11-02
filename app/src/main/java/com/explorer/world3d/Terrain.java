@@ -19,6 +19,7 @@ final class Terrain {
     private static final ConcurrentHashMap<Long, float[]> dem = new ConcurrentHashMap<>();
     private static volatile File cacheDir;
     private static volatile Decoder decoder;
+    static volatile boolean enabled = false;
     static volatile float base = 0f;
     static volatile boolean baseSet = false;
     static volatile boolean flat = false;      // فشل تحميل الارتفاعات: عالم مسطح
@@ -32,9 +33,24 @@ final class Terrain {
         if (dir != null) dir.mkdirs();
     }
 
-    static void reset() { baseSet = false; flat = false; demFails = 0; base = 0f; }
+    static void reset() { enabled = false; baseSet = false; flat = false; demFails = 0; base = 0f; }
 
-    static boolean ready() { return baseSet; }
+    /** التضاريس مفعّلة داخل نطاق عمّان فقط؛ بقية المدن تستخدم سطحاً مستوياً. */
+    static boolean isAmman(double lat, double lon) {
+        double p1 = Math.toRadians(31.9522646), p2 = Math.toRadians(lat);
+        double dp = p2 - p1, dl = Math.toRadians(lon - 35.9389907);
+        double a = Math.sin(dp / 2) * Math.sin(dp / 2)
+                + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) * Math.sin(dl / 2);
+        double distance = 6371000.0 * 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+        return distance <= 22000.0;
+    }
+
+    static void configureForCity(double lat, double lon) {
+        enabled = isAmman(lat, lon);
+        if (!enabled) { base = 0f; baseSet = false; }
+    }
+
+    static boolean ready() { return enabled && baseSet; }
 
     static double gx(double lon) { return (lon + 180.0) / 360.0 * NPIX; }
     static double gy(double lat) {
@@ -48,6 +64,7 @@ final class Terrain {
     }
 
     static void ensure(double lat, double lon) throws IOException {
+        if (!enabled) return;
         int tx = (int) Math.floor(gx(lon) / 256.0), ty = (int) Math.floor(gy(lat) / 256.0);
         long k = key(tx, ty);
         if (dem.containsKey(k)) return;
@@ -80,6 +97,7 @@ final class Terrain {
 
     /** يحمّل كل بلاطات DEM التي قد تحتاجها المنطقة، بما فيها بكسل الاستيفاء المجاور. */
     static void ensureRect(double s, double w, double n, double e) throws IOException {
+        if (!enabled) return;
         double x0 = gx(w) - 0.5, x1 = gx(e) - 0.5;
         double y0 = gy(s) - 0.5, y1 = gy(n) - 0.5;
         int minTx = (int) Math.floor(Math.min(x0, x1) / 256.0);
@@ -118,6 +136,7 @@ final class Terrain {
     }
 
     static void setBaseAt(double lat, double lon) {
+        if (!enabled) { base = 0f; baseSet = false; return; }
         float e = rawElev(lat, lon);
         base = Float.isNaN(e) ? 0f : e;
         baseSet = !Float.isNaN(e);
@@ -125,13 +144,13 @@ final class Terrain {
 
     /** الارتفاع النسبي لنقطة بداية المدينة (م). */
     static float h(float x, float z) {
-        if (!baseSet) return 0f;
+        if (!enabled || !baseSet) return 0f;
         float e = rawElev(Geo.latOf(z), Geo.lonOf(x));
         return Float.isNaN(e) ? 0f : e - base;
     }
 
     /** مستوى سطح البحر نسبةً لنقطة البداية. */
-    static float seaY() { return baseSet ? -base : 0f; }
+    static float seaY() { return enabled && baseSet ? -base : 0f; }
 
     private static byte[] readAll(InputStream in) throws IOException {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
