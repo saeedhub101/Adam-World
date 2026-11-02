@@ -30,13 +30,26 @@ def save(path, data):
 
 def checkpoint(paths):
     rel = [str(p.relative_to(ROOT)) for p in paths if p.exists()]
+    if not rel:
+        return
     subprocess.run(["git", "add", "--", *rel], cwd=ROOT, check=True)
     if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
         return
     subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=ROOT, check=True)
     subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], cwd=ROOT, check=True)
     subprocess.run(["git", "commit", "-m", "Import Amman Overture road segments"], cwd=ROOT, check=True)
-    subprocess.run(["git", "pull", "--rebase", "origin", "main"], cwd=ROOT, check=True)
+
+    # Overture may leave a resumable .state file in the worktree. Stash all
+    # remaining changes before syncing the branch, then restore them.
+    stash = subprocess.run(
+        ["git", "stash", "push", "--include-untracked", "-m", "amman-roads-checkpoint"],
+        cwd=ROOT, text=True, capture_output=True, check=True
+    )
+    try:
+        subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True)
+        subprocess.run(["git", "rebase", "origin/main"], cwd=ROOT, check=True)
+    finally:
+        subprocess.run(["git", "stash", "pop"], cwd=ROOT, check=True)
     subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT, check=True)
 
 def main():
