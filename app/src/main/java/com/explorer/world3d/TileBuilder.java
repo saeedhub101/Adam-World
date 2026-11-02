@@ -422,6 +422,48 @@ final class TileBuilder {
             buf.v(ax, roofY[i], az, 0, 0, cr, cg, cb);
             buf.fixTri();
         }
+        // Architectural plinth: preserve its mapped height as a distinct stone/concrete base band.
+        float plinthHeight = measure(tg(tags, "building:plinth:height"));
+        if (!(plinthHeight > 0f)) plinthHeight = measure(tg(tags, "min_height"));
+        plinthHeight = Math.max(0f, Math.min(h * 0.35f, plinthHeight));
+        // Floor count is taken from source. Height-based inference is only a fallback when absent.
+        float floors = measure(tg(tags, "building:levels"));
+        if (!(floors > 0f)) floors = Math.max(1f, Math.round(h / 3.2f));
+        floors = Math.max(1f, Math.min(100f, floors));
+        float floorStep = Math.max(2.2f, (h - minHeight) / floors);
+        for (int edge = 0; edge < n; edge++) {
+            int next = (edge + 1) % n;
+            float ax = px[edge], az = pz[edge], bx = px[next], bz = pz[next];
+            float dx = bx - ax, dz = bz - az, len = (float) Math.hypot(dx, dz);
+            if (len < 1f) continue;
+            float nx = dz / len, nz = -dx / len;
+            if (Poly.contains(px, pz, (ax + bx) * 0.5f + nx, (az + bz) * 0.5f + nz)) { nx = -nx; nz = -nz; }
+            // A separate, slightly projecting base course makes the plinth legible.
+            if (plinthHeight > 0.15f) {
+                float y0a = ground[edge] + minHeight, y0b = ground[next] + minHeight;
+                float y1a = y0a + plinthHeight, y1b = y0b + plinthHeight;
+                float off = 0.045f;
+                float pr = 0.58f, pg = 0.55f, pb = 0.49f;
+                buf.v(ax + nx*off,y0a,az+nz*off,0,0,pr,pg,pb); buf.v(bx+nx*off,y0b,bz+nz*off,1,0,pr,pg,pb); buf.v(bx+nx*off,y1b,bz+nz*off,1,1,pr,pg,pb); buf.fixTri();
+                buf.v(ax+nx*off,y0a,az+nz*off,0,0,pr,pg,pb); buf.v(bx+nx*off,y1b,bz+nz*off,1,1,pr,pg,pb); buf.v(ax+nx*off,y1a,az+nz*off,0,1,pr,pg,pb); buf.fixTri();
+            }
+            // Fine horizontal facade joints at actual storey elevations (not a texture overlay).
+            float band = Math.min(0.09f, Math.max(0.035f, h / 900f));
+            for (int level = 1; level < (int) floors; level++) {
+                float ya = ground[edge] + minHeight + floorStep * level;
+                float yb = ground[next] + minHeight + floorStep * level;
+                if (ya >= roofY[edge] - 0.15f || yb >= roofY[next] - 0.15f) continue;
+                float off = 0.035f;
+                float shade = 0.70f;
+                buf.v(ax+nx*off,ya-band,az+nz*off,0,0,cr*shade,cg*shade,cb*shade);
+                buf.v(bx+nx*off,yb-band,bz+nz*off,1,0,cr*shade,cg*shade,cb*shade);
+                buf.v(bx+nx*off,yb,bz+nz*off,1,1,cr*shade,cg*shade,cb*shade); buf.fixTri();
+                buf.v(ax+nx*off,ya-band,az+nz*off,0,0,cr*shade,cg*shade,cb*shade);
+                buf.v(bx+nx*off,yb,bz+nz*off,1,1,cr*shade,cg*shade,cb*shade);
+                buf.v(ax+nx*off,ya,az+nz*off,0,1,cr*shade,cg*shade,cb*shade); buf.fixTri();
+            }
+        }
+        // Basement depth is retained in the wall mesh below terrain; visible cutaway controls are renderer/UI work.
         float parea = Math.abs(Poly.area(px, pz));
         boolean pyramid = (rshape.equals("pyramidal") || rshape.equals("hipped")
                 || (rshape.isEmpty() && bld.matches("house|detached|semidetached_house|bungalow") && rnd(id, 10) < 0.6f))
