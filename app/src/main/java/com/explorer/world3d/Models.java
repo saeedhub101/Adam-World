@@ -11,6 +11,7 @@ final class Footprint {
 final class Decal {
     String text;
     float x, z, dx, dz, y = Float.NaN;
+    boolean vertical;
 }
 
 final class RoadPath {
