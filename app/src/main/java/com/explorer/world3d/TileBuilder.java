@@ -74,6 +74,7 @@ final class TileBuilder {
 
         ArrayList<float[]> trees = new ArrayList<>(), lamps = new ArrayList<>();
         int bcount = 0;
+        ArrayList<float[][]> parentFootprints = new ArrayList<>();
         Random rng = new Random(ix * 73856093L ^ iz * 19349663L);
         HashSet<String> names = new HashSet<>();
 
@@ -129,6 +130,21 @@ final class TileBuilder {
                 float cx = center[0], cz = center[1];
                 if (cx < xMin || cx >= xMax || cz < zMin || cz >= zMax) continue;
                 if (Landmarks.suppress(cx, cz)) continue;
+                boolean isPart = !tg(tags, "building:part").isEmpty();
+                if (isPart) {
+                    boolean coveredByParent = false;
+                    for (float[][] parent : parentFootprints) {
+                        if (Poly.contains(parent[0], parent[1], cx, cz)) {
+                            coveredByParent = true;
+                            break;
+                        }
+                    }
+                    if (coveredByParent) continue;
+                } else {
+                    // Primary footprints are retained; overlapping building:part polygons
+                    // are suppressed so their facade/window meshes are not rendered twice.
+                    parentFootprints.add(P);
+                }
                 bcount++;
                 addBuilding(td, tags, id, bld, px, pz);
                 int poi = poiCategory(tags);
