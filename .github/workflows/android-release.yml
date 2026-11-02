@@ -100,8 +100,11 @@ jobs:
         run: |
           set -euo pipefail
           git clone --depth 1 --filter=blob:none --sparse https://github.com/saeedhub101/Adam-City.git Adam-City-source
-          git -C Adam-City-source sparse-checkout set Manila/vector-tiles
+          git -C Adam-City-source sparse-checkout set Manila/vector-tiles building-data/buildings.csv ermita/maps/generated/ermita-public_services.csv ermita/maps/generated/ermita-accessibility.csv
           test "$(find Adam-City-source/Manila/vector-tiles -type f -name '*.pbf' | wc -l)" -gt 0
+          test -s Adam-City-source/building-data/buildings.csv
+          test -s Adam-City-source/ermita/maps/generated/ermita-public_services.csv
+          test -s Adam-City-source/ermita/maps/generated/ermita-accessibility.csv
 
       - name: Build spatially streamed Manila offline data
         run: |
