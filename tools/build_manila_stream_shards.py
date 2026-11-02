@@ -114,7 +114,19 @@ def emit_polygon(writer, source, rawid, rings, tags, layer):
         if len(pts)>=4:
             writer.add({"type":"way","id":sid(source,rawid,i),"tags":dict(tags),"geometry":pts},layer)
 
-PRIMARY_CENTROIDS = []\n\ndef read_pbf(writer):
+PRIMARY_CENTROIDS = []\n\ndef read_osm_detail_index():
+    data=json.loads(DETAILS.read_text(encoding="utf-8"))
+    index={}
+    for f in data.get("features",[]):
+        p=f.get("properties") or {}; tags=p.get("tags") or {}
+        if not (tags.get("building") or tags.get("building:part")): continue
+        for raw in (p.get("id"),p.get("osm_way_id"),p.get("osm_feature_id")):
+            if raw is not None: index[str(raw).split("/")[-1]]=tags
+    return data,index
+
+MATCHED_OSM_IDS=set()
+
+def read_pbf(writer, osm_index):
     try: import mapbox_vector_tile
     except ImportError as e: raise SystemExit("Install mapbox-vector-tile before importing Manila PBF") from e
     files=sorted(PBF_ROOT.rglob("*.pbf"))
@@ -134,8 +146,38 @@ PRIMARY_CENTROIDS = []\n\ndef read_pbf(writer):
             rings=mvt_geometry(g,x,y,z,extent)
             if not rings: continue
             p=f.get("properties") or {}; tags=tags_from_omt(p)
+            rawids=[f.get("id"),p.get("id"),p.get("osm_id"),p.get("osm_way_id"),p.get("source_id")]
+            for raw in rawids:
+                if raw is None: continue
+                key=str(raw).split("/")[-1]
+                supplement=osm_index.get(key)
+                if supplement:
+                    MATCHED_OSM_IDS.add(key)
+                    for k,v in supplement.items():
+                        if v not in (None,"") and tags.get(k) in (None,""): tags[k]=text(v)
             emit_polygon(writer,"omt",f.get("id",count),rings,tags,"openmaptiles_buildings")
             count+=1
+        # Preserve named facilities and address-number points from the same tiles.
+        for lname in ("poi","housenumber"):
+            lyr=tile.get(lname)
+            if not lyr: continue
+            extent2=lyr.get("extent",4096)
+            for f in lyr.get("features",[]):
+                geom=f.get("geometry") or {}; p=f.get("properties") or {}
+                if geom.get("type")!="Point": continue
+                xy=geom.get("coordinates") or []
+                if len(xy)<2: continue
+                lon,lat=tile_lonlat(xy[0]+x*extent2,xy[1]+y*extent2,z,extent2)
+                t={"adam:source":"OpenMapTiles"}
+                if lname=="housenumber":
+                    value=p.get("housenumber") or p.get("housenumber_name") or p.get("name")
+                    if value: t["addr:housenumber"]=text(value)
+                    if p.get("street"): t["addr:street"]=text(p["street"])
+                else:
+                    for k in ("name","class","subclass","ref","amenity","shop","tourism","office","healthcare","cuisine","brand","operator"):
+                        if p.get(k) not in (None,""): t[k]=text(p[k])
+                if len(t)>1:
+                    writer.add({"type":"node","id":sid("omt-"+lname,f.get("id",0)),"lat":lat,"lon":lon,"tags":t},"openmaptiles_"+lname)
     if not count: raise SystemExit("No zoom-14 building features decoded from Manila PBF tiles")
     return count
 
@@ -153,9 +195,9 @@ def read_transport(writer):
             pts=coords_to_points(line)
             if len(pts)>=2: writer.add({"type":"way","id":sid("ofm-road",f.get("id",i),j),"tags":tags,"geometry":pts},"openfreemap_transportation")
 
-def read_osm_details(writer, primary_ids):
+def read_osm_details(writer, data, primary_ids):
     if not DETAILS.is_file(): raise SystemExit(f"Missing OSM detail file: {DETAILS}")
-    data=json.loads(DETAILS.read_text(encoding="utf-8")); unmatched=0; matched=0
+    unmatched=0; matched=0
     # Preserve OSM building footprints/parts only when no OMT footprint matches.
     # OSM attributes are still emitted as point/attribute records for enrichment.
     for f in data.get("features",[]):
@@ -196,9 +238,10 @@ def read_context(writer):
 
 def main():
     writer=Shards()
-    omt=read_pbf(writer)
+    osm_data,osm_index=read_osm_detail_index()
+    omt=read_pbf(writer,osm_index)
     read_transport(writer)
-    matched,unmatched=read_osm_details(writer,set())
+    matched,unmatched=read_osm_details(writer,osm_data,MATCHED_OSM_IDS)
     context=read_context(writer)
     writer.close()
     manifest={"schema_version":1,"city":"Manila","source":"Adam-City OpenMapTiles PBF + OpenFreeMap transportation GeoJSON + OSM supplemental details",
