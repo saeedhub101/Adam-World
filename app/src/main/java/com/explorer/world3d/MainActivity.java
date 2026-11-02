@@ -41,8 +41,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             {"طوكيو", 35.659495, 139.700498},         // Shibuya Scramble Crossing
             {"لندن", 51.500948, -0.124857},           // Bridge Street, Westminster
             {"الرياض", 24.6821, 46.687219},           // King Fahd Road
-            {"القاهرة", 30.05056, 31.24051},        // Talaat Harb Street
-            {"البيت", 31.997579, 35.940358}};         // صيدلية كوبرا، طبربور
+            {"القاهرة", 30.05056, 31.24051}};        // Talaat Harb Street
 
     private CityRenderer renderer;
     private CityGLView glView;
@@ -167,6 +166,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             @Override public void onClick(View v) { teleportOfflineManila(); }
         });
         chips.addView(localManila);
+        Button localHome = btn("البيت");
+        localHome.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { teleportOfflineTabarbour(); }
+        });
+        chips.addView(localHome);
         for (final Object[] c : CITIES) {
             Button b = btn((String) c[0]);
             b.setOnClickListener(new View.OnClickListener() {
@@ -344,6 +348,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             loading.setVisibility(View.VISIBLE);
         }});
         glView.queueEvent(new Runnable() { @Override public void run() { renderer.teleportOfflineAmman(); }});
+    }
+
+    private void teleportOfflineTabarbour() {
+        runOnUiThread(new Runnable() { @Override public void run() {
+            loading.setText("جاري تحميل بيانات البيت المحلية…");
+            loading.setVisibility(View.VISIBLE);
+        }});
+        glView.queueEvent(new Runnable() { @Override public void run() { renderer.teleportOfflineTabarbour(); }});
     }
 
     private void search() {
