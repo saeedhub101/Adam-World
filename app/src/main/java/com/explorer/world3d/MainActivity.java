@@ -153,7 +153,7 @@ public class MainActivity extends Activity {
                 try {
                     URL parsed = new URL(sourceUrl);
                     String host = parsed.getHost();
-                    if (!"api.imagery.hotosm.org".equals(host) && !"api.panoramax.xyz".equals(host) && !"overpass-api.de".equals(host)) {
+                    if (!"api.imagery.hotosm.org".equals(host) && !"api.panoramax.xyz".equals(host) && !"overpass-api.de".equals(host) && !"overpass.kumi.systems".equals(host)) {
                         throw new SecurityException("مصدر غير مسموح");
                     }
                     if (!"https".equalsIgnoreCase(parsed.getProtocol())) {
