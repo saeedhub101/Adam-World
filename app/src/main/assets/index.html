@@ -1450,6 +1450,10 @@ function addRomanTheatre(footprint){
   function boxInsideSite(x,z,w,d){
     return [[-1,-1],[-1,1],[1,-1],[1,1]].every(([sx,sz])=>insideSiteLocal(x+sx*w/2,z+sz*d/2));
   }
+  function arcInsideSite(radius,lo,hi,steps){
+    for(let i=0;i<=steps;i++){const a=lo+(hi-lo)*i/steps;if(!insideSiteLocal(radius*Math.cos(a),radius*Math.sin(a)))return false;}
+    return true;
+  }
   function conformBase(mesh,bottomY,allVertices=false){
     const attr=mesh.geometry&&mesh.geometry.attributes&&mesh.geometry.attributes.position;if(!attr)return;
     const v=new THREE.Vector3();
@@ -1467,6 +1471,7 @@ function addRomanTheatre(footprint){
       const aa=lo+(hi-lo)*j/steps,bb=lo+(hi-lo)*(j+1)/steps;
       const p=(r,a,Y)=>{const x=r*Math.cos(a),z=r*Math.sin(a);return [x,groundAt(x,z)+Y,z];};
       const p0=p(inner,aa,extraY),p1=p(outer,aa,extraY),p2=p(outer,bb,extraY),p3=p(inner,bb,extraY);
+      if(![p0,p1,p2,p3].every(q=>insideSiteLocal(q[0],q[2])))continue;
       seatPos.push(...p0,...p1,...p2,...p0,...p2,...p3);
       const q0=p(inner,aa,extraY-thick),q1=p(inner,bb,extraY-thick);
       wallPos.push(...q0,...q1,...p3,...q0,...p3,...p0);
@@ -1487,15 +1492,19 @@ function addRomanTheatre(footprint){
     const r=13.5+row*1.08+0.46,y=0.28+row*0.12+(row>=10?0.55:0)+(row>=21?0.55:0),count=Math.floor((a1-a0)*r/0.42);
     for(let k=0;k<count;k++){
       const angle=a0+(k+0.5)*(a1-a0)/count;if(aisles.some(gap=>angle>gap[0]-0.018&&angle<gap[1]+0.018))continue;
-      const x=r*Math.cos(angle),z=r*Math.sin(angle);seatDummy.position.set(x,groundAt(x,z)+y+0.18,z);
+      const x=r*Math.cos(angle),z=r*Math.sin(angle);if(!boxInsideSite(x,z,0.40,0.86))continue;seatDummy.position.set(x,groundAt(x,z)+y+0.18,z);
       seatDummy.rotation.set(0,-Math.PI/2-angle,0);seatDummy.updateMatrix();seatMesh.setMatrixAt(seatIndex++,seatDummy.matrix);
     }
   }
   seatMesh.count=seatIndex;seatMesh.instanceMatrix.needsUpdate=true;g.add(seatMesh);
-  const outerWall=new THREE.Mesh(new THREE.CylinderGeometry(48.2,48.2,5.5,112,1,true,0,Math.PI),cutStone);
-  outerWall.position.set(0,groundAt(0,0)+2.75,0);conformBase(outerWall,-2.75);g.add(outerWall);
-  const orchestra=new THREE.Mesh(new THREE.CircleGeometry(13.2,96),stone);
-  orchestra.rotation.x=-Math.PI/2;orchestra.position.set(0,groundAt(0,0)+0.18,0);conformBase(orchestra,0,true);g.add(orchestra);
+  if(arcInsideSite(48.2,0,Math.PI,64)){
+    const outerWall=new THREE.Mesh(new THREE.CylinderGeometry(48.2,48.2,5.5,112,1,true,0,Math.PI),cutStone);
+    outerWall.position.set(0,groundAt(0,0)+2.75,0);conformBase(outerWall,-2.75);g.add(outerWall);
+  }
+  if(arcInsideSite(13.2,0,Math.PI,48)){
+    const orchestra=new THREE.Mesh(new THREE.CircleGeometry(13.2,96),stone);
+    orchestra.rotation.x=-Math.PI/2;orchestra.position.set(0,groundAt(0,0)+0.18,0);conformBase(orchestra,0,true);g.add(orchestra);
+  }
   for(const angle of [0.46,0.97,2.17,2.68])for(let k=0;k<24;k++){
     const r=14+k*1.38,x=Math.cos(angle)*r,z=Math.sin(angle)*r,y=groundAt(x,z)+0.35+k*0.12;
     if(!boxInsideSite(x,z,1.35,1.18))continue;
@@ -1519,13 +1528,19 @@ function addRomanTheatre(footprint){
       cap.position.set(x,colGround+14.0,-29.9);conformBase(cap,-0.275);g.add(cap);
     }
   }
-  const entGround=groundAt(0,-30.5),entablature=new THREE.Mesh(new THREE.BoxGeometry(42,1.1,4.1),cutStone);
-  entablature.position.set(0,entGround+14.9,-30.5);conformBase(entablature,-0.55);g.add(entablature);
+  if(boxInsideSite(0,-30.5,42,4.1)){
+    const entGround=groundAt(0,-30.5),entablature=new THREE.Mesh(new THREE.BoxGeometry(42,1.1,4.1),cutStone);
+    entablature.position.set(0,entGround+14.9,-30.5);conformBase(entablature,-0.55);g.add(entablature);
+  }
   for(const x of [-12,0,12]){
-    const doorGround=groundAt(x,-28.35),door=new THREE.Mesh(new THREE.BoxGeometry(3.4,6.4,0.18),dark);
-    door.position.set(x,doorGround+4.2,-28.35);conformBase(door,-3.2);g.add(door);
-    const lintelGround=groundAt(x,-28.25),lintel=new THREE.Mesh(new THREE.BoxGeometry(4.1,0.65,0.5),cutStone);
-    lintel.position.set(x,lintelGround+7.55,-28.25);conformBase(lintel,-0.325);g.add(lintel);
+    if(boxInsideSite(x,-28.35,3.4,0.18)){
+      const doorGround=groundAt(x,-28.35),door=new THREE.Mesh(new THREE.BoxGeometry(3.4,6.4,0.18),dark);
+      door.position.set(x,doorGround+4.2,-28.35);conformBase(door,-3.2);g.add(door);
+    }
+    if(boxInsideSite(x,-28.25,4.1,0.5)){
+      const lintelGround=groundAt(x,-28.25),lintel=new THREE.Mesh(new THREE.BoxGeometry(4.1,0.65,0.5),cutStone);
+      lintel.position.set(x,lintelGround+7.55,-28.25);conformBase(lintel,-0.325);g.add(lintel);
+    }
   }
   for(const side of [-1,1]){
     if(!boxInsideSite(side*23,-24,7,16))continue;
