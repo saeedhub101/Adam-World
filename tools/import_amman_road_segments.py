@@ -45,11 +45,13 @@ def checkpoint(paths):
         ["git", "stash", "push", "--include-untracked", "-m", "amman-roads-checkpoint"],
         cwd=ROOT, text=True, capture_output=True, check=True
     )
+    stash_created = "No local changes to save" not in (stash.stdout + stash.stderr)
     try:
         subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True)
         subprocess.run(["git", "rebase", "origin/main"], cwd=ROOT, check=True)
     finally:
-        subprocess.run(["git", "stash", "pop"], cwd=ROOT, check=True)
+        if stash_created:
+            subprocess.run(["git", "stash", "pop"], cwd=ROOT, check=True)
     subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT, check=True)
 
 def main():
