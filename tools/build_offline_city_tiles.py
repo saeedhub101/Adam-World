@@ -196,7 +196,15 @@ def _geojson_transportation_elements(path):
         geom=feature.get("geometry") or {}
         kind,coords=geom.get("type"),geom.get("coordinates") or []
         lines=[coords] if kind=="LineString" else (coords if kind=="MultiLineString" else [])
-        raw_id=feature.get("id") or props.get("osm_id") or props.get("osm_way_id") or len(output)
+        raw_id=props.get("osm_id") or props.get("osm_way_id") or feature.get("id") or len(output)
+        source_id=str(raw_id)
+        for prefix in ("openfreemap-transportation/", "openfreemap-transportation_name/"):
+            if source_id.startswith(prefix):
+                source_id=source_id[len(prefix):]
+                break
+        osm_id=_osm_id(source_id)
+        if osm_id is not None:
+            tags["adam:source_osm_id"]=str(osm_id)
         seed=str(raw_id)
         base_id=9_000_000_000+(sum((i+1)*ord(ch) for i,ch in enumerate(seed))%800_000_000)
         for line_index,line in enumerate(lines):
@@ -323,6 +331,24 @@ def source_elements(slug):
         primary_roads = _geojson_transportation_elements(transportation_path)
         if full.is_file():
             full_data = read_json(full)
+            # Enrich provider road geometry with exact OSM tags when the stable
+            # OSM way ID matches. This recovers real width/lanes/names without
+            # replacing OpenFreeMap's primary road geometry.
+            osm_roads = {}
+            for source_element in full_data.get("elements") or []:
+                source_tags = source_element.get("tags") or {}
+                if source_element.get("type") == "way" and source_tags.get("highway"):
+                    source_id = _osm_id(source_element.get("id"))
+                    if source_id is not None:
+                        osm_roads[source_id] = source_tags
+            for road in primary_roads:
+                road_tags = road.get("tags") or {}
+                road_id = _osm_id(road_tags.get("adam:source_osm_id"))
+                if road_id in osm_roads:
+                    for key, value in osm_roads[road_id].items():
+                        if value not in (None, "") and road_tags.get(key) in (None, ""):
+                            road_tags[key] = value
+                    road["tags"] = road_tags
             preserved = [
                 item for item in (full_data.get("elements") or [])
                 if not ((item.get("tags") or {}).get("building") or
