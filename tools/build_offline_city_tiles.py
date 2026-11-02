@@ -117,8 +117,11 @@ def _geojson_way_elements(path, only_building_parts=False):
         if only_building_parts:
             if not tags.get("building:part"):
                 continue
-        elif not (tags.get("building") or tags.get("building:part")):
-            continue
+        else:
+            # Every feature in building-footprints.geojson is a building polygon;
+            # vector tiles do not always publish a separate "building" property.
+            if not (tags.get("building") or tags.get("building:part")):
+                tags["building"] = "yes"
         raw_id = (props.get("osm_feature_id") or props.get("osm_way_id") or
                   props.get("osm_id") or props.get("source_feature_id") or
                   feature.get("id"))
