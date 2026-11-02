@@ -25,7 +25,7 @@ jobs:
   import:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Tabarbour sources and existing Amman OSM context
+      - name: Checkout only the dedicated Tabarbour dataset and required tools
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -33,7 +33,6 @@ jobs:
             /app/src/main/assets/cities/
             /data/facades/cities/catalog.json
             /data/facades/cities/tabarbour/
-            /data/offline-world/amman/
             /data/offline-world/tabarbour/
             /tools/facades/import_city_building_sources.py
             /tools/facades/fetch_catalogue_metadata.py
@@ -50,44 +49,30 @@ jobs:
       - name: Install GeoJSON and vector-tile parsers
         run: python -m pip install --disable-pip-version-check mapbox-vector-tile osm2geojson shapely
 
-      - name: Configure incremental repository checkpoints
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Import OpenFreeMap footprints, road geometry and names, and OSM building details
+      - name: Import Tabarbour footprints, road geometry, names and building details directly
         continue-on-error: true
         run: |
           python -m py_compile tools/facades/import_city_building_sources.py
-          python tools/facades/import_city_building_sources.py --city tabarbour --git-checkpoint
+          python tools/facades/import_city_building_sources.py --city tabarbour
 
-      - name: Harvest Panoramax facade and OpenAerialMap roof evidence
+      - name: Harvest Tabarbour Panoramax and aerial catalogue metadata
         continue-on-error: true
         run: |
-          python tools/facades/fetch_catalogue_metadata.py --city tabarbour --git-checkpoint
+          python -m py_compile tools/facades/fetch_catalogue_metadata.py
+          python tools/facades/fetch_catalogue_metadata.py --city tabarbour
 
-      - name: Match available facade photos to nearby building candidates
+      - name: Build facade photo review candidates
         continue-on-error: true
         run: |
+          python -m py_compile tools/facades/build_review_queue.py
           python tools/facades/build_review_queue.py --city tabarbour
-          git add data/facades/cities/tabarbour/review_queue.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Save Tabarbour facade photo review candidates"
-            git pull --rebase origin main
-            git push origin HEAD:main
-          fi
 
-      - name: Extract mapped trees, water, land cover, traffic and other OSM context
-        continue-on-error: true
+      - name: Download Tabarbour-only OSM context and elevation source tiles
         run: |
           python -m py_compile tools/extract_tabarbour_osm_context.py
           python tools/extract_tabarbour_osm_context.py
-          git add data/offline-world/tabarbour/
-          if ! git diff --cached --quiet; then
-            git commit -m "Save Tabarbour offline environmental and transit context"
-            git pull --rebase origin main
-            git push origin HEAD:main
-          fi
+          test -s data/offline-world/tabarbour/elements.json
+          test -s app/src/main/assets/cities/tabarbour/terrain/manifest.json
 
       - name: Build compact Tabarbour-only Android spatial assets
         run: |
@@ -96,20 +81,48 @@ jobs:
           python tools/build_offline_city_tiles.py --city tabarbour
           test -s app/src/main/assets/cities/tabarbour/manifest.json
           test "$(find app/src/main/assets/cities/tabarbour -maxdepth 1 -name 'tile_*.json' | wc -l)" -gt 0
+          # The city context step downloads terrain after the spatial package is built.
+          python tools/extract_tabarbour_osm_context.py
+          test -s app/src/main/assets/cities/tabarbour/terrain/manifest.json
 
-      - name: Save Tabarbour Android assets to main
+      - name: Verify dedicated Tabarbour data and publish one conflict-safe checkpoint
         run: |
-          git add app/src/main/assets/cities/tabarbour/
-          if ! git diff --cached --quiet; then
-            git commit -m "Package Tabarbour offline spatial data for Android"
-            git pull --rebase origin main
-            git push origin HEAD:main
-          fi
-
-      - name: Verify required Tabarbour offline source files
-        if: always()
-        run: |
+          set -euo pipefail
           test -s data/facades/cities/tabarbour/building-footprints.geojson
           test -s data/facades/cities/tabarbour/transportation.geojson
           test -s data/facades/cities/tabarbour/building-details.geojson
+          test -s data/offline-world/tabarbour/elements.json
           test -s app/src/main/assets/cities/tabarbour/manifest.json
+          test -s app/src/main/assets/cities/tabarbour/terrain/manifest.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          SNAPSHOT="$RUNNER_TEMP/tabarbour-publish"
+          mkdir -p "$SNAPSHOT"
+          for path in data/facades/cities/tabarbour data/offline-world/tabarbour app/src/main/assets/cities/tabarbour; do
+            mkdir -p "$SNAPSHOT/$path"
+            cp -a "$path/." "$SNAPSHOT/$path/"
+          done
+          PUBLISHED=false
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            for path in data/facades/cities/tabarbour data/offline-world/tabarbour app/src/main/assets/cities/tabarbour; do
+              mkdir -p "$path"
+              cp -a "$SNAPSHOT/$path/." "$path/"
+            done
+            git add data/facades/cities/tabarbour data/offline-world/tabarbour app/src/main/assets/cities/tabarbour
+            if git diff --cached --quiet; then
+              PUBLISHED=true
+              break
+            fi
+            git commit -m "Import and package dedicated Tabarbour offline world data"
+            if git push origin HEAD:main; then
+              PUBLISHED=true
+              break
+            fi
+            echo "main advanced during publish; reapplying the saved Tabarbour snapshot (attempt $attempt)"
+          done
+          if [ "$PUBLISHED" != true ]; then
+            echo "Could not publish Tabarbour dataset after five safe retries" >&2
+            exit 1
+          fi
