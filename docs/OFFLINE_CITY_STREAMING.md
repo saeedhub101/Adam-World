@@ -119,6 +119,15 @@ Photorealistic facade texturing remains a separate, evidence-gated production ph
 - The first visit to an uncached area requires internet access to fetch its cell. Once cached, that area can be reused without downloading the full 2 GB source directory.
 
 
+## Amman offline source-property rendering (2026-11-02)
+
+- Amman Local continues to use only `data/full-city-imports/amman/`; no GLB conversion or secondary city source is used.
+- Building shard conversion retains mapped total height, above-ground and underground floor counts, underground height, raised base/min-height, plinth height, roof height/shape/material/colour, facade material/colour, building use/class, names and available address fields. The renderer uses mapped height/levels, base offsets, roof material/colour, gabled/skillion roof profiles and mapped roof rise. When underground depth is mapped, the building wall geometry continues below terrain; it is not a visible underground cutaway in the current camera/terrain renderer.
+- Road conversion retains the road class, source width, surface, bridge/tunnel flags and any mapped bridge/tunnel height or layer. The renderer uses source width instead of the class-width default when a valid width is present, and changes road surface appearance by mapped surface type. Bridge/tunnel vertical offsets are applied only when a source height/layer is available; no fixed assumed bridge or tunnel elevation is substituted.
+- Missing source measurements remain missing. Existing conservative building-height/class fallbacks and class-based road widths are only fallbacks, not source measurements. Building plinth and underground values are retained; the current renderer does not yet provide an interactive underground cutaway or a separately modelled plinth band.
+- This is native procedural geometry, not GLB. A successful signed Android build and visual inspection on device are required before these changes are considered released or fully verified.
+
+
 ## Source boundary correction (2026-11-02)
 
 The native offline Amman stream is generated exclusively from the already imported directory `data/full-city-imports/amman/`. The shard builder must not read `data/facades`, `data/offline-world`, `data/offline-city`, external APIs, or any other city/source folder. It does not modify or replace those existing datasets. The generated compressed spatial cache is a separate derived output under `data/offline-city-stream/amman/`; it is not a second source dataset.
