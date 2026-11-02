@@ -157,20 +157,20 @@ final class TileBuilder {
                     buildingLabel = buildingLabel.isEmpty() ? houseNumber : buildingLabel + " · " + houseNumber;
                 if (!streetName.isEmpty() && !buildingLabel.contains(streetName))
                     buildingLabel = buildingLabel.isEmpty() ? streetName : buildingLabel + " · " + streetName;
+                if (buildingLabel.isEmpty()) buildingLabel = "مبنى";
                 float mappedFloors = measure(tg(tags, "building:levels"));
                 String floorLabel = mappedFloors > 0f
                         ? Math.round(mappedFloors) + " طوابق"
                         : (bHeight(tags, id, bld) > 0f
                             ? "≈" + Math.max(1, Math.round(bHeight(tags, id, bld) / 3.2f)) + " طوابق"
                             : "الطوابق غير موثقة");
-                if (!buildingLabel.isEmpty()) buildingLabel += " · ";
-                buildingLabel += floorLabel;
-                if (buildingLabel.trim().isEmpty()) buildingLabel = "مبنى";
+                buildingLabel += " · " + floorLabel;
                 addFacadeLabel(td, px, pz, buildingLabel, bMinHeight(tags, bHeight(tags, id, bld)), poi);
             } else if (!hw.isEmpty() && RW.containsKey(hw)) {
                 String nm = tg(tags, "name:ar");
                 if (nm.isEmpty()) nm = tg(tags, "name");
                 if (nm.isEmpty()) nm = tg(tags, "name:en");
+                if (nm.isEmpty()) nm = tg(tags, "ref");
                 addRoad(td, tags, hw, nm, names, xs, zs, xMin, xMax, zMin, zMax);
             } else if (tg(tags,"railway").matches("rail|light_rail|tram|subway|narrow_gauge|monorail")) {
                 addClippedRibbon(td,xs,zs,tg(tags,"railway").equals("rail")?4.2f:3.2f,0.24f,td.bufs[B_ROADN],0.25f,0.27f,0.29f);
@@ -447,12 +447,12 @@ final class TileBuilder {
         // OSM height is the total height; roof:height is the roof portion, not an extra height.
         for (int i = 0; i < n; i++) roofY[i] = ground[i] + wallHeight;
         float yTop = hMax + wallHeight;
-        boolean glass = h >= 40f || (bld.matches("office|commercial|hotel") && h >= 24f && rnd(id, 9) < 0.6f);
+        boolean glass = h >= 40f || (bld.matches("office|commercial|hotel") && h >= 24f);
         GeoBuf buf = glass ? td.bufs[B_GLASS] : td.bufs[B_FACADE];
         float cr, cg, cb;
-        if (glass) { float l = 0.75f + rnd(id, 4) * 0.15f; cr = l * 0.9f; cg = l; cb = l * 1.05f; }
+        if (glass) { cr = 0.70f; cg = 0.78f; cb = 0.84f; }
         else { float[] c = buildingColor(tags, id); cr = c[0]; cg = c[1]; cb = c[2]; }
-        float rf = 0.8f + rnd(id, 6) * 0.4f;
+        float rf = 1.0f;
         float rr = 0.43f * rf, rg = 0.43f * rf, rb = 0.43f * rf;
         float[] rc = hex(tg(tags, "roof:colour"));
         if (rc == null) rc = hex(tg(tags, "roof:color"));
@@ -461,7 +461,7 @@ final class TileBuilder {
         else if (rmat.matches("tiles|roof_tiles|clay")) { rr = 0.62f * rf; rg = 0.30f * rf; rb = 0.22f * rf; }
         else if (rmat.matches("metal|tin|zinc")) { rr = 0.55f * rf; rg = 0.58f * rf; rb = 0.60f * rf; }
         else if (rmat.matches("concrete")) { rr = 0.62f; rg = 0.62f; rb = 0.60f; }
-        else if (bld.matches("house|detached|semidetached_house|bungalow|residential") && rnd(id, 8) < 0.7f) { rr = 0.60f * rf; rg = 0.30f * rf; rb = 0.22f * rf; }
+        // Unmapped roof colours remain neutral; do not invent a tile colour.
         float vMax = (yTop - hMin - minHeight + undergroundDepth + 0.08f) / 13.6f, lo = 0.78f;
         float minx = 1e9f, maxx = -1e9f, minz = 1e9f, maxz = -1e9f;
         for (int i = 0; i < n; i++) {
@@ -817,6 +817,13 @@ final class TileBuilder {
         if (!(sourceWidth > 0.5f && sourceWidth <= 120f)) {
             float lanes = measure(tg(tags, "lanes"));
             if (lanes > 0f && lanes <= 12f) sourceWidth = lanes * 3.2f;
+        }
+        if (!(sourceWidth > 0.5f && sourceWidth <= 120f)) {
+            float forward = measure(tg(tags, "lanes:forward"));
+            float backward = measure(tg(tags, "lanes:backward"));
+            float splitLanes = (forward > 0f && forward <= 12f ? forward : 0f)
+                    + (backward > 0f && backward <= 12f ? backward : 0f);
+            if (splitLanes > 0f) sourceWidth = splitLanes * 3.2f;
         }
         if (sourceWidth > 0.5f && sourceWidth <= 120f) w = sourceWidth;
         String surface = tg(tags, "surface").toLowerCase(java.util.Locale.US);
