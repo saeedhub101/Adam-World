@@ -11,6 +11,7 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,10 +41,47 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private TextView loading, hud;
     private EditText query;
     private Button timeBtn;
+    private boolean keyUp, keyDown, keyLeft, keyRight;
     private final String[] CAMERA_LABELS = {"شارع", "قريب", "مرتفع", "درون"};
     private final String[] CAMERA_PRESETS = {"street", "near", "high", "drone"};
 
     private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density + 0.5f); }
+    private void updateRemoteMovement() {
+        renderer.game.sx = (keyRight ? 1f : 0f) - (keyLeft ? 1f : 0f);
+        renderer.game.sy = (keyUp ? 1f : 0f) - (keyDown ? 1f : 0f);
+    }
+
+    @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        int code = event.getKeyCode();
+        boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
+        if (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_W) {
+            keyUp = down; updateRemoteMovement(); return true;
+        }
+        if (code == KeyEvent.KEYCODE_DPAD_DOWN || code == KeyEvent.KEYCODE_S) {
+            keyDown = down; updateRemoteMovement(); return true;
+        }
+        if (code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_A) {
+            keyLeft = down; updateRemoteMovement(); return true;
+        }
+        if (code == KeyEvent.KEYCODE_DPAD_RIGHT || code == KeyEvent.KEYCODE_D) {
+            keyRight = down; updateRemoteMovement(); return true;
+        }
+        if (code == KeyEvent.KEYCODE_BUTTON_A || code == KeyEvent.KEYCODE_ENTER
+                || code == KeyEvent.KEYCODE_DPAD_CENTER) {
+            if (event.getAction() == KeyEvent.ACTION_UP && event.getRepeatCount() == 0) {
+                glView.queueEvent(new Runnable() {
+                    @Override public void run() { renderer.toggleCar(); }
+                });
+            }
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_BUTTON_B || code == KeyEvent.KEYCODE_SHIFT_LEFT) {
+            renderer.game.sprint = down;
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
 
     private Button btn(String t) {
         Button b = new Button(this);
