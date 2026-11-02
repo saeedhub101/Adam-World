@@ -104,7 +104,7 @@ def import_city(city, folder):
                 fd, tmp = tempfile.mkstemp(prefix="route-chunk.", suffix=".tmp", dir=progress)
                 with os.fdopen(fd, "w", encoding="utf-8") as handle:
                     json.dump({"elements": features}, handle, ensure_ascii=False, separators=(",", ":"))
-                    handle.write("\\n")
+                    handle.write("\n")
                 os.replace(tmp, chunk_path)
                 checkpoint(city["slug"], chunk_path)
                 print(f"{city['slug']}: ROUTE_CHUNK_CHECKPOINT {idx+1}/12 segments={len(features)}", flush=True)
@@ -176,7 +176,7 @@ def main():
             fd, tmp = tempfile.mkstemp(prefix="transit-routes.", suffix=".tmp", dir=folder)
             with os.fdopen(fd, "w", encoding="utf-8") as handle:
                 json.dump(payload, handle, ensure_ascii=False, separators=(",", ":"))
-                handle.write("\\n")
+                handle.write("\n")
             os.replace(tmp, path)
             if complete:
                 shutil.rmtree(folder / "transit-route-progress", ignore_errors=True)
