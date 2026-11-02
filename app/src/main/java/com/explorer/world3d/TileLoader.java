@@ -2,15 +2,21 @@ package com.explorer.world3d;
 
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.zip.GZIPInputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -35,14 +41,31 @@ final class TileLoader extends Thread {
     final Set<Long> requested = ConcurrentHashMap.newKeySet();
     final ConcurrentHashMap<Long, Long> failedAt = new ConcurrentHashMap<>();
     private final File cacheDir;
+    private final File offlineDir;
     private final ErrorCallback cb;
     private final ArrayList<int[]> order = new ArrayList<>();
+    private static final double AMMAN_LAT0 = 31.9522646;
+    private static final double AMMAN_LON0 = 35.9389907;
+    private static final double AMMAN_KX = 111320.0 * Math.cos(Math.toRadians(AMMAN_LAT0));
+    private static final double AMMAN_KY = 111132.0;
+    private static final String OFFLINE_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-city-stream/amman";
+    volatile boolean offlineAmman = false;
+    private volatile Set<String> offlineCells;
+    private volatile String offlineDatasetVersion;
+    private final LinkedHashMap<String, JSONObject> offlineShardCache =
+            new LinkedHashMap<String, JSONObject>(12, 0.75f, true) {
+                @Override protected boolean removeEldestEntry(Map.Entry<String, JSONObject> eldest) {
+                    return size() > 10;
+                }
+            };
 
     TileLoader(File cacheDir, ErrorCallback cb) {
         super("tile-loader");
         this.cacheDir = cacheDir;
+        this.offlineDir = new File(cacheDir, "offline-amman");
         this.cb = cb;
         cacheDir.mkdirs();
+        offlineDir.mkdirs();
         for (int dx = -LOAD_R; dx <= LOAD_R; dx++) for (int dz = -LOAD_R; dz <= LOAD_R; dz++) order.add(new int[]{dx, dz});
         Collections.sort(order, new Comparator<int[]>() {
             @Override public int compare(int[] a, int[] b) {
@@ -94,8 +117,12 @@ final class TileLoader extends Thread {
 
     private TileData loadTile(int ix, int iz) throws Exception {
         double west = ix * Geo.dLon, east = (ix + 1) * Geo.dLon, south = iz * Geo.D_LAT, north = (iz + 1) * Geo.D_LAT;
-        File f = new File(cacheDir, String.format(Locale.US, "t_%d_%d.json", Math.round(south * 1e5), Math.round(west * 1e5)));
+        JSONObject root = null;
         String json = null;
+        if (offlineAmman) {
+            root = loadOfflineRoot(south, west, north, east);
+        } else {
+            File f = new File(cacheDir, String.format(Locale.US, "t_%d_%d.json", Math.round(south * 1e5), Math.round(west * 1e5)));
         if (f.exists() && f.length() > 2 && System.currentTimeMillis() - f.lastModified() < 30L * 24 * 3600 * 1000) {
             try { json = readFile(f); } catch (IOException ignore) { json = null; }
         }
@@ -122,7 +149,8 @@ final class TileLoader extends Thread {
                 try { writeFile(f, json); } catch (IOException ignore) {}
             }
         }
-        // DEM يُحمّل لعمّان فقط. بقية المدن تُبنى على مستوى ارتفاع صفر دون طلب أي بلاطات تضاريس.
+        if (!offlineAmman) root = new JSONObject(json);
+        // DEM يُحمّل فقط للمربعات القريبة من عمّان؛ لا تُحمّل بيانات المدينة كاملة.
         if (Terrain.enabled) {
             if (!Terrain.ready()) {
                 synchronized (Terrain.class) {
@@ -144,7 +172,99 @@ final class TileLoader extends Thread {
                         north + 2 * Geo.D_LAT, east + 2 * Geo.dLon);
             }
         }
-        return TileBuilder.build(new JSONObject(json), ix, iz);
+        return TileBuilder.build(root, ix, iz);
+    }
+
+    private JSONObject loadOfflineRoot(double south, double west, double north, double east) throws Exception {
+        ensureOfflineManifest();
+        double lat = (south + north) * 0.5;
+        double lon = (west + east) * 0.5;
+        int sx = (int) Math.floor((lon - AMMAN_LON0) * AMMAN_KX / 1000.0);
+        int sz = (int) Math.floor(-(lat - AMMAN_LAT0) * AMMAN_KY / 1000.0);
+        String cell = sx + "_" + sz;
+        if (!offlineCells.contains(cell)) return emptyElements();
+
+        String version = offlineDatasetVersion == null ? "current" : offlineDatasetVersion;
+        String key = version + ":" + cell;
+        synchronized (offlineShardCache) {
+            JSONObject cached = offlineShardCache.get(key);
+            if (cached != null) return cached;
+        }
+        File versionDir = new File(offlineDir, version);
+        versionDir.mkdirs();
+        File shard = new File(versionDir, cell + ".jsonl.gz");
+        if (!shard.isFile() || shard.length() == 0) {
+            byte[] bytes = downloadBytes(OFFLINE_BASE + "/shards/" + cell + ".jsonl.gz");
+            File tmp = new File(shard.getPath() + ".tmp");
+            try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
+            if (!tmp.renameTo(shard)) {
+                tmp.delete();
+                throw new IOException("Cannot cache Amman shard " + cell);
+            }
+        }
+        JSONArray elements = new JSONArray();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                new GZIPInputStream(new FileInputStream(shard)), "UTF-8"), 32768)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (!line.trim().isEmpty()) elements.put(new JSONObject(line));
+            }
+        } catch (Exception ex) {
+            shard.delete();
+            throw ex;
+        }
+        JSONObject result = new JSONObject();
+        result.put("elements", elements);
+        synchronized (offlineShardCache) { offlineShardCache.put(key, result); }
+        return result;
+    }
+
+    private void ensureOfflineManifest() throws Exception {
+        if (offlineCells != null && offlineDatasetVersion != null) return;
+        synchronized (this) {
+            if (offlineCells != null && offlineDatasetVersion != null) return;
+            File manifestFile = new File(offlineDir, "manifest.json");
+            if (!manifestFile.isFile() || System.currentTimeMillis() - manifestFile.lastModified() > 6L * 3600 * 1000) {
+                byte[] bytes = downloadBytes(OFFLINE_BASE + "/manifest.json");
+                File tmp = new File(manifestFile.getPath() + ".tmp");
+                try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
+                if (!tmp.renameTo(manifestFile)) {
+                    tmp.delete();
+                    throw new IOException("Cannot cache Amman manifest");
+                }
+            }
+            JSONObject manifest = new JSONObject(readFile(manifestFile));
+            JSONArray list = manifest.optJSONArray("cells");
+            if (list == null || list.length() == 0) throw new IOException("Invalid Amman offline manifest");
+            HashSet<String> cells = new HashSet<>();
+            for (int i = 0; i < list.length(); i++) cells.add(list.optString(i));
+            offlineDatasetVersion = manifest.optString("dataset_version", "current");
+            offlineCells = cells;
+        }
+    }
+
+    private static JSONObject emptyElements() throws Exception {
+        JSONObject root = new JSONObject();
+        root.put("elements", new JSONArray());
+        return root;
+    }
+
+    private static byte[] downloadBytes(String url) throws IOException {
+        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+        try {
+            c.setConnectTimeout(15000);
+            c.setReadTimeout(90000);
+            c.setRequestProperty("User-Agent", "Adam-World-Android");
+            c.setRequestProperty("Accept-Encoding", "identity");
+            if (c.getResponseCode() != 200) throw new IOException("Offline Amman HTTP " + c.getResponseCode());
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            try (InputStream in = c.getInputStream()) {
+                byte[] buffer = new byte[32768];
+                int n;
+                while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
+            }
+            return out.toByteArray();
+        } finally { c.disconnect(); }
     }
 
     static String http(String url, String body) throws IOException {
