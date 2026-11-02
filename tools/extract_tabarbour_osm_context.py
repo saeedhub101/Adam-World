@@ -89,15 +89,23 @@ def download_terrain(box):
                 tiles.append(str(rel))
                 continue
             url = f"https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
-            try:
-                content = get_bytes(url, timeout=60)
-                if not content.startswith(b"\x89PNG\r\n\x1a\n"):
-                    raise ValueError("source did not return a PNG")
-                atomic_write(target, content)
-                tiles.append(str(rel))
-                print(f"SAVED Tabarbour terrain tile {rel}", flush=True)
-            except Exception as exc:
-                print(f"WARN terrain tile {rel}: {exc}", flush=True)
+            last_error = None
+            for attempt in range(3):
+                try:
+                    content = get_bytes(url, timeout=60)
+                    if not content.startswith(b"\x89PNG\r\n\x1a\n"):
+                        raise ValueError("source did not return a PNG")
+                    atomic_write(target, content)
+                    tiles.append(str(rel))
+                    print(f"SAVED Tabarbour terrain tile {rel}", flush=True)
+                    last_error = None
+                    break
+                except Exception as exc:
+                    last_error = exc
+                    time.sleep(attempt + 1)
+            if last_error is not None:
+                print(f"WARN terrain tile {rel}: {last_error}", flush=True)
+    expected_count = (tile_x(east, z) - tile_x(west, z) + 1) * (tile_y(south, z) - tile_y(north, z) + 1)
     manifest = {
         "city": "tabarbour",
         "source": "AWS Terrain Tiles / Terrarium",
@@ -107,14 +115,16 @@ def download_terrain(box):
         "center": {"lat": LAT0, "lon": LON0},
         "radius_m": RADIUS_M,
         "tile_count": len(tiles),
+        "expected_tile_count": expected_count,
+        "complete": len(tiles) == expected_count,
         "tiles": tiles,
         "encoding": "Terrarium RGB: elevation_m = (R*256 + G + B/256) - 32768",
         "attribution": "Mapzen Terrarium elevation tiles",
     }
     atomic_write(TERRAIN_OUTPUT / "manifest.json", (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode())
-    if not tiles:
-        raise RuntimeError("No Tabarbour elevation tiles were downloaded")
-    print(f"SAVED Tabarbour terrain manifest: {len(tiles)} tiles", flush=True)
+    if len(tiles) != expected_count:
+        raise RuntimeError(f"Incomplete Tabarbour terrain coverage: {len(tiles)}/{expected_count} tiles")
+    print(f"SAVED complete Tabarbour terrain manifest: {len(tiles)} tiles", flush=True)
 
 
 def main():
@@ -172,6 +182,8 @@ out body geom;
     atomic_write(OUTPUT / "elements.json", (json.dumps(output, ensure_ascii=False, separators=(",", ":")) + "\n").encode())
     print(f"SAVED dedicated Tabarbour OSM context: {len(elements)} elements", flush=True)
 
+    transit_path = OUTPUT / "transit-routes.json"
+    transit_path.unlink(missing_ok=True)
     transit_query = f"""[out:json][timeout:180];
 (
   relation["route"~"bus|train|subway|tram|trolleybus"]({south},{west},{north},{east});
