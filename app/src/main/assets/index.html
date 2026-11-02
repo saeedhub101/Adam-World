@@ -1748,10 +1748,10 @@ async function loadArea(lat,lon,spawn){
       else if(['gravel','fine_gravel','compacted','pebblestone','rock'].includes(surface))roadAcc=roadSurfaceAcc.gravel;
       else if(['dirt','earth','ground','sand','mud','unpaved'].includes(surface))roadAcc=roadSurfaceAcc.dirt;
       if(w>=6||t.highway==='service'){
-        ribbon(P,w+4.2,0.24,SW,(w+4.2)/2,2,heightOffset);
-        ribbon(P,w,0.28,roadAcc,1,w>=7?12:6,heightOffset);
+        ribbon(P,w+4.2,0.08,SW,(w+4.2)/2,2,heightOffset);
+        ribbon(P,w,0.12,roadAcc,1,w>=7?12:6,heightOffset);
       }else{
-        ribbon(P,w,0.28,roadAcc,w/2,2,heightOffset);
+        ribbon(P,w,0.12,roadAcc,w/2,2,heightOffset);
       }
       if(heightOffset>0)addBridgeSupports(P,w,heightOffset);
       if(isTunnel)addTunnelPortals(P,w);
@@ -1838,7 +1838,7 @@ async function loadArea(lat,lon,spawn){
     const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,3.1),material);
     const p=posAt(item.path,item.distance,0);let yaw=Math.atan2(-p.dz,p.dx);
     if(yaw>Math.PI/2)yaw-=Math.PI;if(yaw< -Math.PI/2)yaw+=Math.PI;
-    mesh.rotation.order='YXZ';mesh.rotation.set(-Math.PI/2,yaw,0);mesh.position.set(p.x,terrainHeight(p.x,p.z)+0.48+(item.heightOffset||0),p.z);
+    mesh.rotation.order='YXZ';mesh.rotation.set(-Math.PI/2,yaw,0);mesh.position.set(p.x,terrainHeight(p.x,p.z)+0.28+(item.heightOffset||0),p.z);
     mesh.renderOrder=4;mesh.userData.ownedTexture=texture;mesh.userData.ownedMaterial=true;cityGroup.add(mesh);
   }
 
