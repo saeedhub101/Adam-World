@@ -10,6 +10,7 @@ class OpenFreeMapPrimarySourceTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
+        builder.ROOT = root
         builder.SOURCE = root / "facades" / "cities"
         builder.FULL_SOURCE = root / "offline-world"
         self.city = builder.SOURCE / "sample"
