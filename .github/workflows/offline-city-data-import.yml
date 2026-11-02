@@ -8,6 +8,17 @@ on:
       - "data/facades/cities/catalog.json"
       - ".github/workflows/offline-city-data-import.yml"
   workflow_dispatch:
+    inputs:
+      city_slugs:
+        description: "Optional comma-separated city slugs; blank imports all catalog cities"
+        required: false
+        type: string
+        default: ""
+      force_refresh:
+        description: "Re-import selected cities even if current data exists"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -20,6 +31,10 @@ jobs:
   import:
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    env:
+      PYTHONUNBUFFERED: "1"
+      CITY_SLUGS: ${{ inputs.city_slugs || '' }}
+      FORCE_REFRESH: ${{ inputs.force_refresh || false }}
     steps:
       - name: Checkout main with write credentials
         uses: actions/checkout@v4
@@ -36,5 +51,5 @@ jobs:
       - name: Validate importer
         run: python -m py_compile tools/import_offline_city_map.py
 
-      - name: Import cities with per-chunk commits and resume
-        run: python tools/import_offline_city_map.py
+      - name: Import cities with bounded retries, live progress and resumable commits
+        run: python -u tools/import_offline_city_map.py
