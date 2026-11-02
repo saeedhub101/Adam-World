@@ -199,7 +199,7 @@ final class TileLoader extends Thread {
             if (bundledCityRoot == null || !slug.equals(bundledCitySlug)) {
                 StringBuilder json = new StringBuilder(2 * 1024 * 1024);
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                        context.getAssets().open(slug + "/elements.json"), "UTF-8"), 32768)) {
+                        context.getAssets().open("elements.json"), "UTF-8"), 32768)) {
                     char[] buffer = new char[16384];
                     int n;
                     while ((n = reader.read(buffer)) != -1) json.append(buffer, 0, n);
