@@ -61,6 +61,7 @@ def main():
       try:
        if json.loads(out.read_text()).get("source")=="Overture Maps":continue
       except Exception:pass
+     out.parent.mkdir(parents=True,exist_ok=True)
      tmp=out.with_suffix(".raw.geojson")
      subprocess.run(["overturemaps","download",f"--bbox={w},{s},{e},{n}","-f","geojson","--type="+typ,"-o",str(tmp)],cwd=ROOT,check=True,timeout=3600)
      fc=json.loads(tmp.read_text());tmp.unlink(missing_ok=True);features=[]
