@@ -1442,7 +1442,7 @@ async function loadArea(lat,lon,spawn){
   disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];
   if(terrainGrid)addTerrainSurface(terrainGrid);
   for(const key of Object.keys(archAcc))archAcc[key]=[];
-  bldgs=[];grid=new Map();carPaths=[];pedPaths=[];railPaths=[];busRoutePaths=[];railStations=[];
+  bldgs=[];grid=new Map();carPaths=[];pedPaths=[];railPaths=[];busRoutePaths=[];
   const B=newAcc(),G=newAcc(),RWd=newAcc(),RNr=newAcc(),SW=newAcc();
   const roadSurfaceAcc={concrete:newAcc(),pavers:newAcc(),gravel:newAcc(),dirt:newAcc()};
   const LC={grass:newAcc(),forest:newAcc(),scrub:newAcc(),crops:newAcc(),bare:newAcc(),sand:newAcc(),wetland:newAcc()};
