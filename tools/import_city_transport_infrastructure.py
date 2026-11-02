@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Incrementally enrich stored city OSM data with transit, water and road-condition features."""
 from __future__ import annotations
-import json, math, os, subprocess, tempfile, time
+import json, math, os, shutil, subprocess, tempfile, time
 from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -20,7 +20,7 @@ TRANSPORT_PROFILE = 2
 def query_for(lat: float, lon: float, radius: int) -> str:
     around = f"(around:{radius},{lat:.7f},{lon:.7f})"
     return (
-        "[out:json][timeout:90];("
+        "[out:json][timeout:120];("
         # Re-fetch highway ways so surface, lanes, smoothness, bridge/tunnel,
         # width, traffic-calming and pothole tags are merged into existing roads.
         f'way["highway"]{around};'
@@ -47,7 +47,7 @@ def query_for(lat: float, lon: float, radius: int) -> str:
 def fetch_chunk(query: str, offset: int):
     body = urlencode({"data": query}).encode()
     errors = []
-    for attempt in range(3):
+    for attempt in range(5):
         endpoint = ENDPOINTS[(offset + attempt) % len(ENDPOINTS)]
         try:
             req = Request(endpoint, data=body, headers={
@@ -55,27 +55,49 @@ def fetch_chunk(query: str, offset: int):
                 "Accept": "application/json",
                 "User-Agent": "AdamWorld-TransportImporter/1.0 (public OSM data)",
             })
-            with urlopen(req, timeout=150) as response:
+            with urlopen(req, timeout=210) as response:
                 payload = json.loads(response.read().decode("utf-8"))
             if "elements" not in payload or payload.get("remark"):
                 raise RuntimeError(str(payload.get("remark") or "missing elements"))
             return payload
         except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as exc:
             errors.append(f"{endpoint}: {exc}")
-            time.sleep(2 + attempt * 2)
+            time.sleep(3 + attempt * 3)
     raise RuntimeError("; ".join(errors))
 
-def fetch_city(city):
+def fetch_city(city, folder):
     lat0, lon0 = float(city["center"]["lat"]), float(city["center"]["lon"])
     target_radius = max(2500, int(os.environ.get("ADAM_AMMAN_TRANSPORT_RADIUS_M", city.get("discovery_radius_m", 650)))) if city["slug"] == "amman" else max(2500, int(city.get("discovery_radius_m", 650)))
-    offset_m = target_radius * 0.40
-    chunk_radius = int(target_radius * 0.78)
-    merged = {}
-    for idx in range(8):
-        angle = math.radians(idx * 45)
-        lat = lat0 + math.cos(angle) * offset_m / 111320.0
-        lon = lon0 + math.sin(angle) * offset_m / (111320.0 * max(0.2, math.cos(math.radians(lat0))))
-        payload = fetch_chunk(query_for(lat, lon, chunk_radius), idx)
+    # Twelve smaller overlapping circles cover the requested radius while keeping
+    # each Overpass request substantially lighter than the former eight large ones.
+    offset_m = target_radius * 0.50
+    chunk_radius = int(target_radius * 0.60)
+    progress = folder / "transport-progress"
+    progress.mkdir(parents=True, exist_ok=True)
+    merged, failed, completed = {}, [], []
+    for idx in range(12):
+        chunk_path = progress / f"chunk-{idx:02d}.json"
+        if chunk_path.is_file():
+            payload = json.loads(chunk_path.read_text(encoding="utf-8"))
+            print(f"{city['slug']}: resume transport chunk {idx+1}/12 from checkpoint", flush=True)
+        else:
+            angle = math.radians(idx * 30)
+            lat = lat0 + math.cos(angle) * offset_m / 111320.0
+            lon = lon0 + math.sin(angle) * offset_m / (111320.0 * max(0.2, math.cos(math.radians(lat0))))
+            try:
+                payload = fetch_chunk(query_for(lat, lon, chunk_radius), idx)
+                fd, tmp = tempfile.mkstemp(prefix="transport-chunk.", suffix=".tmp", dir=progress)
+                with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                    json.dump(payload, handle, ensure_ascii=False, separators=(",", ":"))
+                    handle.write("\\n")
+                os.replace(tmp, chunk_path)
+                checkpoint(city["slug"])
+                print(f"{city['slug']}: TRANSPORT_CHUNK_CHECKPOINT {idx+1}/12 saved={len(payload.get('elements', []))}", flush=True)
+            except Exception as exc:
+                failed.append((idx, str(exc)))
+                print(f"{city['slug']}: transport chunk {idx+1}/12 pending; continuing: {exc}", flush=True)
+                continue
+        completed.append(idx)
         for item in payload.get("elements", []):
             key = (item.get("type"), item.get("id"))
             if key[0] and key[1] is not None:
@@ -87,11 +109,9 @@ def fetch_city(city):
                     if "lat" in item: old["lat"], old["lon"] = item["lat"], item["lon"]
                 else:
                     merged[key] = item
-        print(f"{city['slug']}: transport chunk {idx+1}/8; {len(merged)} unique elements", flush=True)
+        print(f"{city['slug']}: transport chunk {idx+1}/12; {len(merged)} unique elements", flush=True)
         time.sleep(1)
-    if not merged:
-        raise RuntimeError("no infrastructure elements returned")
-    return list(merged.values()), target_radius
+    return list(merged.values()), target_radius, failed, completed
 
 def git(*args, check=True):
     return subprocess.run(["git", *args], cwd=ROOT, check=check, text=True,
@@ -120,7 +140,7 @@ def checkpoint(slug):
 
 def main():
     catalog = json.loads(CATALOG.read_text(encoding="utf-8"))
-    succeeded, failed = 0, []
+    succeeded, pending = 0, []
     selected = {x.strip() for x in os.environ.get("ADAM_CITY_SLUGS", "").split(",") if x.strip()}
     for city in catalog.get("cities", []):
         slug = city["slug"]
@@ -138,53 +158,64 @@ def main():
                 print(f"{slug}: transport profile already complete; skip", flush=True)
                 succeeded += 1
                 continue
-            incoming, radius = fetch_city(city)
-            index = {(e.get("type"), e.get("id")): e for e in base.get("elements", [])}
-            added = updated = 0
-            for item in incoming:
-                key = (item.get("type"), item.get("id"))
-                if key in index:
-                    target = index[key]
-                    old_tags = target.setdefault("tags", {})
-                    before = len(old_tags)
-                    old_tags.update(item.get("tags") or {})
-                    if len(old_tags) != before or item.get("geometry"):
-                        updated += 1
-                    if item.get("geometry"):
-                        target["geometry"] = item["geometry"]
-                    if "lat" in item: target["lat"], target["lon"] = item["lat"], item["lon"]
-                else:
-                    base.setdefault("elements", []).append(item)
-                    index[key] = item
-                    added += 1
-            base["elements"].sort(key=lambda e: (e.get("type",""), int(e.get("id",0))))
-            fd, tmp = tempfile.mkstemp(prefix="elements.", suffix=".tmp", dir=folder)
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                json.dump(base, f, ensure_ascii=False, separators=(",", ":"))
-                f.write("\n")
-            os.replace(tmp, elements_path)
+            incoming, radius, failed, completed = fetch_city(city, folder)
+            complete = len(completed) == 12
+            if complete:
+                index = {(e.get("type"), e.get("id")): e for e in base.get("elements", [])}
+                added = updated = 0
+                for item in incoming:
+                    key = (item.get("type"), item.get("id"))
+                    if key in index:
+                        target = index[key]
+                        old_tags = target.setdefault("tags", {})
+                        before = len(old_tags)
+                        old_tags.update(item.get("tags") or {})
+                        if len(old_tags) != before or item.get("geometry"):
+                            updated += 1
+                        if item.get("geometry"):
+                            target["geometry"] = item["geometry"]
+                        if "lat" in item: target["lat"], target["lon"] = item["lat"], item["lon"]
+                    else:
+                        base.setdefault("elements", []).append(item)
+                        index[key] = item
+                        added += 1
+                base["elements"].sort(key=lambda e: (e.get("type",""), int(e.get("id",0))))
+                fd, tmp = tempfile.mkstemp(prefix="elements.", suffix=".tmp", dir=folder)
+                with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                    json.dump(base, handle, ensure_ascii=False, separators=(",", ":"))
+                    handle.write("\\n")
+                os.replace(tmp, elements_path)
+                shutil.rmtree(folder / "transport-progress", ignore_errors=True)
+            else:
+                added = updated = 0
             metadata.update({
-                "transport_profile_version": TRANSPORT_PROFILE,
-                "transport_complete": True,
+                "transport_profile_version": TRANSPORT_PROFILE if complete else max(0, TRANSPORT_PROFILE - 1),
+                "transport_complete": complete,
                 "transport_radius_m": radius,
                 "transport_elements_seen": len(incoming),
                 "transport_elements_added": added,
                 "transport_elements_updated": updated,
+                "transport_completed_chunks": completed,
+                "transport_pending_chunks": [idx for idx in range(12) if idx not in completed],
                 "transport_layers": ["railways", "stations", "subway_entrances", "tram_stops", "bus_stops", "waterway_lines", "waterfalls", "water_pipelines", "sewer_networks", "storm_drains", "water_works", "wastewater_plants", "pumping_stations", "bridges", "tunnels", "road_surface", "smoothness", "lanes", "traffic_calming", "potholes"],
                 "transport_source": "OpenStreetMap via public Overpass endpoints",
             })
-            metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
             checkpoint(slug)
-            print(f"{slug}: SAVED added={added} updated={updated} total={len(base['elements'])}", flush=True)
+            print(f"{slug}: {'SAVED' if complete else 'PARTIAL_CHECKPOINT'} added={added} updated={updated} seen={len(incoming)} completed_chunks={len(completed)}/12 pending_chunks={len(failed)}", flush=True)
             succeeded += 1
+            if failed:
+                pending.append((slug, failed))
         except Exception as exc:
-            failed.append((slug, str(exc)))
+            pending.append((slug, [(-1, str(exc))]))
             print(f"{slug}: FAILED; continuing: {exc}", flush=True)
-    print(f"TRANSPORT_IMPORT_RESULT success={succeeded} failed={len(failed)}", flush=True)
-    for slug, reason in failed:
-        print(f"TRANSPORT_PENDING {slug}: {reason}", flush=True)
-    if failed:
-        raise SystemExit("Some cities failed; successful city checkpoints were saved. Re-run to resume.")
+    print(f"TRANSPORT_IMPORT_RESULT success={succeeded} pending={len(pending)}", flush=True)
+    for slug, reasons in pending:
+        for idx, reason in reasons:
+            print(f"TRANSPORT_PENDING {slug} chunk={idx+1}: {reason}", flush=True)
+    # Partial Overpass outages are checkpoints, not workflow-fatal errors.
+    # A later dispatch resumes only chunks that do not yet have saved files.
+
 
 if __name__ == "__main__":
     main()
