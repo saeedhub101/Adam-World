@@ -112,7 +112,25 @@ try{
     renderWorldCopies:true,
     fadeDuration:0
   });
-  worldMap.on('load',()=>{worldMapReady=true;});
+  worldMap.on('load',()=>{
+    worldMapReady=true;
+    // Prefer recorded building colours and mapped metric heights.
+    for(const layer of worldMap.getStyle().layers||[]){
+      if(layer.type!=='fill-extrusion'||!/building/i.test(layer.id+' '+(layer['source-layer']||'')))continue;
+      try{
+        worldMap.setPaintProperty(layer.id,'fill-extrusion-color',[
+          'coalesce',['to-color',['get','colour']],
+          ['to-color',['get','building_colour']],
+          ['to-color',['get','facade_colour']],
+          '#c9c4b8'
+        ]);
+        if(layer['source-layer']==='building'){
+          worldMap.setPaintProperty(layer.id,'fill-extrusion-height',['coalesce',['to-number',['get','render_height']],['to-number',['get','height']],0]);
+          worldMap.setPaintProperty(layer.id,'fill-extrusion-base',['coalesce',['to-number',['get','render_min_height']],0]);
+        }
+      }catch(e){console.warn('Building style property unavailable:',layer.id,e);}
+    }
+  });
   worldMap.on('error',e=>console.warn('Global map tile/style issue:',e&&e.error?e.error:e));
 }catch(e){console.warn('Global MapLibre initialization failed:',e);}
 function syncGlobalMap(now){
