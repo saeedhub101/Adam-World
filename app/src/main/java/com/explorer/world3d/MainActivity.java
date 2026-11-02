@@ -214,6 +214,18 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             }
         });
         cameraBar.addView(zoomIn);
+        Button basement = btn("كشف تحت الأرض");
+        basement.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                glView.queueEvent(new Runnable() {
+                    @Override public void run() { renderer.toggleUndergroundCutaway(); }
+                });
+                basement.setText(renderer.undergroundCutaway ? "إظهار الأرض" : "كشف تحت الأرض");
+                Toast.makeText(MainActivity.this, renderer.undergroundCutaway
+                        ? "وضع كشف الطوابق تحت الأرض" : "تمت إعادة إظهار التضاريس", Toast.LENGTH_SHORT).show();
+            }
+        });
+        cameraBar.addView(basement);
         cameraScroll.addView(cameraBar);
         FrameLayout.LayoutParams cameraParams = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
