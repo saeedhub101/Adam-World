@@ -136,6 +136,38 @@ def emit_polygon(writer, source, rawid, rings, tags, layer):
             writer.add({"type":"way","id":sid(source,rawid,i),"tags":dict(tags),"geometry":pts},layer)
 
 PRIMARY_CENTROIDS = []
+PRIMARY_POLYGONS = []
+
+def point_in_ring(point, ring):
+    x,y=point; inside=False
+    if len(ring)<3: return False
+    for i,a in enumerate(ring):
+        b=ring[(i+1)%len(ring)]
+        ax,ay=float(a[0]),float(a[1]); bx,by=float(b[0]),float(b[1])
+        if ((ay>y)!=(by>y)) and x < (bx-ax)*(y-ay)/(by-ay+1e-30)+ax:
+            inside=not inside
+    return inside
+
+def overlaps_primary(ring):
+    """Reject duplicate footprints/parts already represented by a primary OMT footprint.
+    Uses polygon containment and vertex coverage rather than a centre-distance threshold.
+    """
+    pts=[(float(p[0]),float(p[1])) for p in ring if len(p)>=2]
+    if len(pts)>1 and pts[0]==pts[-1]: pts=pts[:-1]
+    if len(pts)<3: return False
+    cx=sum(p[0] for p in pts)/len(pts); cy=sum(p[1] for p in pts)/len(pts)
+    for primary in PRIMARY_POLYGONS:
+        if not primary: continue
+        ppts=[(float(p[0]),float(p[1])) for p in primary if len(p)>=2]
+        if len(ppts)>1 and ppts[0]==ppts[-1]: ppts=ppts[:-1]
+        if len(ppts)<3: continue
+        pcx=sum(p[0] for p in ppts)/len(ppts); pcy=sum(p[1] for p in ppts)/len(ppts)
+        if point_in_ring((cx,cy),ppts) or point_in_ring((pcx,pcy),pts):
+            return True
+        covered=sum(1 for p in pts if point_in_ring(p,ppts))
+        if covered/max(1,len(pts)) >= 0.60:
+            return True
+    return False
 
 def read_building_csv_index():
     index={}
@@ -256,6 +288,7 @@ def read_pbf(writer, osm_index, building_index):
             outer=rings[0] if rings else []
             if outer:
                 PRIMARY_CENTROIDS.append((sum(p[0] for p in outer)/len(outer),sum(p[1] for p in outer)/len(outer)))
+                PRIMARY_POLYGONS.append(outer)
             count+=1
         # Preserve named facilities and address-number points from the same tiles.
         for lname in ("poi","housenumber"):
@@ -311,15 +344,14 @@ def read_city_footprints(writer):
         rings=polygons(g)
         if not rings or not rings[0]: continue
         outer=rings[0]
+        if overlaps_primary(outer): continue
         center=(sum(q[0] for q in outer)/len(outer),sum(q[1] for q in outer)/len(outer))
-        near=any(abs(center[0]-x)*KX<4 and abs(center[1]-y)*KY<4 for x,y in PRIMARY_CENTROIDS)
-        if near: continue
         tags={"building":"yes","adam:source":"OpenFreeMap/OpenMapTiles building-footprints"}
         for src,dst in (("render_height","height"),("render_min_height","min_height"),("colour","building:colour")):
             if p.get(src) not in (None,""): tags[dst]=text(p[src])
         if p.get("source_feature_id") not in (None,""): tags["adam:source_feature_id"]=text(p["source_feature_id"])
         emit_polygon(writer,"ofm-footprint",f.get("id",i),rings,tags,"openfreemap_building_footprints")
-        PRIMARY_CENTROIDS.append(center); added+=1
+        PRIMARY_CENTROIDS.append(center); PRIMARY_POLYGONS.append(outer); added+=1
     return added
 
 def read_overture_parts(writer):
@@ -329,6 +361,8 @@ def read_overture_parts(writer):
     for i,f in enumerate(data.get("features",[])):
         p=f.get("properties") or {}; rings=polygons(f.get("geometry") or {})
         if not rings: continue
+        # Overture parts are not independent buildings when a parent footprint is already present.
+        if overlaps_primary(rings[0]): continue
         tags={"building":"yes","building:part":"yes","adam:source":"Overture Maps building_part"}
         if p.get("num_floors") not in (None,""): tags["building:levels"]=text(p["num_floors"])
         if p.get("min_floor") not in (None,""):
@@ -364,16 +398,20 @@ def read_osm_details(writer, data, primary_ids):
             rings=polygons(g)
             outer=rings[0] if rings else []
             center=(sum(p[0] for p in outer)/len(outer),sum(p[1] for p in outer)/len(outer)) if outer else None
-            near_primary=center is not None and any(abs(center[0]-x)*KX<4 and abs(center[1]-y)*KY<4 for x,y in PRIMARY_CENTROIDS)
+            already_covered=bool(outer) and overlaps_primary(outer)
             if t.get("building:part"):
+                if already_covered:
+                    matched+=1
+                    continue
                 t.setdefault("building","yes")
                 if t.get("building:min_level") and not t.get("min_height"):
                     try: t["min_height"]=str(float(t["building:min_level"])*3.2)
                     except (TypeError,ValueError): pass
                 emit_polygon(writer,"osm-building-part",osm_id,rings,t,"osm_building_parts")
                 unmatched+=1
-            elif rawkey not in primary_ids and not near_primary:
+            elif rawkey not in primary_ids and not already_covered:
                 emit_polygon(writer,"osm-footprint",osm_id,rings,t,"osm_building_fallback")
+                PRIMARY_POLYGONS.append(outer)
                 unmatched+=1
             else: matched+=1
     return matched,unmatched
@@ -433,6 +471,7 @@ def main():
             while block:=f.read(1024*1024): h.update(block)
         shard_hashes[shard.stem]=h.hexdigest()
     manifest={"schema_version":1,"city":"Manila","source":"Adam-City OpenMapTiles PBF + OpenFreeMap transportation GeoJSON + OSM supplemental details",
+      "building_deduplication":"polygon-containment-and-vertex-overlap-v2",
       "origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,"cell_halo_m":HALO,
       "dataset_version":hashlib.sha256(json.dumps(shard_hashes,sort_keys=True).encode()).hexdigest()[:16],
       "shard_sha256":shard_hashes,
