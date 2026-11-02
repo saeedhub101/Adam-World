@@ -361,6 +361,12 @@ final class TileBuilder {
         }
         float h = bHeight(tags, id, bld);
         float minHeight = bMinHeight(tags, h);
+        float undergroundDepth = measure(tg(tags, "adam:underground:height"));
+        if (!(undergroundDepth > 0f)) {
+            float undergroundLevels = measure(tg(tags, "building:levels:underground"));
+            undergroundDepth = undergroundLevels > 0f ? undergroundLevels * 3.0f : 0f;
+        }
+        undergroundDepth = Math.max(0f, Math.min(60f, undergroundDepth));
         float mappedRoofHeight = measure(tg(tags, "roof:height"));
         if (!(mappedRoofHeight > 0f)) mappedRoofHeight = Float.NaN;
         // Keep each footprint vertex on its sampled terrain elevation; preserve the mapped base offset.
@@ -392,7 +398,8 @@ final class TileBuilder {
             float len = (float) Math.hypot(bx - ax, bz - az);
             if (len < 0.05f) continue;
             float u = Math.max(1, Math.round(len / 4f)) / 4f;
-            float yBotA = ground[i] + minHeight - 0.08f, yBotB = ground[j] + minHeight - 0.08f;
+            float yBotA = ground[i] + minHeight - undergroundDepth - 0.08f;
+            float yBotB = ground[j] + minHeight - undergroundDepth - 0.08f;
             buf.v(ax, yBotA, az, 0, vMax, cr * lo, cg * lo, cb * lo);
             buf.v(bx, yBotB, bz, u, vMax, cr * lo, cg * lo, cb * lo);
             buf.v(bx, roofY[j], bz, u, 0, cr, cg, cb);
