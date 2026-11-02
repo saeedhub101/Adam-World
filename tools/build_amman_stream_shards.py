@@ -167,6 +167,9 @@ def build():
         for layer,path,is_part in files:
             st=path.stat()
             fingerprint.update(f"{path.relative_to(ROOT)}:{st.st_size}:".encode())
+            with path.open("rb") as hash_stream:
+                for block in iter(lambda: hash_stream.read(1024 * 1024), b""):
+                    fingerprint.update(block)
             with path.open("rb") as f:
                 for feature in ijson.items(f,"features.item"):
                     try:
