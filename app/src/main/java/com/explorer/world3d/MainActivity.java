@@ -148,12 +148,12 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void requestSourceJson(String sourceUrl, String requestId) {
             executor.execute(() -> {
                 String payload = null;
-                String failure = "تعذر الوصول إلى مصدر الصور";
+                String failure = "تعذر الوصول إلى مصدر البيانات الجغرافية";
                 HttpURLConnection c = null;
                 try {
                     URL parsed = new URL(sourceUrl);
                     String host = parsed.getHost();
-                    if (!"api.imagery.hotosm.org".equals(host) && !"api.panoramax.xyz".equals(host)) {
+                    if (!"api.imagery.hotosm.org".equals(host) && !"api.panoramax.xyz".equals(host) && !"overpass-api.de".equals(host)) {
                         throw new SecurityException("مصدر غير مسموح");
                     }
                     if (!"https".equalsIgnoreCase(parsed.getProtocol())) {
@@ -164,6 +164,7 @@ public class MainActivity extends Activity {
                     c.setConnectTimeout(12000);
                     c.setReadTimeout(18000);
                     c.setRequestProperty("Accept", "application/geo+json, application/json");
+                    c.setRequestProperty("User-Agent", "AdamWorld/1.0 (free OpenStreetMap streaming)");
                     c.setRequestProperty("User-Agent", "AdamWorld/1.0 (open imagery metadata)");
                     int status = c.getResponseCode();
                     if (status != HttpURLConnection.HTTP_OK) throw new Exception("HTTP " + status);
