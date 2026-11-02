@@ -39,7 +39,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private CityGLView glView;
     private TextView loading, hud;
     private EditText query;
-    private Button timeBtn;
+    private Button timeBtn;\n    private final String[] CAMERA_LABELS = {\"شارع\", \"قريب\", \"مرتفع\", \"درون\"};\n    private final String[] CAMERA_PRESETS = {\"street\", \"near\", \"high\", \"drone\"};
 
     private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density + 0.5f); }
 
@@ -121,6 +121,51 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         FrameLayout.LayoutParams tp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP);
         tp.setMargins(dp(8), dp(8), dp(8), 0);
         root.addView(top, tp);
+
+        // اختيار منظور الكاميرا والتقريب/الإبعاد
+        HorizontalScrollView cameraScroll = new HorizontalScrollView(this);
+        cameraScroll.setHorizontalScrollBarEnabled(false);
+        LinearLayout cameraBar = new LinearLayout(this);
+        cameraBar.setOrientation(LinearLayout.HORIZONTAL);
+        cameraBar.setPadding(dp(5), dp(4), dp(5), dp(4));
+        cameraBar.setBackgroundColor(0xB80A101A);
+        for (int i = 0; i < CAMERA_PRESETS.length; i++) {
+            final String preset = CAMERA_PRESETS[i];
+            Button cameraButton = btn(CAMERA_LABELS[i]);
+            cameraButton.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    glView.queueEvent(new Runnable() {
+                        @Override public void run() { renderer.game.setCameraPreset(preset); }
+                    });
+                }
+            });
+            cameraBar.addView(cameraButton);
+        }
+        Button zoomOut = btn("−");
+        zoomOut.setTextSize(22);
+        zoomOut.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                glView.queueEvent(new Runnable() {
+                    @Override public void run() { renderer.game.zoom(1.28f); }
+                });
+            }
+        });
+        cameraBar.addView(zoomOut);
+        Button zoomIn = btn("+");
+        zoomIn.setTextSize(22);
+        zoomIn.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                glView.queueEvent(new Runnable() {
+                    @Override public void run() { renderer.game.zoom(0.78f); }
+                });
+            }
+        });
+        cameraBar.addView(zoomIn);
+        cameraScroll.addView(cameraBar);
+        FrameLayout.LayoutParams cameraParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        cameraParams.setMargins(dp(150), 0, dp(150), dp(18));
+        root.addView(cameraScroll, cameraParams);
 
         // العصا
         JoystickView js = new JoystickView(this);
