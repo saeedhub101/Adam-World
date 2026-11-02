@@ -544,10 +544,12 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glDepthMask(false);
         GLES20.glUniform1f(uDecal, 1f);
         for (Tile t : tiles.values()) {
-            if (t.decalMesh == null) continue;
+            if (t.decalMeshes.isEmpty()) continue;
             if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > 850) continue;
-            bindTex(t.decalTex, tex.black);
-            t.decalMesh.draw();
+            for (int page = 0; page < t.decalMeshes.size(); page++) {
+                bindTex(t.decalTextures.get(page), tex.black);
+                t.decalMeshes.get(page).draw();
+            }
         }
         GLES20.glUniform1f(uDecal, 0f);
         GLES20.glDepthMask(true);
