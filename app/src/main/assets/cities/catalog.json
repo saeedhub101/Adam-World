@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "scope": "All current in-game destination areas; add further city entries without code changes.",
+  "cities": [
+    {
+      "slug": "amman",
+      "name": "Amman",
+      "center": {
+        "lat": 31.95165805,
+        "lon": 35.9393934
+      },
+      "discovery_radius_m": 2500,
+      "import_profile_version": 5
+    },
+    {
+      "slug": "manila",
+      "name": "Manila",
+      "center": {
+        "lat": 14.57394,
+        "lon": 120.98283
+      },
+      "discovery_radius_m": 900
+    },
+    {
+      "slug": "bangkok",
+      "name": "Bangkok",
+      "center": {
+        "lat": 13.7466,
+        "lon": 100.5347
+      },
+      "discovery_radius_m": 650
+    },
+    {
+      "slug": "new-york",
+      "name": "New York",
+      "center": {
+        "lat": 40.758,
+        "lon": -73.9855
+      },
+      "discovery_radius_m": 650
+    },
+    {
+      "slug": "paris",
+      "name": "Paris",
+      "center": {
+        "lat": 48.8584,
+        "lon": 2.2945
+      },
+      "discovery_radius_m": 650
+    },
+    {
+      "slug": "dubai",
+      "name": "Dubai",
+      "center": {
+        "lat": 25.1972,
+        "lon": 55.2744
+      },
+      "discovery_radius_m": 650
+    },
+    {
+      "slug": "tokyo",
+      "name": "Tokyo",
+      "center": {
+        "lat": 35.6595,
+        "lon": 139.7006
+      },
+      "discovery_radius_m": 650
+    },
+    {
+      "slug": "london",
+      "name": "London",
+      "center": {
+        "lat": 51.5007,
+        "lon": -0.1246
+      },
+      "discovery_radius_m": 650
+    },
+    {
+      "slug": "riyadh",
+      "name": "Riyadh",
+      "center": {
+        "lat": 24.7136,
+        "lon": 46.6753
+      },
+      "discovery_radius_m": 650
+    },
+    {
+      "slug": "cairo",
+      "name": "Cairo",
+      "center": {
+        "lat": 30.0444,
+        "lon": 31.2357
+      },
+      "discovery_radius_m": 650
+    }
+  ]
+}
