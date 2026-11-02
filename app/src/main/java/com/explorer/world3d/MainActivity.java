@@ -32,7 +32,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private static final String[] TIME_ICONS = {"☀️", "🌇", "🌙"};
     // جميع نقاط البداية موضوعة على شوارع/تقاطعـات عامة، لا داخل معالم أو مبانٍ.
     private static final Object[][] CITIES = {
-            {"عمّان", 31.9522646, 35.9389907},       // شارع الهاشمي قرب الساحة الهاشمية
+            {"عمّان أونلاين", 31.9522646, 35.9389907},       // شارع الهاشمي قرب الساحة الهاشمية
             {"مانيلا", 14.57394, 120.98283},          // تقاطع Pedro Gil St وA. Mabini St
             {"بانكوك", 13.745624, 100.53422},         // Rama I Road
             {"نيويورك", 40.7573398, -73.986011},      // 7th Avenue وW 44th Street
@@ -157,6 +157,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         HorizontalScrollView hs = new HorizontalScrollView(this);
         hs.setHorizontalScrollBarEnabled(false);
         LinearLayout chips = new LinearLayout(this);
+        Button localAmman = btn("عمّان محلي");
+        localAmman.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { teleportOfflineAmman(); }
+        });
+        chips.addView(localAmman);
         for (final Object[] c : CITIES) {
             Button b = btn((String) c[0]);
             b.setOnClickListener(new View.OnClickListener() {
@@ -299,6 +304,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void teleport(final double lat, final double lon) {
         runOnUiThread(new Runnable() { @Override public void run() { loading.setVisibility(View.VISIBLE); } });
         glView.queueEvent(new Runnable() { @Override public void run() { renderer.teleport(lat, lon); } });
+    }
+
+    private void teleportOfflineAmman() {
+        runOnUiThread(new Runnable() { @Override public void run() {
+            loading.setText("جاري تحميل بيانات عمّان المحلية…");
+            loading.setVisibility(View.VISIBLE);
+        }});
+        glView.queueEvent(new Runnable() { @Override public void run() { renderer.teleportOfflineAmman(); }});
     }
 
     private void search() {
