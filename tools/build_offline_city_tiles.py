@@ -6,6 +6,7 @@ OSM supplies supplementary building tags/missing building geometry and non-road
 context only. No data is downloaded by this script.
 """
 from __future__ import annotations
+import argparse
 import json
 import math
 import shutil
@@ -37,7 +38,7 @@ def rings(geometry):
     return []
 
 
-def normalize_osm_element(element, lat0, lon0, kx):
+def normalize_osm_element(element, lat0, lon0, kx, cover_bbox=False):
     """Return a normalized OSM element and its spatial bucket, or None."""
     kind = element.get("type")
     tags = dict(element.get("tags") or {})
@@ -68,12 +69,26 @@ def normalize_osm_element(element, lat0, lon0, kx):
         return None
     center_lat = sum(p["lat"] for p in points) / len(points)
     center_lon = sum(p["lon"] for p in points) / len(points)
-    ix = math.floor(((center_lon - lon0) * kx) / TILE_METERS)
-    iz = math.floor((-(center_lat - lat0) * KY) / TILE_METERS)
-    return (ix, iz), {
+    element_out = {
         "type": "way", "id": int(element.get("id", 0)),
         "tags": tags, "geometry": points,
     }
+    if cover_bbox:
+        min_lon = min(p["lon"] for p in points); max_lon = max(p["lon"] for p in points)
+        min_lat = min(p["lat"] for p in points); max_lat = max(p["lat"] for p in points)
+        ix0 = math.floor(((min_lon - lon0) * kx) / TILE_METERS)
+        ix1 = math.floor(((max_lon - lon0) * kx) / TILE_METERS)
+        iz0 = math.floor((-(max_lat - lat0) * KY) / TILE_METERS)
+        iz1 = math.floor((-(min_lat - lat0) * KY) / TILE_METERS)
+        # Long ways are replicated into every intersected cell so roads and
+        # large footprints remain visible when the player crosses cell edges.
+        if (ix1 - ix0 + 1) * (iz1 - iz0 + 1) <= 256:
+            return [((ix, iz), element_out)
+                    for ix in range(ix0, ix1 + 1)
+                    for iz in range(iz0, iz1 + 1)]
+    ix = math.floor(((center_lon - lon0) * kx) / TILE_METERS)
+    iz = math.floor((-(center_lat - lat0) * KY) / TILE_METERS)
+    return [((ix, iz), element_out)]
 
 
 def _osm_id(value):
@@ -354,7 +369,14 @@ def source_elements(slug):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--city", help="Build only this city slug")
+    args = parser.parse_args()
     catalog = read_json(SOURCE / "catalog.json")
+    if args.city:
+        catalog["cities"] = [city for city in catalog.get("cities", []) if city.get("slug") == args.city]
+        if not catalog["cities"]:
+            raise SystemExit(f"Unknown city slug: {args.city}")
     OUTPUT.mkdir(parents=True, exist_ok=True)
     (OUTPUT / "catalog.json").write_text(
         json.dumps(catalog, ensure_ascii=False, separators=(",", ":")),
@@ -373,15 +395,17 @@ def main():
         seen = set()
 
         for raw in raw_elements:
-            normalized = normalize_osm_element(raw, lat0, lon0, kx)
-            if not normalized:
+            normalized_items = normalize_osm_element(
+                raw, lat0, lon0, kx, cover_bbox=(slug == "tabarbour"))
+            if not normalized_items:
                 continue
-            (ix, iz), element = normalized
-            key = (element["type"], element["id"])
-            if key in seen:
-                continue
-            seen.add(key)
-            buckets[(ix, iz)].append(element)
+            for (ix, iz), element in normalized_items:
+                key = (element["type"], element["id"])
+                bucket_key = (ix, iz, key)
+                if bucket_key in seen:
+                    continue
+                seen.add(bucket_key)
+                buckets[(ix, iz)].append(element)
 
         city_out = OUTPUT / slug
         city_out.mkdir(parents=True, exist_ok=True)
