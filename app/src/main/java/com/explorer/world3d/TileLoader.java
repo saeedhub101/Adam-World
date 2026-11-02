@@ -70,6 +70,7 @@ final class TileLoader extends Thread {
         this.cb = cb;
         cacheDir.mkdirs();
         offlineDir.mkdirs();
+        pruneOnlineCache();
         for (int dx = -LOAD_R; dx <= LOAD_R; dx++) for (int dz = -LOAD_R; dz <= LOAD_R; dz++) order.add(new int[]{dx, dz});
         Collections.sort(order, new Comparator<int[]>() {
             @Override public int compare(int[] a, int[] b) {
