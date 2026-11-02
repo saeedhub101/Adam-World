@@ -220,6 +220,82 @@ def _geojson_transportation_elements(path):
     return output
 
 
+def _point_in_ring(lon, lat, points):
+    inside = False
+    if len(points) < 4:
+        return False
+    j = len(points) - 1
+    for i in range(len(points)):
+        try:
+            xi, yi = float(points[i]["lon"]), float(points[i]["lat"])
+            xj, yj = float(points[j]["lon"]), float(points[j]["lat"])
+        except (KeyError, TypeError, ValueError):
+            return False
+        if ((yi > lat) != (yj > lat)) and (lon < (xj - xi) * (lat - yi) / ((yj - yi) or 1e-15) + xi):
+            inside = not inside
+        j = i
+    return inside
+
+
+def _merge_address_points(city_slug, buildings):
+    """Attach only address nodes that fall inside a mapped building footprint."""
+    address_path = SOURCE / city_slug / "address-points.geojson"
+    if not address_path.is_file() or not buildings:
+        return 0
+    features = read_json(address_path).get("features") or []
+    grid_size = 0.0005
+    grid = defaultdict(list)
+    rings_by_index = []
+    for index, building in enumerate(buildings):
+        points = building.get("geometry") or []
+        if len(points) < 4:
+            continue
+        rings_by_index.append((index, points))
+        min_lon = min(p["lon"] for p in points); max_lon = max(p["lon"] for p in points)
+        min_lat = min(p["lat"] for p in points); max_lat = max(p["lat"] for p in points)
+        gx0, gx1 = math.floor(min_lon / grid_size), math.floor(max_lon / grid_size)
+        gy0, gy1 = math.floor(min_lat / grid_size), math.floor(max_lat / grid_size)
+        for gx in range(gx0, gx1 + 1):
+            for gy in range(gy0, gy1 + 1):
+                grid[(gx, gy)].append(index)
+    ring_lookup = dict(rings_by_index)
+    assigned = 0
+    address_keys = ("addr:housenumber", "addr:housename", "addr:street",
+                    "addr:street:ar", "addr:street:en", "addr:unit",
+                    "addr:postcode", "name", "name:ar")
+    for feature in features:
+        geometry = feature.get("geometry") or {}
+        coords = geometry.get("coordinates") or []
+        if geometry.get("type") != "Point" or len(coords) < 2:
+            continue
+        lon, lat = float(coords[0]), float(coords[1])
+        candidates = grid.get((math.floor(lon / grid_size), math.floor(lat / grid_size)), [])
+        address_tags = _feature_tags(feature)
+        matched = None
+        for index in candidates:
+            if _point_in_ring(lon, lat, ring_lookup[index]):
+                matched = buildings[index]
+                break
+        if matched is None:
+            continue
+        target_tags = matched.setdefault("tags", {})
+        changed = False
+        for key in address_keys:
+            value = address_tags.get(key)
+            if value in (None, ""):
+                continue
+            old = target_tags.get(key)
+            if key == "addr:housenumber" and old not in (None, "") and str(value) not in str(old).split(", "):
+                target_tags[key] = str(old) + ", " + str(value)
+                changed = True
+            elif old in (None, ""):
+                target_tags[key] = value
+                changed = True
+        if changed:
+            assigned += 1
+    return assigned
+
+
 def _footprint_signature(points):
     """Return an approximate metric centroid and area for a closed lon/lat ring."""
     coords=[]
@@ -274,6 +350,9 @@ def source_elements(slug):
                 detail_buildings.append(item)
 
         footprints = _geojson_way_elements(footprints_path)
+        address_assignments = _merge_address_points(slug, footprints + detail_buildings)
+        if address_assignments:
+            print(f"MERGED {address_assignments} Tabarbour address points into building footprints", flush=True)
         footprint_ids = set()
         for item in footprints:
             tags = item.get("tags") or {}
