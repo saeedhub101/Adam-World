@@ -27,5 +27,43 @@
     "barriers",
     "bridges"
   ],
-  "stored_as": "data/offline-world/amman/elements.json"
+  "stored_as": "data/offline-world/amman/elements.json",
+  "transport_profile_version": 1,
+  "transport_complete": false,
+  "transport_radius_m": 12000,
+  "transport_elements_seen": 19487,
+  "transport_elements_added": 0,
+  "transport_elements_updated": 0,
+  "transport_completed_chunks": [
+    0,
+    4,
+    5,
+    6,
+    7
+  ],
+  "transport_pending_chunks": [
+    1,
+    2,
+    3
+  ],
+  "transport_layers": [
+    "railways",
+    "stations",
+    "subway_entrances",
+    "tram_stops",
+    "bus_stops",
+    "waterway_lines",
+    "waterfalls",
+    "water_pipelines",
+    "sewer_networks",
+    "storm_drains",
+    "water_works",
+    "wastewater_plants",
+    "pumping_stations",
+    "bridges",
+    "tunnels",
+    "traffic_calming",
+    "potholes"
+  ],
+  "transport_source": "OpenStreetMap via public Overpass endpoints"
 }
