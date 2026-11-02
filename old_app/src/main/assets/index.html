@@ -531,6 +531,11 @@ function localMetersBetween(lat1, lon1, lat2, lon2) {
   return Math.hypot(x, z);
 }
 async function fetchOnlineOsmArea(lat,lon,cityHint,nearestDistance,radiusMeters){
+  let terrain=null;
+  if(cityHint&&cityHint.slug){
+    try{terrain=await readOfflineJson('cities/'+cityHint.slug+'/elevation-grid.json');}
+    catch(e){console.info('No packaged elevation grid for',cityHint.slug,e.message);}
+  }
   // Libre is the global world. Never substitute a live OSM/Overpass extract
   // when local coverage is absent or a local tile fails: that would create a
   // second, inconsistent source layer. Returning no local geometry leaves the
@@ -542,7 +547,7 @@ async function fetchOnlineOsmArea(lat,lon,cityHint,nearestDistance,radiusMeters)
     elements:[],
     city:{slug:'online',name:'OpenFreeMap / OpenMapTiles'},
     tileCount:0,
-    terrain:null,
+    terrain:terrain,
     online:true
   };
 }
@@ -580,9 +585,9 @@ async function loadOfflineArea(lat, lon, radiusMeters) {
   }catch(e){console.warn('Local tile read failed; using live OpenStreetMap:',e.message);}
   if (!elements.length) return await fetchOnlineOsmArea(lat,lon,selected,nearest,radiusMeters);
   let terrain=null;
-  if(selected.slug==='amman'&&manifest.elevation_grid){
-    try{terrain=await readOfflineJson('cities/amman/'+manifest.elevation_grid);}
-    catch(e){console.warn('Optional Amman terrain unavailable:',e.message);}
+  if(manifest.elevation_grid){
+    try{terrain=await readOfflineJson('cities/'+selected.slug+'/'+manifest.elevation_grid);}
+    catch(e){console.warn('Optional '+selected.name+' terrain unavailable:',e.message);}
   }
   console.info('Adam World offline stream:', selected.slug, 'tiles:', chosen.length,
                'buildings:', elements.length, 'center distance:', Math.round(nearest) + 'm');
@@ -1661,7 +1666,7 @@ async function loadArea(lat,lon,spawn){
     S.px-=o[0];S.pz-=o[1];S.cx-=o[0];S.cz-=o[1];camera.position.x-=o[0];camera.position.z-=o[1];
   }
   LAT0=lat;LON0=lon;KX=111320*Math.cos(lat*Math.PI/180);
-  terrainGrid=(data.city&&data.city.slug==='amman')?(data.terrain||null):null;ground.visible=!terrainGrid&&!worldMapReady;
+  terrainGrid=data.terrain||null;ground.visible=!terrainGrid&&!worldMapReady;
   activeWaterAreas=[];activeWaterways=[];activeTrafficSignals=[];
   disposeGroup(cityGroup);disposeGroup(agentGroup);agents=[];
   if(terrainGrid)addTerrainSurface(terrainGrid);
