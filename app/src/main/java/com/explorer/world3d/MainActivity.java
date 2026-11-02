@@ -163,8 +163,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         cameraBar.addView(zoomIn);
         cameraScroll.addView(cameraBar);
         FrameLayout.LayoutParams cameraParams = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        cameraParams.setMargins(dp(150), 0, dp(150), dp(18));
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        cameraParams.setMargins(dp(150), 0, dp(90), dp(18));
         root.addView(cameraScroll, cameraParams);
 
         // العصا
