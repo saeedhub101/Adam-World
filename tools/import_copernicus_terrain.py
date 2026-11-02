@@ -203,7 +203,7 @@ def main():
     catalog = json.loads(CATALOG.read_text(encoding="utf-8"))
     succeeded, failed = [], []
     for city in catalog.get("cities", []):
-        if city["slug"] != "amman":
+        if city["slug"] not in {"amman", "tabarbour"}:
             print(f"{city['slug']}: terrain disabled by project policy; skipping")
             continue
         slug = city["slug"]
