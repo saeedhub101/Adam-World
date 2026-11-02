@@ -2,6 +2,7 @@ package com.explorer.world3d;
 
 import android.content.Context;
 import android.opengl.GLSurfaceView;
+import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 
@@ -28,6 +29,41 @@ public class CityGLView extends GLSurfaceView {
         setPreserveEGLContextOnPause(true);
         setRenderer(r);
         setRenderMode(RENDERMODE_CONTINUOUSLY);
+        setFocusable(true);
+        setFocusableInTouchMode(true);
+    }
+
+    private static float stick(float value) {
+        float a = Math.abs(value);
+        if (a < 0.16f) return 0f;
+        return Math.signum(value) * Math.min(1f, (a - 0.16f) / 0.84f);
+    }
+
+    private static float firstActive(float primary, float fallback) {
+        return Math.abs(primary) > 0.08f ? primary : fallback;
+    }
+
+    /** Generic USB/Bluetooth gamepads: left stick moves, right stick looks. */
+    @Override public boolean onGenericMotionEvent(MotionEvent e) {
+        if ((e.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
+                && e.getAction() == MotionEvent.ACTION_MOVE) {
+            float moveX = stick(e.getAxisValue(MotionEvent.AXIS_X));
+            float moveY = stick(e.getAxisValue(MotionEvent.AXIS_Y));
+            renderer.game.sx = moveX;
+            renderer.game.sy = -moveY;
+
+            float lookX = firstActive(e.getAxisValue(MotionEvent.AXIS_RX),
+                    e.getAxisValue(MotionEvent.AXIS_Z));
+            float lookY = firstActive(e.getAxisValue(MotionEvent.AXIS_RY),
+                    e.getAxisValue(MotionEvent.AXIS_RZ));
+            lookX = stick(lookX);
+            lookY = stick(lookY);
+            if (lookX != 0f || lookY != 0f) {
+                renderer.addLook(lookX * 11f, lookY * 11f);
+            }
+            return true;
+        }
+        return super.onGenericMotionEvent(e);
     }
 
     @Override public boolean onTouchEvent(MotionEvent e) {
