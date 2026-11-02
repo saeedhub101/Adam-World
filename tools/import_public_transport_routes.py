@@ -20,14 +20,14 @@ ROUTES = {"bus", "tram", "subway", "light_rail", "train", "ferry"}
 
 def query_for(lat, lon, radius):
     around = f"(around:{radius},{lat:.7f},{lon:.7f})"
-    return ('[out:json][timeout:120];('
+    return ('[out:json][timeout:90];('
             f'relation["route"~"^(bus|tram|subway|light_rail|train|ferry)$"]{around};'
             ');out geom;')
 
 def fetch(query, offset):
     body = urlencode({"data": query}).encode()
     errors = []
-    for attempt in range(5):
+    for attempt in range(3):
         endpoint = ENDPOINTS[(offset + attempt) % len(ENDPOINTS)]
         try:
             req = Request(endpoint, data=body, headers={
@@ -35,14 +35,14 @@ def fetch(query, offset):
                 "Accept": "application/json",
                 "User-Agent": "AdamWorld-PublicTransportRoutes/1.0 (public OSM data)",
             })
-            with urlopen(req, timeout=210) as response:
+            with urlopen(req, timeout=120) as response:
                 payload = json.loads(response.read().decode("utf-8"))
             if "elements" not in payload or payload.get("remark"):
                 raise RuntimeError(str(payload.get("remark") or "missing elements"))
             return payload
         except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as exc:
             errors.append(f"{endpoint}: {exc}")
-            time.sleep(3 + attempt * 3)
+            time.sleep(2 + attempt * 2)
     raise RuntimeError("; ".join(errors))
 
 def load_checkpoint(path):
@@ -63,14 +63,14 @@ def import_city(city, folder):
     progress = folder / "transit-route-progress"
     progress.mkdir(parents=True, exist_ok=True)
     collected, failed, completed = {}, [], []
-    for idx in range(12):
+    for idx in range(8):
         chunk_path = progress / f"chunk-{idx:02d}.json"
         if chunk_path.is_file():
             payload = load_checkpoint(chunk_path)
-            print(f"{city['slug']}: resume route chunk {idx+1}/12 from checkpoint", flush=True)
+            print(f"{city['slug']}: resume route chunk {idx+1}/8 from checkpoint", flush=True)
             features = payload.get("elements", [])
         else:
-            angle = math.radians(idx * 30)
+            angle = math.radians(idx * 45)
             lat = lat0 + math.cos(angle) * offset_m / 111320.0
             lon = lon0 + math.sin(angle) * offset_m / (111320.0 * max(0.2, math.cos(math.radians(lat0))))
             try:
@@ -118,18 +118,18 @@ def import_city(city, folder):
                     handle.write("\n")
                 os.replace(tmp, chunk_path)
                 checkpoint(city["slug"], chunk_path)
-                print(f"{city['slug']}: ROUTE_CHUNK_CHECKPOINT {idx+1}/12 segments={len(features)}", flush=True)
+                print(f"{city['slug']}: ROUTE_CHUNK_CHECKPOINT {idx+1}/8 segments={len(features)}", flush=True)
             except Exception as exc:
                 failed.append((idx, str(exc)))
-                print(f"{city['slug']}: route chunk {idx+1}/12 pending; continuing: {exc}", flush=True)
+                print(f"{city['slug']}: route chunk {idx+1}/8 pending; continuing: {exc}", flush=True)
                 continue
         completed.append(idx)
         for feature in features:
             key = (feature.get("id"), (feature.get("tags") or {}).get("public_transport_route"))
             collected[key] = feature
-        print(f"{city['slug']}: route chunk {idx+1}/12; {len(collected)} mapped route segments", flush=True)
+        print(f"{city['slug']}: route chunk {idx+1}/8; {len(collected)} mapped route segments", flush=True)
         time.sleep(1)
-    return list(collected.values()), len(completed) == 12, failed, completed
+    return list(collected.values()), len(completed) == 8, failed, completed
 
 def git(*args, check=True):
     return subprocess.run(["git", *args], cwd=ROOT, check=check, text=True,
@@ -181,7 +181,7 @@ def main():
                 "source": "OpenStreetMap public Overpass route relations",
                 "route_segment_count": len(features),
                 "completed_chunks": completed,
-                "pending_chunks": [idx for idx in range(12) if idx not in completed],
+                "pending_chunks": [idx for idx in range(8) if idx not in completed],
                 "elements": features,
             }
             fd, tmp = tempfile.mkstemp(prefix="transit-routes.", suffix=".tmp", dir=folder)
