@@ -28,7 +28,25 @@ def sid(value, part=0):
     return int.from_bytes(hashlib.blake2b(raw,digest_size=8).digest(),"big") & 0x7fffffffffffffff
 
 def val(v):
-    return "" if v is None or isinstance(v,(dict,list)) else str(v)
+    if v is None:
+        return ""
+    if isinstance(v, dict):
+        for key in ("value", "primary", "common", "name", "height", "meters", "feet"):
+            if v.get(key) is not None:
+                result = val(v[key])
+                unit = v.get("unit") or v.get("units")
+                if key == "value" and unit and result:
+                    return f"{result} {val(unit)}"
+                if result:
+                    return result
+        return ""
+    if isinstance(v, list):
+        for item in v:
+            result = val(item)
+            if result:
+                return result
+        return ""
+    return str(v)
 
 def name_value(v):
     return val(v.get("primary") or v.get("common")) if isinstance(v,dict) else val(v)
@@ -133,6 +151,11 @@ class Writer:
         self.handles.clear()
 
 def cells_for(geom,box):
+    # Runtime game tiles are about 333 m wide. A shard selected by tile centre
+    # must also contain every feature touching that tile, including across a
+    # 1 km shard edge. The 240 m halo covers the tile's half-diagonal.
+    halo_lon = 240.0 / KX
+    halo_lat = 240.0 / KY
     minx,miny,maxx,maxy=geom.bounds
     x0=math.floor((minx-LON0)*KX/CELL); x1=math.floor((maxx-LON0)*KX/CELL)
     z0=math.floor(-(maxy-LAT0)*KY/CELL); z1=math.floor(-(miny-LAT0)*KY/CELL)
@@ -140,7 +163,8 @@ def cells_for(geom,box):
         w=LON0+x*CELL/KX; e=LON0+(x+1)*CELL/KX
         for z in range(z0,z1+1):
             n=LAT0-z*CELL/KY; s=LAT0-(z+1)*CELL/KY
-            if geom.intersects(box(w,s,e,n)): yield f"{x}_{z}"
+            if geom.intersects(box(w-halo_lon,s-halo_lat,e+halo_lon,n+halo_lat)):
+                yield f"{x}_{z}"
 
 def sources():
     # Strict source boundary: only the existing imported Amman directory.
@@ -213,7 +237,7 @@ def build():
         version=fingerprint.hexdigest()[:16]
         manifest={"schema_version":1,"city":"Amman","source_directory":"data/full-city-imports/amman",
           "source_datasets":["Overture buildings","Overture building parts","Overture road segments","Overture land cover","Overture water","Overture infrastructure"],
-          "dataset_version":version,"origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,
+          "dataset_version":version,"origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,"cell_halo_m":240,
           "cells":sorted(writer.cells,key=lambda value:tuple(map(int,value.split("_")))),
           "shards":metadata,"element_counts_by_layer":dict(writer.counts),"shard_count":len(metadata)}
         temporary=OUTPUT/"manifest.json.tmp"
