@@ -214,8 +214,13 @@ def read_osm_details(writer, data, primary_ids):
         elif g.get("type") in ("Polygon","MultiPolygon"):
             # Keep OSM geometry as fallback supplement; renderer's feature-id dedupe
             # prevents it from replacing a matched OMT footprint.
-            if str(t.get("osm_way_id") or t.get("id") or osm_id).split("/")[-1] not in primary_ids:
-                emit_polygon(writer,"osm-footprint",osm_id,polygons(g),t,"osm_building_fallback")
+            rawkey=str(t.get("osm_way_id") or t.get("id") or osm_id).split("/")[-1]
+            rings=polygons(g)
+            outer=[pt for poly in rings for pt in (poly[0] if poly else [])]
+            center=(sum(p[0] for p in outer)/len(outer),sum(p[1] for p in outer)/len(outer)) if outer else None
+            near_primary=center is not None and any(abs(center[0]-x)*KX<4 and abs(center[1]-y)*KY<4 for x,y in PRIMARY_CENTROIDS)
+            if rawkey not in primary_ids and not near_primary:
+                emit_polygon(writer,"osm-footprint",osm_id,rings,t,"osm_building_fallback")
                 unmatched+=1
             else: matched+=1
     return matched,unmatched
