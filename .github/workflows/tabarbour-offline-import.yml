@@ -138,8 +138,8 @@ jobs:
           base = Path("app/src/main/assets/cities/tabarbour")
           manifest = json.loads((base / "manifest.json").read_text())
           tiles = list(base.glob("tile_*.json"))
-          if manifest.get("city") != "tabarbour":
-              raise SystemExit("Spatial manifest is not Tabarbour")
+          if manifest.get("slug") != "tabarbour":
+              raise SystemExit("Spatial manifest slug is not Tabarbour")
           if not tiles:
               raise SystemExit("No spatial cells were generated")
           for path in tiles:
