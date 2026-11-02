@@ -337,6 +337,7 @@ function addTerrainSurface(g){
 
 /* ---------- أدوات هندسية ---------- */
 function polyArea(P){let a=0;for(let i=0;i<P.length;i++){const p=P[i],q=P[(i+1)%P.length];a+=p[0]*q[1]-q[0]*p[1];}return a/2;}
+function polygonCentroid(P){let twice=0,x=0,z=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],c=a[0]*b[1]-b[0]*a[1];twice+=c;x+=(a[0]+b[0])*c;z+=(a[1]+b[1])*c;}if(Math.abs(twice)<1)return [P.reduce((v,p)=>v+p[0],0)/P.length,P.reduce((v,p)=>v+p[1],0)/P.length];return [x/(3*twice),z/(3*twice)];}
 function inPoly(x,z,P){let ins=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if(((a[1]>z)!==(b[1]>z))&&(x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0]))ins=!ins;}return ins;}
 function isWaterAt(x,z){
   for(const poly of activeWaterAreas)if(inPoly(x,z,poly))return true;
@@ -1408,8 +1409,8 @@ function addRomanTheatre(footprint){
   }
   g.userData.landmark="Roman Theatre";g.userData.terrainConformed=true;
 }
-function addBurjKhalifa(P,baseY){
-  const cx=P.reduce((s,p)=>s+p[0],0)/P.length,cz=P.reduce((s,p)=>s+p[1],0)/P.length;
+function addBurjKhalifa(P,cx,cz){
+  const baseY=terrainHeight(cx,cz);
   const group=new THREE.Group();group.position.set(cx,baseY,cz);cityGroup.add(group);
   const glass=new THREE.MeshLambertMaterial({color:0x7897a8,side:THREE.DoubleSide});
   const band=new THREE.MeshLambertMaterial({color:0xb8c6c9,side:THREE.DoubleSide});
@@ -1517,8 +1518,8 @@ async function loadArea(lat,lon,spawn){
         bldgs.push(theatre);gridAdd(theatre);continue;
       }
       if(osmWayId==='446646206'){
-        const bx=P.reduce((v,p)=>v+p[0],0)/P.length,bz=P.reduce((v,p)=>v+p[1],0)/P.length;
-        addBurjKhalifa(P,terrainHeight(bx,bz));
+        const [bx,bz]=polygonCentroid(P);
+        addBurjKhalifa(P,bx,bz);
         const ll=unproj(bx,bz),bb={id:el.id,tags:t,height:828,lat:ll[0],lon:ll[1],name:'Burj Khalifa',pts:P,minx:Math.min(...P.map(p=>p[0])),maxx:Math.max(...P.map(p=>p[0])),minz:Math.min(...P.map(p=>p[1])),maxz:Math.max(...P.map(p=>p[1]))};bldgs.push(bb);gridAdd(bb);continue;
       }
       const facadeItems=facadeAssignments.get(osmWayId)||[];
