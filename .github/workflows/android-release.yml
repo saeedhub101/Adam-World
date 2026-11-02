@@ -54,6 +54,12 @@ jobs:
             /gradle.properties
           sparse-checkout-cone-mode: false
 
+      - name: Require the dedicated Tabarbour offline dataset
+        run: |
+          set -euo pipefail
+          test -s app/src/main/assets/cities/tabarbour/manifest.json
+          test "$(find app/src/main/assets/cities/tabarbour -maxdepth 1 -name 'tile_*.json' | wc -l)" -gt 0
+
       - name: Set up Python for Amman spatial streaming
         uses: actions/setup-python@v5
         with:
