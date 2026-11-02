@@ -1,0 +1,13 @@
+{
+  "city": "Interlaken",
+  "boundary": "Overture Maps division_area (exact name match)",
+  "boundary_bbox": [
+    7.75310087220754,
+    46.47748565673771,
+    8.145211219821988,
+    46.795406341329624
+  ],
+  "overture_layers": 4,
+  "updated": "2026-11-02T16:44:08.340618+00:00",
+  "imagery_catalogues": "metadata discovery attempted; image downloads pending licence validation"
+}
