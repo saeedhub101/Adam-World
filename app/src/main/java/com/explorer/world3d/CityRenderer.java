@@ -91,6 +91,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private long lastN = System.nanoTime(), lastUnload, lastAgentMs, lastHudMs, spawnDeadline;
     private boolean started, needSpawn, spawned;
     private float lookDx, lookDy;
+    private volatile float gamepadLookX, gamepadLookY;
     public volatile int timeIdx = 0;
     private long lastErrToast;
     private final Random rng = new Random();
@@ -115,6 +116,11 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     public void shutdown() { loader.shutdown(); }
 
     public synchronized void addLook(float dx, float dy) { lookDx += dx; lookDy += dy; }
+
+    public void setGamepadLook(float x, float y) {
+        gamepadLookX = Math.max(-1f, Math.min(1f, x));
+        gamepadLookY = Math.max(-1f, Math.min(1f, y));
+    }
 
     /* ---------- GL ---------- */
     private static int compile(int type, String src) {
@@ -386,6 +392,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         float ldx, ldy;
         synchronized (this) { ldx = lookDx; ldy = lookDy; lookDx = 0; lookDy = 0; }
         if (ldx != 0 || ldy != 0) game.look(ldx, ldy);
+        float gx = gamepadLookX, gy = gamepadLookY;
+        if (gx != 0f || gy != 0f) game.look(gx * dt * 260f, gy * dt * 260f);
 
         TileData td;
         int ups = 0;
