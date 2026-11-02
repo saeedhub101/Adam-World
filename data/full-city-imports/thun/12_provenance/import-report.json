@@ -1,0 +1,13 @@
+{
+  "city": "Thun",
+  "boundary": "Overture Maps division_area (exact name match)",
+  "boundary_bbox": [
+    7.459155082740949,
+    46.67348480188218,
+    7.872692108154297,
+    46.836799621505406
+  ],
+  "overture_layers": 4,
+  "updated": "2026-11-02T16:45:49.822498+00:00",
+  "imagery_catalogues": "metadata discovery attempted; image downloads pending licence validation"
+}
