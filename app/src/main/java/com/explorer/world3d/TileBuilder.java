@@ -127,7 +127,9 @@ final class TileBuilder {
                 bcount++;
                 addBuilding(td, tags, id, bld, px, pz);
                 int poi = poiCategory(tags);
-                if (poi > 0) addPoi(td, cx, cz, poiName(tags), poi, Terrain.h(cx, cz) + bHeight(tags, id, bld) + 1.2f);
+                String buildingLabel = poiName(tags);
+                if ((poi > 0) || !buildingLabel.isEmpty())
+                    addFacadeLabel(td, px, pz, buildingLabel, bMinHeight(tags, bHeight(tags, id, bld)), poi);
             } else if (!hw.isEmpty() && RW.containsKey(hw)) {
                 String nm = tg(tags, "name:ar");
                 if (nm.isEmpty()) nm = tg(tags, "name");
@@ -693,7 +695,42 @@ final class TileBuilder {
         sign.box(x,y-1.0f,z,0.12f,2.0f,0.12f,0.25f,0.25f,0.27f);
         sign.box(x,y+0.20f,z,0.95f,0.48f,0.14f,r,g,b);
         if(name!=null&&!name.trim().isEmpty()&&td.decals.size()<40){
-            Decal d=new Decal(); d.text=name.trim(); d.x=x; d.z=z; d.dx=1f; d.dz=0f; d.y=y+0.55f;
+            Decal d=new Decal(); d.text=name.trim(); d.x=x; d.z=z; d.dx=1f; d.dz=0f; d.y=y-0.55f; d.vertical=true;
+            td.decals.add(d);
+        }
+    }
+
+    /** لافتة رأسية على أطول واجهة للمبنى، مع اسم المنشأة أو رقمها وفئة النشاط. */
+    private static void addFacadeLabel(TileData td, float[] px, float[] pz, String name, float minHeight, int category) {
+        int best=0; float longest=0f;
+        for(int i=0;i<px.length;i++){
+            int j=(i+1)%px.length; float len=(float)Math.hypot(px[j]-px[i],pz[j]-pz[i]);
+            if(len>longest){longest=len;best=i;}
+        }
+        if(longest<1.2f) return;
+        int j=(best+1)%px.length;
+        float dx=(px[j]-px[best])/longest, dz=(pz[j]-pz[best])/longest;
+        float area=Poly.area(px,pz);
+        float nx=area>0f?dz:-dz, nz=area>0f?-dx:dx;
+        float x=(px[best]+px[j])*0.5f+nx*0.16f;
+        float z=(pz[best]+pz[j])*0.5f+nz*0.16f;
+        float y=Terrain.h(x,z)+minHeight+1.35f;
+        float width=Math.min(3.6f,Math.max(1.8f,Math.min(longest-0.25f,3.6f)));
+        float half=width*0.5f, height=1.15f;
+        float lx=x-dx*half, lz=z-dz*half, rx=x+dx*half, rz=z+dz*half;
+        float cr=0.34f,cg=0.28f,cb=0.22f;
+        if(category==1){cr=0.12f;cg=0.38f;cb=0.72f;}
+        else if(category==2){cr=0.78f;cg=0.25f;cb=0.10f;}
+        else if(category==3){cr=0.43f;cg=0.25f;cb=0.14f;}
+        else if(category==4){cr=0.42f;cg=0.20f;cb=0.62f;}
+        else if(category==5){cr=0.12f;cg=0.48f;cb=0.28f;}
+        GeoBuf sign=td.bufs[B_SIGN];
+        sign.v(lx,y,lz,0,1,cr,cg,cb); sign.v(rx,y,rz,1,1,cr,cg,cb);
+        sign.v(rx,y+height,rz,1,0,cr,cg,cb); sign.fixTri();
+        sign.v(lx,y,lz,0,1,cr,cg,cb); sign.v(rx,y+height,rz,1,0,cr,cg,cb);
+        sign.v(lx,y+height,lz,0,0,cr,cg,cb); sign.fixTri();
+        if(name!=null&&!name.trim().isEmpty()&&td.decals.size()<40){
+            Decal d=new Decal(); d.text=name.trim(); d.x=x; d.z=z; d.dx=dx; d.dz=dz; d.y=y+0.08f; d.vertical=true;
             td.decals.add(d);
         }
     }
