@@ -1,0 +1,13 @@
+{
+  "city": "Manila",
+  "boundary": "Overture Maps division_area (exact name match)",
+  "boundary_bbox": [
+    120.7917034,
+    14.5508249,
+    121.0261685,
+    14.6395473
+  ],
+  "overture_layers": 4,
+  "updated": "2026-11-02T15:04:06.266509+00:00",
+  "imagery_catalogues": "metadata discovery attempted; image downloads pending licence validation"
+}
