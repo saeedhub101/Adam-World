@@ -94,5 +94,5 @@ evidence-gated production phase.
 ## Live geographic streaming (2026-11-02)
 
 - Local APK tiles are preferred whenever the player is inside a stored city coverage area.
-- When the player moves outside stored coverage or a local sector is absent, the game requests a bounded 320 m OpenStreetMap Overpass area (buildings, roads, land cover, water and mapped street objects) and rebuilds the nearby scene around the new player position. This requires an internet connection; no API key is used.
-- Live requests are limited to the official public Overpass host, use a 4 MB response cap and do not replace or modify the repository's offline data. The current live fallback is OSM geometry retrieval, not a full OpenFreeMap vector-tile renderer.
+- When the player moves outside stored coverage or a local sector is absent, the game requests a bounded 350 m OpenStreetMap Overpass area (buildings, roads, land cover, water and mapped street objects) and rebuilds the nearby scene around the new player position. This requires an internet connection; no API key is used.
+- Live requests are limited to two public Overpass endpoints, use a 4 MB response cap and do not replace or modify the repository's offline data. The current live fallback is OSM geometry retrieval, not a full OpenFreeMap vector-tile renderer.
