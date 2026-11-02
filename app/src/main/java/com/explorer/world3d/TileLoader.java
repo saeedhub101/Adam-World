@@ -106,6 +106,8 @@ final class TileLoader extends Thread {
         while (running) {
             try {
                 if (!havePlayer) { Thread.sleep(200); continue; }
+                // Back-pressure: never let completed tiles accumulate faster than GL uploads.
+                if (ready.size() >= 6) { Thread.sleep(100); continue; }
                 int cx = ptx, cz = ptz, g = gen;
                 int[] pick = null;
                 long k = 0;
