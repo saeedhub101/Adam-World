@@ -46,7 +46,7 @@ class OpenFreeMapPrimarySourceTests(unittest.TestCase):
         line = {"type": "LineString", "coordinates": [[35,31],[35.001,31.001]]}
         self.write_json(self.city / "building-footprints.geojson", {
             "type": "FeatureCollection", "features": [
-                self.feature("openfree/101", {"osm_id": 101, "building": "yes"},
+                self.feature("openfree/101", {"osm_id": 101, "building": "yes", "height": "20"},
                     polygon)
             ]
         })
@@ -55,7 +55,7 @@ class OpenFreeMapPrimarySourceTests(unittest.TestCase):
                 self.feature("osm-101", {"osm_feature_id": "way/101", "tags": {"building": "yes", "height": "12"}},
                     polygon),
                 self.feature("osm-202", {"osm_feature_id": "way/202", "tags": {"building": "yes", "height": "8"}},
-                    polygon)
+                    {"type": "Polygon", "coordinates": [[[35.002,31],[35.0021,31],[35.0021,31.0001],[35.002,31.0001],[35.002,31]]]})
             ]
         })
         self.write_json(self.city / "transportation.geojson", {
@@ -76,6 +76,8 @@ class OpenFreeMapPrimarySourceTests(unittest.TestCase):
         self.assertEqual(osm_roads, [])
         self.assertTrue(any(x["tags"].get("adam:source_geometry") == "OpenFreeMap/OpenMapTiles" and x["tags"].get("highway") == "primary" for x in elements))
         self.assertTrue(any(str(x.get("id")) == "202" and x["tags"].get("height") == "8" for x in elements))
+        primary_building = next(x for x in elements if x.get("id") == 101)
+        self.assertEqual(primary_building["tags"].get("height"), "20")
         self.assertIn("openfreemap-road-geometry-and-labels", kind)
         self.assertTrue(any(x.get("type") == "node" and x.get("id") == 400 for x in elements))
 
