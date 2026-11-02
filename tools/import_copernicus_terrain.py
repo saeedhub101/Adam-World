@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Fetch free Copernicus DEM GLO-30 COG windows for every Adam World city.
+"""Fetch free Copernicus DEM GLO-30 COG windows for enabled Adam World areas.
+
+Amman and Tabarbour are terrain-enabled destinations.
 
 No API key or paid endpoint is used. Each city's 201x201 grid is saved and
 committed independently so a rerun skips valid checkpoints and resumes later
