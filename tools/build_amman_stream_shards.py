@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """Build independently downloadable 1 km Amman shards from committed Overture data."""
 from __future__ import annotations
-import gzip, hashlib, json, math, shutil, sys
+import gzip, hashlib, json, math, shutil
 from collections import OrderedDict, defaultdict
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from build_offline_city_tiles import source_elements, _footprint_signature, _same_footprint_signature
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "data/full-city-imports/amman"
@@ -144,150 +142,84 @@ def cells_for(geom,box):
             n=LAT0-z*CELL/KY; s=LAT0-(z+1)*CELL/KY
             if geom.intersects(box(w,s,e,n)): yield f"{x}_{z}"
 
-def sources(include_overture_roads):
-    defs=[("building","02_buildings_overture/building",False),
+def sources():
+    # Strict source boundary: only the existing imported Amman directory.
+    definitions=[
+      ("building","02_buildings_overture/building",False),
+      ("building_part","02_buildings_overture/building_part",True),
       ("land","10_landcover_overture/land",False),
       ("land_cover","10_landcover_overture/land_cover",False),
       ("land_use","10_landcover_overture/land_use",False),
       ("water","10_landcover_overture/water",False),
       ("infrastructure","10_landcover_overture/infrastructure",False)]
-    if include_overture_roads:
-        defs.insert(1,("transport","09_transport_overture/segment",False))
-    for layer,sub,part in defs:
-        for path in sorted((SOURCE/sub).glob("part-*.geojson")): yield layer,path,part
-
-def element_geometry(element, Point, LineString, Polygon):
-    if element.get("type")=="node":
-        try: return Point(float(element["lon"]),float(element["lat"]))
-        except (KeyError,TypeError,ValueError): return None
-    if element.get("type")!="way": return None
-    coords=[]
-    for p in element.get("geometry") or []:
-        try: coords.append((float(p["lon"]),float(p["lat"])))
-        except (KeyError,TypeError,ValueError): continue
-    if len(coords)<2: return None
-    tags=element.get("tags") or {}
-    polygonal=bool(tags.get("building") or tags.get("building:part") or tags.get("leisure")
-                   or tags.get("landuse") or tags.get("natural") or tags.get("waterway")=="riverbank")
-    if polygonal and len(coords)>=4 and coords[0]==coords[-1]:
-        try: return Polygon(coords)
-        except Exception: pass
-    try: return LineString(coords)
-    except Exception: return None
-
-def signature_cell(signature):
-    return (math.floor(signature[0]/5.0),math.floor(signature[1]/5.0))
-
-def is_duplicate(signature, cells):
-    if not signature: return False
-    cx,cy=signature_cell(signature)
-    nearby=(candidate for dx in (-1,0,1) for dy in (-1,0,1)
-            for candidate in cells.get((cx+dx,cy+dy),[]))
-    return any(_same_footprint_signature(signature,primary) for primary in nearby)
-
-def add_signature(signature,cells):
-    if signature: cells[signature_cell(signature)].append(signature)
+    for layer,relative,part in definitions:
+        for path in sorted((SOURCE/relative).glob("part-*.geojson")):
+            yield layer,path,part
 
 def build():
     import ijson
-    from shapely.geometry import box,Point,LineString,Polygon
-    files=list(sources(False))
-    if not any(p.is_file() for _,p,_ in files): raise SystemExit("No Amman Overture chunks found")
-    if OUTPUT.exists(): shutil.rmtree(OUTPUT)
-    temp=OUTPUT/".tmp"; shard_dir=OUTPUT/"shards"; temp.mkdir(parents=True)
-    writer=Writer(temp); fingerprint=hashlib.sha256()
-    primary_buildings=defaultdict(list)
-    base_elements,base_path,base_kind=source_elements("amman")
-    primary_roads=False
-    # OpenFreeMap/OpenMapTiles are the primary footprints and road geometry.
-    # The existing helper adds OSM only as unmatched-building and non-road context.
-    for element in base_elements:
-        try:
-            geom=element_geometry(element,Point,LineString,Polygon)
-            if geom is None or geom.is_empty: continue
-            tags=element.get("tags") or {}
-            if element.get("type")=="way" and tags.get("highway"):
-                layer="primary_roads"; primary_roads=True
-            elif element.get("type")=="way" and (tags.get("building") or tags.get("building:part")):
-                layer="primary_buildings"
-                sig=_footprint_signature(element.get("geometry") or [])
-                add_signature(sig,primary_buildings)
-            else:
-                layer="osm_nonroad_context"
-            for cell in cells_for(geom,box): writer.add(cell,element,layer)
-        except Exception: continue
-    # Full-city Overture buildings fill areas not already covered by primary OpenFreeMap footprints.
-    for layer,path,is_part in files:
-        if layer=="building":
-            st=path.stat()
-            fingerprint.update(f"{path.relative_to(ROOT)}:{st.st_size}:".encode())
+    from shapely.geometry import box,shape
+    files=list(sources())
+    if not files:
+        raise SystemExit("No usable data in data/full-city-imports/amman")
+    if OUTPUT.exists():
+        shutil.rmtree(OUTPUT)
+    temp=OUTPUT/".tmp"
+    shard_dir=OUTPUT/"shards"
+    temp.mkdir(parents=True)
+    writer=Writer(temp)
+    fingerprint=hashlib.sha256()
+    try:
+        for layer,path,is_part in files:
+            fingerprint.update(path.relative_to(ROOT).as_posix().encode())
             with path.open("rb") as hash_stream:
-                for block in iter(lambda: hash_stream.read(1024 * 1024), b""):
+                for block in iter(lambda:hash_stream.read(1024*1024),b""):
                     fingerprint.update(block)
-            with path.open("rb") as f:
-                for feature in ijson.items(f,"features.item"):
+            with path.open("rb") as source:
+                for feature in ijson.items(source,"features.item"):
                     try:
-                        elems=make_elements(feature,layer,False)
-                        for element in elems:
-                            sig=_footprint_signature(element.get("geometry") or [])
-                            if is_duplicate(sig,primary_buildings): continue
-                            add_signature(sig,primary_buildings)
-                            geom=element_geometry(element,Point,LineString,Polygon)
-                            if geom is None or geom.is_empty: continue
-                            for cell in cells_for(geom,box): writer.add(cell,element,"overture_buildings")
-                    except Exception: continue
-            print("Processed Overture buildings",path.name,flush=True)
-        else:
-            st=path.stat()
-            fingerprint.update(f"{path.relative_to(ROOT)}:{st.st_size}:".encode())
-            with path.open("rb") as hash_stream:
-                for block in iter(lambda: hash_stream.read(1024 * 1024), b""):
-                    fingerprint.update(block)
-            with path.open("rb") as f:
-                for feature in ijson.items(f,"features.item"):
-                    try:
-                        elems=make_elements(feature,layer,is_part)
-                        for element in elems:
-                            geom=element_geometry(element,Point,LineString,Polygon)
-                            if geom is None or geom.is_empty: continue
-                            for cell in cells_for(geom,box): writer.add(cell,element,"overture_"+layer)
-                    except Exception: continue
-            print("Processed Overture",layer,path.name,flush=True)
-    # Use Overture road segments only if the OpenFreeMap/OpenMapTiles road layer is absent.
-    if not primary_roads:
-        for layer,path,_ in sources(True):
-            if layer!="transport": continue
-            with path.open("rb") as f:
-                for feature in ijson.items(f,"features.item"):
-                    try:
-                        for element in make_elements(feature,"transport",False):
-                            geom=element_geometry(element,Point,LineString,Polygon)
-                            if geom is None or geom.is_empty: continue
-                            for cell in cells_for(geom,box): writer.add(cell,element,"overture_transport_fallback")
-                    except Exception: continue
-    writer.close()
-    if not writer.cells: raise RuntimeError("No renderable Amman features were generated")
-    if "0_0" not in writer.cells or not ({"primary_roads","overture_transport_fallback"} & writer.cell_layers["0_0"]):
-        raise RuntimeError("The Roman Theatre start cell (0_0) has no primary road geometry")
+                        geometry=feature.get("geometry")
+                        if not geometry:
+                            continue
+                        shape_geometry=shape(geometry)
+                        if shape_geometry.is_empty:
+                            continue
+                        elements=make_elements(feature, "building" if layer=="building_part" else layer, is_part)
+                        if not elements:
+                            continue
+                        for cell in cells_for(shape_geometry,box):
+                            for element in elements:
+                                writer.add(cell,element,layer)
+                    except Exception:
+                        continue
+            print("Processed imported Amman:",layer,path.name,flush=True)
+        writer.close()
+        if not writer.cells:
+            raise RuntimeError("No renderable features found in imported Amman data")
         shard_dir.mkdir(parents=True)
-        meta={}
-        for cell in sorted(writer.cells,key=lambda q:tuple(map(int,q.split("_")))):
-            raw=temp/(cell+".jsonl"); target=shard_dir/(cell+".jsonl.gz")
-            with raw.open("rb") as src, target.open("wb") as dst:
+        metadata={}
+        for cell in sorted(writer.cells,key=lambda value:tuple(map(int,value.split("_")))):
+            raw=temp/(cell+".jsonl")
+            target=shard_dir/(cell+".jsonl.gz")
+            with raw.open("rb") as src,target.open("wb") as dst:
                 with gzip.GzipFile(fileobj=dst,mode="wb",compresslevel=6,mtime=0) as gz:
                     shutil.copyfileobj(src,gz,1024*1024)
-            meta[cell]={"file":"shards/"+target.name,"bytes":target.stat().st_size}
+            metadata[cell]={"file":"shards/"+target.name,"bytes":target.stat().st_size}
             raw.unlink()
         version=fingerprint.hexdigest()[:16]
-        manifest={"schema_version":1,"city":"Amman","source":"Overture Maps",
+        manifest={"schema_version":1,"city":"Amman","source_directory":"data/full-city-imports/amman",
+          "source_datasets":["Overture buildings","Overture land cover","Overture water","Overture infrastructure"],
           "dataset_version":version,"origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,
-          "cells":sorted(writer.cells,key=lambda q:tuple(map(int,q.split("_")))),
-          "shards":meta,"element_counts_by_layer":dict(writer.counts),"shard_count":len(meta)}
-        (OUTPUT/"manifest.json.tmp").write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding="utf-8")
-        (OUTPUT/"manifest.json.tmp").replace(OUTPUT/"manifest.json")
+          "cells":sorted(writer.cells,key=lambda value:tuple(map(int,value.split("_")))),
+          "shards":metadata,"element_counts_by_layer":dict(writer.counts),"shard_count":len(metadata)}
+        temporary=OUTPUT/"manifest.json.tmp"
+        temporary.write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding="utf-8")
+        temporary.replace(OUTPUT/"manifest.json")
         shutil.rmtree(temp,ignore_errors=True)
-        print(json.dumps({"city":"Amman","shards":len(meta),"elements":dict(writer.counts),"version":version}),flush=True)
-    finally: writer.close()
+        print(json.dumps({"city":"Amman","source":"data/full-city-imports/amman",
+          "shards":len(metadata),"elements":dict(writer.counts),"version":version}),flush=True)
+    finally:
+        writer.close()
 
 if __name__=="__main__":
     build()
