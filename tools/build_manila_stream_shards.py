@@ -10,7 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PBF_ROOT = Path(os.environ.get("ADAM_CITY_MANILA_PBF", ROOT / "Adam-City-source/Manila/vector-tiles"))
 TRANSPORT = ROOT / "data/facades/cities/manila/transportation.geojson"
-DETAILS = ROOT / "data/reference/adam-city/manila/ermita/ermita-building-details.geojson"
+DETAILS = ROOT / "data/facades/cities/manila/building-details.geojson"
+FOOTPRINTS = ROOT / "data/facades/cities/manila/building-footprints.geojson"
+OVERTURE_PARTS = ROOT / "data/full-city-imports/manila/02_buildings_overture/building_part/part-00001.geojson"
 OSM_CONTEXT = ROOT / "data/offline-world/manila/elements.json"
 BUILDING_CSV = Path(os.environ.get("ADAM_CITY_BUILDING_CSV", ROOT / "Adam-City-source/building-data/buildings.csv"))
 POI_CSV = Path(os.environ.get("ADAM_CITY_POI_CSV", ROOT / "Adam-City-source/ermita/maps/generated/ermita-public_services.csv"))
@@ -300,6 +302,45 @@ def read_transport(writer):
             pts=coords_to_points(line)
             if len(pts)>=2: writer.add({"type":"way","id":sid("ofm-road",f.get("id",i),j),"tags":tags,"geometry":pts},"openfreemap_transportation")
 
+def read_city_footprints(writer):
+    if not FOOTPRINTS.is_file(): return 0
+    data=json.loads(FOOTPRINTS.read_text(encoding="utf-8"))
+    added=0
+    for i,f in enumerate(data.get("features",[])):
+        p=f.get("properties") or {}; g=f.get("geometry") or {}
+        rings=polygons(g)
+        if not rings or not rings[0]: continue
+        outer=rings[0]
+        center=(sum(q[0] for q in outer)/len(outer),sum(q[1] for q in outer)/len(outer))
+        near=any(abs(center[0]-x)*KX<4 and abs(center[1]-y)*KY<4 for x,y in PRIMARY_CENTROIDS)
+        if near: continue
+        tags={"building":"yes","adam:source":"OpenFreeMap/OpenMapTiles building-footprints"}
+        for src,dst in (("render_height","height"),("render_min_height","min_height"),("colour","building:colour")):
+            if p.get(src) not in (None,""): tags[dst]=text(p[src])
+        if p.get("source_feature_id") not in (None,""): tags["adam:source_feature_id"]=text(p["source_feature_id"])
+        emit_polygon(writer,"ofm-footprint",f.get("id",i),rings,tags,"openfreemap_building_footprints")
+        PRIMARY_CENTROIDS.append(center); added+=1
+    return added
+
+def read_overture_parts(writer):
+    if not OVERTURE_PARTS.is_file(): return 0
+    data=json.loads(OVERTURE_PARTS.read_text(encoding="utf-8"))
+    added=0
+    for i,f in enumerate(data.get("features",[])):
+        p=f.get("properties") or {}; rings=polygons(f.get("geometry") or {})
+        if not rings: continue
+        tags={"building":"yes","building:part":"yes","adam:source":"Overture Maps building_part"}
+        if p.get("num_floors") not in (None,""): tags["building:levels"]=text(p["num_floors"])
+        if p.get("min_floor") not in (None,""):
+            tags["building:min_level"]=text(p["min_floor"])
+            try: tags["min_height"]=str(max(0.0,float(p["min_floor"])*3.2))
+            except (TypeError,ValueError): pass
+        if p.get("is_underground"): tags["location"]="underground"
+        if p.get("building_id"): tags["adam:overture_building_id"]=text(p["building_id"])
+        emit_polygon(writer,"overture-building-part",f.get("id",i),rings,tags,"overture_building_parts")
+        added+=1
+    return added
+
 def read_osm_details(writer, data, primary_ids):
     if not DETAILS.is_file(): raise SystemExit(f"Missing OSM detail file: {DETAILS}")
     unmatched=0; matched=0
@@ -324,7 +365,14 @@ def read_osm_details(writer, data, primary_ids):
             outer=rings[0] if rings else []
             center=(sum(p[0] for p in outer)/len(outer),sum(p[1] for p in outer)/len(outer)) if outer else None
             near_primary=center is not None and any(abs(center[0]-x)*KX<4 and abs(center[1]-y)*KY<4 for x,y in PRIMARY_CENTROIDS)
-            if rawkey not in primary_ids and not near_primary:
+            if t.get("building:part"):
+                t.setdefault("building","yes")
+                if t.get("building:min_level") and not t.get("min_height"):
+                    try: t["min_height"]=str(float(t["building:min_level"])*3.2)
+                    except (TypeError,ValueError): pass
+                emit_polygon(writer,"osm-building-part",osm_id,rings,t,"osm_building_parts")
+                unmatched+=1
+            elif rawkey not in primary_ids and not near_primary:
                 emit_polygon(writer,"osm-footprint",osm_id,rings,t,"osm_building_fallback")
                 unmatched+=1
             else: matched+=1
@@ -372,6 +420,8 @@ def main():
     building_index=read_building_csv_index()
     omt=read_pbf(writer,osm_index,building_index)
     if PBF_ROAD_COUNT == 0: read_transport(writer)
+    footprint_count=read_city_footprints(writer)
+    overture_part_count=read_overture_parts(writer)
     matched,unmatched=read_osm_details(writer,osm_data,MATCHED_OSM_IDS)
     thematic=read_thematic_csv(writer)
     context=read_context(writer)
@@ -387,7 +437,7 @@ def main():
       "dataset_version":hashlib.sha256(json.dumps(shard_hashes,sort_keys=True).encode()).hexdigest()[:16],
       "shard_sha256":shard_hashes,
       "cells":sorted(writer.cells),"counts":dict(writer.counts),"openmaptiles_building_features":omt,"openmaptiles_transportation_features":PBF_ROAD_COUNT,
-      "osm_building_fallback_features":unmatched,"osm_context_features":context,"thematic_supplement_features":thematic,
+      "osm_building_fallback_features":unmatched,"openfreemap_footprint_features":footprint_count,"overture_building_part_features":overture_part_count,"osm_context_features":context,"thematic_supplement_features":thematic,
       "osm_detail_matched_count":matched,"terrain":"disabled_flat_ground",
       "attribution":["© OpenFreeMap / OpenMapTiles","© OpenStreetMap contributors"],
       "license":"OpenStreetMap data ODbL 1.0; OpenFreeMap/OpenMapTiles attribution required"}
