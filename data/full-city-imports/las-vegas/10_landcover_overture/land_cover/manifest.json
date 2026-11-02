@@ -1,5 +1,5 @@
 {
-  "status": "partial",
+  "status": "complete",
   "source": "Overture Maps",
   "source_type": "land_cover",
   "parts": [
@@ -9,5 +9,6 @@
       "features": 185
     }
   ],
-  "feature_count": 185
+  "feature_count": 185,
+  "completed_at": "2026-11-02T16:29:32.475174+00:00"
 }
