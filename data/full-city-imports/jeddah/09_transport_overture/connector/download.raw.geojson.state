@@ -1,0 +1,14 @@
+{
+  "last_release": "2026-10-21.0",
+  "last_run": "2026-11-02T16:59:56.950588+00:00",
+  "theme": "transportation",
+  "type": "connector",
+  "bbox": {
+    "xmin": 38.75,
+    "ymin": 21.2,
+    "xmax": 39.5,
+    "ymax": 21.95
+  },
+  "backend": "geojson",
+  "output": "/home/runner/work/Adam-World/Adam-World/data/full-city-imports/jeddah/09_transport_overture/connector/download.raw.geojson"
+}

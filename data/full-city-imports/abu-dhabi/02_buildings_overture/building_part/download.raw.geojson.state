@@ -1,0 +1,14 @@
+{
+  "last_release": "2026-10-21.0",
+  "last_run": "2026-11-02T16:56:10.982748+00:00",
+  "theme": "buildings",
+  "type": "building_part",
+  "bbox": {
+    "xmin": 54.1,
+    "ymin": 24.15,
+    "xmax": 54.9,
+    "ymax": 24.8
+  },
+  "backend": "geojson",
+  "output": "/home/runner/work/Adam-World/Adam-World/data/full-city-imports/abu-dhabi/02_buildings_overture/building_part/download.raw.geojson"
+}

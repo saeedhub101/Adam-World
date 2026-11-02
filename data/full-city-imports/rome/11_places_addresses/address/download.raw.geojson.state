@@ -1,0 +1,14 @@
+{
+  "last_release": "2026-10-21.0",
+  "last_run": "2026-11-02T16:39:43.488331+00:00",
+  "theme": "addresses",
+  "type": "address",
+  "bbox": {
+    "xmin": 12.15,
+    "ymin": 41.7,
+    "xmax": 12.9,
+    "ymax": 42.1
+  },
+  "backend": "geojson",
+  "output": "/home/runner/work/Adam-World/Adam-World/data/full-city-imports/rome/11_places_addresses/address/download.raw.geojson"
+}

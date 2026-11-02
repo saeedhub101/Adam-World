@@ -1,0 +1,14 @@
+{
+  "last_release": "2026-10-21.0",
+  "last_run": "2026-11-02T16:44:35.843194+00:00",
+  "theme": "transportation",
+  "type": "segment",
+  "bbox": {
+    "xmin": 7.48,
+    "ymin": 46.65,
+    "xmax": 7.82,
+    "ymax": 46.86
+  },
+  "backend": "geojson",
+  "output": "/home/runner/work/Adam-World/Adam-World/data/full-city-imports/thun/09_transport_overture/segment/download.raw.geojson"
+}
