@@ -15,7 +15,7 @@ ENDPOINTS = [
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
 ]
-PROFILE = 1
+PROFILE = 2
 ROUTES = {"bus", "tram", "subway", "light_rail", "train", "ferry"}
 
 def query_for(lat, lon, radius):
@@ -47,7 +47,7 @@ def fetch(query, offset):
 
 def import_city(city):
     lat0, lon0 = float(city["center"]["lat"]), float(city["center"]["lon"])
-    radius = max(2500, int(city.get("discovery_radius_m", 650)))
+    radius = max(2500, int(os.environ.get("ADAM_AMMAN_TRANSPORT_RADIUS_M", city.get("discovery_radius_m", 650)))) if city["slug"] == "amman" else max(2500, int(city.get("discovery_radius_m", 650)))
     offset_m, chunk_radius = radius * 0.40, int(radius * 0.78)
     collected = {}
     for idx in range(8):
@@ -126,8 +126,11 @@ def checkpoint(slug, path):
 def main():
     catalog = json.loads(CATALOG.read_text(encoding="utf-8"))
     succeeded, failed = 0, []
+    selected = {x.strip() for x in os.environ.get("ADAM_CITY_SLUGS", "").split(",") if x.strip()}
     for city in catalog.get("cities", []):
         slug = city["slug"]
+        if selected and slug not in selected:
+            continue
         folder = OUTPUT / slug
         path = folder / "transit-routes.json"
         try:
