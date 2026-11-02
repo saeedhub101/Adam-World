@@ -200,7 +200,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
         if (!started) {
             started = true;
-            Geo.setOrigin(31.9516, 35.9394);
+            Geo.setOrigin(31.9522646, 35.9389907);
             game.reset();
             beginSpawn();
         }
