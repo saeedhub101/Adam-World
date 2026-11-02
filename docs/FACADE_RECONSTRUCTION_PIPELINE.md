@@ -258,3 +258,34 @@ published preview checked for window coverage, balcony placement, roof geometry,
 frame rate and memory on the target device. Future roof types and per-building
 architectural profiles should be added only from OSM tags or verified imagery,
 not guessed from nearby photographs.
+
+## Cross-source building identity reconciliation (ported from Adam-City)
+
+Adam-City's Ermita source-reconciliation work contributed one reusable rule to this
+pipeline: stable OSM identity is the only automatic cross-provider join key.
+Provider-local numeric IDs and nearby footprints must not be treated as the same
+building. Source geometry and tag differences are retained as competing evidence,
+not silently resolved by choosing one provider.
+
+The city-independent tool is:
+
+```sh
+python3 tools/facades/reconcile_building_sources.py \
+  --input osm=data/facades/cities/amman/buildings.geojson \
+  --input panoramax=data/facades/cities/amman/panoramax-items.geojson \
+  --output data/facades/cities/amman/source-reconciliation.json
+```
+
+Repeat `--input source_name=path` for each actual building-footprint provider.
+Do not pass street-photo catalogues as building-footprint sources. The output keeps
+all observations, source-local IDs, geometry hashes and tag conflicts. It does not
+select a winning footprint, infer identity from proximity, or approve a facade
+photo. Run the unit tests with:
+
+```sh
+python3 -m unittest tools.facades.tests.test_reconcile_building_sources -v
+```
+
+This is a provenance/QA stage before review-queue generation and GLB export. It
+does not replace the existing human-verified photo-to-facade gate.
+
