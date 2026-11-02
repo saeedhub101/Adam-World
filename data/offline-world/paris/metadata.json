@@ -11,7 +11,7 @@
     "lon": 2.2945
   },
   "radius_m": 650,
-  "element_count": 8007,
+  "element_count": 16258,
   "geometry_layers": [
     "buildings",
     "roads",
@@ -27,42 +27,5 @@
     "barriers",
     "bridges"
   ],
-  "stored_as": "data/offline-world/paris/elements.json",
-  "microsoft_footprints_version": "2026-08-13",
-  "microsoft_footprints_complete": true,
-  "microsoft_footprints_status": "imported",
-  "microsoft_footprints_tiles": 1,
-  "microsoft_footprints_added": 3183,
-  "microsoft_footprints_license": "CDLA-Permissive-2.0",
-  "microsoft_footprints_imagery_years": "2014-2024",
-  "microsoft_footprints_tile_index": [
-    {
-      "quadkey": "120220011",
-      "location": "France",
-      "url": "https://bfppub.z5.web.core.windows.net/2026-08-13/global-buildings.geojsonl/RegionName=France/quadkey=120220011/part-00103-110f5303-ff85-4c71-a2bf-c6070024fec8.c000.csv.gz",
-      "upload_date": "2026-08-13"
-    }
-  ],
-  "transport_profile_version": 1,
-  "transport_complete": true,
-  "transport_radius_m": 2500,
-  "transport_elements_seen": 46422,
-  "transport_elements_added": 44075,
-  "transport_elements_updated": 1933,
-  "transport_layers": [
-    "railways",
-    "stations",
-    "subway_entrances",
-    "tram_stops",
-    "waterway_lines",
-    "waterfalls",
-    "bridges",
-    "tunnels",
-    "road_surface",
-    "smoothness",
-    "lanes",
-    "traffic_calming",
-    "potholes"
-  ],
-  "transport_source": "OpenStreetMap via public Overpass endpoints"
+  "stored_as": "data/offline-world/paris/elements.json"
 }
