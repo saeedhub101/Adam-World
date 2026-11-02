@@ -110,7 +110,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                 if (now - lastErrToast > 20000) {
                     lastErrToast = now;
                     L.onToast(loader.offlineAmman ? "تعذر تنزيل بيانات عمّان المحلية. تحقق من الإنترنت"
-                            : loader.offlineCitySlug != null ? "تعذر قراءة بيانات مانيلا المحلية"
+                            : loader.offlineManila ? "تعذر تنزيل بيانات مانيلا المحلية" : loader.offlineCitySlug != null ? "تعذر قراءة بيانات المدينة المحلية"
                             : "تعذر تحميل بيانات الخريطة، تحقق من الإنترنت");
                 }
             }
@@ -206,6 +206,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         if (!started) {
             started = true;
             loader.offlineAmman = false;
+            loader.offlineManila = false;
             loader.offlineCitySlug = null;
             Geo.setOrigin(31.997579, 35.940358);
             Terrain.configureForCity(Geo.lat0, Geo.lon0);
@@ -224,7 +225,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         spawned = false;
         spawnDeadline = System.currentTimeMillis() + 25000;
         loader.havePlayer = true;
-        L.onLoading(true, loader.offlineAmman ? "جاري تحميل عمّان المحلية…" : loader.offlineCitySlug != null ? "جاري تحميل مانيلا المحلية…" : "جاري تحميل المدينة…");
+        L.onLoading(true, loader.offlineAmman ? "جاري تحميل عمّان المحلية…" : loader.offlineManila ? "جاري تحميل مانيلا المحلية…" : loader.offlineCitySlug != null ? "جاري تحميل المدينة المحلية…" : "جاري تحميل المدينة…");
     }
 
     /** ينقل اللاعب إلى مدينة/موقع جديد. يُستدعى من خيط الرسم. */
@@ -237,7 +238,11 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private void teleportInternal(double lat, double lon, boolean offline, String offlineCity) {
         loader.gen++;
         loader.offlineAmman = offline;
-        loader.offlineCitySlug = offlineCity;
+        loader.offlineManila = "manila".equals(offlineCity);
+        loader.offlineCitySlug = loader.offlineManila ? null : offlineCity;
+        loader.offlineCells = null;
+        loader.offlineDatasetVersion = null;
+        synchronized (loader.offlineShardCache) { loader.offlineShardCache.clear(); }
         loader.requested.clear(); loader.failedAt.clear(); loader.ready.clear();
         for (Tile t : tiles.values()) t.release();
         tiles.clear();
@@ -278,13 +283,14 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     @Override public float heightAt(float x, float z) {
+        if (loader.offlineManila) return 0f;
         float lm = Landmarks.heightAt(x, z);
         return Float.isNaN(lm) ? Terrain.h(x, z) : lm;
     }
 
     /** يبني مربعات الأرض من الارتفاعات الحقيقية حول اللاعب ويحذف البعيد منها. */
     private void updateTerrain(int ptx, int ptz) {
-        if (!Terrain.enabled || !Terrain.baseSet) return;
+        if (loader.offlineManila || !Terrain.enabled || !Terrain.baseSet) return;
         Iterator<Map.Entry<Long, Mesh>> it = terrain.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Long, Mesh> en = it.next();
@@ -441,7 +447,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             Tile c = tiles.get(Geo.key(Geo.tileX(0f), Geo.tileZ(0f)));
             if (c != null || nowMs > spawnDeadline) {
                 doSpawn(c);
-                if (c == null) L.onToast(loader.offlineAmman ? "لم تتوفر بيانات محلية عند نقطة البداية" : "تعذر تحميل بيانات المدينة. تحقق من الإنترنت");
+                if (c == null) L.onToast(loader.offlineAmman || loader.offlineManila || loader.offlineCitySlug != null ? "لم تتوفر بيانات محلية عند نقطة البداية" : "تعذر تحميل بيانات المدينة. تحقق من الإنترنت");
             }
         }
 
