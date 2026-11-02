@@ -56,7 +56,7 @@
   </div>
   <div class="chips">
     <button class="btn" data-c="31.9516,35.9394">عمّان</button>
-    <button class="btn" data-c="14.57655,120.98105">مانيلا</button>
+    <button class="btn" data-c="14.58291,120.98029">مانيلا · Rizal Park</button>
     <button class="btn" data-c="13.7466,100.5347">بانكوك</button>
     <button class="btn" data-c="40.7580,-73.9855">نيويورك</button>
     <button class="btn" data-c="48.8606,2.3376">باريس</button>
@@ -1581,6 +1581,24 @@ async function loadArea(lat,lon,spawn){
   const LC={grass:newAcc(),forest:newAcc(),scrub:newAcc(),crops:newAcc(),bare:newAcc(),sand:newAcc(),wetland:newAcc()};
   const WT=newAcc(),WTLine=newAcc();
   const trees=[],lamps=[],signals=[],busStops=[],railStations=[],stopSigns=[],crossings=[],waterfalls=[],potholes=[],speedBumps=[];const roadLabels=[],roadLabelKeys=new Set();let bcount=0;
+  // NPDC's georeferenced Rizal Park tree records are part of the game world.
+  // Load them only when the player is actually in the park area; all coordinates
+  // and measured heights are taken from the preserved source export.
+  const RIZAL_PARK_CENTER={lat:14.58291,lon:120.98029};
+  if(localMetersBetween(lat,lon,RIZAL_PARK_CENTER.lat,RIZAL_PARK_CENTER.lon)<1100){
+    try{
+      const inventory=await readOfflineJson('data/regions/philippines/manila/rizal-park/rizal-park-inventory.json');
+      for(const item of (inventory.trees||[])){
+        if(!Number.isFinite(item.latitude)||!Number.isFinite(item.longitude))continue;
+        trees.push({id:Number(String(item.id||'').replace(/\\D/g,''))||900000+trees.length,
+          p:proj(item.latitude,item.longitude),
+          tags:{natural:'tree',height:item.height_m?String(item.height_m):'',name:item.common_name||'NPDC inventoried tree',
+            species:item.scientific_name||'',genus:item.family||'',leaf_cycle:'deciduous',
+            'npdc:tree_id':item.id,'npdc:classification':item.classification||''}});
+      }
+      console.info('NPDC Rizal Park inventory trees loaded:',(inventory.trees||[]).length);
+    }catch(e){console.warn('Rizal Park NPDC tree inventory unavailable:',e.message);}
+  }
   const facadeAssignments=loadVerifiedFacadeAssignments();
   let romanTheatreFootprint=null;
   const wallV=3.4*4;
