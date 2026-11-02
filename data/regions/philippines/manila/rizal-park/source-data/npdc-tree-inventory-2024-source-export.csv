@@ -1,0 +1,31 @@
+Tree number,Common Name,Scientific name,Family Name,Tree Classification,Fruit-bearing,,DBH ,Height,Longitude,Latitude,Tree defects,Health,Structural integrity,Overall risk rating,Remarks,,
+AG86,Neem tree,Azadirachta indica,Meliaceae,Exotic,x,,,9.4,E 120 58 48.34,N 14 34 58.51,N 14 34 58.51,,leaning,high,near walkway ,,
+AG131,Alagau,Premna odorata,Lamiaceae,Native,x,,,5,E 120 58 49.38,N 14 34 59.01,,,straight,Low,,Low,23
+AG88,Mango,Mangifera indica,Anacardiaceae,Exotic,/,,,9,E 120 58 48.48,N 14 34 58.08,N 14 34 58.08,presence of wound ,leaning ,high,dead branches ,,
+AG87,Banaba,Lagerstroemia speciosa,Lythraceae,Native,x,,,8.6,E 120 58 48.42,N 14 34 58.26,N 14 34 58.26,,"leaning, weak forking",high,dead branches ,high,2
+AG89,Banaba,Lagerstroemia speciosa,Lythraceae,Native,x,,,11,E 120 58 48.78,N 14 34 58.70,dead branches,straight,Low,Low,,moderate,3
+AG94,Banaba,Lagerstroemia speciosa,Lythraceae,Native,x,,,10,E 120 58 48.75,N 14 34 58.39,galls,weak forking,straight; exposed roots,Low,,,28
+AG104,Banaba,Lagerstroemia speciosa,Lythraceae,Native,x,,,8,E 120 58 49.14,N 14 34 58.33,,,straight,Low,,,
+AG107,Banaba,Lagerstroemia speciosa,Lythraceae,Native,x,,,12,E 120 58 49.28,N 14 34 58.45,,,straight,Low,,Narra,
+AG109,Banaba,Lagerstroemia speciosa,Lythraceae,Native,x,,,11.8,E 120 58 49.55,N 14 34 58.50,,,straight,Low,,Manila Palm,
+AG110,Banaba,Lagerstroemia speciosa,Lythraceae,Native,x,,,10.9,E 120 58 49.54,N 14 34 58.60,,,straight,Low,,Molave,6
+AG113,Banaba,Lagerstroemia speciosa,Lythraceae,Native,x,,,6,E 120 58 49.46,N 14 34 58.72,,,straight,Low,,,
+AG114,Banaba,Lagerstroemia speciosa,Lythraceae,Native,x,,,8,E 120 58 49.50,N 14 34 58.51,,,straight,Low,,,
+AG101,Botong,Barringtonia asiatica,Lecythidaceae,Native,x,,,17,E 120 58 49.40,N 14 34 58.29,,,straight,Low,,,
+AG92,Ilang-ilang,Cananga odorata,Annonaceae,Native,x,,,8,E 120 58 48.61,N 14 34 58.74,,dead branches,leaning; exposed roots,high,near pathway,,
+AG102,Mahogany,Swietenia macrophylla,Meliaceae,Exotic,x,166.7,53.06225803,12.5,E 120 58 49.03,N 14 34 58.21,,,straight,Low,,,
+AG103,Mahogany,Swietenia macrophylla,Meliaceae,Exotic,x,106,33.74084794,10,E 120 58 49.21,N 14 34 58.30,,,straight,Low,,,
+AG111,Ilang-ilang,Cananga odorata,Annonaceae,Native,x,,,12.5,E 120 58 49.41,N 14 34 58.58,,,straight,Low,,,
+AG105,Candletree,Parmentiera cereifera,Bignoniaceae,Exotic,x,,,10,E 120 58 49.36,N 14 34 58.36,,,straight,Low,,,
+AG106,Mahogany,Swietenia macrophylla,Meliaceae,Exotic,x,304.1,96.79803639,14.1,E 120 58 49.37,N 14 34 58.47,,,straight,Low,,,
+AG133,Ilang-ilang,Cananga odorata,Annonaceae ,Native,x,,,12.5,E 120 58 49.20,N 14 34 59.01,,,straight,Low,,,
+AG108,Mahogany,Swietenia macrophylla,Meliaceae,Exotic,x,159,50.6112719,11,E 120 58 49.58,N 14 34 58.43,,,straight,Low,,,
+AG97,Kalumpit,Terminalia microcarpa,Combretaceae,Native,x,,,14.4,E 120 58 48.84,N 14 34 58.12,,dead branches,erect bole; slightly leaning,moderate,falling branches,,
+AG91,Molave,Vitex parviflora,Lamiaceae,Native,x,,,13,E 120 58 48.66,N 14 34 58.64,callus,weak forking,exposed roots,moderate,,,
+AG93,Molave,Vitex parviflora,Lamiaceae,Native,x,,,12,E 120 58 48.76,N 14 34 58.57,,,straight,Low,,,
+AG112,Mango,Mangifera indica,Anacardiaceae,Exotic,/,106,33.74084794,10,E 120 58 49.53,N 14 34 58.72,,,straight,Low,,,
+AG95,Molave,Vitex parviflora,Lamiaceae,Native,x,,,10.3,E 120 58 48.82,N 14 34 58.35,,weak forking; dead branches,exposed roots,moderate,,,
+AG98,Molave,Vitex parviflora,Lamiaceae,Native,x,,,9,E 120 58 49.03,N 14 34 57.92,callus,,straight,Low,,,
+AG99,Molave,Vitex parviflora,Lamiaceae,Native,x,,,9.7,E 120 58 49.09,N 14 34 57.89,,,straight,Low,,,
+AG132,Mahogany,Swietenia macrophylla,Meliaceae,Exotic,x,79.8,25.40112892,7,E 120 58 49.31,N 14 34 59.06,,,straight,Low,,,
+AG100,Molave,Vitex parviflora,Lamiaceae,Native,x,,,10.5,E 120 58 49.18,N 14 34 57.99,,,straight,Low,,,
