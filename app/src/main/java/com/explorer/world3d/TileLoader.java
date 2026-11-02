@@ -46,6 +46,7 @@ final class TileLoader extends Thread {
     private final Context context;
     private final File cacheDir;
     private final File offlineDir;
+    private final File manilaOfflineDir;
     private final ErrorCallback cb;
     private final ArrayList<int[]> order = new ArrayList<>();
     private static final double AMMAN_LAT0 = 31.9522646;
@@ -53,10 +54,16 @@ final class TileLoader extends Thread {
     private static final double AMMAN_KX = 111320.0 * Math.cos(Math.toRadians(AMMAN_LAT0));
     private static final double AMMAN_KY = 111132.0;
     private static final String OFFLINE_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-city-stream/amman";
+    private static final String MANILA_OFFLINE_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-city-stream/manila";
+    private static final double MANILA_LAT0 = 14.57394;
+    private static final double MANILA_LON0 = 120.98283;
+    private static final double MANILA_KX = 111320.0 * Math.cos(Math.toRadians(MANILA_LAT0));
+    private static final double MANILA_KY = 111132.0;
     private static final long OFFLINE_CACHE_MAX_BYTES = 384L * 1024L * 1024L;
     private static final long ONLINE_CACHE_MAX_BYTES = 128L * 1024L * 1024L;
     private static final long CACHE_MAX_AGE_MS = 3L * 24L * 3600L * 1000L;
     volatile boolean offlineAmman = false;
+    volatile boolean offlineManila = false;
     volatile String offlineCitySlug = null;
     private JSONObject bundledCityRoot;
     private String bundledCitySlug;
@@ -74,6 +81,7 @@ final class TileLoader extends Thread {
         this.context = context.getApplicationContext();
         this.cacheDir = cacheDir;
         this.offlineDir = new File(cacheDir, "offline-amman");
+        this.manilaOfflineDir = new File(cacheDir, "offline-manila");
         this.cb = cb;
         cacheDir.mkdirs();
         offlineDir.mkdirs();
@@ -133,6 +141,8 @@ final class TileLoader extends Thread {
         String json = null;
         if (offlineAmman) {
             root = loadOfflineRoot(south, west, north, east);
+        } else if (offlineManila) {
+            root = loadManilaRoot(south, west, north, east);
         } else if (offlineCitySlug != null) {
             root = loadBundledCityRoot(south, west, north, east);
         } else {
@@ -284,6 +294,71 @@ final class TileLoader extends Thread {
         return maxLat >= south && minLat <= north && maxLon >= west && minLon <= east;
     }
 
+
+    private JSONObject loadManilaRoot(double south, double west, double north, double east) throws Exception {
+        ensureManilaManifest();
+        double lat = (south + north) * 0.5, lon = (west + east) * 0.5;
+        int sx = (int) Math.floor((lon - MANILA_LON0) * MANILA_KX / 1000.0);
+        int sz = (int) Math.floor(-(lat - MANILA_LAT0) * MANILA_KY / 1000.0);
+        String cell = sx + "_" + sz;
+        if (!offlineCells.contains(cell)) return emptyElements();
+        String version = offlineDatasetVersion == null ? "current" : offlineDatasetVersion;
+        String key = version + ":" + cell;
+        synchronized (offlineShardCache) {
+            JSONObject cached = offlineShardCache.get(key);
+            if (cached != null) return cached;
+        }
+        manilaOfflineDir.mkdirs();
+        File versionDir = new File(manilaOfflineDir, version); versionDir.mkdirs();
+        File shard = new File(versionDir, cell + ".jsonl.gz");
+        if (!shard.isFile() || shard.length() == 0) {
+            byte[] bytes = downloadBytes(MANILA_OFFLINE_BASE + "/shards/" + cell + ".jsonl.gz");
+            File tmp = new File(shard.getPath() + ".tmp");
+            try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
+            if (!tmp.renameTo(shard)) { tmp.delete(); throw new IOException("Cannot cache Manila shard " + cell); }
+            pruneOfflineCache(shard);
+        }
+        JSONArray elements = new JSONArray();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                new GZIPInputStream(new FileInputStream(shard)), "UTF-8"), 32768)) {
+            String line;
+            while ((line = reader.readLine()) != null) if (!line.trim().isEmpty()) elements.put(new JSONObject(line));
+        } catch (Exception ex) { shard.delete(); throw ex; }
+        JSONObject result = new JSONObject(); result.put("elements", elements);
+        synchronized (offlineShardCache) { offlineShardCache.put(key, result); }
+        return result;
+    }
+
+    private void ensureManilaManifest() throws Exception {
+        if (offlineCells != null && offlineDatasetVersion != null) return;
+        synchronized (this) {
+            if (offlineCells != null && offlineDatasetVersion != null) return;
+            manilaOfflineDir.mkdirs();
+            File manifestFile = new File(manilaOfflineDir, "manifest.json");
+            if (!manifestFile.isFile() || System.currentTimeMillis() - manifestFile.lastModified() > 5L * 60 * 1000) {
+                try {
+                    byte[] bytes = downloadBytes(MANILA_OFFLINE_BASE + "/manifest.json");
+                    File tmp = new File(manifestFile.getPath() + ".tmp");
+                    try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
+                    if (!tmp.renameTo(manifestFile)) { tmp.delete(); throw new IOException("Cannot cache Manila manifest"); }
+                } catch (IOException networkError) {
+                    if (!manifestFile.isFile() || manifestFile.length() == 0) throw networkError;
+                }
+            }
+            JSONObject manifest = new JSONObject(readFile(manifestFile));
+            JSONArray list = manifest.optJSONArray("cells");
+            if (list == null || list.length() == 0) throw new IOException("Invalid Manila offline manifest");
+            HashSet<String> cells = new HashSet<>();
+            for (int i=0;i<list.length();i++) cells.add(list.optString(i));
+            String nextVersion = manifest.optString("dataset_version", "current");
+            if (offlineDatasetVersion != null && !offlineDatasetVersion.equals(nextVersion)) {
+                synchronized (offlineShardCache) { offlineShardCache.clear(); }
+            }
+            offlineDatasetVersion = nextVersion; offlineCells = cells;
+            pruneOfflineCache(null);
+        }
+    }
+
     private JSONObject loadOfflineRoot(double south, double west, double north, double east) throws Exception {
         ensureOfflineManifest();
         double lat = (south + north) * 0.5;
@@ -365,7 +440,8 @@ final class TileLoader extends Thread {
 
     /** Keep offline storage bounded: expire old shards and evict least-recently-used files. */
     private void pruneOfflineCache(File keep) {
-        File[] versions = offlineDir.listFiles();
+        File activeDir = offlineManila ? manilaOfflineDir : offlineDir;
+        File[] versions = activeDir.listFiles();
         if (versions == null) return;
         long now = System.currentTimeMillis(), total = 0L;
         ArrayList<File> shards = new ArrayList<>();
@@ -437,7 +513,7 @@ final class TileLoader extends Thread {
             c.setReadTimeout(90000);
             c.setRequestProperty("User-Agent", "Adam-World-Android");
             c.setRequestProperty("Accept-Encoding", "identity");
-            if (c.getResponseCode() != 200) throw new IOException("Offline Amman HTTP " + c.getResponseCode());
+            if (c.getResponseCode() != 200) throw new IOException("Offline city HTTP " + c.getResponseCode());
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             try (InputStream in = c.getInputStream()) {
                 byte[] buffer = new byte[32768];
