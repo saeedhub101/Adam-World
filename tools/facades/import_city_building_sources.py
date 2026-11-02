@@ -211,15 +211,25 @@ def main():
     p.add_argument("--cities-root",type=Path,default=CITY_ROOT)
     a=p.parse_args()
     cities=[a.cities_root/a.city] if a.city else sorted(x for x in a.cities_root.iterdir() if x.is_dir())
+    failures=[]
     for city in cities:
         if not (city/"city.json").exists():
             print(f"SKIP {city.name}: missing city.json",flush=True); continue
-        try: bbox=bounds(city)
+        try:
+            bbox=bounds(city)
         except Exception as exc:
-            print(f"ERROR {city.name}: invalid city config: {exc}",flush=True); failures.append(f"{city.name}/config"); continue
+            print(f"ERROR {city.name}: invalid city config: {exc}",flush=True)
+            failures.append(f"{city.name}/config")
+            continue
         for label,fn in (("footprints",import_openfreemap),("details",import_osm_details)):
-            try: fn(city,bbox,a.refresh,a.git_checkpoint)
-            except Exception as exc: print(f"ERROR {city.name}/{label}: {exc}",flush=True)
+            try:
+                fn(city,bbox,a.refresh,a.git_checkpoint)
+            except Exception as exc:
+                print(f"ERROR {city.name}/{label}: {exc}",flush=True)
+                failures.append(f"{city.name}/{label}")
         time.sleep(2)
+    if failures:
+        print("FAILED SOURCE STAGES: "+", ".join(failures),flush=True)
+        raise SystemExit(1)
 
 if __name__=="__main__": main()
