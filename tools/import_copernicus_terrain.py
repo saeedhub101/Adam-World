@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch free Copernicus DEM GLO-30 COG windows for enabled Adam World areas.
-
-Amman and Tabarbour are terrain-enabled destinations; package the updated city index with each Tabarbour terrain checkpoint.
+"""Fetch free Copernicus DEM GLO-30 COG windows for every Adam World city.
 
 No API key or paid endpoint is used. Each city's 201x201 grid is saved and
 committed independently so a rerun skips valid checkpoints and resumes later
@@ -205,7 +203,7 @@ def main():
     catalog = json.loads(CATALOG.read_text(encoding="utf-8"))
     succeeded, failed = [], []
     for city in catalog.get("cities", []):
-        if city["slug"] not in {"amman", "tabarbour"}:
+        if city["slug"] != "amman":
             print(f"{city['slug']}: terrain disabled by project policy; skipping")
             continue
         slug = city["slug"]
