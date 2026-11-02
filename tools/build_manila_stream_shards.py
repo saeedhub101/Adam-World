@@ -251,6 +251,9 @@ def read_pbf(writer, osm_index, building_index):
                         for k,v in source_tags.items():
                             if v not in (None,"") and tags.get(k) in (None,""): tags[k]=text(v)
             emit_polygon(writer,"omt",f.get("id",count),rings,tags,"openmaptiles_buildings")
+            outer=rings[0] if rings else []
+            if outer:
+                PRIMARY_CENTROIDS.append((sum(p[0] for p in outer)/len(outer),sum(p[1] for p in outer)/len(outer)))
             count+=1
         # Preserve named facilities and address-number points from the same tiles.
         for lname in ("poi","housenumber"):
