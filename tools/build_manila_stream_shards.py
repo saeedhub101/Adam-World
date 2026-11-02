@@ -114,7 +114,7 @@ def emit_polygon(writer, source, rawid, rings, tags, layer):
         if len(pts)>=4:
             writer.add({"type":"way","id":sid(source,rawid,i),"tags":dict(tags),"geometry":pts},layer)
 
-def read_pbf(writer):
+PRIMARY_CENTROIDS = []\n\ndef read_pbf(writer):
     try: import mapbox_vector_tile
     except ImportError as e: raise SystemExit("Install mapbox-vector-tile before importing Manila PBF") from e
     files=sorted(PBF_ROOT.rglob("*.pbf"))
@@ -122,7 +122,7 @@ def read_pbf(writer):
     count=0
     for path in files:
         try:
-            z,x,y=map(int,path.relative_to(PBF_ROOT).parts[-4:-1])
+            parts=path.relative_to(PBF_ROOT).parts\n            z=int(parts[-3]); x=int(parts[-2]); y=int(Path(parts[-1]).stem)
         except Exception: continue
         if z!=14: continue
         tile=mapbox_vector_tile.decode(path.read_bytes())
