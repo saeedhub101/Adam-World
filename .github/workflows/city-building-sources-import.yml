@@ -1,0 +1,94 @@
+name: Adam World — Original Building Footprints, Details and Facade Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      refresh:
+        description: "Re-fetch source datasets instead of keeping valid city checkpoints"
+        required: false
+        type: boolean
+        default: false
+      city:
+        description: "Optional city slug; leave empty for all ten cities"
+        required: false
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - "tools/facades/import_city_building_sources.py"
+      - ".github/workflows/city-building-sources-import.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adam-world-original-building-sources
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install free source-data parsers
+        run: python3 -m pip install --disable-pip-version-check mapbox-vector-tile shapely osm2geojson
+      - name: Configure incremental commits
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Import original OpenFreeMap footprints and full OSM building details
+        continue-on-error: true
+        env:
+          REFRESH: ${{ inputs.refresh }}
+          CITY: ${{ inputs.city }}
+        run: |
+          args=(--git-checkpoint)
+          if [ "$REFRESH" = "true" ]; then args+=(--refresh); fi
+          if [ -n "$CITY" ]; then args+=(--city "$CITY"); fi
+          python3 tools/facades/import_city_building_sources.py "${args[@]}"
+      - name: Ensure OSM building outlines for facade matching
+        continue-on-error: true
+        env:
+          REFRESH: ${{ inputs.refresh }}
+          CITY: ${{ inputs.city }}
+        run: |
+          args=(--git-checkpoint)
+          if [ "$REFRESH" = "true" ]; then args+=(--refresh); fi
+          if [ -n "$CITY" ]; then args+=(--city "$CITY"); fi
+          python3 tools/facades/fetch_osm_buildings.py "${args[@]}"
+      - name: Harvest Panoramax facade photographs and OpenAerialMap roof evidence
+        continue-on-error: true
+        env:
+          REFRESH: ${{ inputs.refresh }}
+          CITY: ${{ inputs.city }}
+        run: |
+          args=(--git-checkpoint)
+          if [ "$REFRESH" = "true" ]; then args+=(--refresh); fi
+          if [ -n "$CITY" ]; then args+=(--city "$CITY"); fi
+          python3 tools/facades/fetch_catalogue_metadata.py "${args[@]}"
+      - name: Build facade photo-to-building review candidates
+        continue-on-error: true
+        run: python3 tools/facades/build_review_queue.py
+      - name: Commit any remaining generated source records
+        if: always()
+        continue-on-error: true
+        run: |
+          git add -A data/facades/cities
+          if ! git diff --cached --quiet; then
+            git commit -m "Save per-city building source and facade evidence data"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Fail visibly if an import stage failed
+        if: always()
+        run: |
+          test -f data/facades/cities/amman/building-footprints.geojson || exit 1
