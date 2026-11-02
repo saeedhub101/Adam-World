@@ -43,6 +43,7 @@ jobs:
             /data/offline-world/amman/
             /data/offline-world/manila/
             /data/facades/cities/manila/
+            /data/full-city-imports/manila/02_buildings_overture/building_part/
             /data/reference/adam-city/manila/
             /data/offline-city-stream/manila/
             /tools/build_manila_stream_shards.py
