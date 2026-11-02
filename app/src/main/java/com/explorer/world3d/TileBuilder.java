@@ -92,6 +92,9 @@ final class TileBuilder {
                 if (tg(tags, "natural").equals("tree") && trees.size() < 260) trees.add(new float[]{x, z});
                 else if (tg(tags, "highway").equals("street_lamp") && lamps.size() < 60) lamps.add(new float[]{x, z});
                 else if (poiCategory(tags) > 0) addPoi(td, x, z, poiName(tags), poiCategory(tags), Terrain.h(x, z) + 2.8f);
+                else if (isWaterUtility(tags)) addUtilityMarker(td, x, z, tags);
+                else if (tg(tags,"railway").matches("station|halt|tram_stop|subway_entrance") || tg(tags,"public_transport").matches("station|platform|stop_position")) addPoi(td,x,z,poiName(tags),7,Terrain.h(x,z)+2.8f);
+                else if (tg(tags,"highway").equals("bus_stop")) addPoi(td,x,z,poiName(tags),6,Terrain.h(x,z)+2.8f);
                 continue;
             }
             if (!type.equals("way")) continue;
@@ -135,6 +138,14 @@ final class TileBuilder {
                 if (nm.isEmpty()) nm = tg(tags, "name");
                 if (nm.isEmpty()) nm = tg(tags, "name:en");
                 addRoad(td, tags, hw, nm, names, xs, zs, xMin, xMax, zMin, zMax);
+            } else if (tg(tags,"railway").matches("rail|light_rail|tram|subway|narrow_gauge|monorail")) {
+                float[][] pc=resample(xs,zs,8f);
+                ribbon(pc[0],pc[1],tg(tags,"railway").equals("rail")?4.2f:3.2f,0.24f,td.bufs[B_ROADN],1f,12f,0.25f,0.27f,0.29f);
+            } else if (tg(tags,"route").matches("bus|trolleybus")) {
+                float[][] pc=resample(xs,zs,8f);
+                ribbon(pc[0],pc[1],2.4f,0.25f,td.bufs[B_ROADN],1f,12f,0.12f,0.42f,0.88f);
+            } else if (isWaterUtility(tags)) {
+                addWaterUtilityLine(td,tags,xs,zs);
             } else if (waterway.matches("river|stream|canal|ditch|drain|wadi|tidal_channel")) {
                 float w = waterway.equals("river") ? 14f : waterway.equals("canal") ? 8f : 3f;
                 String ws = tg(tags, "width");
@@ -662,10 +673,41 @@ final class TileBuilder {
         }
     }
 
+    private static boolean isWaterUtility(JSONObject tags) {
+        String man=tg(tags,"man_made"), waterway=tg(tags,"waterway"), substance=tg(tags,"substance"), utility=tg(tags,"utility");
+        return man.matches("pipeline|water_works|water_tower|wastewater_plant|pumping_station|reservoir")
+                || waterway.matches("drain|ditch|sewer")
+                || utility.matches("water|sewer|sanitary|stormwater")
+                || substance.matches("water|sewage|wastewater");
+    }
+
+    private static void addWaterUtilityLine(TileData td, JSONObject tags, float[] xs, float[] zs) {
+        ArrayList<float[]> pieces=clipLine(xs,zs,-1e9f,1e9f,-1e9f,1e9f);
+        String substance=tg(tags,"substance"), utility=tg(tags,"utility"), man=tg(tags,"man_made");
+        boolean sewer=substance.matches("sewage|wastewater") || utility.matches("sewer|sanitary");
+        float width=man.equals("pipeline")?1.15f:man.equals("pumping_station")?3f:1.7f;
+        float r=sewer?0.38f:0.10f,g=sewer?0.40f:0.48f,b=sewer?0.43f:0.88f;
+        for(ArrayList<float[]> piece:pieces){
+            float[][] a=toArrays(piece); if(a==null)continue;
+            float[][] pc=resample(a[0],a[1],8f);
+            ribbon(pc[0],pc[1],width,0.18f,td.bufs[B_WATER],1f,12f,r,g,b);
+        }
+    }
+
+    private static void addUtilityMarker(TileData td,float x,float z,JSONObject tags) {
+        String man=tg(tags,"man_made");
+        float r=0.10f,g=0.48f,b=0.88f;
+        if(man.equals("wastewater_plant")){r=0.42f;g=0.44f;b=0.48f;}
+        else if(man.equals("pumping_station")){r=0.92f;g=0.58f;b=0.12f;}
+        td.bufs[B_SIGN].box(x,Terrain.h(x,z)+1.0f,z,1.4f,2.0f,1.4f,r,g,b);
+    }
+
     /** تصنيف الأنشطة التجارية والخدمية من خصائص المكان أو المبنى. */
     private static int poiCategory(JSONObject tags) {
         String amenity=tg(tags,"amenity"), shop=tg(tags,"shop"), tourism=tg(tags,"tourism"), building=tg(tags,"building"), healthcare=tg(tags,"healthcare");
         if (amenity.matches("hospital|clinic|doctors|dentist|healthcare") || healthcare.matches("hospital|clinic|doctor|dentist")) return 1;
+        if (tg(tags,"highway").equals("bus_stop") || tg(tags,"public_transport").matches("platform|stop_position") && tg(tags,"bus").equals("yes")) return 6;
+        if (tg(tags,"railway").matches("station|halt|tram_stop|subway_entrance") || tg(tags,"public_transport").equals("station")) return 7;
         if (building.matches("hospital|clinic|health_centre")) return 1;
         if (amenity.matches("restaurant|fast_food|food_court")) return 2;
         if (amenity.matches("cafe|coffee_shop|bar")) return 3;
