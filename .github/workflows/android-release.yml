@@ -66,7 +66,7 @@ jobs:
           root = Path("app/src/main/assets/cities/tabarbour")
           spatial = json.loads((root / "manifest.json").read_text())
           terrain = json.loads((root / "terrain/manifest.json").read_text())
-          if spatial.get("city") != "tabarbour":
+          if spatial.get("slug") != "tabarbour":
               raise SystemExit("Tabarbour spatial assets are not city-scoped")
           if terrain.get("city") != "tabarbour" or not terrain.get("complete"):
               raise SystemExit("Tabarbour offline elevation tiles are incomplete")
