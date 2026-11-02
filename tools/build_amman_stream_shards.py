@@ -117,28 +117,47 @@ def make_elements(feature, layer, part=False):
         return [{"type":"way","id":sid(raw,i),"tags":tags,"geometry":pts}
                 for i,ring in enumerate(polygon_rings(g)) if len(pts:=points(ring,True))>=4]
     if layer=="transport":
-        if val(p.get("subtype")).lower() not in ("","road"): return []
-        highway=ROAD.get(val(p.get("class") or "unknown").lower())
-        if not highway: return []
-        tags={"highway":highway,"adam:source":"Overture Maps"}
+        st={}
+        for pair in p.get("source_tags") or []:
+            if isinstance(pair,(list,tuple)) and len(pair)>=2: st[str(pair[0])]=val(pair[1])
+        cls=val(p.get("class")).lower()
+        subtype=val(p.get("subtype")).lower()
+        tags={"adam:source":"Overture Maps"}
+        highway=ROAD.get(cls)
+        if highway and subtype in ("","road"):
+            tags["highway"]=highway
+        elif cls in ("rail","railway","train","light_rail","tram","subway","metro") or st.get("railway") or st.get("route") in ("train","subway","tram","light_rail"):
+            tags["railway"]=st.get("railway") or ("subway" if cls in ("subway","metro") else "tram" if cls in ("tram","light_rail") else "rail")
+            if st.get("service"): tags["service"]=st["service"]
+        elif st.get("route") in ("bus","trolleybus") or st.get("bus") in ("yes","designated"):
+            tags["route"]="bus"
+        elif st.get("highway")=="bus_stop" or st.get("public_transport") in ("platform","stop_position","station"):
+            tags.update({k:st[k] for k in ("highway","public_transport","bus","name") if k in st})
+        else:
+            return []
         nm=name_value(p.get("names"))
         if nm: tags["name"]=nm
+        for key in ("ref","network","operator","service","layer","bridge","tunnel"):
+            if p.get(key) is not None and key not in tags: tags[key]=val(p[key])
         widths=p.get("width_rules")
         if isinstance(widths,list) and widths:
             candidates=[item for item in widths if isinstance(item,dict) and item.get("value") is not None]
             if candidates: tags["width"]=val(candidates[0]["value"])
-        if not tags.get("width") and p.get("width") is not None:
-            tags["width"]=val(p["width"])
+        if not tags.get("width") and p.get("width") is not None: tags["width"]=val(p["width"])
         surfaces=p.get("road_surface")
         if isinstance(surfaces,list) and surfaces and isinstance(surfaces[0],dict) and surfaces[0].get("value") is not None:
             tags["surface"]=val(surfaces[0]["value"])
         flags=json.dumps(p.get("road_flags") or []).lower()
         if "is_bridge" in flags: tags["bridge"]="yes"
         if "is_tunnel" in flags: tags["tunnel"]="yes"
-        for src,dst in (("bridge_height","bridge:height"),("tunnel_height","tunnel:height"),("layer","layer")):
-            if p.get(src) is not None: tags[dst]=val(p[src])
-        return [{"type":"way","id":sid(raw,i),"tags":tags,"geometry":pts}
-                for i,line in enumerate(line_parts(g)) if len(pts:=points(line))>=2]
+        out=[]
+        if kind=="Point":
+            lon,lat=g.get("coordinates",[None,None])[:2]
+            if lon is not None and lat is not None: out.append({"type":"node","id":sid(raw),"lon":float(lon),"lat":float(lat),"tags":tags})
+        for i,line in enumerate(line_parts(g)):
+            pts=points(line)
+            if len(pts)>=2: out.append({"type":"way","id":sid(raw,i),"tags":tags,"geometry":pts})
+        return out
     value=val(p.get("class") or p.get("subtype") or p.get("value")).lower()
     source_tags={}
     for pair in p.get("source_tags") or []:
@@ -177,8 +196,30 @@ def make_elements(feature, layer, part=False):
             tags={"natural":"water","water":water,"adam:source":"Overture Maps"}
             if water in ("reservoir","basin"): tags["landuse"]=water
     elif layer=="infrastructure":
-        if value not in ("bridge","pier","breakwater"): return []
-        tags={"man_made":value,"adam:source":"Overture Maps"}
+        tags={"adam:source":"Overture Maps"}
+        cls=(val(p.get("class") or p.get("subtype") or p.get("type"))).lower()
+        infra=source_tags.get("man_made") or source_tags.get("waterway") or cls
+        if any(k in infra for k in ("wastewater","sewage","sewer","treatment_plant")):
+            tags["man_made"]="wastewater_plant"
+        elif any(k in infra for k in ("water_works","waterworks","water_tower","reservoir","pumping_station","pump_station")):
+            tags["man_made"]="water_works" if "works" in infra else "water_tower" if "tower" in infra else "pumping_station" if "pump" in infra else "reservoir"
+        elif any(k in infra for k in ("pipeline","water_pipe","water_main")):
+            tags["man_made"]="pipeline"; tags["substance"]="water"
+        elif any(k in infra for k in ("storm_drain","drain","culvert","ditch")):
+            tags["waterway"]="drain"
+        elif infra in ("bridge","pier","breakwater"):
+            tags["man_made"]=infra
+        else:
+            utility=source_tags.get("utility","").lower()
+            substance=source_tags.get("substance","").lower()
+            if utility in ("water","sewer") or substance in ("water","sewage"):
+                tags["man_made"]="pipeline"; tags["substance"]=substance or utility
+            else: return []
+        for key in ("name","operator","ref"):
+            if p.get(key) is not None: tags[key]=val(p[key])
+        if kind=="Point":
+            lon,lat=g.get("coordinates",[None,None])[:2]
+            return [{"type":"node","id":sid(raw),"lon":float(lon),"lat":float(lat),"tags":tags}] if lon is not None and lat is not None else []
     elif value in ("park","garden","recreation_ground","playground"):
         tags={"leisure":"park" if value=="park" else value,"adam:source":"Overture Maps"}
     elif value in ("forest","wood","trees"):
