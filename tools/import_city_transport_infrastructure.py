@@ -20,10 +20,9 @@ TRANSPORT_PROFILE = 2
 def query_for(lat: float, lon: float, radius: int) -> str:
     around = f"(around:{radius},{lat:.7f},{lon:.7f})"
     return (
-        "[out:json][timeout:120];("
+        "[out:json][timeout:90];("
         # Re-fetch highway ways so surface, lanes, smoothness, bridge/tunnel,
         # width, traffic-calming and pothole tags are merged into existing roads.
-        f'way["highway"]{around};'
         f'way["railway"~"rail|light_rail|subway|tram|monorail|narrow_gauge|funicular|preserved"]{around};'
         f'way["waterway"~"river|stream|canal|ditch|drain|weir|dam|lock_gate"]{around};'
         f'way["waterway"="riverbank"]{around};'
@@ -47,7 +46,7 @@ def query_for(lat: float, lon: float, radius: int) -> str:
 def fetch_chunk(query: str, offset: int):
     body = urlencode({"data": query}).encode()
     errors = []
-    for attempt in range(5):
+    for attempt in range(3):
         endpoint = ENDPOINTS[(offset + attempt) % len(ENDPOINTS)]
         try:
             req = Request(endpoint, data=body, headers={
@@ -55,14 +54,14 @@ def fetch_chunk(query: str, offset: int):
                 "Accept": "application/json",
                 "User-Agent": "AdamWorld-TransportImporter/1.0 (public OSM data)",
             })
-            with urlopen(req, timeout=210) as response:
+            with urlopen(req, timeout=120) as response:
                 payload = json.loads(response.read().decode("utf-8"))
             if "elements" not in payload or payload.get("remark"):
                 raise RuntimeError(str(payload.get("remark") or "missing elements"))
             return payload
         except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as exc:
             errors.append(f"{endpoint}: {exc}")
-            time.sleep(3 + attempt * 3)
+            time.sleep(2 + attempt * 2)
     raise RuntimeError("; ".join(errors))
 
 def load_checkpoint(path):
@@ -86,13 +85,13 @@ def fetch_city(city, folder):
     progress = folder / "transport-progress"
     progress.mkdir(parents=True, exist_ok=True)
     merged, failed, completed = {}, [], []
-    for idx in range(12):
+    for idx in range(8):
         chunk_path = progress / f"chunk-{idx:02d}.json"
         if chunk_path.is_file():
             payload = load_checkpoint(chunk_path)
-            print(f"{city['slug']}: resume transport chunk {idx+1}/12 from checkpoint", flush=True)
+            print(f"{city['slug']}: resume transport chunk {idx+1}/8 from checkpoint", flush=True)
         else:
-            angle = math.radians(idx * 30)
+            angle = math.radians(idx * 45)
             lat = lat0 + math.cos(angle) * offset_m / 111320.0
             lon = lon0 + math.sin(angle) * offset_m / (111320.0 * max(0.2, math.cos(math.radians(lat0))))
             try:
@@ -103,10 +102,10 @@ def fetch_city(city, folder):
                     handle.write("\n")
                 os.replace(tmp, chunk_path)
                 checkpoint(city["slug"])
-                print(f"{city['slug']}: TRANSPORT_CHUNK_CHECKPOINT {idx+1}/12 saved={len(payload.get('elements', []))}", flush=True)
+                print(f"{city['slug']}: TRANSPORT_CHUNK_CHECKPOINT {idx+1}/8 saved={len(payload.get('elements', []))}", flush=True)
             except Exception as exc:
                 failed.append((idx, str(exc)))
-                print(f"{city['slug']}: transport chunk {idx+1}/12 pending; continuing: {exc}", flush=True)
+                print(f"{city['slug']}: transport chunk {idx+1}/8 pending; continuing: {exc}", flush=True)
                 continue
         completed.append(idx)
         for item in payload.get("elements", []):
@@ -120,7 +119,7 @@ def fetch_city(city, folder):
                     if "lat" in item: old["lat"], old["lon"] = item["lat"], item["lon"]
                 else:
                     merged[key] = item
-        print(f"{city['slug']}: transport chunk {idx+1}/12; {len(merged)} unique elements", flush=True)
+        print(f"{city['slug']}: transport chunk {idx+1}/8; {len(merged)} unique elements", flush=True)
         time.sleep(1)
     return list(merged.values()), target_radius, failed, completed
 
@@ -170,7 +169,7 @@ def main():
                 succeeded += 1
                 continue
             incoming, radius, failed, completed = fetch_city(city, folder)
-            complete = len(completed) == 12
+            complete = len(completed) == 8
             if complete:
                 index = {(e.get("type"), e.get("id")): e for e in base.get("elements", [])}
                 added = updated = 0
@@ -207,7 +206,7 @@ def main():
                 "transport_elements_added": added,
                 "transport_elements_updated": updated,
                 "transport_completed_chunks": completed,
-                "transport_pending_chunks": [idx for idx in range(12) if idx not in completed],
+                "transport_pending_chunks": [idx for idx in range(8) if idx not in completed],
                 "transport_layers": ["railways", "stations", "subway_entrances", "tram_stops", "bus_stops", "waterway_lines", "waterfalls", "water_pipelines", "sewer_networks", "storm_drains", "water_works", "wastewater_plants", "pumping_stations", "bridges", "tunnels", "road_surface", "smoothness", "lanes", "traffic_calming", "potholes"],
                 "transport_source": "OpenStreetMap via public Overpass endpoints",
             })
