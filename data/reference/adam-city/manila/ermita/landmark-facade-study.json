@@ -1,0 +1,243 @@
+{
+  "project": "Adam-City",
+  "study_version": 1,
+  "updated_utc": "2026-10-20",
+  "status": "architectural_reference_study_complete_geometry_match_pending",
+  "policy": "Use photos to design building-specific facade geometry and materials. Do not project photographs onto buildings. Do not apply a profile to an OSM polygon until the footprint identity and orientation are verified.",
+  "targets": [
+    {
+      "id": "LANDMARK-NMFA",
+      "name": "National Museum of Fine Arts (Old Legislative Building)",
+      "priority": 1,
+      "location": {
+        "latitude": 14.5869472,
+        "longitude": 120.9813222,
+        "source": "Wikidata coordinate reported for the Old Legislative Building"
+      },
+      "identity": {
+        "verified": true,
+        "aliases": [
+          "Old Legislative Building",
+          "Old Congress Building",
+          "National Museum of Fine Arts"
+        ],
+        "source_urls": [
+          "https://www.nationalmuseum.gov.ph/our-museums/national-museum-of-fine-arts/",
+          "https://philhistoricsites.nhcp.gov.ph/registry_database/old-legislative-building/"
+        ]
+      },
+      "repository_references": [
+        {
+          "path": "ermita/buildings/reference_photos/04660jfNational-Museum-of-the-Philippines-Ermita-Manilafvf-19.jpg",
+          "license": "CC0",
+          "match": "National Museum Complex; verify exact view/building before using for camera matching"
+        },
+        {
+          "path": "ermita/buildings/reference_photos/04660jfNational-Museum-of-the-Philippines-Ermita-Manilafvf-20.jpg",
+          "license": "CC0",
+          "match": "National Museum Complex; verify exact view/building before using for camera matching"
+        },
+        {
+          "path": "ermita/buildings/reference_photos/04660jfNational-Museum-of-the-Philippines-Ermita-Manilafvf-21.jpg",
+          "license": "CC0",
+          "match": "National Museum Complex; verify exact view/building before using for camera matching"
+        },
+        {
+          "path": "ermita/buildings/reference_photos/04660jfNational-Museum-of-the-Philippines-Ermita-Manilafvf-23.jpg",
+          "license": "CC0",
+          "match": "National Museum Complex; verify exact view/building before using for camera matching"
+        },
+        {
+          "path": "ermita/buildings/reference_photos/04660jfNational-Museum-of-the-Philippines-Ermita-Manilafvf-28.jpg",
+          "license": "CC0",
+          "match": "National Museum Complex; verify exact view/building before using for camera matching"
+        },
+        {
+          "path": "ermita/buildings/reference_photos/04660jfNational-Museum-of-the-Philippines-Ermita-Manilafvf-29.jpg",
+          "license": "CC0",
+          "match": "National Museum Complex; verify exact view/building before using for camera matching"
+        },
+        {
+          "path": "ermita/buildings/reference_photos/04660jfNational-Museum-of-the-Philippines-Ermita-Manilafvf-35.jpg",
+          "license": "CC0",
+          "match": "National Museum Complex; verify exact view/building before using for camera matching"
+        }
+      ],
+      "visual_design_observations": [
+        "Monumental, near-symmetrical Beaux-Arts / Neoclassical composition; the central portico must read differently from the long side wings.",
+        "Pale white-to-warm-stone plaster; restrained weathering and subtle tonal variation rather than a single flat white material.",
+        "Four giant Corinthian columns in the central projecting bay; capitals, shafts, bases and column shadows need separate geometry.",
+        "Deep entablature, layered cornices and a triangular sculpted pediment; relief silhouette should be modeled as a raised feature, not a flat dark decal.",
+        "Tall rectangular multi-pane windows with dark frames, repeated by floor and aligned in vertical bays; pilasters and shallow window surrounds between bays.",
+        "Central balconies/corbels and stepped entrance platform; multiple door openings and clear depth at the portico.",
+        "Long side wings, corner column groups, roofline cornice and repeated window rhythm; avoid a simple rectangular prism.",
+        "Building is documented as four stories with a rectangular plan and internal courtyards; the footprint must preserve courtyard voids if present in the authoritative geometry."
+      ],
+      "modeling_plan": [
+        "Verify the footprint polygon and orientation against official coordinates and repository photos; split museum complex polygons into individual structures if needed.",
+        "Build a four-storey base mass with floor-band offsets and shallow pilasters, then a separately modeled projecting central portico.",
+        "Create repeated windows as grouped modules; model frames, recesses, sills and lintels with varied depth.",
+        "Create column shafts, bases and stylized Corinthian capitals as distinct meshes; add a layered entablature and pediment relief.",
+        "Add entrance steps, plinth, balconies/corbels, cornices, parapet/roofline, and subtle material/weathering variation.",
+        "Keep sculptural detail procedural and clearly labeled as a visual approximation unless directly traced from a licensed close-up."
+      ],
+      "footprint_status": "not_yet_matched_to_a_specific_committed_OSM_polygon",
+      "do_not_do": [
+        "Do not assign the facade to a generic nearby polygon.",
+        "Do not treat the National Museum complex as one building without confirming its separate footprints.",
+        "Do not claim photogrammetric or surveyed accuracy."
+      ],
+      "footprint_audit": {
+        "checked_file": "ermita/maps/generated/ermita-building-details.geojson",
+        "result": "No exact National Museum of Fine Arts / Old Legislative Building OSM polygon identified by name or geometry in the checked local building-detail data.",
+        "nearby_candidates": [
+          {
+            "osm_feature_id": "way/1120247726",
+            "distance_to_reference_coordinate_m": 56,
+            "approx_bbox_m": [
+              43,
+              26
+            ],
+            "tags": {
+              "building": "yes",
+              "height": "8"
+            },
+            "decision": "reject_as_unverified; footprint is too small to represent the full museum"
+          },
+          {
+            "osm_feature_id": "way/188204305",
+            "distance_to_reference_coordinate_m": 57,
+            "approx_bbox_m": [
+              0,
+              0
+            ],
+            "tags": {
+              "building": "yes",
+              "building:levels": "1"
+            },
+            "decision": "reject_as_unverified; small building and no identity tags"
+          },
+          {
+            "osm_feature_id": "way/188204302",
+            "distance_to_reference_coordinate_m": 74,
+            "approx_bbox_m": [
+              0,
+              0
+            ],
+            "tags": {
+              "building": "yes",
+              "building:levels": "1",
+              "height": "7"
+            },
+            "decision": "reject_as_unverified; small building and no identity tags"
+          }
+        ],
+        "required_action": "Import/identify the full Old Legislative Building footprint (including its actual outline/courtyard voids) before attaching custom facade geometry."
+      }
+    },
+    {
+      "id": "LANDMARK-PGH-CANCER-INSTITUTE",
+      "name": "Cancer Institute Building, Philippine General Hospital",
+      "priority": 2,
+      "location": {
+        "street": "Padre Faura Street, Manila",
+        "coordinates_status": "exact footprint coordinate not yet verified"
+      },
+      "identity": {
+        "verified": true,
+        "source_urls": [
+          "https://commons.wikimedia.org/wiki/File:PGH_Cancer_Institute_Building.jpg",
+          "https://www.pgh.gov.ph/wp-content/uploads/2025/05/PGH_ARTA-EODB-Handbook_Updated-31-March-2023.pdf"
+        ]
+      },
+      "repository_references": [
+        {
+          "path": "ermita/buildings/reference_photos/PGH-Cancer-Institute-Building.jpg",
+          "license": "CC BY-SA 4.0",
+          "source": "Wikimedia Commons",
+          "source_url": "https://commons.wikimedia.org/wiki/File:PGH_Cancer_Institute_Building.jpg",
+          "match": "Photo description identifies the Cancer Institute facade on Padre Faura Street"
+        }
+      ],
+      "visual_design_observations": [
+        "Historic institutional facade with a projecting central portico and a triangular/classical pediment.",
+        "Pale lavender-grey/off-white plaster with visible age and uneven weathering; use subtle mottling and paint variation, not dramatic damage.",
+        "Four tall rectangular columns at the central entrance; deep shadows behind the portico make the central bay read as recessed.",
+        "Wide entablature and cornice with small repeated ornamental blocks; pediment and fascia should be layered.",
+        "Tall vertical openings and multi-pane windows on the wings; keep their rhythm distinct from the entrance portico.",
+        "Roof edge has a muted reddish tone in the reference; model the roof/cap as a separate material surface.",
+        "The photo contains temporary canopies, tables, chairs, a vehicle and people; exclude these from the permanent building model unless separately treated as removable scene props.",
+        "Facade lettering in the reference is historical signage; only reproduce readable text when the text is legible and the orientation/placement is verified."
+      ],
+      "modeling_plan": [
+        "Identify the exact Cancer Institute footprint among PGH campus buildings before applying any facade details.",
+        "Create the institutional massing, raised central portico, four columns, deep entablature, pediment and cornice as separate meshes.",
+        "Model window recesses, frames and repeated openings on each wing; avoid applying generic balconies or a generic storefront door.",
+        "Use aged pale lavender-grey plaster with mild variation and darker recesses; keep the roof edge muted red.",
+        "Add the historic sign as a separate, editable mesh/texture asset only after confirming exact wording and scale.",
+        "Keep temporary waiting-area objects out of the base building GLB so the building remains reusable."
+      ],
+      "footprint_status": "candidate_polygon_exists_in_PGH_area_but_exact_identity_not_yet_confirmed",
+      "do_not_do": [
+        "Do not attach this facade to PGH Central Block, OPD or another named building without evidence.",
+        "Do not bake the tents, chairs, car or people into the building geometry.",
+        "Do not infer exact floor heights or dimensions from one perspective photo."
+      ],
+      "footprint_audit": {
+        "checked_file": "ermita/maps/generated/ermita-building-details.geojson",
+        "result": "A plausible historic hospital-style polygon exists nearby, but the current data does not identify it as the Cancer Institute.",
+        "nearby_candidates": [
+          {
+            "osm_feature_id": "way/16554344",
+            "distance_to_candidate_reference_point_m": 10,
+            "approx_bbox_m": [
+              133,
+              187
+            ],
+            "tags": {
+              "building": "hospital",
+              "building:architecture": "neoclassical",
+              "building:levels": "2",
+              "start_date": "1910-09"
+            },
+            "decision": "strong architectural candidate but identity not verified; do not assign yet"
+          },
+          {
+            "osm_feature_id": "way/90314484",
+            "distance_to_candidate_reference_point_m": 50,
+            "approx_bbox_m": [
+              0,
+              0
+            ],
+            "tags": {
+              "building": "hospital",
+              "building:levels": "7",
+              "name": "Central Block"
+            },
+            "decision": "not Cancer Institute based on current name tag; do not assign"
+          },
+          {
+            "osm_feature_id": "way/308702686",
+            "distance_to_candidate_reference_point_m": 67,
+            "approx_bbox_m": [
+              0,
+              0
+            ],
+            "tags": {
+              "building": "yes"
+            },
+            "decision": "unverified"
+          }
+        ],
+        "required_action": "Verify the Cancer Institute outline against the reference photo and campus map; record the confirmed OSM way/relation ID before generating its facade."
+      }
+    }
+  ],
+  "next_implementation_gate": [
+    "Match each target to its exact footprint geometry and orientation.",
+    "Record the matched OSM way/relation ID and evidence in this file.",
+    "Generate a separate target-specific GLB layer so these two landmark models can be toggled without changing other buildings.",
+    "Run geometry checks and visually verify camera alignment before enabling the landmark layer in the public preview."
+  ],
+  "sources_note": "Repository photo metadata and publicly available official/Commons descriptions were used for this first architectural study. Photographs are reference evidence, not automatic facade textures. Copyright/licence terms must remain attached to every reused image."
+}
