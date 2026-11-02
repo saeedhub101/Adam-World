@@ -423,6 +423,37 @@ final class TileBuilder {
                 buf.v(ax0, centerGround + h + rh, az0, 0.01f, 0.01f, rr * 1.1f, rg * 1.1f, rb * 1.1f);
                 buf.fixTri();
             }
+        } else if (rshape.equals("gabled") || rshape.equals("skillion")) {
+            // Fit the roof ridge/slope to the footprint's principal direction.
+            double mx = 0d, mz = 0d;
+            for (int i = 0; i < n; i++) { mx += px[i]; mz += pz[i]; }
+            mx /= n; mz /= n;
+            double xx = 0d, zz = 0d, xz = 0d;
+            for (int i = 0; i < n; i++) {
+                double dx = px[i] - mx, dz = pz[i] - mz;
+                xx += dx * dx; zz += dz * dz; xz += dx * dz;
+            }
+            double angle = 0.5d * Math.atan2(2d * xz, xx - zz);
+            double nx = -Math.sin(angle), nz = Math.cos(angle);
+            float[] across = new float[n];
+            float minAcross = Float.POSITIVE_INFINITY, maxAcross = Float.NEGATIVE_INFINITY;
+            for (int i = 0; i < n; i++) {
+                across[i] = (float) (nx * (px[i] - mx) + nz * (pz[i] - mz));
+                minAcross = Math.min(minAcross, across[i]); maxAcross = Math.max(maxAcross, across[i]);
+            }
+            float rise = Float.isFinite(mappedRoofHeight)
+                    ? Math.max(0.25f, Math.min(mappedRoofHeight, Math.max(0.5f, h * 0.45f))) : 2.0f;
+            float span = Math.max(0.01f, maxAcross - minAcross);
+            int[] tr = Poly.earClip(px, pz);
+            for (int i = 0; i + 2 < tr.length; i += 3) {
+                for (int k = 0; k < 3; k++) {
+                    int vi = tr[i + k];
+                    float t = (across[vi] - minAcross) / span;
+                    float roofFactor = rshape.equals("gabled") ? 1f - Math.abs(2f * t - 1f) : t;
+                    buf.v(px[vi], roofY[vi] + rise * roofFactor, pz[vi], 0.01f, 0.01f, rr, rg, rb);
+                }
+                buf.fixTri();
+            }
         } else {
             int[] tr = Poly.earClip(px, pz);
             for (int i = 0; i + 2 < tr.length; i += 3) {
