@@ -86,13 +86,16 @@ def cells_for(points):
 class Shards:
     def __init__(self):
         OUT.mkdir(parents=True,exist_ok=True)
-        for p in OUT.glob("*.jsonl"): p.unlink()
+        self.folder=OUT/"shards"
+        self.folder.mkdir(parents=True,exist_ok=True)
+        for p in self.folder.glob("*.jsonl"): p.unlink()
+        for p in self.folder.glob("*.jsonl.gz"): p.unlink()
         self.handles=OrderedDict(); self.counts=defaultdict(int); self.cells=set()
     def add(self,e,layer):
         pts=e.get("geometry") or []
         for cell in cells_for(pts):
             h=self.handles.pop(cell,None)
-            if h is None: h=(OUT/(cell+".jsonl")).open("a",encoding="utf-8")
+            if h is None: h=(self.folder/(cell+".jsonl")).open("a",encoding="utf-8")
             self.handles[cell]=h
             if len(self.handles)>40: self.handles.popitem(last=False)[1].close()
             h.write(json.dumps(e,ensure_ascii=False,separators=(",",":"))+"\n")
@@ -100,8 +103,8 @@ class Shards:
     def close(self):
         for h in self.handles.values(): h.close()
         self.handles.clear()
-        for p in OUT.glob("*.jsonl"):
-            with p.open("rb") as src, (OUT/(p.stem+".jsonl.gz")).open("wb") as raw:
+        for p in self.folder.glob("*.jsonl"):
+            with p.open("rb") as src, (self.folder/(p.stem+".jsonl.gz")).open("wb") as raw:
                 with gzip.GzipFile(fileobj=raw,mode="wb",compresslevel=6) as dst:
                     while b:=src.read(1024*1024): dst.write(b)
             p.unlink()
@@ -358,9 +361,16 @@ def main():
     thematic=read_thematic_csv(writer)
     context=read_context(writer)
     writer.close()
+    shard_hashes={}
+    for shard in sorted((OUT/"shards").glob("*.jsonl.gz")):
+        h=hashlib.sha256()
+        with shard.open("rb") as f:
+            while block:=f.read(1024*1024): h.update(block)
+        shard_hashes[shard.stem]=h.hexdigest()
     manifest={"schema_version":1,"city":"Manila","source":"Adam-City OpenMapTiles PBF + OpenFreeMap transportation GeoJSON + OSM supplemental details",
       "origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,"cell_halo_m":HALO,
-      "dataset_version":hashlib.sha256(json.dumps([sorted(writer.cells),dict(writer.counts)],sort_keys=True).encode()).hexdigest()[:16],
+      "dataset_version":hashlib.sha256(json.dumps(shard_hashes,sort_keys=True).encode()).hexdigest()[:16],
+      "shard_sha256":shard_hashes,
       "cells":sorted(writer.cells),"counts":dict(writer.counts),"openmaptiles_building_features":omt,"openmaptiles_transportation_features":PBF_ROAD_COUNT,
       "osm_building_fallback_features":unmatched,"osm_context_features":context,"thematic_supplement_features":thematic,
       "osm_detail_matched_count":matched,"terrain":"disabled_flat_ground",
