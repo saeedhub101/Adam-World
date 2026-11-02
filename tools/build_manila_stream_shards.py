@@ -93,6 +93,8 @@ class Shards:
         self.handles=OrderedDict(); self.counts=defaultdict(int); self.cells=set()
     def add(self,e,layer):
         pts=e.get("geometry") or []
+        if e.get("type")=="node" and "lat" in e and "lon" in e:
+            pts=[{"lat":float(e["lat"]),"lon":float(e["lon"])}]
         for cell in cells_for(pts):
             h=self.handles.pop(cell,None)
             if h is None: h=(self.folder/(cell+".jsonl")).open("a",encoding="utf-8")
