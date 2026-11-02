@@ -150,10 +150,23 @@ final class TileBuilder {
                 int poi = poiCategory(tags);
                 String buildingLabel = poiName(tags);
                 String houseNumber = tg(tags, "addr:housenumber");
+                String streetName = tg(tags, "addr:street:ar");
+                if (streetName.isEmpty()) streetName = tg(tags, "addr:street");
+                if (streetName.isEmpty()) streetName = tg(tags, "addr:street:en");
                 if (!houseNumber.isEmpty() && !buildingLabel.equals(houseNumber))
                     buildingLabel = buildingLabel.isEmpty() ? houseNumber : buildingLabel + " · " + houseNumber;
-                if (!buildingLabel.isEmpty())
-                    addFacadeLabel(td, px, pz, buildingLabel, bMinHeight(tags, bHeight(tags, id, bld)), poi);
+                if (!streetName.isEmpty() && !buildingLabel.contains(streetName))
+                    buildingLabel = buildingLabel.isEmpty() ? streetName : buildingLabel + " · " + streetName;
+                float mappedFloors = measure(tg(tags, "building:levels"));
+                String floorLabel = mappedFloors > 0f
+                        ? Math.round(mappedFloors) + " طوابق"
+                        : (bHeight(tags, id, bld) > 0f
+                            ? "≈" + Math.max(1, Math.round(bHeight(tags, id, bld) / 3.2f)) + " طوابق"
+                            : "الطوابق غير موثقة");
+                if (!buildingLabel.isEmpty()) buildingLabel += " · ";
+                buildingLabel += floorLabel;
+                if (buildingLabel.trim().isEmpty()) buildingLabel = "مبنى";
+                addFacadeLabel(td, px, pz, buildingLabel, bMinHeight(tags, bHeight(tags, id, bld)), poi);
             } else if (!hw.isEmpty() && RW.containsKey(hw)) {
                 String nm = tg(tags, "name:ar");
                 if (nm.isEmpty()) nm = tg(tags, "name");
@@ -333,11 +346,16 @@ final class TileBuilder {
     }
 
     private static float bHeight(JSONObject t, long id, String b) {
+        // Prefer mapped OSM height and floor data. Provider render_height is used
+        // only when OSM has no explicit height/levels for this footprint.
         float h = measure(tg(t, "height"));
         if (h > 0f) return Math.max(3f, h);
         float levels = measure(tg(t, "building:levels"));
         if (levels > 0f) return Math.max(3f, levels * 3.2f + 0.5f);
-        // Conservative, deterministic class fallback; never invent per-building random heights.
+        h = measure(tg(t, "render_height_m"));
+        if (!(h > 0f)) h = measure(tg(t, "render_height"));
+        if (h > 0f) return Math.max(3f, h);
+        // Explicitly conservative class fallback when the source has no height.
         if (b.equals("roof") || b.equals("carport") || b.equals("garage") || b.equals("garages")) return 3.5f;
         if (b.matches("house|detached|shed|hut|cabin|semidetached_house|bungalow|residential")) return 6.5f;
         if (b.matches("apartments|commercial|office|hotel|retail|hospital|university|school")) return 10.5f;
@@ -372,21 +390,21 @@ final class TileBuilder {
     private static float[] buildingColor(JSONObject t, long id) {
         String s = tg(t, "building:colour");
         if (s.isEmpty()) s = tg(t, "building:color");
+        if (s.isEmpty()) s = tg(t, "colour");
         float[] hc = hex(s);
         if (hc != null) return hc;
         String m = tg(t, "building:material");
-        float jit = 0.94f + rnd(id, 5) * 0.12f;
         switch (m) {
-            case "brick": return new float[]{0.62f * jit, 0.35f * jit, 0.27f * jit};
-            case "concrete": case "cement_block": return new float[]{0.68f * jit, 0.68f * jit, 0.66f * jit};
-            case "stone": case "sandstone": case "limestone": return new float[]{0.80f * jit, 0.74f * jit, 0.62f * jit};
-            case "wood": return new float[]{0.60f * jit, 0.45f * jit, 0.30f * jit};
-            case "plaster": case "stucco": case "render": return new float[]{0.90f * jit, 0.86f * jit, 0.76f * jit};
+            case "brick": return new float[]{0.62f, 0.35f, 0.27f};
+            case "concrete": case "cement_block": return new float[]{0.68f, 0.68f, 0.66f};
+            case "stone": case "sandstone": case "limestone": return new float[]{0.80f, 0.74f, 0.62f};
+            case "wood": return new float[]{0.60f, 0.45f, 0.30f};
+            case "plaster": case "stucco": case "render": return new float[]{0.90f, 0.86f, 0.76f};
             default: break;
         }
-        int c = PALETTE[(int) (rnd(id, 3) * PALETTE.length) % PALETTE.length];
-        float v = 0.92f + rnd(id, 5) * 0.14f;
-        return new float[]{((c >> 16) & 255) / 255f * v, ((c >> 8) & 255) / 255f * v, (c & 255) / 255f * v};
+        // No per-building random colours: unknown facade colour stays neutral until
+        // a verified matching facade image or an explicit mapped colour is available.
+        return new float[]{0.78f, 0.73f, 0.65f};
     }
 
     private static void facadeQuad(GeoBuf b,
@@ -792,18 +810,33 @@ final class TileBuilder {
 
     private static void addRoad(TileData td, JSONObject tags, String hw, String name, HashSet<String> names, float[] xs, float[] zs,
                                 float xMin, float xMax, float zMin, float zMax) {
-        float w = RW.get(hw);
+        float w = RW.getOrDefault(hw, 4.0f);
         float sourceWidth = measure(tg(tags, "width"));
+        if (!(sourceWidth > 0.5f && sourceWidth <= 120f)) sourceWidth = measure(tg(tags, "width:carriageway"));
+        if (!(sourceWidth > 0.5f && sourceWidth <= 120f)) sourceWidth = measure(tg(tags, "est_width"));
+        if (!(sourceWidth > 0.5f && sourceWidth <= 120f)) {
+            float lanes = measure(tg(tags, "lanes"));
+            if (lanes > 0f && lanes <= 12f) sourceWidth = lanes * 3.2f;
+        }
         if (sourceWidth > 0.5f && sourceWidth <= 120f) w = sourceWidth;
         String surface = tg(tags, "surface").toLowerCase(java.util.Locale.US);
         boolean bridge = tg(tags, "bridge").equals("yes");
         boolean tunnel = tg(tags, "tunnel").equals("yes");
         boolean veh = w >= 4.5f && !hw.equals("pedestrian");
+        boolean labelOnly = tg(tags, "adam:label_only").equals("yes");
         for (ArrayList<float[]> pc : clipLine(xs, zs, xMin, xMax, zMin, zMax)) {
             float[][] a = toArrays(pc);
             if (a == null) continue;
             float[][] r = resample(a[0], a[1], 8f);
             float[] px = r[0], pz = r[1];
+            if (labelOnly) {
+                if (!name.isEmpty() && px.length >= 2) {
+                    RoadPath labelPath = new RoadPath(px, pz, 1.0f, false);
+                    float[] labelPoint = new float[4];
+                    addDecal(td, labelPath, labelPath.total * 0.5f, name, labelPoint);
+                }
+                continue;
+            }
             float mappedStructureHeight = measure(tg(tags, bridge ? "bridge:height" : "tunnel:height"));
             float mappedLayer = measure(tg(tags, "layer"));
             float deckOffset = Float.isFinite(mappedStructureHeight) && mappedStructureHeight > 0f
@@ -824,13 +857,13 @@ final class TileBuilder {
             RoadPath rp = new RoadPath(px, pz, w, veh);
             rp.name = name;
             if (rp.total > 20f) td.paths.add(rp);
-            // أسماء الشوارع على الأسفلت
-            if (!name.isEmpty() && veh && w >= 6f && rp.total >= 30f && td.decals.size() < 12
-                    && (names.contains(name) || names.size() < 6)) {
+            // Label every mapped named street segment; label-only vector-tile
+            // features are handled above and never create a duplicate road surface.
+            if (!name.isEmpty() && rp.total >= 12f) {
                 names.add(name);
                 float[] o = new float[4];
-                for (float s = rp.total * 0.5f; s < rp.total - 8f && td.decals.size() < 12; s += 100f) addDecal(td, rp, s, name, o);
-                for (float s = rp.total * 0.5f - 100f; s > 8f && td.decals.size() < 12; s -= 100f) addDecal(td, rp, s, name, o);
+                addDecal(td, rp, rp.total * 0.5f, name, o);
+                for (float s = 125f; s < rp.total - 8f; s += 150f) addDecal(td, rp, s, name, o);
             }
         }
     }
