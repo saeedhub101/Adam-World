@@ -409,7 +409,7 @@ def main():
             "tiles": tiles,
         }
         elevation_source = SOURCE / slug / "elevation-grid.json"
-        if elevation_source.is_file():
+        if slug == "amman" and elevation_source.is_file():
             shutil.copy2(elevation_source, city_out / "elevation-grid.json")
             manifest["elevation_grid"] = "elevation-grid.json"
             manifest["elevation_source"] = "Copernicus DEM GLO-30"
