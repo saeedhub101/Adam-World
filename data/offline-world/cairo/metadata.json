@@ -11,7 +11,7 @@
     "lon": 31.2357
   },
   "radius_m": 650,
-  "element_count": 1063,
+  "element_count": 2317,
   "geometry_layers": [
     "buildings",
     "roads",
@@ -27,20 +27,5 @@
     "barriers",
     "bridges"
   ],
-  "stored_as": "data/offline-world/cairo/elements.json",
-  "microsoft_footprints_version": "2026-08-13",
-  "microsoft_footprints_complete": true,
-  "microsoft_footprints_status": "imported",
-  "microsoft_footprints_tiles": 1,
-  "microsoft_footprints_added": 18072,
-  "microsoft_footprints_license": "CDLA-Permissive-2.0",
-  "microsoft_footprints_imagery_years": "2014-2024",
-  "microsoft_footprints_tile_index": [
-    {
-      "quadkey": "122121122",
-      "location": "Egypt",
-      "url": "https://bfppub.z5.web.core.windows.net/2026-08-13/global-buildings.geojsonl/RegionName=Egypt/quadkey=122121122/part-00021-110f5303-ff85-4c71-a2bf-c6070024fec8.c000.csv.gz",
-      "upload_date": "2026-08-13"
-    }
-  ]
+  "stored_as": "data/offline-world/cairo/elements.json"
 }
