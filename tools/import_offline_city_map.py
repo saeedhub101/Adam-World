@@ -49,7 +49,7 @@ def query_for(city, lat=None, lon=None, radius=None):
     )
 
 
-def fetch_city(city):
+def fetch_city(city, checkpoint_dir=None):
     """
     Split large city requests into eight overlapping circles. The union covers
     the requested discovery circle while keeping each Overpass response smaller.
@@ -64,8 +64,24 @@ def fetch_city(city):
     chunk_radius = max(700, int(target_radius * 0.72))
     merged = {}
     chunk_errors = []
+    checkpoint_dir = Path(checkpoint_dir) if checkpoint_dir else None
+    if checkpoint_dir:
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     for chunk_index in range(8):
+        checkpoint = checkpoint_dir / f"chunk-{chunk_index + 1:02d}.json" if checkpoint_dir else None
+        if checkpoint and checkpoint.is_file():
+            try:
+                cached = json.loads(checkpoint.read_text(encoding="utf-8"))
+                if isinstance(cached.get("elements"), list):
+                    for element in cached["elements"]:
+                        key = (element.get("type"), element.get("id"))
+                        if key[0] is not None and key[1] is not None:
+                            merged[key] = element
+                    print(f"{city['name']}: resumed chunk {chunk_index + 1}/8 ({len(cached['elements'])} elements)")
+                    continue
+            except Exception:
+                print(f"{city['name']}: discarding invalid cached chunk {chunk_index + 1}/8")
         angle = math.radians(chunk_index * 45.0)
         north_m = math.cos(angle) * chunk_offset
         east_m = math.sin(angle) * chunk_offset
@@ -75,32 +91,47 @@ def fetch_city(city):
         errors = []
         endpoints = ENDPOINTS[chunk_index % len(ENDPOINTS):] + ENDPOINTS[:chunk_index % len(ENDPOINTS)]
         data = None
-        for endpoint in endpoints:
-            try:
-                request = Request(endpoint, data=body, headers={
-                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "User-Agent": "AdamWorldOfflineImporter/1.1 (repository data build)",
-                    "Accept": "application/json",
-                })
-                with urlopen(request, timeout=75) as response:
-                    payload = response.read()
-                candidate = json.loads(payload.decode("utf-8"))
-                if "elements" not in candidate:
-                    raise RuntimeError("Overpass response has no elements array")
-                data = candidate
+        # Retry the complete endpoint rotation three times with increasing backoff.
+        for retry_round in range(3):
+            for endpoint in endpoints:
+                try:
+                    request = Request(endpoint, data=body, headers={
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "User-Agent": "AdamWorldOfflineImporter/1.2 (repository data build)",
+                        "Accept": "application/json",
+                    })
+                    with urlopen(request, timeout=120) as response:
+                        payload = response.read()
+                    candidate = json.loads(payload.decode("utf-8"))
+                    if "elements" not in candidate:
+                        raise RuntimeError("Overpass response has no elements array")
+                    data = candidate
+                    break
+                except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as exc:
+                    errors.append(f"round {retry_round + 1} {endpoint}: {exc}")
+                    time.sleep(3)
+            if data is not None:
                 break
-            except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as exc:
-                errors.append(f"{endpoint}: {exc}")
-                time.sleep(2)
+            if retry_round < 2:
+                delay = 10 * (retry_round + 1)
+                print(f"{city['name']}: chunk {chunk_index + 1}/8 retry round {retry_round + 2}/3 after {delay}s")
+                time.sleep(delay)
         if data is None:
             chunk_errors.append(f"chunk {chunk_index + 1}/8: " + "; ".join(errors))
             print(f"{city['name']}: chunk {chunk_index + 1}/8 failed; continuing retries")
             continue
-        for element in data.get("elements") or []:
+        chunk_elements = data.get("elements") or []
+        if checkpoint:
+            temp_chunk = checkpoint.with_suffix(".json.tmp")
+            temp_chunk.write_text(json.dumps({"elements": chunk_elements}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+            temp_chunk.replace(checkpoint)
+            # Persist each successful spatial chunk, so a rerun skips it.
+            commit_city(city["slug"], len(chunk_elements))
+        for element in chunk_elements:
             key = (element.get("type"), element.get("id"))
             if key[0] is not None and key[1] is not None:
                 merged[key] = element
-        print(f"{city['name']}: chunk {chunk_index + 1}/8 saved in memory ({len(merged)} unique elements)")
+        print(f"{city['name']}: chunk {chunk_index + 1}/8 checkpointed ({len(merged)} unique elements)")
 
     if chunk_errors:
         raise RuntimeError("One or more spatial chunks failed; refusing partial city replacement: " + " | ".join(chunk_errors))
@@ -182,7 +213,7 @@ def main():
             print(f"{city['name']}: legacy data has no validated metadata; re-importing")
         try:
             print(f"{city['name']}: fetching OSM layers for {city.get('discovery_radius_m', 650)} m window")
-            data = fetch_city(city)
+            data = fetch_city(city, target_dir / "chunks")
             target_dir.mkdir(parents=True, exist_ok=True)
             temp = target.with_suffix(".json.tmp")
             temp.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")),
@@ -206,6 +237,12 @@ def main():
                 json.dumps(metadata, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8",
             )
+            # Remove temporary per-chunk checkpoints only after the complete
+            # merged city and its metadata are safely written.
+            chunks_dir = target_dir / "chunks"
+            if chunks_dir.exists():
+                import shutil
+                shutil.rmtree(chunks_dir)
             commit_city(slug, len(data["elements"]))
             succeeded += 1
             print(f"{city['name']}: SAVED_AND_PUSHED {len(data['elements'])} elements")
