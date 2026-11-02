@@ -123,8 +123,11 @@ def make_elements(feature, layer, part=False):
         nm=name_value(p.get("names"))
         if nm: tags["name"]=nm
         widths=p.get("width_rules")
-        if isinstance(widths,list) and widths and isinstance(widths[0],dict) and widths[0].get("value") is not None:
-            tags["width"]=val(widths[0]["value"])
+        if isinstance(widths,list) and widths:
+            candidates=[item for item in widths if isinstance(item,dict) and item.get("value") is not None]
+            if candidates: tags["width"]=val(candidates[0]["value"])
+        if not tags.get("width") and p.get("width") is not None:
+            tags["width"]=val(p["width"])
         surfaces=p.get("road_surface")
         if isinstance(surfaces,list) and surfaces and isinstance(surfaces[0],dict) and surfaces[0].get("value") is not None:
             tags["surface"]=val(surfaces[0]["value"])
