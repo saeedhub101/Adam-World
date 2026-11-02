@@ -91,6 +91,7 @@ final class TileBuilder {
                 if (x < xMin || x >= xMax || z < zMin || z >= zMax) continue;
                 if (tg(tags, "natural").equals("tree") && trees.size() < 260) trees.add(new float[]{x, z});
                 else if (tg(tags, "highway").equals("street_lamp") && lamps.size() < 60) lamps.add(new float[]{x, z});
+                else if (tg(tags,"highway").equals("traffic_signals") || tg(tags,"crossing").equals("traffic_signals")) addTrafficSignal(td,x,z);
                 else if (poiCategory(tags) > 0) addPoi(td, x, z, poiName(tags), poiCategory(tags), Terrain.h(x, z) + 2.8f);
                 else if (isWaterUtility(tags)) addUtilityMarker(td, x, z, tags);
                 else if (tg(tags,"railway").matches("station|halt|tram_stop|subway_entrance") || tg(tags,"public_transport").matches("station|platform|stop_position")) addPoi(td,x,z,poiName(tags),7,Terrain.h(x,z)+2.8f);
@@ -802,6 +803,16 @@ final class TileBuilder {
         if(man.equals("wastewater_plant")){r=0.42f;g=0.44f;b=0.48f;}
         else if(man.equals("pumping_station")){r=0.92f;g=0.58f;b=0.12f;}
         td.bufs[B_SIGN].box(x,Terrain.h(x,z)+1.0f,z,1.4f,2.0f,1.4f,r,g,b);
+    }
+
+    private static void addTrafficSignal(TileData td,float x,float z) {
+        float y=Terrain.h(x,z);
+        GeoBuf b=td.bufs[B_SIGN];
+        b.box(x,y+1.8f,z,0.10f,3.6f,0.10f,0.16f,0.17f,0.18f);
+        b.box(x,y+3.05f,z,0.46f,0.82f,0.30f,0.10f,0.11f,0.12f);
+        b.box(x,y+3.30f,z+0.17f,0.16f,0.16f,0.06f,0.90f,0.12f,0.10f);
+        b.box(x,y+3.05f,z+0.17f,0.16f,0.16f,0.06f,0.95f,0.68f,0.08f);
+        b.box(x,y+2.80f,z+0.17f,0.16f,0.16f,0.06f,0.10f,0.78f,0.24f);
     }
 
     /** تصنيف الأنشطة التجارية والخدمية من خصائص المكان أو المبنى. */
