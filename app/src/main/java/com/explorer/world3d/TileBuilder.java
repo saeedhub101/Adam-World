@@ -1,0 +1,592 @@
+package com.explorer.world3d;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Random;
+
+/** يحوّل JSON القادم من OpenStreetMap إلى هندسة ثلاثية الأبعاد لمربع واحد، موضوعة على التضاريس الحقيقية. */
+final class TileBuilder {
+    static final int B_FACADE = 0, B_GLASS = 1, B_SIDEWALK = 2, B_ROADN = 3, B_ROADW = 4, B_PLAIN = 5, B_SIGN = 6, B_WATER = 7;
+    private static final JSONObject EMPTY = new JSONObject();
+    private static final HashMap<String, Float> RW = new HashMap<>();
+    private static final int[] PALETTE = {0xd9c9a8, 0xcfcfcf, 0xc4876b, 0xece6d8, 0xc2a27a, 0xaeb8c2, 0xd8b98e, 0xe3dccb};
+
+    static {
+        RW.put("motorway", 14f); RW.put("trunk", 12f); RW.put("primary", 11f); RW.put("secondary", 9f);
+        RW.put("tertiary", 8f); RW.put("unclassified", 6f); RW.put("residential", 6f); RW.put("living_street", 5f);
+        RW.put("service", 4.5f); RW.put("motorway_link", 7f); RW.put("trunk_link", 7f); RW.put("primary_link", 7f);
+        RW.put("secondary_link", 6f); RW.put("tertiary_link", 6f); RW.put("pedestrian", 6f);
+        RW.put("footway", 2.5f); RW.put("path", 2f); RW.put("steps", 2f); RW.put("cycleway", 2.5f); RW.put("track", 3.5f);
+    }
+
+    private TileBuilder() {}
+
+    static float rnd(long id, int k) {
+        double x = Math.sin(id * 12.9898 + k * 78.233) * 43758.5453;
+        return (float) (x - Math.floor(x));
+    }
+
+    private static String tg(JSONObject t, String k) {
+        return t.has(k) ? t.optString(k, "") : "";
+    }
+
+    /** شبكة ارتفاعات محلية للمربع لتسريع تعبئة المساحات. */
+    private static final class Hg {
+        final float x0, z0, dx, dz;
+        final int nx, nz;
+        final float[] h;
+
+        Hg(float xMin, float xMax, float zMin, float zMax, float step) {
+            nx = Math.max(2, Math.round((xMax - xMin) / step)) + 1;
+            nz = Math.max(2, Math.round((zMax - zMin) / step)) + 1;
+            x0 = xMin; z0 = zMin;
+            dx = (xMax - xMin) / (nx - 1);
+            dz = (zMax - zMin) / (nz - 1);
+            h = new float[nx * nz];
+            for (int j = 0; j < nz; j++) for (int i = 0; i < nx; i++) h[j * nx + i] = Terrain.h(x0 + i * dx, z0 + j * dz);
+        }
+
+        float s(float x, float z) {
+            float fx = (x - x0) / dx, fz = (z - z0) / dz;
+            fx = Math.max(0f, Math.min(nx - 1.001f, fx));
+            fz = Math.max(0f, Math.min(nz - 1.001f, fz));
+            int i = (int) fx, j = (int) fz;
+            float ax = fx - i, az = fz - j;
+            float a = h[j * nx + i], b = h[j * nx + i + 1], c = h[(j + 1) * nx + i], d = h[(j + 1) * nx + i + 1];
+            return (a * (1 - ax) + b * ax) * (1 - az) + (c * (1 - ax) + d * ax) * az;
+        }
+    }
+
+    static TileData build(JSONObject root, int ix, int iz) throws JSONException {
+        TileData td = new TileData(ix, iz);
+        double west = ix * Geo.dLon, east = (ix + 1) * Geo.dLon, south = iz * Geo.D_LAT, north = (iz + 1) * Geo.D_LAT;
+        float xMin = Geo.x(west), xMax = Geo.x(east), zMin = Geo.z(north), zMax = Geo.z(south);
+        JSONArray els = root.optJSONArray("elements");
+        if (els == null) return td;
+        Hg hg = new Hg(xMin, xMax, zMin, zMax, 5f);
+
+        ArrayList<float[]> trees = new ArrayList<>(), lamps = new ArrayList<>();
+        int bcount = 0;
+        Random rng = new Random(ix * 73856093L ^ iz * 19349663L);
+        HashSet<String> names = new HashSet<>();
+
+        for (int e = 0; e < els.length(); e++) {
+            JSONObject el = els.optJSONObject(e);
+            if (el == null) continue;
+            JSONObject tags = el.optJSONObject("tags");
+            if (tags == null) tags = EMPTY;
+            String type = el.optString("type", "");
+
+            if (type.equals("node")) {
+                double lat = el.optDouble("lat", Double.NaN), lon = el.optDouble("lon", Double.NaN);
+                if (Double.isNaN(lat) || Double.isNaN(lon)) continue;
+                float x = Geo.x(lon), z = Geo.z(lat);
+                if (x < xMin || x >= xMax || z < zMin || z >= zMax) continue;
+                if (tg(tags, "natural").equals("tree") && trees.size() < 260) trees.add(new float[]{x, z});
+                else if (tg(tags, "highway").equals("street_lamp") && lamps.size() < 60) lamps.add(new float[]{x, z});
+                continue;
+            }
+            if (!type.equals("way")) continue;
+            JSONArray g = el.optJSONArray("geometry");
+            if (g == null || g.length() < 2) continue;
+            int n = g.length();
+            float[] xs = new float[n], zs = new float[n];
+            for (int i = 0; i < n; i++) {
+                JSONObject p = g.getJSONObject(i);
+                xs[i] = Geo.x(p.getDouble("lon"));
+                zs[i] = Geo.z(p.getDouble("lat"));
+            }
+            long id = el.optLong("id", 0);
+
+            String bld = tg(tags, "building");
+            String hw = tg(tags, "highway");
+            String leisure = tg(tags, "leisure"), landuse = tg(tags, "landuse"), natural = tg(tags, "natural");
+            String waterway = tg(tags, "waterway");
+
+            if (natural.equals("coastline")) {
+                td.hasCoast = true;
+                addCoastSand(td, xs, zs, xMin, xMax, zMin, zMax);
+            } else if (!bld.isEmpty() && !bld.equals("no")) {
+                if (bcount > 900) continue;
+                float[][] P = clean(xs, zs);
+                if (P == null) continue;
+                float[] px = P[0], pz = P[1];
+                if (Math.abs(Poly.area(px, pz)) < 10f) continue;
+                float cx = 0, cz = 0;
+                for (int i = 0; i < px.length; i++) { cx += px[i]; cz += pz[i]; }
+                cx /= px.length; cz /= px.length;
+                if (cx < xMin || cx >= xMax || cz < zMin || cz >= zMax) continue;
+                if (Landmarks.suppress(cx, cz)) continue;
+                bcount++;
+                addBuilding(td, tags, id, bld, px, pz);
+            } else if (!hw.isEmpty() && RW.containsKey(hw)) {
+                String nm = tg(tags, "name:ar");
+                if (nm.isEmpty()) nm = tg(tags, "name");
+                if (nm.isEmpty()) nm = tg(tags, "name:en");
+                addRoad(td, hw, nm, names, xs, zs, xMin, xMax, zMin, zMax);
+            } else if (waterway.matches("river|stream|canal|ditch|drain")) {
+                float w = waterway.equals("river") ? 14f : waterway.equals("canal") ? 8f : 3f;
+                String ws = tg(tags, "width");
+                if (!ws.isEmpty()) { try { w = Math.max(1.5f, Math.min(80f, Float.parseFloat(ws))); } catch (Exception ignore) {} }
+                float[][] pc = resample(xs, zs, 8f);
+                ribbon(pc[0], pc[1], w, 0.22f, td.bufs[B_WATER], 1f, 12f, 1f, 1f, 1f);
+            } else if (natural.equals("water") || waterway.equals("riverbank") || landuse.matches("reservoir|basin")) {
+                float[][] P = clean(xs, zs);
+                if (P == null || !overlaps(P, xMin, xMax, zMin, zMax)) continue;
+                float lvl = 1e9f;
+                for (int i = 0; i < P[0].length; i++) lvl = Math.min(lvl, hg.s(P[0][i], P[1][i]));
+                fillCells(td.bufs[B_WATER], P[0], P[1], xMin, xMax, zMin, zMax, 5f, hg, lvl + 0.1f, 0f, 1f, 1f, 1f, id);
+            } else if (leisure.matches("park|garden|pitch|playground")
+                    || landuse.matches("grass|forest|recreation_ground|village_green|meadow|sand|farmland|orchard|vineyard|cemetery")
+                    || natural.matches("wood|scrub|beach|sand|dune|wetland|heath|grassland")) {
+                float[][] P = clean(xs, zs);
+                if (P == null || !overlaps(P, xMin, xMax, zMin, zMax)) continue;
+                boolean sand = natural.matches("beach|sand|dune") || landuse.equals("sand");
+                boolean forest = natural.equals("wood") || landuse.equals("forest");
+                boolean farm = landuse.matches("farmland|orchard|vineyard");
+                float gr = 0.44f, gg = 0.56f, gb = 0.31f, yo = 0.13f;
+                if (sand) { gr = 0.84f; gg = 0.76f; gb = 0.57f; yo = 0.12f; }
+                else if (forest) { gr = 0.27f; gg = 0.40f; gb = 0.21f; yo = 0.14f; }
+                else if (farm) { gr = 0.58f; gg = 0.55f; gb = 0.33f; yo = 0.10f; }
+                else if (natural.matches("scrub|heath|grassland")) { gr = 0.50f; gg = 0.52f; gb = 0.32f; yo = 0.12f; }
+                else if (natural.equals("wetland")) { gr = 0.36f; gg = 0.50f; gb = 0.40f; yo = 0.11f; }
+                int cells = fillCells(td.bufs[B_PLAIN], P[0], P[1], xMin, xMax, zMin, zMax, 5f, hg, Float.NaN, yo, gr, gg, gb, id);
+                int nt = sand ? 0 : Math.min(forest ? 40 : 25, (int) (cells * 25f / (forest ? 70f : 220f)));
+                float mnx = 1e9f, mxx = -1e9f, mnz = 1e9f, mxz = -1e9f;
+                for (int i = 0; i < P[0].length; i++) {
+                    mnx = Math.min(mnx, P[0][i]); mxx = Math.max(mxx, P[0][i]);
+                    mnz = Math.min(mnz, P[1][i]); mxz = Math.max(mxz, P[1][i]);
+                }
+                mnx = Math.max(mnx, xMin); mxx = Math.min(mxx, xMax); mnz = Math.max(mnz, zMin); mxz = Math.min(mxz, zMax);
+                for (int k = 0; nt > 0 && k < nt * 4 && trees.size() < 260; k++) {
+                    float x = mnx + rng.nextFloat() * (mxx - mnx), z = mnz + rng.nextFloat() * (mxz - mnz);
+                    if (Poly.contains(P[0], P[1], x, z)) { trees.add(new float[]{x, z}); nt--; }
+                }
+            }
+        }
+
+        // أعمدة إنارة على الطرق الواسعة
+        for (RoadPath rp : td.paths) {
+            if (!rp.veh || rp.w < 6f) continue;
+            float[] o = new float[4];
+            int k = 0;
+            for (float s = 15; s < rp.total - 8 && lamps.size() < 120; s += 42, k++) {
+                float off = (rp.w / 2f + 1.7f) * (k % 2 == 0 ? 1 : -1);
+                rp.posAt(s, off, o);
+                lamps.add(new float[]{o[0], o[1]});
+            }
+        }
+        Landmarks.addToTile(td, xMin, xMax, zMin, zMax);
+        GeoBuf pl = td.bufs[B_PLAIN];
+        for (float[] t : trees) addTree(pl, t[0], Terrain.h(t[0], t[1]), t[1], 0.8f + rng.nextFloat() * 0.7f, rng);
+        for (float[] l : lamps) {
+            float y0 = Terrain.h(l[0], l[1]);
+            pl.box(l[0], y0 + 3.5f, l[1], 0.12f, 7f, 0.12f, 0.33f, 0.35f, 0.38f);
+            pl.box(l[0], y0 + 7.1f, l[1], 0.5f, 0.25f, 0.5f, 1f, 0.95f, 0.7f);
+        }
+        return td;
+    }
+
+    /** يزيل النقاط المكررة والنقطة الأخيرة المطابقة للأولى. */
+    private static float[][] clean(float[] xs, float[] zs) {
+        int n = xs.length;
+        float[] ox = new float[n], oz = new float[n];
+        int m = 0;
+        for (int i = 0; i < n; i++) {
+            if (m > 0 && Math.hypot(xs[i] - ox[m - 1], zs[i] - oz[m - 1]) <= 0.05) continue;
+            ox[m] = xs[i]; oz[m] = zs[i]; m++;
+        }
+        if (m > 2 && Math.hypot(ox[0] - ox[m - 1], oz[0] - oz[m - 1]) < 0.05) m--;
+        if (m < 3) return null;
+        return new float[][]{java.util.Arrays.copyOf(ox, m), java.util.Arrays.copyOf(oz, m)};
+    }
+
+    private static boolean overlaps(float[][] P, float x0, float x1, float z0, float z1) {
+        float mnx = 1e9f, mxx = -1e9f, mnz = 1e9f, mxz = -1e9f;
+        for (int i = 0; i < P[0].length; i++) {
+            mnx = Math.min(mnx, P[0][i]); mxx = Math.max(mxx, P[0][i]);
+            mnz = Math.min(mnz, P[1][i]); mxz = Math.max(mxz, P[1][i]);
+        }
+        return !(mxx < x0 || mnx > x1 || mxz < z0 || mnz > z1);
+    }
+
+    /** يملأ مضلعاً بخلايا صغيرة تتبع التضاريس داخل حدود المربع. flatY غير NaN يعني مستوى ثابتاً (بحيرة). */
+    private static int fillCells(GeoBuf b, float[] px, float[] pz, float xMin, float xMax, float zMin, float zMax,
+                                 float step, Hg hg, float flatY, float yOff, float r, float g, float bl, long id) {
+        float mnx = 1e9f, mxx = -1e9f, mnz = 1e9f, mxz = -1e9f;
+        for (int i = 0; i < px.length; i++) {
+            mnx = Math.min(mnx, px[i]); mxx = Math.max(mxx, px[i]);
+            mnz = Math.min(mnz, pz[i]); mxz = Math.max(mxz, pz[i]);
+        }
+        int nx = Math.max(1, Math.round((xMax - xMin) / step)), nz = Math.max(1, Math.round((zMax - zMin) / step));
+        float cx = (xMax - xMin) / nx, cz = (zMax - zMin) / nz;
+        int i0 = Math.max(0, (int) Math.floor((mnx - xMin) / cx)), i1 = Math.min(nx - 1, (int) Math.floor((mxx - xMin) / cx));
+        int j0 = Math.max(0, (int) Math.floor((mnz - zMin) / cz)), j1 = Math.min(nz - 1, (int) Math.floor((mxz - zMin) / cz));
+        int count = 0;
+        boolean flat = !Float.isNaN(flatY);
+        for (int j = j0; j <= j1; j++) {
+            for (int i = i0; i <= i1; i++) {
+                float xa = xMin + i * cx, xb = xa + cx, za = zMin + j * cz, zb = za + cz;
+                if (!Poly.contains(px, pz, (xa + xb) / 2f, (za + zb) / 2f)) continue;
+                float ya, yb, yc, yd;
+                if (flat) { ya = yb = yc = yd = flatY; }
+                else {
+                    ya = hg.s(xa, za) + yOff; yb = hg.s(xb, za) + yOff; yc = hg.s(xb, zb) + yOff; yd = hg.s(xa, zb) + yOff;
+                }
+                float v = flat ? 1f : 0.96f + 0.08f * rnd(id + i * 7L + j * 131L, 1);
+                float rr = r * v, gg = g * v, bb = bl * v;
+                b.v(xa, ya, za, .5f, .5f, rr, gg, bb); b.v(xb, yb, za, .5f, .5f, rr, gg, bb); b.v(xb, yc, zb, .5f, .5f, rr, gg, bb); b.fixTri();
+                b.v(xa, ya, za, .5f, .5f, rr, gg, bb); b.v(xb, yc, zb, .5f, .5f, rr, gg, bb); b.v(xa, yd, zb, .5f, .5f, rr, gg, bb); b.fixTri();
+                count++;
+                if (count > 9000) return count;
+            }
+        }
+        return count;
+    }
+
+    /* ---------- المباني ---------- */
+    private static float[] hex(String s) {
+        if (s.startsWith("#") && s.length() == 7) {
+            try {
+                int c = Integer.parseInt(s.substring(1), 16);
+                return new float[]{((c >> 16) & 255) / 255f, ((c >> 8) & 255) / 255f, (c & 255) / 255f};
+            } catch (Exception ignore) {}
+        }
+        switch (s) {
+            case "white": return new float[]{0.92f, 0.92f, 0.9f};
+            case "red": return new float[]{0.7f, 0.25f, 0.2f};
+            case "brown": return new float[]{0.5f, 0.35f, 0.25f};
+            case "grey": case "gray": return new float[]{0.6f, 0.6f, 0.6f};
+            case "yellow": return new float[]{0.88f, 0.8f, 0.5f};
+            case "beige": return new float[]{0.85f, 0.78f, 0.62f};
+            case "black": return new float[]{0.2f, 0.2f, 0.2f};
+            case "green": return new float[]{0.4f, 0.55f, 0.4f};
+            case "blue": return new float[]{0.4f, 0.5f, 0.7f};
+            case "orange": return new float[]{0.85f, 0.55f, 0.3f};
+            default: return null;
+        }
+    }
+
+    private static float bHeight(JSONObject t, long id, String b) {
+        String hs = tg(t, "height");
+        if (!hs.isEmpty()) {
+            try { float h = Float.parseFloat(hs.replaceAll("[^0-9.]", "")); if (h > 0) return Math.max(3f, h); } catch (Exception ignore) {}
+        }
+        String ls = tg(t, "building:levels");
+        if (!ls.isEmpty()) {
+            try { float lv = Float.parseFloat(ls); return Math.max(3f, lv * 3.3f + 1f); } catch (Exception ignore) {}
+        }
+        float r = rnd(id, 0);
+        if (b.equals("roof") || b.equals("carport")) return 3f;
+        if (b.matches("house|detached|garage|garages|shed|hut|cabin|semidetached_house|bungalow")) return 4f + r * 3f;
+        if (b.matches("apartments|commercial|office|hotel|retail|hospital|university")) return 14f + r * 24f;
+        return 7f + r * 14f;
+    }
+
+    private static float[] buildingColor(JSONObject t, long id) {
+        String s = tg(t, "building:colour");
+        if (s.isEmpty()) s = tg(t, "building:color");
+        float[] hc = hex(s);
+        if (hc != null) return hc;
+        String m = tg(t, "building:material");
+        float jit = 0.94f + rnd(id, 5) * 0.12f;
+        switch (m) {
+            case "brick": return new float[]{0.62f * jit, 0.35f * jit, 0.27f * jit};
+            case "concrete": case "cement_block": return new float[]{0.68f * jit, 0.68f * jit, 0.66f * jit};
+            case "stone": case "sandstone": case "limestone": return new float[]{0.80f * jit, 0.74f * jit, 0.62f * jit};
+            case "wood": return new float[]{0.60f * jit, 0.45f * jit, 0.30f * jit};
+            case "plaster": case "stucco": case "render": return new float[]{0.90f * jit, 0.86f * jit, 0.76f * jit};
+            default: break;
+        }
+        int c = PALETTE[(int) (rnd(id, 3) * PALETTE.length) % PALETTE.length];
+        float v = 0.92f + rnd(id, 5) * 0.14f;
+        return new float[]{((c >> 16) & 255) / 255f * v, ((c >> 8) & 255) / 255f * v, (c & 255) / 255f * v};
+    }
+
+    private static void addBuilding(TileData td, JSONObject tags, long id, String bld, float[] px, float[] pz) {
+        int n = px.length;
+        float hMin = 1e9f, hMax = -1e9f;
+        for (int i = 0; i < n; i++) {
+            float hh = Terrain.h(px[i], pz[i]);
+            hMin = Math.min(hMin, hh); hMax = Math.max(hMax, hh);
+        }
+        float h = bHeight(tags, id, bld);
+        float yBot = hMin - 0.6f, yTop = hMax + h;
+        boolean glass = h >= 40f || (bld.matches("office|commercial|hotel") && h >= 24f && rnd(id, 9) < 0.6f);
+        GeoBuf buf = glass ? td.bufs[B_GLASS] : td.bufs[B_FACADE];
+        float cr, cg, cb;
+        if (glass) { float l = 0.75f + rnd(id, 4) * 0.15f; cr = l * 0.9f; cg = l; cb = l * 1.05f; }
+        else { float[] c = buildingColor(tags, id); cr = c[0]; cg = c[1]; cb = c[2]; }
+        float rf = 0.8f + rnd(id, 6) * 0.4f;
+        float rr = 0.43f * rf, rg = 0.43f * rf, rb = 0.43f * rf;
+        float[] rc = hex(tg(tags, "roof:colour"));
+        if (rc == null) rc = hex(tg(tags, "roof:color"));
+        String rmat = tg(tags, "roof:material");
+        if (rc != null) { rr = rc[0]; rg = rc[1]; rb = rc[2]; }
+        else if (rmat.matches("tiles|roof_tiles|clay")) { rr = 0.62f * rf; rg = 0.30f * rf; rb = 0.22f * rf; }
+        else if (rmat.matches("metal|tin|zinc")) { rr = 0.55f * rf; rg = 0.58f * rf; rb = 0.60f * rf; }
+        else if (rmat.matches("concrete")) { rr = 0.62f; rg = 0.62f; rb = 0.60f; }
+        else if (bld.matches("house|detached|semidetached_house|bungalow|residential") && rnd(id, 8) < 0.7f) { rr = 0.60f * rf; rg = 0.30f * rf; rb = 0.22f * rf; }
+        String rshape = tg(tags, "roof:shape");
+        float vMax = (yTop - yBot) / 13.6f, lo = 0.78f;
+        float minx = 1e9f, maxx = -1e9f, minz = 1e9f, maxz = -1e9f;
+        for (int i = 0; i < n; i++) {
+            int j = (i + 1) % n;
+            float ax = px[i], az = pz[i], bx = px[j], bz = pz[j];
+            minx = Math.min(minx, ax); maxx = Math.max(maxx, ax);
+            minz = Math.min(minz, az); maxz = Math.max(maxz, az);
+            float len = (float) Math.hypot(bx - ax, bz - az);
+            if (len < 0.05f) continue;
+            float u = Math.max(1, Math.round(len / 4f)) / 4f;
+            buf.v(ax, yBot, az, 0, vMax, cr * lo, cg * lo, cb * lo);
+            buf.v(bx, yBot, bz, u, vMax, cr * lo, cg * lo, cb * lo);
+            buf.v(bx, yTop, bz, u, 0, cr, cg, cb);
+            buf.fixTri();
+            buf.v(ax, yBot, az, 0, vMax, cr * lo, cg * lo, cb * lo);
+            buf.v(bx, yTop, bz, u, 0, cr, cg, cb);
+            buf.v(ax, yTop, az, 0, 0, cr, cg, cb);
+            buf.fixTri();
+        }
+        float parea = Math.abs(Poly.area(px, pz));
+        boolean pyramid = (rshape.equals("pyramidal") || rshape.equals("hipped")
+                || (rshape.isEmpty() && bld.matches("house|detached|semidetached_house|bungalow") && rnd(id, 10) < 0.6f))
+                && n <= 8 && parea < 700f && h < 14f;
+        if (pyramid) {
+            float ax0 = 0, az0 = 0;
+            for (int i = 0; i < n; i++) { ax0 += px[i]; az0 += pz[i]; }
+            ax0 /= n; az0 /= n;
+            float rh = Math.min(3.2f, (float) Math.sqrt(parea) / 4f);
+            for (int i = 0; i < n; i++) {
+                int j = (i + 1) % n;
+                buf.v(px[i], yTop, pz[i], 0.01f, 0.01f, rr, rg, rb);
+                buf.v(px[j], yTop, pz[j], 0.01f, 0.01f, rr, rg, rb);
+                buf.v(ax0, yTop + rh, az0, 0.01f, 0.01f, rr * 1.1f, rg * 1.1f, rb * 1.1f);
+                buf.fixTri();
+            }
+        } else {
+            int[] tr = Poly.earClip(px, pz);
+            for (int i = 0; i + 2 < tr.length; i += 3) {
+                for (int k = 0; k < 3; k++) buf.v(px[tr[i + k]], yTop, pz[tr[i + k]], 0.01f, 0.01f, rr, rg, rb);
+                buf.fixTri();
+            }
+        }
+        float mxc = 0, mzc = 0;
+        for (int i = 0; i < n; i++) { mxc += px[i]; mzc += pz[i]; }
+        if (h >= 25f && Landmarks.nearSigns(mxc / n, mzc / n)) addSigns(td, px, pz, h, hMax, id);
+        Footprint f = new Footprint();
+        f.xs = px; f.zs = pz; f.minx = minx; f.maxx = maxx; f.minz = minz; f.maxz = maxz;
+        Collision.add(td.grid, f);
+    }
+
+    /** لوحات إعلانية مضيئة على واجهات المباني قرب تايمز سكوير. */
+    private static void addSigns(TileData td, float[] px, float[] pz, float h, float baseY, long id) {
+        GeoBuf sb = td.bufs[B_SIGN];
+        int count = 0, n = px.length;
+        for (int i = 0; i < n && count < 3; i++) {
+            int j = (i + 1) % n;
+            float ax = px[i], az = pz[i], bx = px[j], bz = pz[j];
+            float len = (float) Math.hypot(bx - ax, bz - az);
+            if (len < 12f) continue;
+            float dx = (bx - ax) / len, dz = (bz - az) / len;
+            float nx = dz, nz = -dx;
+            if (Poly.contains(px, pz, (ax + bx) / 2f + nx, (az + bz) / 2f + nz)) { nx = -nx; nz = -nz; }
+            float y0 = 6f + rnd(id, 20 + i) * 2f;
+            float y1 = Math.min(h - 3f, y0 + 16f + rnd(id, 30 + i) * 14f);
+            if (y1 - y0 < 6f) continue;
+            y0 += baseY; y1 += baseY;
+            float o = 0.35f, sh = len * 0.05f;
+            float x0 = ax + dx * sh + nx * o, z0 = az + dz * sh + nz * o;
+            float x1 = bx - dx * sh + nx * o, z1 = bz - dz * sh + nz * o;
+            int cell = (int) (rnd(id, 40 + i) * 16) % 16;
+            float u0 = (cell % 4) / 4f + 0.004f, u1 = u0 + 0.242f, v0 = (cell / 4) / 4f + 0.004f, v1 = v0 + 0.242f;
+            sb.v(x0, y0, z0, u0, v1, 1, 1, 1); sb.v(x1, y0, z1, u1, v1, 1, 1, 1); sb.v(x1, y1, z1, u1, v0, 1, 1, 1); sb.fixTri();
+            sb.v(x0, y0, z0, u0, v1, 1, 1, 1); sb.v(x1, y1, z1, u1, v0, 1, 1, 1); sb.v(x0, y1, z0, u0, v0, 1, 1, 1); sb.fixTri();
+            count++;
+        }
+    }
+
+    private static void addTree(GeoBuf b, float x, float y0, float z, float s, Random rng) {
+        b.box(x, y0 + 1.3f * s, z, 0.28f * s, 2.6f * s, 0.28f * s, 0.35f, 0.24f, 0.16f);
+        float cy = y0 + 3.7f * s, r = 2.0f * s;
+        float gr = 0.2f + rng.nextFloat() * 0.15f, gg = 0.42f + rng.nextFloat() * 0.18f, gb = 0.16f + rng.nextFloat() * 0.08f;
+        float ty = cy + 2.2f * s, by = cy - 1.4f * s;
+        b.tri(x, ty, z, x + r, cy, z, x, cy, z + r, gr, gg, gb);
+        b.tri(x, ty, z, x, cy, z + r, x - r, cy, z, gr, gg, gb);
+        b.tri(x, ty, z, x - r, cy, z, x, cy, z - r, gr, gg, gb);
+        b.tri(x, ty, z, x, cy, z - r, x + r, cy, z, gr, gg, gb);
+        b.tri(x, by, z, x, cy, z + r, x + r, cy, z, gr * .8f, gg * .8f, gb * .8f);
+        b.tri(x, by, z, x - r, cy, z, x, cy, z + r, gr * .8f, gg * .8f, gb * .8f);
+        b.tri(x, by, z, x, cy, z - r, x - r, cy, z, gr * .8f, gg * .8f, gb * .8f);
+        b.tri(x, by, z, x + r, cy, z, x, cy, z - r, gr * .8f, gg * .8f, gb * .8f);
+    }
+
+    /* ---------- الطرق والسواحل ---------- */
+    private static boolean clipSeg(float[] s, float x0, float x1, float z0, float z1) {
+        float dx = s[2] - s[0], dz = s[3] - s[1];
+        float t0 = 0, t1 = 1;
+        float[] p = {-dx, dx, -dz, dz};
+        float[] q = {s[0] - x0, x1 - s[0], s[1] - z0, z1 - s[1]};
+        for (int i = 0; i < 4; i++) {
+            if (p[i] == 0) { if (q[i] < 0) return false; }
+            else {
+                float t = q[i] / p[i];
+                if (p[i] < 0) { if (t > t1) return false; if (t > t0) t0 = t; }
+                else { if (t < t0) return false; if (t < t1) t1 = t; }
+            }
+        }
+        float ax = s[0] + t0 * dx, az = s[1] + t0 * dz, bx = s[0] + t1 * dx, bz = s[1] + t1 * dz;
+        s[0] = ax; s[1] = az; s[2] = bx; s[3] = bz;
+        return true;
+    }
+
+    private static ArrayList<ArrayList<float[]>> clipLine(float[] xs, float[] zs, float xMin, float xMax, float zMin, float zMax) {
+        ArrayList<float[]> cur = new ArrayList<>();
+        ArrayList<ArrayList<float[]>> pieces = new ArrayList<>();
+        float[] seg = new float[4];
+        for (int i = 0; i + 1 < xs.length; i++) {
+            seg[0] = xs[i]; seg[1] = zs[i]; seg[2] = xs[i + 1]; seg[3] = zs[i + 1];
+            if (!clipSeg(seg, xMin, xMax, zMin, zMax)) {
+                if (cur.size() > 1) pieces.add(cur);
+                cur = new ArrayList<>();
+                continue;
+            }
+            if (cur.isEmpty()) {
+                cur.add(new float[]{seg[0], seg[1]});
+            } else {
+                float[] last = cur.get(cur.size() - 1);
+                if (Math.hypot(last[0] - seg[0], last[1] - seg[1]) > 0.05) {
+                    if (cur.size() > 1) pieces.add(cur);
+                    cur = new ArrayList<>();
+                    cur.add(new float[]{seg[0], seg[1]});
+                }
+            }
+            cur.add(new float[]{seg[2], seg[3]});
+        }
+        if (cur.size() > 1) pieces.add(cur);
+        return pieces;
+    }
+
+    private static float[][] toArrays(ArrayList<float[]> pc) {
+        ArrayList<float[]> pts = new ArrayList<>();
+        for (float[] p : pc) {
+            if (pts.isEmpty() || Math.hypot(p[0] - pts.get(pts.size() - 1)[0], p[1] - pts.get(pts.size() - 1)[1]) > 0.3) pts.add(p);
+        }
+        if (pts.size() < 2) return null;
+        float[] px = new float[pts.size()], pz = new float[pts.size()];
+        for (int i = 0; i < px.length; i++) { px[i] = pts.get(i)[0]; pz[i] = pts.get(i)[1]; }
+        return new float[][]{px, pz};
+    }
+
+    /** يقسّم الخط إلى مقاطع قصيرة ليتبع التضاريس. */
+    private static float[][] resample(float[] px, float[] pz, float maxLen) {
+        ArrayList<float[]> o = new ArrayList<>();
+        for (int i = 0; i + 1 < px.length; i++) {
+            float len = (float) Math.hypot(px[i + 1] - px[i], pz[i + 1] - pz[i]);
+            int k = Math.max(1, (int) Math.ceil(len / maxLen));
+            for (int s = 0; s < k; s++) {
+                float t = s / (float) k;
+                o.add(new float[]{px[i] + (px[i + 1] - px[i]) * t, pz[i] + (pz[i + 1] - pz[i]) * t});
+            }
+        }
+        o.add(new float[]{px[px.length - 1], pz[pz.length - 1]});
+        float[] rx = new float[o.size()], rz = new float[o.size()];
+        for (int i = 0; i < rx.length; i++) { rx[i] = o.get(i)[0]; rz[i] = o.get(i)[1]; }
+        return new float[][]{rx, rz};
+    }
+
+    private static void addCoastSand(TileData td, float[] xs, float[] zs, float xMin, float xMax, float zMin, float zMax) {
+        // الأرض على يسار اتجاه الخط في OSM؛ شريط الرمل يُزاح نحو اليابسة
+        for (ArrayList<float[]> pc : clipLine(xs, zs, xMin, xMax, zMin, zMax)) {
+            float[][] a = toArrays(pc);
+            if (a == null) continue;
+            float[][] r = resample(a[0], a[1], 8f);
+            int n = r[0].length;
+            float[] sx = new float[n], sz = new float[n];
+            for (int i = 0; i < n; i++) {
+                int p = Math.max(0, i - 1), q = Math.min(n - 1, i + 1);
+                float dx = r[0][q] - r[0][p], dz = r[1][q] - r[1][p];
+                float d = (float) Math.hypot(dx, dz);
+                if (d < 1e-6f) d = 1;
+                dx /= d; dz /= d;
+                sx[i] = r[0][i] + dz * 7f; sz[i] = r[1][i] - dx * 7f; // يسار الاتجاه
+            }
+            ribbon(sx, sz, 14f, 0.14f, td.bufs[B_PLAIN], 1f, 12f, 0.86f, 0.78f, 0.60f);
+        }
+    }
+
+    private static void addRoad(TileData td, String hw, String name, HashSet<String> names, float[] xs, float[] zs,
+                                float xMin, float xMax, float zMin, float zMax) {
+        float w = RW.get(hw);
+        boolean veh = w >= 4.5f && !hw.equals("pedestrian");
+        for (ArrayList<float[]> pc : clipLine(xs, zs, xMin, xMax, zMin, zMax)) {
+            float[][] a = toArrays(pc);
+            if (a == null) continue;
+            float[][] r = resample(a[0], a[1], 8f);
+            float[] px = r[0], pz = r[1];
+            if (w >= 6f || hw.equals("service")) {
+                ribbon(px, pz, w + 4.2f, 0.20f, td.bufs[B_SIDEWALK], (w + 4.2f) / 2f, 2f, 1f, 1f, 1f);
+                if (w >= 7f) ribbon(px, pz, w, 0.28f, td.bufs[B_ROADW], 1f, 12f, 1f, 1f, 1f);
+                else ribbon(px, pz, w, 0.28f, td.bufs[B_ROADN], 1f, 6f, 1f, 1f, 1f);
+            } else {
+                ribbon(px, pz, w, 0.24f, td.bufs[B_SIDEWALK], w / 2f, 2f, 1f, 1f, 1f);
+            }
+            RoadPath rp = new RoadPath(px, pz, w, veh);
+            rp.name = name;
+            if (rp.total > 20f) td.paths.add(rp);
+            // أسماء الشوارع على الأسفلت
+            if (!name.isEmpty() && veh && w >= 6f && rp.total >= 30f && td.decals.size() < 40
+                    && (names.contains(name) || names.size() < 14)) {
+                names.add(name);
+                float[] o = new float[4];
+                for (float s = rp.total * 0.5f; s < rp.total - 8f && td.decals.size() < 40; s += 100f) addDecal(td, rp, s, name, o);
+                for (float s = rp.total * 0.5f - 100f; s > 8f && td.decals.size() < 40; s -= 100f) addDecal(td, rp, s, name, o);
+            }
+        }
+    }
+
+    private static void addDecal(TileData td, RoadPath rp, float s, String name, float[] o) {
+        rp.posAt(s, rp.w / 4f, o);
+        float dx = o[2], dz = o[3];
+        if (dx < -1e-3f || (Math.abs(dx) <= 1e-3f && dz > 0)) { dx = -dx; dz = -dz; } // اتجاه مقروء من الأعلى
+        Decal d = new Decal();
+        d.text = name; d.x = o[0]; d.z = o[1]; d.dx = dx; d.dz = dz;
+        td.decals.add(d);
+    }
+
+    private static void ribbon(float[] px, float[] pz, float w, float yOff, GeoBuf b, float uw, float vs,
+                               float cr, float cg, float cb) {
+        int n = px.length;
+        float[] lx = new float[n], lz = new float[n], rx = new float[n], rz = new float[n], vv = new float[n];
+        float[] ly = new float[n], ry = new float[n];
+        float cum = 0;
+        for (int i = 0; i < n; i++) {
+            int a = Math.max(0, i - 1), c = Math.min(n - 1, i + 1);
+            float dx = px[c] - px[a], dz = pz[c] - pz[a];
+            float d = (float) Math.hypot(dx, dz);
+            if (d < 1e-6f) d = 1;
+            dx /= d; dz /= d;
+            float nx = -dz, nz = dx;
+            lx[i] = px[i] + nx * w / 2f; lz[i] = pz[i] + nz * w / 2f;
+            rx[i] = px[i] - nx * w / 2f; rz[i] = pz[i] - nz * w / 2f;
+            ly[i] = Terrain.h(lx[i], lz[i]) + yOff;
+            ry[i] = Terrain.h(rx[i], rz[i]) + yOff;
+            if (i > 0) cum += (float) Math.hypot(px[i] - px[i - 1], pz[i] - pz[i - 1]);
+            vv[i] = cum / vs;
+        }
+        for (int i = 0; i < n - 1; i++) {
+            b.v(lx[i], ly[i], lz[i], 0, vv[i], cr, cg, cb);
+            b.v(rx[i], ry[i], rz[i], uw, vv[i], cr, cg, cb);
+            b.v(lx[i + 1], ly[i + 1], lz[i + 1], 0, vv[i + 1], cr, cg, cb);
+            b.fixTri();
+            b.v(rx[i], ry[i], rz[i], uw, vv[i], cr, cg, cb);
+            b.v(rx[i + 1], ry[i + 1], rz[i + 1], uw, vv[i + 1], cr, cg, cb);
+            b.v(lx[i + 1], ly[i + 1], lz[i + 1], 0, vv[i + 1], cr, cg, cb);
+            b.fixTri();
+        }
+    }
+}
