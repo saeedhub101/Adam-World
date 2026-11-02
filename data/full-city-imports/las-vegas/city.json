@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "slug": "las-vegas",
+  "name": "Las Vegas",
+  "country": "United States",
+  "boundary": {
+    "status": "pending",
+    "method": "Overture Maps administrative division geometry",
+    "file": "01_admin_boundary/city-boundary.geojson"
+  },
+  "status": "pending",
+  "sources": {
+    "OpenAerialMap": {
+      "status": "pending",
+      "notes": "Coverage and licence not yet checked"
+    },
+    "LiDAR (directly downloadable open datasets only)": {
+      "status": "pending",
+      "notes": "Coverage and licence not yet checked"
+    },
+    "Google Open Buildings": {
+      "status": "pending",
+      "notes": "Coverage and licence not yet checked"
+    },
+    "Overture Maps": {
+      "status": "pending",
+      "notes": "Coverage and licence not yet checked"
+    },
+    "Panoramax": {
+      "status": "pending",
+      "notes": "Coverage and licence not yet checked"
+    },
+    "HydroSHEDS": {
+      "status": "pending",
+      "notes": "Coverage and licence not yet checked"
+    },
+    "JRC Global Surface Water": {
+      "status": "pending",
+      "notes": "Coverage and licence not yet checked"
+    }
+  },
+  "layers": {
+    "01_admin_boundary": {
+      "status": "pending",
+      "expected_files": [
+        "city-boundary.geojson",
+        "boundary-metadata.json"
+      ]
+    },
+    "02_buildings_overture": {
+      "status": "pending",
+      "expected_files": [
+        "buildings.geojson",
+        "building-parts.geojson",
+        "building-metadata.parquet"
+      ]
+    },
+    "03_buildings_google": {
+      "status": "pending",
+      "expected_files": [
+        "google-open-buildings.geojson",
+        "source-metadata.json"
+      ]
+    },
+    "04_buildings_lidar": {
+      "status": "pending",
+      "expected_files": [
+        "lidar-point-cloud.laz",
+        "lidar-derived-dem.tif",
+        "lidar-derived-dsm.tif",
+        "lidar-coverage-index.geojson"
+      ]
+    },
+    "05_aerial_openaerialmap": {
+      "status": "pending",
+      "expected_files": [
+        "imagery-catalog.json",
+        "orthophotos/",
+        "imagery-metadata.json"
+      ]
+    },
+    "06_street_panoramax": {
+      "status": "pending",
+      "expected_files": [
+        "panoramax-catalog.geojson",
+        "images/",
+        "camera-metadata.json"
+      ]
+    },
+    "07_water_hydrosheds": {
+      "status": "pending",
+      "expected_files": [
+        "rivers.geojson",
+        "water-bodies.geojson",
+        "flow-direction.tif",
+        "flow-accumulation.tif"
+      ]
+    },
+    "08_water_jrc": {
+      "status": "pending",
+      "expected_files": [
+        "surface-water-occurrence.tif",
+        "surface-water-seasonality.tif",
+        "surface-water-transitions.tif"
+      ]
+    },
+    "09_transport_overture": {
+      "status": "pending",
+      "expected_files": [
+        "road-segments.geojson",
+        "road-connectors.geojson",
+        "transport-metadata.json"
+      ]
+    },
+    "10_landcover_overture": {
+      "status": "pending",
+      "expected_files": [
+        "land-cover.geojson",
+        "land-use.geojson",
+        "infrastructure.geojson",
+        "bathymetry.geojson"
+      ]
+    },
+    "11_places_addresses": {
+      "status": "pending",
+      "expected_files": [
+        "places.geojson",
+        "addresses.geojson"
+      ]
+    },
+    "12_provenance": {
+      "status": "pending",
+      "expected_files": [
+        "source-inventory.json",
+        "license-report.json",
+        "import-report.json",
+        "checksums.sha256"
+      ]
+    }
+  },
+  "derived_directory": "derived",
+  "provenance_directory": "12_provenance"
+}
