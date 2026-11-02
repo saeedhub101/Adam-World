@@ -32,7 +32,12 @@
       "file": "part-00006.geojson",
       "bytes": 36699764,
       "features": 66465
+    },
+    {
+      "file": "part-00007.geojson",
+      "bytes": 36700108,
+      "features": 65744
     }
   ],
-  "feature_count": 395106
+  "feature_count": 460850
 }
