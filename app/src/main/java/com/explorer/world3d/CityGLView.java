@@ -31,6 +31,11 @@ public class CityGLView extends GLSurfaceView {
     }
 
     @Override public boolean onTouchEvent(MotionEvent e) {
+        scaleDetector.onTouchEvent(e);
+        if (scaleDetector.isInProgress()) {
+            lookId = -1;
+            return true;
+        }
         switch (e.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN:
