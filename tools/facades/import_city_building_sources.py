@@ -142,6 +142,92 @@ def import_openfreemap(city,bbox,refresh,git_checkpoint):
     print(f"SAVED {city.name}: {len(features)} OpenFreeMap footprints from {fetched} tiles",flush=True)
     if git_checkpoint: checkpoint(out,city)
 
+
+def _line_layer_highway(props):
+    road_class=str(props.get("class") or "").lower()
+    subclass=str(props.get("subclass") or "").lower()
+    mapping={"motorway":"motorway","trunk":"trunk","primary":"primary",
+        "secondary":"secondary","tertiary":"tertiary","minor":"residential",
+        "service":"service","track":"track","path":"path","raceway":"raceway",
+        "busway":"service","bus_guideway":"service"}
+    if subclass in {"pedestrian","footway","cycleway","steps","bridleway","corridor"}:
+        return {"pedestrian":"pedestrian","footway":"footway","cycleway":"cycleway",
+                "steps":"steps","bridleway":"path","corridor":"footway"}[subclass]
+    return mapping.get(road_class)
+
+def import_openfreemap_transportation(city,bbox,refresh,git_checkpoint):
+    """Import primary road geometry and official vector-tile road-name lines."""
+    out=city/"transportation.geojson"
+    if out.exists() and not refresh:
+        try:
+            old=json.loads(out.read_text(encoding="utf-8"))
+            if old.get("source_bounds_wsen")==list(bbox) and old.get("source")=="OpenFreeMap/OpenMapTiles transportation and transportation_name v1":
+                print(f"KEEP {city.name}: {len(old.get('features',[]))} OpenFreeMap road/name features",flush=True)
+                return
+        except Exception: pass
+    meta=get_json(TILEJSON)
+    template=(meta.get("tiles") or ["https://tiles.openfreemap.org/planet/latest/{z}/{x}/{y}.pbf"])[0]
+    z=min(ZOOM,int(meta.get("maxzoom",ZOOM)))
+    west,south,east,north=bbox
+    groups={"transportation":defaultdict(list),"transportation_name":defaultdict(list)}
+    group_props={"transportation":{},"transportation_name":{}}
+    fetched=0
+    for x in range(tile_x(west,z),tile_x(east,z)+1):
+        for y in range(tile_y(north,z),tile_y(south,z)+1):
+            url=template.replace("{z}",str(z)).replace("{x}",str(x)).replace("{y}",str(y))
+            try:
+                tile=mapbox_vector_tile.decode(get_bytes(url),default_options={"y_coord_down":True})
+                fetched+=1
+            except Exception as exc:
+                print(f"WARN {city.name}: transportation tile {z}/{x}/{y}: {exc}",flush=True); continue
+            for layer_name in ("transportation","transportation_name"):
+                layer=tile.get(layer_name) or {}
+                for feature in layer.get("features",[]):
+                    geom=feature.get("geometry") or {}
+                    if geom.get("type") not in ("LineString","MultiLineString"): continue
+                    props=dict(feature.get("properties") or {})
+                    highway=_line_layer_highway(props)
+                    if not highway: continue
+                    coords=coords_to_lonlat(geom.get("coordinates"),x,y,z)
+                    try:
+                        line=shape({"type":geom["type"],"coordinates":coords})
+                        if line.is_empty or line.length<=0: continue
+                    except Exception: continue
+                    raw_id=props.get("osm_id") or props.get("osm_way_id") or feature.get("id")
+                    key=str(raw_id) if raw_id is not None else f"xy:{round(line.centroid.x,6)}:{round(line.centroid.y,6)}"
+                    groups[layer_name][key].append(line)
+                    group_props[layer_name][key]=props
+    features=[]
+    for layer_name in ("transportation","transportation_name"):
+        for key,parts in groups[layer_name].items():
+            try: geom=unary_union(parts)
+            except Exception: continue
+            if geom.is_empty or geom.geom_type not in ("LineString","MultiLineString"): continue
+            props=group_props[layer_name][key]
+            highway=_line_layer_highway(props)
+            tags={**props,"highway":highway,"adam:source_geometry":"OpenFreeMap/OpenMapTiles"}
+            if props.get("brunnel")=="bridge": tags["bridge"]="yes"
+            elif props.get("brunnel")=="tunnel": tags["tunnel"]="yes"
+            if layer_name=="transportation_name":
+                tags["adam:label_only"]="yes"
+                tags["name"]=props.get("name") or props.get("name:latin") or props.get("name_en") or props.get("name:nonlatin") or props.get("ref") or ""
+                if not tags["name"]: continue
+            features.append({"type":"Feature","id":f"openfreemap-{layer_name}/{key}",
+                "properties":tags,"geometry":mapping(geom)})
+    if not any((f.get("properties") or {}).get("adam:label_only")!="yes" for f in features):
+        raise RuntimeError("OpenFreeMap returned no usable transportation road geometries; old output retained")
+    result={"type":"FeatureCollection","name":f"{city.name} road geometry and road-name lines",
+        "source":"OpenFreeMap/OpenMapTiles transportation and transportation_name v1",
+        "source_url":TILEJSON,"source_bounds_wsen":list(bbox),"zoom":z,"tiles_fetched":fetched,
+        "attribution":"© OpenFreeMap / OpenMapTiles; underlying map data © OpenStreetMap contributors",
+        "license":"OpenStreetMap data ODbL 1.0; OpenFreeMap/OpenMapTiles attribution required",
+        "road_feature_count":sum(1 for f in features if (f.get("properties") or {}).get("adam:label_only")!="yes"),
+        "road_name_feature_count":sum(1 for f in features if (f.get("properties") or {}).get("adam:label_only")=="yes"),
+        "feature_count":len(features),"features":features}
+    atomic_json(out,result)
+    print(f"SAVED {city.name}: {result['road_feature_count']} OpenFreeMap roads + {result['road_name_feature_count']} road-name lines from {fetched} tiles",flush=True)
+    if git_checkpoint: checkpoint(out,city)
+
 def osm_query(b):
     w,s,e,n=b
     box=f"{s:.7f},{w:.7f},{n:.7f},{e:.7f}"
@@ -222,7 +308,7 @@ def main():
             print(f"ERROR {city.name}: invalid city config: {exc}",flush=True)
             failures.append(f"{city.name}/config")
             continue
-        for label,fn in (("footprints",import_openfreemap),("details",import_osm_details)):
+        for label,fn in (("footprints",import_openfreemap),("transportation",import_openfreemap_transportation),("details",import_osm_details)):
             try:
                 fn(city,bbox,a.refresh,a.git_checkpoint)
             except Exception as exc:
