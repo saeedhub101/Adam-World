@@ -99,6 +99,60 @@ const $=id=>document.getElementById(id);
 // Global MapLibre world base: roads, land, water and 3D building tiles remain
 // visible even when the player leaves every locally imported city region.
 let worldMap=null,worldMapReady=false,lastWorldMapSync=0;
+const localMapFeatureIds=new Map();
+const mapLibreLayerBaseFilters=new Map();
+function applyLocalMapFeatureExclusions(){
+  if(!worldMap||!worldMapReady)return;
+  const layers=(worldMap.getStyle()&&worldMap.getStyle().layers)||[];
+  for(const layer of layers){
+    const sourceLayer=String(layer['source-layer']||'');
+    const ids=localMapFeatureIds.get(sourceLayer);
+    if(!mapLibreLayerBaseFilters.has(layer.id))mapLibreLayerBaseFilters.set(layer.id,layer.filter||null);
+    const base=mapLibreLayerBaseFilters.get(layer.id);
+    try{
+      if(ids&&ids.size){
+        const featureId=['to-string',['coalesce',['get','osm_id'],['get','osm_way_id'],['id']]];
+        const filter=['all'];
+        if(base)filter.push(base);
+        filter.push(['!', ['in',featureId,['literal',Array.from(ids)]]]);
+        worldMap.setFilter(layer.id,filter);
+      }else if(base){
+        worldMap.setFilter(layer.id,base);
+      }else{
+        worldMap.setFilter(layer.id,null);
+      }
+    }catch(e){console.warn('Could not apply local feature replacement filter:',layer.id,e);}
+  }
+}
+function setLocalMapFeatureExclusions(elements){
+  localMapFeatureIds.clear();
+  const add=(source,id)=>{
+    if(id===undefined||id===null||id==='')return;
+    const key=String(id).replace(/^(node|way|relation)\//,'');
+    if(!key)return;
+    if(!localMapFeatureIds.has(source))localMapFeatureIds.set(source,new Set());
+    localMapFeatureIds.get(source).add(key);
+  };
+  for(const el of elements||[]){
+    const tags=el&&el.tags||{};
+    const id=tags.osm_id??tags.osm_way_id??tags['adam:source_osm_id']??el.id;
+    if(tags.building&&tags.building!=='no')add('building',id);
+    if(tags.highway){
+      add('transportation',id);
+      if(tags['adam:label_only']==='yes')add('transportation_name',id);
+    }
+    if(tags.railway)add('transportation',id);
+    if(tags.waterway==='riverbank'||tags.natural==='water'||tags.water==='lake'||
+       ['water','reservoir','basin'].includes(String(tags.landuse||'')))add('water',id);
+    if(tags.waterway&&tags.waterway!=='riverbank')add('waterway',id);
+    if(tags.landcover)add('landcover',id);
+    if(tags.landuse)add('landuse',id);
+    if(tags.leisure==='park'||tags.leisure==='garden')add('park',id);
+    if(el.type==='node'&&(tags.natural==='tree'||tags.highway||tags.railway||
+       tags.public_transport||tags.waterway==='waterfall'))add('poi',id);
+  }
+  applyLocalMapFeatureExclusions();
+}
 try{
   worldMap=new maplibregl.Map({
     container:'worldMap',
@@ -117,6 +171,7 @@ try{
     // The MapLibre map is the continuous world ground beneath the transparent Three.js scene.
     if(!terrainGrid)ground.visible=false;
     worldMap.resize();
+    applyLocalMapFeatureExclusions();
     // Prefer recorded building colours and mapped metric heights.
     for(const layer of worldMap.getStyle().layers||[]){
       if(layer.type!=='fill-extrusion'||!/building/i.test(layer.id+' '+(layer['source-layer']||'')))continue;
@@ -1599,6 +1654,7 @@ function addRobinsonsPlaceSign(P,baseY,height){
 /* ---------- بناء المدينة ---------- */
 async function loadArea(lat,lon,spawn){
   const data=await loadOfflineArea(lat,lon,450);
+  setLocalMapFeatureExclusions(data.elements||[]);
   if(!spawn){ // نقل الأصل مع الحفاظ على مواقع اللاعب
     const o=proj(lat,lon);
     S.px-=o[0];S.pz-=o[1];S.cx-=o[0];S.cz-=o[1];camera.position.x-=o[0];camera.position.z-=o[1];
