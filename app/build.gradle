@@ -41,7 +41,7 @@ android {
 // Package the existing Manila OSM extract and the preserved old_app Rizal Park tree inventory
 // as app assets so the Manila local mode works without a first-run network download.
 android.sourceSets.main.assets.srcDirs += [
-    file("$rootDir/data/offline-world"),
+    file("$rootDir/data/offline-world/manila"),
     file("$rootDir/old_app/src/main/assets/data")
 ]
 
