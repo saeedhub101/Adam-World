@@ -10,7 +10,7 @@ final class Footprint {
 
 final class Decal {
     String text;
-    float x, z, dx, dz;
+    float x, z, dx, dz, y = Float.NaN;
 }
 
 final class RoadPath {
