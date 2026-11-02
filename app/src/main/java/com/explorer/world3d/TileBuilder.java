@@ -91,6 +91,7 @@ final class TileBuilder {
                 if (x < xMin || x >= xMax || z < zMin || z >= zMax) continue;
                 if (tg(tags, "natural").equals("tree") && trees.size() < 260) trees.add(new float[]{x, z});
                 else if (tg(tags, "highway").equals("street_lamp") && lamps.size() < 60) lamps.add(new float[]{x, z});
+                else if (poiCategory(tags) > 0) addPoi(td, x, z, poiName(tags), poiCategory(tags), Terrain.h(x, z) + 2.8f);
                 continue;
             }
             if (!type.equals("way")) continue;
@@ -125,6 +126,8 @@ final class TileBuilder {
                 if (Landmarks.suppress(cx, cz)) continue;
                 bcount++;
                 addBuilding(td, tags, id, bld, px, pz);
+                int poi = poiCategory(tags);
+                if (poi > 0) addPoi(td, cx, cz, poiName(tags), poi, Terrain.h(cx, cz) + bHeight(tags, id, bld) + 1.2f);
             } else if (!hw.isEmpty() && RW.containsKey(hw)) {
                 String nm = tg(tags, "name:ar");
                 if (nm.isEmpty()) nm = tg(tags, "name");
@@ -142,6 +145,11 @@ final class TileBuilder {
                 float lvl = 1e9f;
                 for (int i = 0; i < P[0].length; i++) lvl = Math.min(lvl, hg.s(P[0][i], P[1][i]));
                 fillCells(td.bufs[B_WATER], P[0], P[1], xMin, xMax, zMin, zMax, 5f, hg, lvl + 0.1f, 0f, 1f, 1f, 1f, id);
+            } else if (poiCategory(tags) > 0) {
+                float[][] P = clean(xs, zs);
+                if (P == null || !overlaps(P, xMin, xMax, zMin, zMax)) continue;
+                float[] center = centroid(P[0], P[1]);
+                addPoi(td, center[0], center[1], poiName(tags), poiCategory(tags), Terrain.h(center[0], center[1]) + 3.2f);
             } else if (leisure.matches("park|garden|pitch|playground")
                     || landuse.matches("grass|forest|recreation_ground|village_green|meadow|sand|farmland|orchard|vineyard|cemetery")
                     || natural.matches("wood|scrub|beach|sand|dune|wetland|heath|grassland")) {
@@ -603,6 +611,44 @@ final class TileBuilder {
                 for (float s = rp.total * 0.5f; s < rp.total - 8f && td.decals.size() < 40; s += 100f) addDecal(td, rp, s, name, o);
                 for (float s = rp.total * 0.5f - 100f; s > 8f && td.decals.size() < 40; s -= 100f) addDecal(td, rp, s, name, o);
             }
+        }
+    }
+
+    /** تصنيف الأنشطة التجارية والخدمية من خصائص المكان أو المبنى. */
+    private static int poiCategory(JSONObject tags) {
+        String amenity=tg(tags,"amenity"), shop=tg(tags,"shop"), tourism=tg(tags,"tourism"), building=tg(tags,"building");
+        if (amenity.matches("hospital|clinic|doctors|dentist|healthcare")) return 1;
+        if (building.matches("hospital|clinic")) return 1;
+        if (amenity.matches("restaurant|fast_food|food_court")) return 2;
+        if (amenity.matches("cafe|coffee_shop|bar")) return 3;
+        if (tourism.matches("hotel|motel|hostel|guest_house")) return 4;
+        if (building.matches("hotel")) return 4;
+        if (shop.matches("mall|supermarket|convenience|department_store|retail|general|clothes|bakery|butcher|electronics|chemist")) return 5;
+        return 0;
+    }
+
+    private static String poiName(JSONObject tags) {
+        String name=tg(tags,"name:ar");
+        if (name.isEmpty()) name=tg(tags,"name");
+        if (name.isEmpty()) name=tg(tags,"name:en");
+        if (name.isEmpty()) name=tg(tags,"brand");
+        if (name.isEmpty()) name=tg(tags,"addr:housenumber");
+        return name;
+    }
+
+    /** علامة فئوية واضحة ولافتة اسمية فوق موقع النشاط، بارتفاع يتبع المبنى/التضاريس. */
+    private static void addPoi(TileData td, float x, float z, String name, int category, float y) {
+        float r=0.18f,g=0.62f,b=0.88f;
+        if(category==2){r=0.94f;g=0.43f;b=0.16f;}
+        else if(category==3){r=0.58f;g=0.34f;b=0.20f;}
+        else if(category==4){r=0.55f;g=0.32f;b=0.76f;}
+        else if(category==5){r=0.20f;g=0.68f;b=0.42f;}
+        GeoBuf sign=td.bufs[B_SIGN];
+        sign.box(x,y-1.0f,z,0.12f,2.0f,0.12f,0.25f,0.25f,0.27f);
+        sign.box(x,y+0.20f,z,0.95f,0.48f,0.14f,r,g,b);
+        if(name!=null&&!name.trim().isEmpty()&&td.decals.size()<40){
+            Decal d=new Decal(); d.text=name.trim(); d.x=x; d.z=z; d.dx=1f; d.dz=0f; d.y=y+0.55f;
+            td.decals.add(d);
         }
     }
 
