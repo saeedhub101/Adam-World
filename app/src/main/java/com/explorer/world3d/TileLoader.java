@@ -231,13 +231,18 @@ final class TileLoader extends Thread {
         synchronized (this) {
             if (offlineCells != null && offlineDatasetVersion != null) return;
             File manifestFile = new File(offlineDir, "manifest.json");
-            if (!manifestFile.isFile() || System.currentTimeMillis() - manifestFile.lastModified() > 1L * 3600 * 1000) {
-                byte[] bytes = downloadBytes(OFFLINE_BASE + "/manifest.json");
-                File tmp = new File(manifestFile.getPath() + ".tmp");
-                try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
-                if (!tmp.renameTo(manifestFile)) {
-                    tmp.delete();
-                    throw new IOException("Cannot cache Amman manifest");
+            if (!manifestFile.isFile() || System.currentTimeMillis() - manifestFile.lastModified() > 5L * 60 * 1000) {
+                try {
+                    byte[] bytes = downloadBytes(OFFLINE_BASE + "/manifest.json");
+                    File tmp = new File(manifestFile.getPath() + ".tmp");
+                    try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
+                    if (!tmp.renameTo(manifestFile)) {
+                        tmp.delete();
+                        throw new IOException("Cannot cache Amman manifest");
+                    }
+                } catch (IOException networkError) {
+                    // Keep the last valid manifest usable when the player is offline.
+                    if (!manifestFile.isFile() || manifestFile.length() == 0) throw networkError;
                 }
             }
             JSONObject manifest = new JSONObject(readFile(manifestFile));
