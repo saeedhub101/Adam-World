@@ -20,9 +20,10 @@ The 15 requested cities are listed in `catalog.json`. Each city has its own fold
 3. Keep source datasets separate; store normalized cross-source layers in `derived/`.
 4. Preserve source IDs, timestamps, original properties, CRS, vertical datums, licences, attribution and checksums.
 5. Every layer must be marked `downloaded`, `not_available`, `license_restricted`, `failed_retryable`, or `not_applicable`. Never fabricate missing coverage.
-6. Chunk large rasters and point clouds by spatial tile. Save each completed chunk and checkpoint during the workflow. Resume from valid checksums, import only missing/invalid chunks, and continue other sources after a failure.
-7. Do not commit imagery or point clouds whose licence forbids redistribution.
-8. GitHub has per-file and repository storage limits. Keep chunks below the per-file limit; if total licensed data exceeds repository capacity, report the exact remainder rather than claiming a complete import.
+6. Chunk every large Overture GeoJSON layer into valid FeatureCollection files under 35 MiB (`part-00001.geojson`, etc.) with a per-layer `manifest.json`. Checkpoint each part immediately. On resume, retain and skip verified parts, continue from the next part, and skip a layer only when its manifest is complete and every recorded size matches. Temporary full downloads stay untracked and are deleted after processing.
+7. Never commit a full-city GeoJSON layer as one file. Keep each committed part below 35 MiB (well below GitHub's 100 MB hard limit); compression is optional and is not relied on for compliance.
+8. Do not commit imagery or point clouds whose licence forbids redistribution.
+9. GitHub has per-file and repository storage limits. If total licensed data exceeds repository capacity, report the exact remainder rather than claiming a complete import.
 
 ## Current state
 This initial commit establishes the isolated registry and per-city layer contract only. No city source data has been downloaded yet. Completion requires verified files, geographic coverage, licences, checksums and validation.
