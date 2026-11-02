@@ -25,6 +25,11 @@
   #hud{position:absolute;right:18px;bottom:260px;z-index:5;color:#fff;font-size:18px;font-weight:bold;text-shadow:0 0 4px #000;display:none}
   #credit{position:absolute;left:8px;bottom:6px;z-index:4;color:#fff;font-size:10px;opacity:.75;text-shadow:0 0 3px #000}
   #loading{position:absolute;inset:0;z-index:10;background:rgba(10,12,20,.88);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;text-align:center;padding:20px}
+  #errorDialog{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.48);pointer-events:none}
+  #errorDialog .panel{width:min(440px,100%);box-sizing:border-box;background:#182333;color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:16px;padding:18px;box-shadow:0 12px 38px rgba(0,0,0,.5);text-align:center;pointer-events:auto}
+  #errorDialog h3{margin:0 0 10px;font-size:18px}
+  #errorText{font-size:14px;line-height:1.6;overflow-wrap:anywhere;color:#e3eaf2}
+  #errorDialog button{margin-top:16px;min-width:110px;padding:11px 24px;border:0;border-radius:10px;background:#1676bd;color:#fff;font-size:16px;font-weight:bold}
   #imageryPanel{position:absolute;z-index:8;left:8px;right:8px;top:112px;max-height:58vh;overflow:auto;background:rgba(12,18,28,.96);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:12px;display:none;box-shadow:0 8px 28px rgba(0,0,0,.4)}
   #imageryPanel h3{font-size:15px;margin:0 0 8px}#imageryPanel p{font-size:12px;line-height:1.55;margin:5px 0;color:#d8e0e9}#imageryPanel a{color:#9bd0ff}#imageryPanel .sourceLinks{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}#imageryPanel .sourceLinks a{background:#25364a;padding:7px 9px;border-radius:8px;text-decoration:none;font-size:12px}#imageryPanel .photo{display:flex;gap:9px;padding:8px 0;border-top:1px solid #344253;align-items:flex-start}#imageryPanel .photo img{width:96px;height:72px;object-fit:cover;border-radius:7px;background:#303944}#imageryPanel .photo div{min-width:0;font-size:12px;line-height:1.45}#imageryPanel .muted{color:#b7c1cc}#imageryToggle{background:#245b83}
   #cameraControls{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:6;display:flex;gap:5px;align-items:center;padding:6px;background:rgba(8,13,22,.78);border:1px solid rgba(255,255,255,.25);border-radius:14px;backdrop-filter:blur(8px);max-width:calc(100vw - 180px)}
@@ -77,17 +82,35 @@
 <div id="msg"></div>
 <div id="credit">© مساهمو OpenStreetMap</div>
 <div id="loading">جاري تحميل المدينة…</div>
+<div id="errorDialog" role="alertdialog" aria-modal="true" aria-labelledby="errorTitle">
+  <div class="panel">
+    <h3 id="errorTitle">حدث خطأ</h3>
+    <div id="errorText">حدث خطأ أثناء تحميل جزء من اللعبة.</div>
+    <button id="errorOk" type="button">OK</button>
+  </div>
+</div>
 
 <script>
 const $=id=>document.getElementById(id);
-function startupFailure(message){
-  const box=$('loading');
-  if(!box)return;
-  box.textContent='تعذر بدء Adam World: '+(message||'حدث خطأ غير متوقع')+' — تحقق من ملفات التطبيق المحلية ثم أعد فتحه.';
-  box.style.display='flex';
-  box.style.pointerEvents='auto';
-  box.onclick=()=>location.reload();
+function showRecoverableError(message,title){
+  const dialog=$('errorDialog'),text=$('errorText'),loadingBox=$('loading');
+  if(loadingBox){loadingBox.style.display='none';loadingBox.onclick=null;loadingBox.style.pointerEvents='none';}
+  if(!dialog||!text)return;
+  $('errorTitle').textContent=title||'حدث خطأ';
+  text.textContent=(message||'حدث خطأ غير متوقع')+' — يمكنك الضغط على OK ومتابعة اللعب أو اختيار مدينة أخرى.';
+  dialog.style.display='flex';
 }
+function startupFailure(message){
+  showRecoverableError(message,'تعذر إكمال عملية في اللعبة');
+}
+$('errorOk').onclick=()=>{$('errorDialog').style.display='none';};
+window.addEventListener('error',e=>{
+  if(e&&e.message)startupFailure(e.message);
+});
+window.addEventListener('unhandledrejection',e=>{
+  const reason=e&&e.reason;
+  startupFailure(reason&&reason.message?reason.message:'تعذر تحميل بيانات المدينة');
+});
 window.addEventListener('error',e=>{
   if(e&&e.message)startupFailure(e.message);
 });
@@ -1851,17 +1874,26 @@ async function loadArea(lat,lon,spawn){
 }
 
 let loading=false;
+let pendingCityRequest=null;
 async function loadCity(lat,lon){
-  loading=true;$('loading').style.display='flex';$('loading').textContent='جاري تحميل بيانات المدينة من التخزين المحلي…';
+  // Keep only the newest requested destination while a city load is in progress.
+  // A failed city must never trap the player on a blocking loading screen.
+  if(loading){pendingCityRequest={lat,lon};return;}
+  loading=true;
+  $('errorDialog').style.display='none';
+  $('loading').style.display='flex';
+  $('loading').style.pointerEvents='none';
+  $('loading').textContent='جاري تحميل بيانات المدينة من التخزين المحلي…';
   try{
     await loadArea(lat,lon,true);
   }catch(e){
     const detail=e&&e.message?e.message:'خطأ غير معروف';
-    $('loading').textContent='تعذر تحميل بيانات المدينة المحلية. '+detail+' — اضغط هنا لإعادة المحاولة.';
-    $('loading').style.display='flex';
-    $('loading').onclick=()=>{ $('loading').onclick=null; loadCity(lat,lon); };
+    showRecoverableError('تعذر تحميل المدينة المطلوبة: '+detail,'تعذر تحميل المدينة');
   }finally{
     loading=false;
+    const next=pendingCityRequest;
+    pendingCityRequest=null;
+    if(next)loadCity(next.lat,next.lon);
   }
 }
 let reloadRetryAfter=0;
