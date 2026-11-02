@@ -2,7 +2,8 @@ name: Adam World Android Release
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - "app/**"
       - "build.gradle"
@@ -24,15 +25,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.5"
+
       - name: Prepare the existing production signing key
         env:
           ADAM_WORLD_KEYSTORE_BASE64: ${{ secrets.ADAM_WORLD_KEYSTORE_BASE64 }}
@@ -50,11 +56,21 @@ jobs:
           test -s "$KEYSTORE"
           keytool -list -keystore "$KEYSTORE" -storepass "$ADAM_WORLD_KEYSTORE_PASSWORD" -alias "$ADAM_WORLD_KEY_ALIAS" >/dev/null
           echo "ADAM_WORLD_KEYSTORE_FILE=$KEYSTORE" >> "$GITHUB_ENV"
+
       - name: Calculate the next package version
         run: |
           set -euo pipefail
           git fetch --force --tags origin
-          LAST_VERSION="$(git tag --list 'adam-world-v*' | sed -E 's/^adam-world-v([0-9]+)$/\\1/' | grep -E '^[0-9]+
+          LAST_TAG="$(git tag --list 'adam-world-v[0-9]*' | sort -V | tail -n 1)"
+          LAST_VERSION="${LAST_TAG##*v}"
+          LAST_VERSION="${LAST_VERSION:-0}"
+          VERSION_CODE="$((LAST_VERSION + 1))"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=adam-world-v$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "Building package version $VERSION_CODE"
+
+      - name: Build signed Android APK
+        env:
           ADAM_WORLD_KEYSTORE_PASSWORD: ${{ secrets.ADAM_WORLD_KEYSTORE_PASSWORD }}
           ADAM_WORLD_KEY_ALIAS: ${{ secrets.ADAM_WORLD_KEY_ALIAS }}
           ADAM_WORLD_KEY_PASSWORD: ${{ secrets.ADAM_WORLD_KEY_PASSWORD }}
@@ -68,41 +84,12 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK"
           cp "$APK" Adam-World.apk
           sha256sum Adam-World.apk
+
       - name: Publish release and APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           name: Adam World v${{ env.VERSION_CODE }}
-          make_latest: true
-          generate_release_notes: true
-          files: Adam-World.apk
-          fail_on_unmatched_files: true
- | sort -n | tail -n 1)"
-          LAST_VERSION="${LAST_VERSION:-0}"
-          VERSION_CODE="$((LAST_VERSION + 1))"
-          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
-          echo "RELEASE_TAG=adam-world-v$VERSION_CODE" >> "$GITHUB_ENV"
-          echo "Building package version $VERSION_CODE"
-      - name: Build signed Android APK
-        env:
-          ADAM_WORLD_KEYSTORE_PASSWORD: ${{ secrets.ADAM_WORLD_KEYSTORE_PASSWORD }}
-          ADAM_WORLD_KEY_ALIAS: ${{ secrets.ADAM_WORLD_KEY_ALIAS }}
-          ADAM_WORLD_KEY_PASSWORD: ${{ secrets.ADAM_WORLD_KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          gradle --no-daemon -PVERSION_CODE="$GITHUB_RUN_NUMBER" assembleRelease
-          APK="app/build/outputs/apk/release/app-release.apk"
-          test -s "$APK"
-          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          test -x "$APKSIGNER"
-          "$APKSIGNER" verify --verbose "$APK"
-          cp "$APK" Adam-World.apk
-          sha256sum Adam-World.apk
-      - name: Publish release and APK
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: adam-world-v${{ github.run_number }}
-          name: Adam World v${{ github.run_number }}
           make_latest: true
           generate_release_notes: true
           files: Adam-World.apk
