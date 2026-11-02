@@ -11,8 +11,11 @@
 ## Repository sources
 
 - `data/facades/cities/<city>/buildings.geojson` is the existing committed building fallback.
-- `data/offline-world/<city>/elements.json` is the full local OSM extract, including building ways, roads, parks, land cover, water, trees, and street lamps. The import workflow commits each city independently and resumes by validating existing city data and metadata.
-- `tools/build_offline_city_tiles.py` packages the best available local source into 250 m tiles and writes a manifest per city.
+- `data/facades/cities/<city>/building-footprints.geojson` is the authoritative building footprint geometry from OpenFreeMap/OpenMapTiles.
+- `data/facades/cities/<city>/transportation.geojson` is the authoritative road geometry plus the `transportation_name` label lines from OpenFreeMap/OpenMapTiles.
+- `data/facades/cities/<city>/building-details.geojson` is supplementary OSM data only: it enriches a matching primary footprint with available tags and contributes only unmatched buildings/building parts.
+- `data/offline-world/<city>/elements.json` remains a source of supplementary non-road context and building gaps; its OSM road ways are excluded whenever primary OpenFreeMap transportation is present.
+- `tools/build_offline_city_tiles.py` packages these prioritized sources into 250 m tiles and writes a manifest per city.
 
 ## Spatial streaming
 
@@ -43,10 +46,13 @@ profile refresh is checkpointed city-by-city directly to `main`; subsequent
 reruns validate the profile and stored element count and skip completed cities.
 A partial run attempts every city and preserves each successful checkpoint.
 
-The import profile includes building and road ways, parks/land cover, water,
+The legacy OSM import profile includes buildings, roads, parks/land cover, water,
 mapped tree and street-lamp nodes, traffic signals, crossings, bus stops,
-level crossings, barriers and bridge/pier ways. The Android packager prefers
-these full extracts over the smaller building-only fallback GeoJSON.
+level crossings, barriers and bridge/pier ways. For game building and road geometry,
+these raw OSM ways are no longer authoritative: OpenFreeMap/OpenMapTiles building
+footprints and transportation lines take precedence; OSM contributes only missing
+building geometry/parts and supplemental tags. Non-road environmental/context
+features may still be retained from the offline extract.
 
 ## Player and camera controls
 
@@ -59,7 +65,7 @@ these full extracts over the smaller building-only fallback GeoJSON.
 - During a city jump or local tile reload, movement is paused until the new
   offline tile neighborhood has loaded. Movement streaming recenters the local
   origin and loads nearby tiles from APK assets.
-- OSM road names (`name:ar`, `name`, `name:en`, then `ref`) are rendered as outlined text directly on the road surface, aligned with the road and repeated sparingly on long named streets. Unnamed roads receive no invented labels.
+- Street labels are sourced from the OpenFreeMap/OpenMapTiles `transportation_name` layer and rendered as outlined text above the corresponding road surface. OSM road ways are not used as the road geometry source. Names are never invented; labels are repeated sparingly along long streets.
 - Mapped bus-stop, stop-sign and pedestrian-crossing nodes are rendered at their OSM coordinates. Detached facade-photo cards remain hidden.
 
 ## Real facade evidence boundary
@@ -79,7 +85,7 @@ evidence-gated production phase.
 
 ## Street-name labels and update delivery
 
-- Named OSM road ways render their actual mapped name directly on the road surface, aligned to the road direction. Arabic `name:ar` is preferred, then `name:en`, `name`, `official_name`, `loc_name`, and finally the mapped `ref`; no street names are fabricated. The visible label limit is 240 placements per loaded area.
+- OpenFreeMap/OpenMapTiles `transportation_name` lines provide road-label geometry and names. The game raises labels above the road mesh, disables depth occlusion for the label plane, and repeats names sparingly along long streets. The label limit is 600 placements per loaded area.
 - Release workflow publishes a small `adam-world-web-update.zip` containing the changed game HTML. When a release marks `Native-Required: false` and `Web-Content-Changed: true`, Android downloads and applies this bundle into app-private storage, then reloads the game without reinstalling the APK or removing user data. Native-code or packaged offline-data changes still require a normal APK update.
 - Facade photo candidates remain unverified until the exact building identity and visible facade are confirmed. The latest review harvest validated 78 preview images (33 HD source images) across the cities with available Panoramax coverage; this is not 78 verified facade assignments. No candidate is assigned to a building merely because it is nearby or camera-aligned.
 
@@ -94,5 +100,5 @@ evidence-gated production phase.
 ## Live geographic streaming (2026-11-02)
 
 - Local APK tiles are preferred whenever the player is inside a stored city coverage area.
-- When the player moves outside stored coverage or a local sector is absent, the game requests a bounded 350 m OpenStreetMap Overpass area (buildings, roads, land cover, water and mapped street objects) and rebuilds the nearby scene around the new player position. This requires an internet connection; no API key is used.
-- Live requests are limited to two public Overpass endpoints, use a 4 MB response cap and do not replace or modify the repository's offline data. The current live fallback is OSM geometry retrieval, not a full OpenFreeMap vector-tile renderer.
+- When the player moves outside stored city coverage, MapLibre continues to render the OpenFreeMap Liberty basemap and its vector-tile roads/labels/buildings. A bounded Overpass request may retrieve building/building-part geometry only as supplementary local 3D content; it does not fetch or replace roads. This requires an internet connection and no API key.
+- Live OSM fallback is strictly building-only. OpenFreeMap/MapLibre remains the road and map base; OSM does not become the road source.
