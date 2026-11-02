@@ -1,5 +1,7 @@
 package com.explorer.world3d;
 
+import android.content.Context;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -41,6 +43,7 @@ final class TileLoader extends Thread {
     final ConcurrentLinkedQueue<TileData> ready = new ConcurrentLinkedQueue<>();
     final Set<Long> requested = ConcurrentHashMap.newKeySet();
     final ConcurrentHashMap<Long, Long> failedAt = new ConcurrentHashMap<>();
+    private final Context context;
     private final File cacheDir;
     private final File offlineDir;
     private final ErrorCallback cb;
@@ -54,6 +57,9 @@ final class TileLoader extends Thread {
     private static final long ONLINE_CACHE_MAX_BYTES = 128L * 1024L * 1024L;
     private static final long CACHE_MAX_AGE_MS = 3L * 24L * 3600L * 1000L;
     volatile boolean offlineAmman = false;
+    volatile String offlineCitySlug = null;
+    private JSONObject bundledCityRoot;
+    private String bundledCitySlug;
     private volatile Set<String> offlineCells;
     private volatile String offlineDatasetVersion;
     private final LinkedHashMap<String, JSONObject> offlineShardCache =
@@ -63,8 +69,9 @@ final class TileLoader extends Thread {
                 }
             };
 
-    TileLoader(File cacheDir, ErrorCallback cb) {
+    TileLoader(Context context, File cacheDir, ErrorCallback cb) {
         super("tile-loader");
+        this.context = context.getApplicationContext();
         this.cacheDir = cacheDir;
         this.offlineDir = new File(cacheDir, "offline-amman");
         this.cb = cb;
@@ -126,6 +133,8 @@ final class TileLoader extends Thread {
         String json = null;
         if (offlineAmman) {
             root = loadOfflineRoot(south, west, north, east);
+        } else if (offlineCitySlug != null) {
+            root = loadBundledCityRoot(south, west, north, east);
         } else {
             File f = new File(cacheDir, String.format(Locale.US, "t_%d_%d.json", Math.round(south * 1e5), Math.round(west * 1e5)));
         if (f.exists() && f.length() > 2 && System.currentTimeMillis() - f.lastModified() < 30L * 24 * 3600 * 1000) {
@@ -179,6 +188,100 @@ final class TileLoader extends Thread {
             }
         }
         return TileBuilder.build(root, ix, iz);
+    }
+
+    /** Read a bundled OSM city extract and select only features intersecting this render tile. */
+    private JSONObject loadBundledCityRoot(double south, double west, double north, double east) throws Exception {
+        final String slug = offlineCitySlug;
+        if (slug == null || slug.trim().isEmpty()) return emptyElements();
+        JSONObject source;
+        synchronized (this) {
+            if (bundledCityRoot == null || !slug.equals(bundledCitySlug)) {
+                StringBuilder json = new StringBuilder(2 * 1024 * 1024);
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                        context.getAssets().open(slug + "/elements.json"), "UTF-8"), 32768)) {
+                    char[] buffer = new char[16384];
+                    int n;
+                    while ((n = reader.read(buffer)) != -1) json.append(buffer, 0, n);
+                }
+                JSONObject loaded = new JSONObject(json.toString());
+                if (loaded.optJSONArray("elements") == null) throw new IOException("Invalid bundled OSM city dataset: " + slug);
+                if ("manila".equals(slug)) addRizalParkInventory(loaded);
+                bundledCityRoot = loaded;
+                bundledCitySlug = slug;
+            }
+            source = bundledCityRoot;
+        }
+        JSONArray all = source.optJSONArray("elements");
+        JSONArray selected = new JSONArray();
+        if (all != null) {
+            for (int i = 0; i < all.length(); i++) {
+                JSONObject element = all.optJSONObject(i);
+                if (element != null && intersectsTile(element, south, west, north, east)) selected.put(element);
+            }
+        }
+        JSONObject result = new JSONObject();
+        result.put("elements", selected);
+        return result;
+    }
+
+    /** Preserve the old_app NPDC tree inventory as geolocated tree features in offline Manila. */
+    private void addRizalParkInventory(JSONObject city) {
+        try (InputStream in = context.getAssets().open(
+                "regions/philippines/manila/rizal-park/rizal-park-inventory.json");
+             BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"))) {
+            StringBuilder json = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) json.append(line);
+            JSONArray trees = new JSONObject(json.toString()).optJSONArray("trees");
+            JSONArray elements = city.optJSONArray("elements");
+            if (trees == null || elements == null) return;
+            for (int i = 0; i < trees.length(); i++) {
+                JSONObject tree = trees.optJSONObject(i);
+                if (tree == null) continue;
+                double lat = tree.optDouble("latitude", Double.NaN);
+                double lon = tree.optDouble("longitude", Double.NaN);
+                if (Double.isNaN(lat) || Double.isNaN(lon)) continue;
+                JSONObject tags = new JSONObject();
+                tags.put("natural", "tree");
+                tags.put("name", tree.optString("common_name", "Tree"));
+                tags.put("species", tree.optString("scientific_name", ""));
+                tags.put("height", tree.optString("height_m", ""));
+                tags.put("ref", tree.optString("id", ""));
+                JSONObject node = new JSONObject();
+                node.put("type", "node");
+                node.put("id", 9000000000L + Math.abs((long) tree.optString("id", "0").hashCode()));
+                node.put("lat", lat);
+                node.put("lon", lon);
+                node.put("tags", tags);
+                elements.put(node);
+            }
+        } catch (Exception ignored) {
+            // The OSM city remains usable if the optional legacy inventory is unavailable.
+        }
+    }
+
+    private static boolean intersectsTile(JSONObject element, double south, double west, double north, double east) {
+        String type = element.optString("type", "");
+        if ("node".equals(type)) {
+            double lat = element.optDouble("lat", Double.NaN);
+            double lon = element.optDouble("lon", Double.NaN);
+            return !Double.isNaN(lat) && !Double.isNaN(lon)
+                    && lat >= south && lat <= north && lon >= west && lon <= east;
+        }
+        JSONArray geometry = element.optJSONArray("geometry");
+        if (geometry == null || geometry.length() < 2) return false;
+        double minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+        for (int i = 0; i < geometry.length(); i++) {
+            JSONObject point = geometry.optJSONObject(i);
+            if (point == null) continue;
+            double lat = point.optDouble("lat", Double.NaN);
+            double lon = point.optDouble("lon", Double.NaN);
+            if (Double.isNaN(lat) || Double.isNaN(lon)) continue;
+            minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
+            minLon = Math.min(minLon, lon); maxLon = Math.max(maxLon, lon);
+        }
+        return maxLat >= south && minLat <= north && maxLon >= west && minLon <= east;
     }
 
     private JSONObject loadOfflineRoot(double south, double west, double north, double east) throws Exception {
