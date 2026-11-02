@@ -78,9 +78,10 @@ camera direction is not proof of building identity. Detached photo cards are
 hidden in gameplay. A photo may appear on a building only after its exact
 building/facade, camera direction, image quality and redistribution licence are
 verified and the resulting local texture is baked onto that building's own mesh.
-The current verified facade manifest is still empty; the ten-city OSM geometry
-import is complete, but photorealistic facade texturing remains a separate,
-evidence-gated production phase.
+The current verified facade manifest is still empty; the ten-city OpenFreeMap/OpenMapTiles
+footprint and road layers are imported as the primary geometry, with OSM used only
+for supplementary building attributes and missing building/building-part geometry.
+Photorealistic facade texturing remains a separate, evidence-gated production phase.
 
 
 ## Street-name labels and update delivery
