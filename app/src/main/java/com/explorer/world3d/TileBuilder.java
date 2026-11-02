@@ -129,7 +129,7 @@ final class TileBuilder {
                 String nm = tg(tags, "name:ar");
                 if (nm.isEmpty()) nm = tg(tags, "name");
                 if (nm.isEmpty()) nm = tg(tags, "name:en");
-                addRoad(td, hw, nm, names, xs, zs, xMin, xMax, zMin, zMax);
+                addRoad(td, tags, hw, nm, names, xs, zs, xMin, xMax, zMin, zMax);
             } else if (waterway.matches("river|stream|canal|ditch|drain")) {
                 float w = waterway.equals("river") ? 14f : waterway.equals("canal") ? 8f : 3f;
                 String ws = tg(tags, "width");
@@ -565,21 +565,32 @@ final class TileBuilder {
         }
     }
 
-    private static void addRoad(TileData td, String hw, String name, HashSet<String> names, float[] xs, float[] zs,
+    private static void addRoad(TileData td, JSONObject tags, String hw, String name, HashSet<String> names, float[] xs, float[] zs,
                                 float xMin, float xMax, float zMin, float zMax) {
         float w = RW.get(hw);
+        float sourceWidth = measure(tg(tags, "width"));
+        if (sourceWidth > 0.5f && sourceWidth <= 120f) w = sourceWidth;
+        String surface = tg(tags, "surface").toLowerCase(java.util.Locale.US);
+        boolean bridge = tg(tags, "bridge").equals("yes");
+        boolean tunnel = tg(tags, "tunnel").equals("yes");
         boolean veh = w >= 4.5f && !hw.equals("pedestrian");
         for (ArrayList<float[]> pc : clipLine(xs, zs, xMin, xMax, zMin, zMax)) {
             float[][] a = toArrays(pc);
             if (a == null) continue;
             float[][] r = resample(a[0], a[1], 8f);
             float[] px = r[0], pz = r[1];
+            float deckOffset = bridge ? 1.2f : tunnel ? -2.2f : 0f;
+            float yOffset = 0.22f + deckOffset;
+            float rr = 1f, rg = 1f, rb = 1f;
+            if (surface.matches("gravel|fine_gravel|ground|dirt|earth|unpaved|compacted")) { rr = 0.78f; rg = 0.70f; rb = 0.56f; }
+            else if (surface.matches("concrete|paving_stones|sett|cobblestone")) { rr = 0.82f; rg = 0.82f; rb = 0.78f; }
+            else if (surface.matches("sand|mud")) { rr = 0.88f; rg = 0.77f; rb = 0.58f; }
             if (w >= 6f || hw.equals("service")) {
-                ribbon(px, pz, w + 4.2f, 0.20f, td.bufs[B_SIDEWALK], (w + 4.2f) / 2f, 2f, 1f, 1f, 1f);
-                if (w >= 7f) ribbon(px, pz, w, 0.28f, td.bufs[B_ROADW], 1f, 12f, 1f, 1f, 1f);
-                else ribbon(px, pz, w, 0.28f, td.bufs[B_ROADN], 1f, 6f, 1f, 1f, 1f);
+                if (!bridge && !tunnel) ribbon(px, pz, w + 4.2f, 0.20f, td.bufs[B_SIDEWALK], (w + 4.2f) / 2f, 2f, 1f, 1f, 1f);
+                GeoBuf roadBuf = (w >= 7f ? td.bufs[B_ROADW] : td.bufs[B_ROADN]);
+                ribbonOffset(px, pz, w, yOffset, roadBuf, 1f, 12f, rr, rg, rb);
             } else {
-                ribbon(px, pz, w, 0.24f, td.bufs[B_SIDEWALK], w / 2f, 2f, 1f, 1f, 1f);
+                ribbonOffset(px, pz, w, yOffset, td.bufs[B_SIDEWALK], w / 2f, 2f, rr, rg, rb);
             }
             RoadPath rp = new RoadPath(px, pz, w, veh);
             rp.name = name;
@@ -605,6 +616,11 @@ final class TileBuilder {
     }
 
     private static void ribbon(float[] px, float[] pz, float w, float yOff, GeoBuf b, float uw, float vs,
+                               float cr, float cg, float cb) {
+        ribbonOffset(px, pz, w, yOff, b, uw, vs, cr, cg, cb);
+    }
+
+    private static void ribbonOffset(float[] px, float[] pz, float w, float yOff, GeoBuf b, float uw, float vs,
                                float cr, float cg, float cb) {
         int n = px.length;
         float[] lx = new float[n], lz = new float[n], rx = new float[n], rz = new float[n], vv = new float[n];
