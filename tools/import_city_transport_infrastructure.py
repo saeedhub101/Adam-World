@@ -65,6 +65,17 @@ def fetch_chunk(query: str, offset: int):
             time.sleep(3 + attempt * 3)
     raise RuntimeError("; ".join(errors))
 
+def load_checkpoint(path):
+    raw = path.read_text(encoding="utf-8")
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        # Recover checkpoints written by the earlier workflow, which appended
+        # the two literal characters backslash+n instead of a newline.
+        if raw.endswith("\\n"):
+            return json.loads(raw[:-2])
+        raise
+
 def fetch_city(city, folder):
     lat0, lon0 = float(city["center"]["lat"]), float(city["center"]["lon"])
     target_radius = max(2500, int(os.environ.get("ADAM_AMMAN_TRANSPORT_RADIUS_M", city.get("discovery_radius_m", 650)))) if city["slug"] == "amman" else max(2500, int(city.get("discovery_radius_m", 650)))
@@ -78,7 +89,7 @@ def fetch_city(city, folder):
     for idx in range(12):
         chunk_path = progress / f"chunk-{idx:02d}.json"
         if chunk_path.is_file():
-            payload = json.loads(chunk_path.read_text(encoding="utf-8"))
+            payload = load_checkpoint(chunk_path)
             print(f"{city['slug']}: resume transport chunk {idx+1}/12 from checkpoint", flush=True)
         else:
             angle = math.radians(idx * 30)
