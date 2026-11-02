@@ -268,6 +268,13 @@ def read_pbf(writer, osm_index, building_index):
                 else:
                     for k in ("name","class","subclass","ref","amenity","shop","tourism","office","healthcare","cuisine","brand","operator"):
                         if p.get(k) not in (None,""): t[k]=text(p[k])
+                    cls=text(p.get("class") or p.get("subclass")).lower()
+                    if cls in ("hospital","clinic","doctors","dentist","pharmacy","restaurant","fast_food","food_court","cafe","coffee_shop","bar","school","university","police","fire_station","library"):
+                        t.setdefault("amenity",cls)
+                    elif cls in ("hotel","motel","hostel","guest_house"): t.setdefault("tourism",cls)
+                    elif cls in ("mall","supermarket","convenience","department_store","retail"): t.setdefault("shop",cls)
+                    elif cls in ("railway_station","station","tram_stop","subway_entrance"): t.setdefault("railway","station")
+                    elif cls in ("bus_stop","bus_station"): t.setdefault("highway","bus_stop")
                 if len(t)>1:
                     writer.add({"type":"node","id":sid("omt-"+lname,f.get("id",0)),"lat":lat,"lon":lon,"tags":t},"openmaptiles_"+lname)
     if not count: raise SystemExit("No zoom-14 building features decoded from Manila PBF tiles")
