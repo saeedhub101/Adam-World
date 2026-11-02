@@ -5,7 +5,7 @@ final class Landmarks {
     private Landmarks() {}
 
     static final double BURJ_LAT = 25.19720, BURJ_LON = 55.27440;
-    static final double RT_LAT = 31.95165, RT_LON = 35.93945;      // المدرج الروماني - عمّان
+    static final double RT_LAT = 31.95165805, RT_LON = 35.93939340; // إحداثيات مركز المدرج من سجل دائرة الآثار الأردنية
     static final double TS_LAT = 40.7580, TS_LON = -73.9855;       // تايمز سكوير
     static final double TK_LAT = 40.7588, TK_LON = -73.9851;       // درجات TKTS الحمراء
 
@@ -44,7 +44,7 @@ final class Landmarks {
         float rx = Geo.x(RT_LON), rz = Geo.z(RT_LAT);
         float dx = x - rx, dz = z - rz;
         if (Math.abs(dx) < 60f && Math.abs(dz) < 60f) {
-            float base = Terrain.h(rx, rz);
+            float base = Terrain.h(x, z);
             if (dz >= 0) {
                 float r = (float) Math.hypot(dx, dz);
                 if (r < ROW_R0[0]) return base + 0.05f;
@@ -76,7 +76,7 @@ final class Landmarks {
         float x = Geo.x(BURJ_LON), z = Geo.z(BURJ_LAT);
         if (x >= xMin && x < xMax && z >= zMin && z < zMax) { int[] st = starts(td); burj(td, x, z); shift(td, st, Terrain.h(x, z)); }
         x = Geo.x(RT_LON); z = Geo.z(RT_LAT);
-        if (x >= xMin && x < xMax && z >= zMin && z < zMax) { int[] st = starts(td); theatre(td, x, z); shift(td, st, Terrain.h(x, z)); }
+        if (x >= xMin && x < xMax && z >= zMin && z < zMax) { theatre(td, x, z); }
         x = Geo.x(TK_LON); z = Geo.z(TK_LAT);
         if (x >= xMin && x < xMax && z >= zMin && z < zMax) { int[] st = starts(td); tkts(td, x, z); shift(td, st, Terrain.h(x, z)); }
     }
@@ -217,8 +217,10 @@ final class Landmarks {
                 if (aisle) { cr *= 0.72f; cg *= 0.72f; cb *= 0.72f; }
                 float s0 = (float) Math.sin(t0), c0 = (float) Math.cos(t0), s1 = (float) Math.sin(t1), c1 = (float) Math.cos(t1);
                 // السطح
-                b.quad(cx + r0 * s0, h, cz + r0 * c0, cx + r1 * s0, h, cz + r1 * c0,
-                        cx + r1 * s1, h, cz + r1 * c1, cx + r0 * s1, h, cz + r0 * c1, cr, cg, cb);
+                float x00 = cx + r0 * s0, z00 = cz + r0 * c0, x10 = cx + r1 * s0, z10 = cz + r1 * c0;
+                float x11 = cx + r1 * s1, z11 = cz + r1 * c1, x01 = cx + r0 * s1, z01 = cz + r0 * c1;
+                b.quad(x00, Terrain.h(x00, z00) + h, z00, x10, Terrain.h(x10, z10) + h, z10,
+                        x11, Terrain.h(x11, z11) + h, z11, x01, Terrain.h(x01, z01) + h, z01, cr, cg, cb);
                 // الحاجز الأمامي
                 b.quad(cx + r0 * s0, h - 0.5f, cz + r0 * c0, cx + r0 * s1, h - 0.5f, cz + r0 * c1,
                         cx + r0 * s1, h, cz + r0 * c1, cx + r0 * s0, h, cz + r0 * c0, cr * 0.9f, cg * 0.9f, cb * 0.9f);
@@ -242,13 +244,29 @@ final class Landmarks {
             b.tri(cx, 0.05f, cz, cx + 13f * (float) Math.sin(t0), 0.05f, cz + 13f * (float) Math.cos(t0),
                     cx + 13f * (float) Math.sin(t1), 0.05f, cz + 13f * (float) Math.cos(t1), 0.86f, 0.82f, 0.72f);
         }
-        // المسرح وواجهته ذات الأعمدة
-        b.box(cx, 0.8f, cz - 6f, 50f, 1.6f, 8f, 0.80f, 0.74f, 0.62f);
-        b.box(cx, 6f, cz - 10.5f, 50f, 12f, 1.5f, 0.76f, 0.70f, 0.58f);
-        for (int i = 0; i < 9; i++) b.box(cx - 24f + 6f * i, 4.2f, cz - 8.5f, 0.9f, 8.4f, 0.9f, 0.84f, 0.78f, 0.66f);
-        b.box(cx, 9.2f, cz - 8.5f, 50f, 1.4f, 1.6f, 0.82f, 0.76f, 0.64f);
-        // تصادم: جدار المسرح والحلقة الخلفية
-        foot(td, new float[]{cx - 25f, cx + 25f, cx + 25f, cx - 25f}, new float[]{cz - 11.25f, cz - 11.25f, cz - 9.75f, cz - 9.75f});
+        // مبنى المسرح: واجهة مقسمة إلى كتل حجرية مع بوابتين حقيقيتين قابلتين للعبور.
+        float stageY = Terrain.h(cx, cz - 6f);
+        b.box(cx, stageY + 0.8f, cz - 6f, 50f, 1.6f, 8f, 0.80f, 0.74f, 0.62f);
+        float wallY = Terrain.h(cx, cz - 10.5f);
+        b.box(cx - 18.5f, wallY + 6f, cz - 10.5f, 13f, 12f, 1.5f, 0.76f, 0.70f, 0.58f);
+        b.box(cx, wallY + 6f, cz - 10.5f, 20f, 12f, 1.5f, 0.76f, 0.70f, 0.58f);
+        b.box(cx + 18.5f, wallY + 6f, cz - 10.5f, 13f, 12f, 1.5f, 0.76f, 0.70f, 0.58f);
+        // عتبات وأكتاف حجرية حول فتحتي الدخول، مع إبقاء الممرين مفتوحين.
+        for (float gx : new float[]{-12f, 12f}) {
+            b.box(cx + gx, wallY + 11.1f, cz - 10.5f, 4.2f, 1.8f, 1.5f, 0.82f, 0.76f, 0.64f);
+            b.box(cx + gx - 2.1f, wallY + 5f, cz - 10.5f, 0.55f, 10f, 1.7f, 0.84f, 0.78f, 0.66f);
+            b.box(cx + gx + 2.1f, wallY + 5f, cz - 10.5f, 0.55f, 10f, 1.7f, 0.84f, 0.78f, 0.66f);
+        }
+        for (int i = 0; i < 9; i++) {
+            float px = -24f + 6f * i;
+            if (Math.abs(px + 12f) < 0.1f || Math.abs(px - 12f) < 0.1f) continue;
+            b.box(cx + px, wallY + 4.2f, cz - 8.5f, 0.9f, 8.4f, 0.9f, 0.84f, 0.78f, 0.66f);
+        }
+        b.box(cx, wallY + 9.2f, cz - 8.5f, 50f, 1.4f, 1.6f, 0.82f, 0.76f, 0.64f);
+        // التصادم يطابق الكتل الصلبة فقط؛ فتحات البوابتين خالية.
+        foot(td, new float[]{cx - 25f, cx - 12f, cx - 12f, cx - 25f}, new float[]{cz - 11.25f, cz - 11.25f, cz - 9.75f, cz - 9.75f});
+        foot(td, new float[]{cx - 10f, cx + 10f, cx + 10f, cx - 10f}, new float[]{cz - 11.25f, cz - 11.25f, cz - 9.75f, cz - 9.75f});
+        foot(td, new float[]{cx + 12f, cx + 25f, cx + 25f, cx + 12f}, new float[]{cz - 11.25f, cz - 11.25f, cz - 9.75f, cz - 9.75f});
         int n = SEG + 1;
         float[] fx = new float[n * 2], fz = new float[n * 2];
         for (int k = 0; k <= SEG; k++) {
