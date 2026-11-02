@@ -9,6 +9,7 @@ on:
       - "data/facades/cities/tabarbour/city.json"
       - "tools/facades/import_city_building_sources.py"
       - "tools/facades/fetch_catalogue_metadata.py"
+      - "tools/facades/build_review_queue.py"
       - "tools/build_offline_city_tiles.py"
       - "tools/extract_tabarbour_osm_context.py"
   workflow_dispatch:
@@ -36,6 +37,7 @@ jobs:
             /data/offline-world/tabarbour/
             /tools/facades/import_city_building_sources.py
             /tools/facades/fetch_catalogue_metadata.py
+            /tools/facades/build_review_queue.py
             /tools/build_offline_city_tiles.py
             /tools/extract_tabarbour_osm_context.py
           sparse-checkout-cone-mode: false
@@ -63,6 +65,17 @@ jobs:
         continue-on-error: true
         run: |
           python tools/facades/fetch_catalogue_metadata.py --city tabarbour --git-checkpoint
+
+      - name: Match available facade photos to nearby building candidates
+        continue-on-error: true
+        run: |
+          python tools/facades/build_review_queue.py --city tabarbour
+          git add data/facades/cities/tabarbour/review_queue.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Save Tabarbour facade photo review candidates"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
 
       - name: Extract mapped trees, water, land cover, traffic and other OSM context
         continue-on-error: true
