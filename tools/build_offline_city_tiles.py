@@ -232,10 +232,9 @@ def _same_footprint(a,b):
     return distance<=2.0 and area_ratio>=0.88
 
 def source_elements(slug):
-    # Use the newly imported GeoJSON as the authoritative building geometry.
-    # Preserve the rest of the offline OSM world (roads, water, parks, transit),
-    # replacing only its building ways with the OpenFreeMap footprints enriched
-    # by the matching OSM Overpass tags. No GLB conversion is involved.
+    # OpenFreeMap/OpenMapTiles provide primary building and road geometry.
+    # OSM contributes only missing building geometry/attributes; non-road
+    # environmental context and transit records are preserved separately.
     footprints_path = SOURCE / slug / "building-footprints.geojson"
     details_path = SOURCE / slug / "building-details.geojson"
     if footprints_path.is_file():
@@ -310,12 +309,6 @@ def source_elements(slug):
             else:
                 source_kind += "+osm-nonroad-context"
             source_path += f" + {full.relative_to(ROOT)}"
-        else:
-            # The legacy GeoJSON fallback may contain only buildings; retain
-            # it only when there is no complete non-building extract to preserve.
-            legacy = SOURCE / slug / "buildings.geojson"
-            if legacy.is_file():
-                source_path += f" + {legacy.relative_to(ROOT)}"
         if transportation_path.is_file():
             source_path += f" + {transportation_path.relative_to(ROOT)}"
             source_kind += "+openfreemap-road-geometry-and-labels"
