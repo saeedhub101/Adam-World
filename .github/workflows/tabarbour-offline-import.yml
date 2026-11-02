@@ -72,7 +72,7 @@ jobs:
           python -m py_compile tools/extract_tabarbour_osm_context.py
           python tools/extract_tabarbour_osm_context.py
           test -s data/offline-world/tabarbour/elements.json
-          test -s app/src/main/assets/cities/tabarbour/terrain/manifest.json
+          test -s data/offline-world/tabarbour/terrain/manifest.json
 
       - name: Build compact Tabarbour-only Android spatial assets
         run: |
@@ -81,8 +81,8 @@ jobs:
           python tools/build_offline_city_tiles.py --city tabarbour
           test -s app/src/main/assets/cities/tabarbour/manifest.json
           test "$(find app/src/main/assets/cities/tabarbour -maxdepth 1 -name 'tile_*.json' | wc -l)" -gt 0
-          # The city context step downloads terrain after the spatial package is built.
-          python tools/extract_tabarbour_osm_context.py
+          mkdir -p app/src/main/assets/cities/tabarbour/terrain
+          cp -a data/offline-world/tabarbour/terrain/. app/src/main/assets/cities/tabarbour/terrain/
           test -s app/src/main/assets/cities/tabarbour/terrain/manifest.json
 
       - name: Verify dedicated Tabarbour data and publish one conflict-safe checkpoint
@@ -93,7 +93,7 @@ jobs:
           test -s data/facades/cities/tabarbour/building-details.geojson
           test -s data/offline-world/tabarbour/elements.json
           test -s app/src/main/assets/cities/tabarbour/manifest.json
-          test -s app/src/main/assets/cities/tabarbour/terrain/manifest.json
+          test -s data/offline-world/tabarbour/terrain/manifest.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           SNAPSHOT="$RUNNER_TEMP/tabarbour-publish"
