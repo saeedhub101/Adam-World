@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Package repository-owned city data as compact spatial tiles for Android assets.
 
-Prefer complete offline OSM extracts (buildings, roads, parks, water, trees,
-street lamps). Fall back to the already committed building GeoJSON until each
-city's full extract has been imported. No data is downloaded by this script.
+OpenFreeMap/OpenMapTiles are authoritative for building footprints and roads.
+OSM supplies supplementary building tags/missing building geometry and non-road
+context only. No data is downloaded by this script.
 """
 from __future__ import annotations
 import json
