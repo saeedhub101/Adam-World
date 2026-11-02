@@ -1,0 +1,60 @@
+name: Adam World Offline City Data Import
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/import_offline_city_map.py"
+      - "data/facades/cities/catalog.json"
+      - ".github/workflows/offline-city-data-import.yml"
+  workflow_dispatch:
+    inputs:
+      city:
+        description: "Optional city slug; leave empty to resume all cities"
+        required: false
+        type: string
+      force_refresh:
+        description: "Refresh already complete cities"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adam-world-offline-city-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout main with write credentials
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate importer
+        run: python -m py_compile tools/import_offline_city_map.py
+
+      - name: Import cities with per-chunk commits and resume
+        env:
+          CITY: ${{ inputs.city }}
+          FORCE_REFRESH: ${{ inputs.force_refresh }}
+        run: |
+          set -euo pipefail
+          if [ -n "${CITY:-}" ]; then
+            echo "A single-city selection was requested: $CITY"
+            python tools/import_offline_city_map.py --city "$CITY"
+          else
+            python tools/import_offline_city_map.py
+          fi
