@@ -12,8 +12,6 @@ import shutil
 from collections import defaultdict
 from pathlib import Path
 
-from shapely.geometry import shape
-
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "data" / "facades" / "cities"
 FULL_SOURCE = ROOT / "data" / "offline-world"
@@ -198,6 +196,41 @@ def _geojson_transportation_elements(path):
             output.append({"type":"way","id":base_id+line_index,"tags":tags_out,"geometry":points})
     return output
 
+
+def _footprint_signature(points):
+    """Return an approximate metric centroid and area for a closed lon/lat ring."""
+    coords=[]
+    for point in points or []:
+        try:
+            coords.append((float(point["lon"]),float(point["lat"])))
+        except (KeyError,TypeError,ValueError):
+            return None
+    if len(coords)<4:
+        return None
+    lat0=sum(lat for _,lat in coords)/len(coords)
+    sx=111320.0*math.cos(math.radians(lat0))
+    sy=111132.0
+    xy=[(lon*sx,lat*sy) for lon,lat in coords]
+    area=0.0
+    for i,(x,y) in enumerate(xy):
+        nx,ny=xy[(i+1)%len(xy)]
+        area+=x*ny-nx*y
+    area=abs(area)*0.5
+    if area<=0:
+        return None
+    cx=sum(x for x,_ in xy)/len(xy)
+    cy=sum(y for _,y in xy)/len(xy)
+    return cx,cy,area
+
+
+def _same_footprint(a,b):
+    sa,sb=_footprint_signature(a),_footprint_signature(b)
+    if not sa or not sb:
+        return False
+    distance=math.hypot(sa[0]-sb[0],sa[1]-sb[1])
+    area_ratio=min(sa[2],sb[2])/max(sa[2],sb[2])
+    return distance<=2.0 and area_ratio>=0.88
+
 def source_elements(slug):
     # Use the newly imported GeoJSON as the authoritative building geometry.
     # Preserve the rest of the offline OSM world (roads, water, parks, transit),
@@ -239,39 +272,14 @@ def source_elements(slug):
         # Some providers can expose the same real footprint under a different
         # feature identifier. Suppress near-identical OSM geometry duplicates
         # before treating OSM as a missing-building source.
-        primary_shapes = []
-        for item in footprints:
-            points = item.get("geometry") or []
-            if len(points) < 4:
-                continue
-            try:
-                poly = shape({"type": "Polygon", "coordinates": [[
-                    [float(p["lon"]), float(p["lat"])] for p in points
-                ]]})
-                if not poly.is_empty and poly.area > 0:
-                    primary_shapes.append(poly)
-            except (KeyError, TypeError, ValueError):
-                continue
+        primary_shapes = [item.get("geometry") or [] for item in footprints]
         unmatched_buildings = []
         for item in detail_buildings:
             source_id = _osm_id((item.get("tags") or {}).get("adam:source_osm_id") or item.get("id"))
             if source_id in footprint_ids:
                 continue
             points = item.get("geometry") or []
-            duplicate = False
-            if len(points) >= 4 and primary_shapes:
-                try:
-                    candidate = shape({"type": "Polygon", "coordinates": [[
-                        [float(p["lon"]), float(p["lat"])] for p in points
-                    ]]})
-                    if not candidate.is_empty and candidate.area > 0:
-                        for primary in primary_shapes:
-                            smaller = min(candidate.area, primary.area)
-                            if smaller > 0 and candidate.intersection(primary).area / smaller >= 0.88:
-                                duplicate = True
-                                break
-                except (KeyError, TypeError, ValueError):
-                    pass
+            duplicate = any(_same_footprint(points, primary) for primary in primary_shapes)
             if not duplicate:
                 unmatched_buildings.append(item)
         unmatched_parts = [
