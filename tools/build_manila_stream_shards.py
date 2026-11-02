@@ -216,7 +216,7 @@ def read_pbf(writer, osm_index, building_index):
                     for rec in road_records:
                         d=min((cx-p[0])**2+(cy-p[1])**2 for p in rec[0])
                         if d<bestd: bestd=d; best=rec
-                    if best is not None and bestd<10000: best[1]["name"]=nm
+                    if best is not None and bestd<2500: best[1]["name"]=nm
         for local,tags,rawid,ex in road_records:
             pts=[]
             for px,py in local:
@@ -224,8 +224,7 @@ def read_pbf(writer, osm_index, building_index):
             writer.add({"type":"way","id":sid("omt-transport",rawid),"tags":dict(tags),"geometry":pts},"openmaptiles_transportation")
             PBF_ROAD_COUNT+=1
 
-        layer=tile.get("building") or tile.get("buildings")
-        if not layer: continue
+        layer=tile.get("building") or tile.get("buildings") or {"extent":4096,"features":[]}
         extent=layer.get("extent",4096)
         for f in layer.get("features",[]):
             g=f.get("geometry") or {}
