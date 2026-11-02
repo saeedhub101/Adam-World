@@ -149,7 +149,8 @@ final class TileLoader extends Thread {
                 try { writeFile(f, json); } catch (IOException ignore) {}
             }
         }
-        if (!offlineAmman) root = new JSONObject(json);
+        root = new JSONObject(json);
+        }
         // DEM يُحمّل فقط للمربعات القريبة من عمّان؛ لا تُحمّل بيانات المدينة كاملة.
         if (Terrain.enabled) {
             if (!Terrain.ready()) {
