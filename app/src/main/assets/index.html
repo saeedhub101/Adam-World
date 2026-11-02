@@ -1377,7 +1377,7 @@ function addRomanTheatre(footprint){
   }
   seatMesh.count=seatIndex;seatMesh.instanceMatrix.needsUpdate=true;g.add(seatMesh);
   const outerWall=new THREE.Mesh(new THREE.CylinderGeometry(48.2,48.2,5.5,112,1,true,0,Math.PI),cutStone);
-  outerWall.position.set(0,groundAt(0,47)+2.75,0);conformBase(outerWall,-2.75);g.add(outerWall);
+  outerWall.position.set(0,groundAt(0,0)+2.75,0);conformBase(outerWall,-2.75);g.add(outerWall);
   const orchestra=new THREE.Mesh(new THREE.CircleGeometry(13.2,96),stone);
   orchestra.rotation.x=-Math.PI/2;orchestra.position.set(0,groundAt(0,0)+0.18,0);conformBase(orchestra,0,true);g.add(orchestra);
   for(const angle of [0.46,0.97,2.17,2.68])for(let k=0;k<24;k++){
@@ -1400,8 +1400,8 @@ function addRomanTheatre(footprint){
   for(const x of [-12,0,12]){
     const doorGround=groundAt(x,-28.35),door=new THREE.Mesh(new THREE.BoxGeometry(3.4,6.4,0.18),dark);
     door.position.set(x,doorGround+4.2,-28.35);conformBase(door,-3.2);g.add(door);
-    const lintel=new THREE.Mesh(new THREE.BoxGeometry(4.1,0.65,0.5),cutStone);
-    lintel.position.set(x,doorGround+7.55,-28.25);conformBase(lintel,-0.325);g.add(lintel);
+    const lintelGround=groundAt(x,-28.25),lintel=new THREE.Mesh(new THREE.BoxGeometry(4.1,0.65,0.5),cutStone);
+    lintel.position.set(x,lintelGround+7.55,-28.25);conformBase(lintel,-0.325);g.add(lintel);
   }
   for(const side of [-1,1]){
     const wingGround=groundAt(side*23,-24),wing=new THREE.Mesh(new THREE.BoxGeometry(7,10,16),stone);
