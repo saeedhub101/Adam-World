@@ -26,7 +26,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            /app/
+            /data/full-city-imports/amman/
+            /data/offline-city-stream/amman/
+            /tools/build_amman_stream_shards.py
+            /build.gradle
+            /settings.gradle
+            /gradle.properties
+          sparse-checkout-cone-mode: false
 
       - name: Set up Python for Amman spatial streaming
         uses: actions/setup-python@v5
