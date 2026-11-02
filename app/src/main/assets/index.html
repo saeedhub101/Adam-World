@@ -480,7 +480,7 @@ async function fetchOnlineOsmArea(lat,lon,cityHint,nearestDistance,radiusMeters)
   const south=(lat-dLat).toFixed(6),west=(lon-dLon).toFixed(6);
   const north=(lat+dLat).toFixed(6),east=(lon+dLon).toFixed(6);
   const bbox=south+','+west+','+north+','+east;
-  const query='[out:json][timeout:25];(way["building"]('+bbox+');way["highway"]('+bbox+');way["natural"]('+bbox+');way["landuse"]('+bbox+');way["waterway"]('+bbox+');node["natural"="tree"]('+bbox+');node["highway"~"traffic_signals|bus_stop|street_lamp|stop|crossing"]('+bbox+'););out body geom;';
+  const query='[out:json][timeout:25];(way["building"]('+bbox+');relation["building"]('+bbox+');way["building:part"]('+bbox+');relation["building:part"]('+bbox+'););out body geom;';
   const endpoints=['https://overpass-api.de/api/interpreter?data=','https://overpass.kumi.systems/api/interpreter?data='];
   let result=null,lastError=null;
   for(const endpoint of endpoints){
@@ -489,15 +489,15 @@ async function fetchOnlineOsmArea(lat,lon,cityHint,nearestDistance,radiusMeters)
   }
   if(!result)throw new Error('تعذر الاتصال بخوادم OpenStreetMap العامة: '+(lastError&&lastError.message?lastError.message:'network error'));
   const elements=Array.isArray(result&&result.elements)?result.elements:[];
-  if(!elements.length)throw new Error('لم يُرجع OpenStreetMap أي طرق أو مبانٍ في هذا القطاع');
+  if(!elements.length)throw new Error('لم يُرجع OpenStreetMap مباني إضافية في هذا القطاع');
   const nearAmman=cityHint&&cityHint.slug==='amman'&&nearestDistance<=3000;
   let terrain=null;
   if(nearAmman){
     try{terrain=await readOfflineJson('cities/amman/elevation-grid.json');}
     catch(e){console.warn('Amman terrain asset unavailable:',e.message);}
   }
-  console.info('Adam World live OSM stream:',elements.length,'elements; radius:',radius,'m');
-  return {elements:elements,city:nearAmman?cityHint:{slug:'online',name:'OpenStreetMap'},tileCount:0,terrain:terrain,online:true};
+  console.info('Adam World supplementary OSM building-only stream:',elements.length,'elements; OpenFreeMap/MapLibre remains the road and map base; radius:',radius,'m');
+  return {elements:elements,city:nearAmman?cityHint:{slug:'online',name:'OpenFreeMap / OpenMapTiles'},tileCount:0,terrain:terrain,online:true};
 }
 async function loadOfflineArea(lat, lon, radiusMeters) {
   const catalog = await getOfflineCatalog();
