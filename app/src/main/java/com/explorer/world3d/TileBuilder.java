@@ -139,11 +139,9 @@ final class TileBuilder {
                 if (nm.isEmpty()) nm = tg(tags, "name:en");
                 addRoad(td, tags, hw, nm, names, xs, zs, xMin, xMax, zMin, zMax);
             } else if (tg(tags,"railway").matches("rail|light_rail|tram|subway|narrow_gauge|monorail")) {
-                float[][] pc=resample(xs,zs,8f);
-                ribbon(pc[0],pc[1],tg(tags,"railway").equals("rail")?4.2f:3.2f,0.24f,td.bufs[B_ROADN],1f,12f,0.25f,0.27f,0.29f);
+                addClippedRibbon(td,xs,zs,tg(tags,"railway").equals("rail")?4.2f:3.2f,0.24f,td.bufs[B_ROADN],0.25f,0.27f,0.29f);
             } else if (tg(tags,"route").matches("bus|trolleybus")) {
-                float[][] pc=resample(xs,zs,8f);
-                ribbon(pc[0],pc[1],2.4f,0.25f,td.bufs[B_ROADN],1f,12f,0.12f,0.42f,0.88f);
+                addClippedRibbon(td,xs,zs,2.4f,0.25f,td.bufs[B_ROADN],0.12f,0.42f,0.88f);
             } else if (isWaterUtility(tags)) {
                 if (tg(tags,"man_made").matches("pipeline") || waterway.matches("drain|ditch|sewer")) {
                     if (g.length() >= 2) addWaterUtilityLine(td,tags,xs,zs);
@@ -158,8 +156,7 @@ final class TileBuilder {
                 float w = waterway.equals("river") ? 14f : waterway.equals("canal") ? 8f : 3f;
                 String ws = tg(tags, "width");
                 if (!ws.isEmpty()) { try { w = Math.max(1.5f, Math.min(80f, Float.parseFloat(ws))); } catch (Exception ignore) {} }
-                float[][] pc = resample(xs, zs, 8f);
-                ribbon(pc[0], pc[1], w, 0.22f, td.bufs[B_WATER], 1f, 12f, 1f, 1f, 1f);
+                addClippedRibbon(td,xs,zs,w,0.22f,td.bufs[B_WATER],0.12f,0.48f,0.86f);
             } else if (natural.equals("water") || waterway.equals("riverbank") || landuse.matches("reservoir|basin")) {
                 float[][] P = clean(xs, zs);
                 if (P == null || !overlaps(P, xMin, xMax, zMin, zMax)) continue;
@@ -760,6 +757,16 @@ final class TileBuilder {
                 for (float s = rp.total * 0.5f; s < rp.total - 8f && td.decals.size() < 40; s += 100f) addDecal(td, rp, s, name, o);
                 for (float s = rp.total * 0.5f - 100f; s > 8f && td.decals.size() < 40; s -= 100f) addDecal(td, rp, s, name, o);
             }
+        }
+    }
+
+    private static void addClippedRibbon(TileData td,float[] xs,float[] zs,float width,float yOffset,GeoBuf target,float r,float g,float b) {
+        double west=td.ix*Geo.dLon,east=(td.ix+1)*Geo.dLon;
+        double south=td.iz*Geo.D_LAT,north=(td.iz+1)*Geo.D_LAT;
+        for(ArrayList<float[]> piece:clipLine(xs,zs,Geo.x(west),Geo.x(east),Geo.z(north),Geo.z(south))){
+            float[][] a=toArrays(piece); if(a==null)continue;
+            float[][] pc=resample(a[0],a[1],8f);
+            ribbon(pc[0],pc[1],width,yOffset,target,1f,12f,r,g,b);
         }
     }
 
