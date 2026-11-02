@@ -471,7 +471,32 @@ final class TileBuilder {
                 buf.v(ax+nx*off,ya,az+nz*off,0,1,cr*shade,cg*shade,cb*shade); buf.fixTri();
             }
         }
-        // Basement depth is retained in the wall mesh below terrain; visible cutaway controls are renderer/UI work.
+        // Basement storey joints are modelled below ground and become visible in cutaway mode.
+        float basementFloors = measure(tg(tags, "building:levels:underground"));
+        if (basementFloors > 0f && undergroundDepth > 0f) {
+            int count = Math.max(1, Math.min(20, Math.round(basementFloors)));
+            float basementStep = undergroundDepth / count;
+            for (int edge = 0; edge < n; edge++) {
+                int next = (edge + 1) % n;
+                float ax = px[edge], az = pz[edge], bx = px[next], bz = pz[next];
+                float dx = bx - ax, dz = bz - az, len = (float) Math.hypot(dx, dz);
+                if (len < 1f) continue;
+                float nx = dz / len, nz = -dx / len;
+                if (Poly.contains(px, pz, (ax + bx) * 0.5f + nx, (az + bz) * 0.5f + nz)) { nx = -nx; nz = -nz; }
+                for (int level = 1; level < count; level++) {
+                    float ya = ground[edge] + minHeight - basementStep * level;
+                    float yb = ground[next] + minHeight - basementStep * level;
+                    float off = 0.055f, band = 0.10f;
+                    float br = 0.34f, bg = 0.37f, bb = 0.39f;
+                    buf.v(ax+nx*off,ya-band,az+nz*off,0,0,br,bg,bb);
+                    buf.v(bx+nx*off,yb-band,bz+nz*off,1,0,br,bg,bb);
+                    buf.v(bx+nx*off,yb,bz+nz*off,1,1,br,bg,bb); buf.fixTri();
+                    buf.v(ax+nx*off,ya-band,az+nz*off,0,0,br,bg,bb);
+                    buf.v(bx+nx*off,yb,bz+nz*off,1,1,br,bg,bb);
+                    buf.v(ax+nx*off,ya,az+nz*off,0,1,br,bg,bb); buf.fixTri();
+                }
+            }
+        }
         float parea = Math.abs(Poly.area(px, pz));
         boolean pyramid = (rshape.equals("pyramidal") || rshape.equals("hipped")
                 || (rshape.isEmpty() && bld.matches("house|detached|semidetached_house|bungalow") && rnd(id, 10) < 0.6f))
