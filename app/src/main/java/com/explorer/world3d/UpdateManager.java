@@ -91,13 +91,17 @@ final class UpdateManager {
 
     static void resumePendingInstall(Activity activity) {
         File apk = new File(new File(activity.getCacheDir(), "updates"), APK_NAME);
-        if (waitingForPermission && apk.isFile() && apk.length() > 0 && canInstall(activity)) {\n            waitingForPermission = false;\n            install(activity, apk);\n        }
+        if (waitingForPermission && apk.isFile() && apk.length() > 0 && canInstall(activity)) {
+            waitingForPermission = false;
+            install(activity, apk);
+        }
     }
 
     private static void installOrRequestPermission(Activity activity, File apk) {
         Toast.makeText(activity, "تم تنزيل التحديث. جارٍ فتح مثبت Android", Toast.LENGTH_LONG).show();
         if (Build.VERSION.SDK_INT >= 26 && !activity.getPackageManager().canRequestPackageInstalls()) {
-            waitingForPermission = true;\n            activity.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+            waitingForPermission = true;
+            activity.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                     Uri.parse("package:" + activity.getPackageName())));
             return;
         }
