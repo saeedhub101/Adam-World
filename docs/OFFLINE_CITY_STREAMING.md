@@ -128,6 +128,15 @@ Photorealistic facade texturing remains a separate, evidence-gated production ph
 - This is native procedural geometry, not GLB. A successful signed Android build and visual inspection on device are required before these changes are considered released or fully verified.
 
 
+## Amman offline architectural detail and basement cutaway (2026-11-02)
+
+- The native procedural renderer adds separate horizontal facade joints at source storey elevations and a projecting plinth band only when `building:plinth:height` is present. It does not infer a plinth from `min_height`.
+- Underground storey depth uses `adam:underground:height`; when absent, the renderer estimates depth from `building:levels:underground` at 3 m per level. Basement walls, floor joints and concrete floor slabs are generated below terrain.
+- The camera control row includes **كشف تحت الأرض**. It hides the terrain mesh while leaving the below-grade building geometry visible; use **إظهار الأرض** to restore the terrain. This is a global terrain cutaway, not a localized per-building section plane.
+- Source road widths, road surfaces and available bridge/tunnel height or layer attributes are used by the procedural renderer. Bridge/tunnel elevations with no source height/layer remain unresolved rather than being assigned a fabricated engineering elevation.
+- These changes affect only the native offline renderer and source-shard mapping; no GLB assets are created or loaded. Android release build and on-device visual QA are still required before claiming the APK is verified.
+
+
 ## Source boundary correction (2026-11-02)
 
 The native offline Amman stream is generated exclusively from the already imported directory `data/full-city-imports/amman/`. The shard builder must not read `data/facades`, `data/offline-world`, `data/offline-city`, external APIs, or any other city/source folder. It does not modify or replace those existing datasets. The generated compressed spatial cache is a separate derived output under `data/offline-city-stream/amman/`; it is not a second source dataset.
