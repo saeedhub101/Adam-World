@@ -666,12 +666,12 @@ final class TileBuilder {
     private static int poiCategory(JSONObject tags) {
         String amenity=tg(tags,"amenity"), shop=tg(tags,"shop"), tourism=tg(tags,"tourism"), building=tg(tags,"building"), healthcare=tg(tags,"healthcare");
         if (amenity.matches("hospital|clinic|doctors|dentist|healthcare") || healthcare.matches("hospital|clinic|doctor|dentist")) return 1;
-        if (building.matches("hospital|clinic")) return 1;
+        if (building.matches("hospital|clinic|health_centre")) return 1;
         if (amenity.matches("restaurant|fast_food|food_court")) return 2;
         if (amenity.matches("cafe|coffee_shop|bar")) return 3;
         if (tourism.matches("hotel|motel|hostel|guest_house")) return 4;
-        if (building.matches("hotel")) return 4;
-        if (shop.matches("mall|supermarket|convenience|department_store|retail|general|clothes|bakery|butcher|electronics|chemist")) return 5;
+        if (building.matches("hotel|motel|hostel")) return 4;
+        if (shop.matches("mall|supermarket|convenience|department_store|retail|general|clothes|bakery|butcher|electronics|chemist") || building.matches("retail|supermarket|mall|shop")) return 5;
         return 0;
     }
 
