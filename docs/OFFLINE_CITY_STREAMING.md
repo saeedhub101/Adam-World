@@ -117,3 +117,8 @@ Photorealistic facade texturing remains a separate, evidence-gated production ph
 - On first entry to local Amman, the app downloads a small manifest and only the 1 km cells needed by its nearby 5-by-5 game-tile neighborhood. As the player moves, new cells are downloaded on demand. Downloaded cells are cached on disk; at most ten parsed source cells are retained in the in-memory LRU cache.
 - Rendered game tiles outside the keep radius are released from memory. Offline Amman never falls back to Overpass/OSM when a local cell is absent; missing coverage remains empty. The existing online destinations and online Amman loader remain separate and unchanged.
 - The first visit to an uncached area requires internet access to fetch its cell. Once cached, that area can be reused without downloading the full 2 GB source directory.
+
+
+## Source boundary correction (2026-11-02)
+
+The native offline Amman stream is generated exclusively from the already imported directory `data/full-city-imports/amman/`. The shard builder must not read `data/facades`, `data/offline-world`, `data/offline-city`, external APIs, or any other city/source folder. It does not modify or replace those existing datasets. The generated compressed spatial cache is a separate derived output under `data/offline-city-stream/amman/`; it is not a second source dataset.
