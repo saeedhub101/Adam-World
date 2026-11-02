@@ -13,6 +13,15 @@
       "import_profile_version": 5
     },
     {
+      "slug": "tabarbour",
+      "name": "Tabarbour",
+      "center": {
+        "lat": 31.997579,
+        "lon": 35.940358
+      },
+      "discovery_radius_m": 3500
+    },
+    {
       "slug": "manila",
       "name": "Manila",
       "center": {
