@@ -104,12 +104,13 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         this.L = l;
         Matrix.setIdentityM(ident, 0);
         Terrain.init(new File(ctx.getCacheDir(), "dem"), new AndroidDecoder());
-        loader = new TileLoader(new File(ctx.getCacheDir(), "tiles"), new TileLoader.ErrorCallback() {
+        loader = new TileLoader(ctx, new File(ctx.getCacheDir(), "tiles"), new TileLoader.ErrorCallback() {
             @Override public void onError() {
                 long now = System.currentTimeMillis();
                 if (now - lastErrToast > 20000) {
                     lastErrToast = now;
                     L.onToast(loader.offlineAmman ? "تعذر تنزيل بيانات عمّان المحلية. تحقق من الإنترنت"
+                            : loader.offlineCitySlug != null ? "تعذر قراءة بيانات مانيلا المحلية"
                             : "تعذر تحميل بيانات الخريطة، تحقق من الإنترنت");
                 }
             }
@@ -205,6 +206,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         if (!started) {
             started = true;
             loader.offlineAmman = false;
+            loader.offlineCitySlug = null;
             Geo.setOrigin(31.997579, 35.940358);
             Terrain.configureForCity(Geo.lat0, Geo.lon0);
             game.reset();
@@ -222,17 +224,20 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         spawned = false;
         spawnDeadline = System.currentTimeMillis() + 25000;
         loader.havePlayer = true;
-        L.onLoading(true, loader.offlineAmman ? "جاري تحميل عمّان المحلية…" : "جاري تحميل المدينة…");
+        L.onLoading(true, loader.offlineAmman ? "جاري تحميل عمّان المحلية…" : loader.offlineCitySlug != null ? "جاري تحميل مانيلا المحلية…" : "جاري تحميل المدينة…");
     }
 
     /** ينقل اللاعب إلى مدينة/موقع جديد. يُستدعى من خيط الرسم. */
-    public void teleport(double lat, double lon) { teleportInternal(lat, lon, false); }
+    public void teleport(double lat, double lon) { teleportInternal(lat, lon, false, null); }
 
-    public void teleportOfflineAmman() { teleportInternal(31.9522646, 35.9389907, true); }
+    public void teleportOfflineAmman() { teleportInternal(31.9522646, 35.9389907, true, null); }
 
-    private void teleportInternal(double lat, double lon, boolean offline) {
+    public void teleportOfflineManila() { teleportInternal(14.57394, 120.98283, false, "manila"); }
+
+    private void teleportInternal(double lat, double lon, boolean offline, String offlineCity) {
         loader.gen++;
         loader.offlineAmman = offline;
+        loader.offlineCitySlug = offlineCity;
         loader.requested.clear(); loader.failedAt.clear(); loader.ready.clear();
         for (Tile t : tiles.values()) t.release();
         tiles.clear();
