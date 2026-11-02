@@ -267,18 +267,18 @@ def source_elements(slug):
             else:
                 source_kind += "+osm-nonroad-context"
             source_path += f" + {full.relative_to(ROOT)}"
-        if transportation_path.is_file():
-            source_path += f" + {transportation_path.relative_to(ROOT)}"
-            source_kind += "+openfreemap-road-geometry-and-labels"
-        else:
-            primary_roads = []
-            source_kind += "+temporary-legacy-osm-road-fallback"
         else:
             # The legacy GeoJSON fallback may contain only buildings; retain
             # it only when there is no complete non-building extract to preserve.
             legacy = SOURCE / slug / "buildings.geojson"
             if legacy.is_file():
                 source_path += f" + {legacy.relative_to(ROOT)}"
+        if transportation_path.is_file():
+            source_path += f" + {transportation_path.relative_to(ROOT)}"
+            source_kind += "+openfreemap-road-geometry-and-labels"
+        else:
+            primary_roads = []
+            source_kind += "+temporary-legacy-osm-road-fallback"
         combined = preserved + primary_roads + footprints + unmatched_buildings + unmatched_parts
         if combined:
             return combined, source_path, source_kind
