@@ -52,15 +52,11 @@ public class CityGLView extends GLSurfaceView {
             renderer.game.sx = moveX;
             renderer.game.sy = -moveY;
 
-            float lookX = firstActive(e.getAxisValue(MotionEvent.AXIS_RX),
-                    e.getAxisValue(MotionEvent.AXIS_Z));
-            float lookY = firstActive(e.getAxisValue(MotionEvent.AXIS_RY),
-                    e.getAxisValue(MotionEvent.AXIS_RZ));
-            lookX = stick(lookX);
-            lookY = stick(lookY);
-            if (lookX != 0f || lookY != 0f) {
-                renderer.addLook(lookX * 11f, lookY * 11f);
-            }
+            float lookX = stick(firstActive(e.getAxisValue(MotionEvent.AXIS_RX),
+                    e.getAxisValue(MotionEvent.AXIS_Z)));
+            float lookY = stick(-firstActive(e.getAxisValue(MotionEvent.AXIS_RY),
+                    e.getAxisValue(MotionEvent.AXIS_RZ)));
+            renderer.setGamepadLook(lookX, lookY);
             return true;
         }
         return super.onGenericMotionEvent(e);
