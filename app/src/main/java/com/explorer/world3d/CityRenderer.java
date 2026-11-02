@@ -103,7 +103,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         this.ctx = ctx;
         this.L = l;
         Matrix.setIdentityM(ident, 0);
-        Terrain.init(new File(ctx.getCacheDir(), "dem"), new AndroidDecoder());
+        Terrain.init(new File(ctx.getCacheDir(), "dem"), new AndroidDecoder(), ctx.getAssets());
         loader = new TileLoader(ctx, new File(ctx.getCacheDir(), "tiles"), new TileLoader.ErrorCallback() {
             @Override public void onError() {
                 long now = System.currentTimeMillis();
