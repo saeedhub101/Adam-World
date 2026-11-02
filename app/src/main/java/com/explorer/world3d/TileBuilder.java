@@ -753,12 +753,12 @@ final class TileBuilder {
             rp.name = name;
             if (rp.total > 20f) td.paths.add(rp);
             // أسماء الشوارع على الأسفلت
-            if (!name.isEmpty() && veh && w >= 6f && rp.total >= 30f && td.decals.size() < 40
-                    && (names.contains(name) || names.size() < 14)) {
+            if (!name.isEmpty() && veh && w >= 6f && rp.total >= 30f && td.decals.size() < 12
+                    && (names.contains(name) || names.size() < 6)) {
                 names.add(name);
                 float[] o = new float[4];
-                for (float s = rp.total * 0.5f; s < rp.total - 8f && td.decals.size() < 40; s += 100f) addDecal(td, rp, s, name, o);
-                for (float s = rp.total * 0.5f - 100f; s > 8f && td.decals.size() < 40; s -= 100f) addDecal(td, rp, s, name, o);
+                for (float s = rp.total * 0.5f; s < rp.total - 8f && td.decals.size() < 12; s += 100f) addDecal(td, rp, s, name, o);
+                for (float s = rp.total * 0.5f - 100f; s > 8f && td.decals.size() < 12; s -= 100f) addDecal(td, rp, s, name, o);
             }
         }
     }
