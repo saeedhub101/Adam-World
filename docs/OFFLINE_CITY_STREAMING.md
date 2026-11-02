@@ -2,7 +2,7 @@
 
 ## Runtime contract
 
-- The Android game must not request OpenStreetMap/Overpass for city geometry.
+- The Android game must not request OpenStreetMap/Overpass for road geometry or the map base. OpenStreetMap/Overpass is permitted only for supplementary missing building footprints/building parts when the player leaves pre-imported city coverage.
 - Three.js is bundled into the APK at `app/src/main/assets/vendor/three.min.js`.
 - City geometry is packaged under `app/src/main/assets/cities/<city>/`.
 - The native Android bridge reads these assets synchronously; the game requests only nearby spatial tiles.
