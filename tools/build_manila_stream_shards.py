@@ -60,6 +60,14 @@ def lines(g):
     if g.get("type")=="MultiLineString": return g.get("coordinates",[])
     return []
 
+def tile_line_points(coords,x,y,z,extent):
+    return [tile_lonlat(p[0]+x*extent,p[1]+y*extent,z,extent) for p in coords if len(p)>=2]
+
+def lines_unused(g):
+    if g.get("type")=="LineString": return [g.get("coordinates",[])]
+    if g.get("type")=="MultiLineString": return g.get("coordinates",[])
+    return []
+
 def cells_for(points):
     if not points: return []
     lons=[p["lon"] for p in points]; lats=[p["lat"] for p in points]
@@ -154,6 +162,7 @@ def read_osm_detail_index():
     return data,index
 
 MATCHED_OSM_IDS=set()
+PBF_ROAD_COUNT=0
 
 def read_pbf(writer, osm_index, building_index):
     try: import mapbox_vector_tile
@@ -168,6 +177,53 @@ def read_pbf(writer, osm_index, building_index):
         except Exception: continue
         if z!=14: continue
         tile=mapbox_vector_tile.decode(path.read_bytes())
+        # PBF transportation is the primary road source across the imported tile coverage.
+        global PBF_ROAD_COUNT
+        road_layer=tile.get("transportation")
+        name_layer=tile.get("transportation_name")
+        road_records=[]
+        if road_layer:
+            ex=road_layer.get("extent",4096)
+            for rf in road_layer.get("features",[]):
+                rp=rf.get("properties") or {}; rg=rf.get("geometry") or {}
+                cls=text(rp.get("class")).lower(); sub=text(rp.get("subclass")).lower()
+                highway_map={"motorway":"motorway","trunk":"trunk","primary":"primary","secondary":"secondary",
+                  "tertiary":"tertiary","minor":"residential","service":"service","track":"track",
+                  "path":"path","pedestrian":"pedestrian","construction":"construction"}
+                tags={"adam:source":"OpenMapTiles/OpenFreeMap"}
+                if cls in ("rail","transit","subway","tram","light_rail"):
+                    tags["railway"]="subway" if cls=="subway" else "tram" if cls in ("tram","light_rail") else "rail"
+                elif cls in highway_map: tags["highway"]=highway_map[cls]
+                if sub in ("footway","steps","cycleway","pedestrian","path"): tags["highway"]=sub
+                if rp.get("oneway") not in (None,""): tags["oneway"]=text(rp["oneway"])
+                if rp.get("layer") not in (None,""): tags["layer"]=text(rp["layer"])
+                if rp.get("brunnel")=="bridge": tags["bridge"]="yes"
+                if rp.get("brunnel")=="tunnel": tags["tunnel"]="yes"
+                if rp.get("service") not in (None,""): tags["service"]=text(rp["service"])
+                for part in lines(rg):
+                    local=[(float(p[0]),float(p[1])) for p in part if len(p)>=2]
+                    if len(local)>=2: road_records.append([local,tags,rf.get("id",len(road_records)),ex])
+        if name_layer and road_records:
+            for nf in name_layer.get("features",[]):
+                np=nf.get("properties") or {}; ng=nf.get("geometry") or {}
+                nm=text(np.get("name") or np.get("ref"))
+                if not nm: continue
+                for part in lines(ng):
+                    local=[(float(p[0]),float(p[1])) for p in part if len(p)>=2]
+                    if not local: continue
+                    cx=sum(p[0] for p in local)/len(local); cy=sum(p[1] for p in local)/len(local)
+                    best=None; bestd=1e30
+                    for rec in road_records:
+                        d=min((cx-p[0])**2+(cy-p[1])**2 for p in rec[0])
+                        if d<bestd: bestd=d; best=rec
+                    if best is not None and bestd<10000: best[1]["name"]=nm
+        for local,tags,rawid,ex in road_records:
+            pts=[]
+            for px,py in local:
+                lon,lat=tile_lonlat(px+x*ex,py+y*ex,z,ex); pts.append({"lon":lon,"lat":lat})
+            writer.add({"type":"way","id":sid("omt-transport",rawid),"tags":dict(tags),"geometry":pts},"openmaptiles_transportation")
+            PBF_ROAD_COUNT+=1
+
         layer=tile.get("building") or tile.get("buildings")
         if not layer: continue
         extent=layer.get("extent",4096)
@@ -298,7 +354,7 @@ def main():
     osm_data,osm_index=read_osm_detail_index()
     building_index=read_building_csv_index()
     omt=read_pbf(writer,osm_index,building_index)
-    read_transport(writer)
+    if PBF_ROAD_COUNT == 0: read_transport(writer)
     matched,unmatched=read_osm_details(writer,osm_data,MATCHED_OSM_IDS)
     thematic=read_thematic_csv(writer)
     context=read_context(writer)
@@ -306,7 +362,7 @@ def main():
     manifest={"schema_version":1,"city":"Manila","source":"Adam-City OpenMapTiles PBF + OpenFreeMap transportation GeoJSON + OSM supplemental details",
       "origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,"cell_halo_m":HALO,
       "dataset_version":hashlib.sha256(json.dumps([sorted(writer.cells),dict(writer.counts)],sort_keys=True).encode()).hexdigest()[:16],
-      "cells":sorted(writer.cells),"counts":dict(writer.counts),"openmaptiles_building_features":omt,
+      "cells":sorted(writer.cells),"counts":dict(writer.counts),"openmaptiles_building_features":omt,"openmaptiles_transportation_features":PBF_ROAD_COUNT,
       "osm_building_fallback_features":unmatched,"osm_context_features":context,"thematic_supplement_features":thematic,
       "osm_detail_matched_count":matched,"terrain":"disabled_flat_ground",
       "attribution":["© OpenFreeMap / OpenMapTiles","© OpenStreetMap contributors"],
