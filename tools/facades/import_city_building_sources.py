@@ -216,7 +216,7 @@ def main():
             print(f"SKIP {city.name}: missing city.json",flush=True); continue
         try: bbox=bounds(city)
         except Exception as exc:
-            print(f"ERROR {city.name}: invalid city config: {exc}",flush=True); continue
+            print(f"ERROR {city.name}: invalid city config: {exc}",flush=True); failures.append(f"{city.name}/config"); continue
         for label,fn in (("footprints",import_openfreemap),("details",import_osm_details)):
             try: fn(city,bbox,a.refresh,a.git_checkpoint)
             except Exception as exc: print(f"ERROR {city.name}/{label}: {exc}",flush=True)
