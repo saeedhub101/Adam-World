@@ -12,6 +12,8 @@ import shutil
 from collections import defaultdict
 from pathlib import Path
 
+from shapely.geometry import shape
+
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "data" / "facades" / "cities"
 FULL_SOURCE = ROOT / "data" / "offline-world"
