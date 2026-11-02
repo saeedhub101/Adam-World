@@ -334,37 +334,7 @@ def source_elements(slug):
             elements.extend(route_data.get("elements") or [])
         kind = "osm-nonroad-context-only" + ("+transit-routes" if route_file.is_file() else "")
         return elements, str(full.relative_to(ROOT)), kind
-    buildings = read_json(SOURCE / slug / "buildings.geojson")
-    elements = []
-    for feature in buildings.get("features", []):
-        props = dict(feature.get("properties") or {})
-        way_id = props.get("osm_way_id") or props.get("osm_id") or feature.get("id")
-        if way_id is None:
-            continue
-        try:
-            way_id = int(str(way_id).replace("way/", ""))
-        except (TypeError, ValueError):
-            continue
-        for part_index, ring in enumerate(rings(feature.get("geometry"))):
-            points = []
-            for point in ring:
-                if not isinstance(point, (list, tuple)) or len(point) < 2:
-                    continue
-                lon, lat = float(point[0]), float(point[1])
-                if math.isfinite(lat) and math.isfinite(lon):
-                    points.append({"lat": lat, "lon": lon})
-            if len(points) < 4:
-                continue
-            tags = {str(k): v for k, v in props.items()
-                    if v is not None and k not in {"osm_way_id", "osm_type", "source"}}
-            tags.setdefault("building", "yes")
-            elements.append({
-                "type": "way",
-                "id": way_id if part_index == 0 else way_id * 100 + part_index,
-                "tags": tags,
-                "geometry": points,
-            })
-    return elements, f"data/facades/cities/{slug}/buildings.geojson", "buildings-fallback"
+    return [], "none", "no-openfreemap-primary-data"
 
 
 def main():
