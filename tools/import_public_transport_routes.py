@@ -192,7 +192,7 @@ def main():
             if complete:
                 shutil.rmtree(folder / "transit-route-progress", ignore_errors=True)
             checkpoint(slug, path)
-            print(f"{slug}: {'ROUTES_SAVED' if complete else 'ROUTES_PARTIAL_CHECKPOINT'} segments={len(features)} completed_chunks={len(completed)}/12 pending_chunks={len(failed)}", flush=True)
+            print(f"{slug}: {'ROUTES_SAVED' if complete else 'ROUTES_PARTIAL_CHECKPOINT'} segments={len(features)} completed_chunks={len(completed)}/8 pending_chunks={len(failed)}", flush=True)
             succeeded += 1
             if failed:
                 pending.append((slug, failed))
