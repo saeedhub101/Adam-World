@@ -270,6 +270,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.addView(loading, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         setContentView(root);
+        glView.requestFocus();
         UpdateManager.check(this, false);
     }
 
