@@ -299,7 +299,7 @@ def add_existing_osm_context(writer, box, shape):
     # Do not duplicate primary building or road geometry from the OSM fallback.
     folder=ROOT/"data/offline-world/amman"
     sources=[folder/"elements.json",folder/"transit-routes.json"]
-    allowed=("waterway","railway","public_transport","route","man_made","utility","substance","bus","highway")
+    allowed=("waterway","railway","public_transport","public_transport_route","route","man_made","utility","substance","bus","highway")
     for path in sources:
         if not path.is_file():
             continue
@@ -329,7 +329,12 @@ def add_existing_osm_context(writer, box, shape):
                 geometry=shape(geom)
                 if geometry.is_empty:
                     continue
-                element={"type":typ,"id":int(item.get("id") or 0),"tags":tags}
+                normalized_tags=dict(tags)
+                if normalized_tags.get("public_transport_route") and not normalized_tags.get("route"):
+                    normalized_tags["route"]=normalized_tags["public_transport_route"]
+                if normalized_tags.get("route_name") and not normalized_tags.get("name"):
+                    normalized_tags["name"]=normalized_tags["route_name"]
+                element={"type":typ,"id":int(item.get("id") or 0),"tags":normalized_tags}
                 if typ=="node":
                     element["lon"],element["lat"]=geom["coordinates"]
                 else:
