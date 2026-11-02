@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 final class UpdateManager {
     private static final String RELEASE_API = "https://api.github.com/repos/saeedhub101/Adam-World/releases/latest";
     private static volatile boolean checking = false;
+    private static volatile boolean waitingForPermission = false;
     private static final String APK_NAME = "adam-world-update.apk";
 
     static void check(final Activity activity, final boolean manual) {
@@ -90,13 +91,13 @@ final class UpdateManager {
 
     static void resumePendingInstall(Activity activity) {
         File apk = new File(new File(activity.getCacheDir(), "updates"), APK_NAME);
-        if (apk.isFile() && apk.length() > 0 && canInstall(activity)) install(activity, apk);
+        if (waitingForPermission && apk.isFile() && apk.length() > 0 && canInstall(activity)) {\n            waitingForPermission = false;\n            install(activity, apk);\n        }
     }
 
     private static void installOrRequestPermission(Activity activity, File apk) {
         Toast.makeText(activity, "تم تنزيل التحديث. جارٍ فتح مثبت Android", Toast.LENGTH_LONG).show();
         if (Build.VERSION.SDK_INT >= 26 && !activity.getPackageManager().canRequestPackageInstalls()) {
-            activity.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+            waitingForPermission = true;\n            activity.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                     Uri.parse("package:" + activity.getPackageName())));
             return;
         }
