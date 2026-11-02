@@ -591,9 +591,13 @@ final class TileBuilder {
             if (a == null) continue;
             float[][] r = resample(a[0], a[1], 8f);
             float[] px = r[0], pz = r[1];
-            float deckOffset = bridge ? 1.2f : tunnel ? -2.2f : 0f;
+            float mappedStructureHeight = measure(tg(tags, bridge ? "bridge:height" : "tunnel:height"));
+            float mappedLayer = measure(tg(tags, "layer"));
+            float deckOffset = Float.isFinite(mappedStructureHeight) && mappedStructureHeight > 0f
+                    ? mappedStructureHeight : (Float.isFinite(mappedLayer) ? mappedLayer * 3.2f : 0f);
             float yOffset = 0.22f + deckOffset;
-            float rr = 1f, rg = 1f, rb = 1f;
+            float rr = bridge ? 0.88f : 1f, rg = bridge ? 0.89f : 1f, rb = bridge ? 0.91f : 1f;
+            if (tunnel) { rr = 0.58f; rg = 0.59f; rb = 0.61f; }
             if (surface.matches("gravel|fine_gravel|ground|dirt|earth|unpaved|compacted")) { rr = 0.78f; rg = 0.70f; rb = 0.56f; }
             else if (surface.matches("concrete|paving_stones|sett|cobblestone")) { rr = 0.82f; rg = 0.82f; rb = 0.78f; }
             else if (surface.matches("sand|mud")) { rr = 0.88f; rg = 0.77f; rb = 0.58f; }
