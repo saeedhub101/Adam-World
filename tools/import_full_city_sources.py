@@ -33,7 +33,7 @@ def main():
   print("START",slug,flush=True);saved=[]
   try:
    import shapely
-   from shapely.geometry import shape,mapping
+   from shapely.geometry import shape,mapping,box
    from shapely.ops import unary_union
    # Resolve exact administrative polygon before treating any download as full-city data.
    bd=folder/"01_admin_boundary";bd.mkdir(parents=True,exist_ok=True);bp=bd/"division-area-candidates.geojson"
@@ -43,10 +43,16 @@ def main():
    for f in raw.get("features",[]):
     p=f.get("properties") or {};names=p.get("names") or {};nm=str(names.get("primary") or p.get("name") or "").casefold()
     if nm==name.casefold() and f.get("geometry"):matches.append((p,shape(f["geometry"]),f))
-   if not matches:raise RuntimeError("No exact Overture city division boundary; do not claim full-city coverage")
-   matches.sort(key=lambda x:x[1].area,reverse=True);props,poly,feature=matches[0]
-   if len(matches)>1 and abs(matches[0][1].area-matches[1][1].area)<1e-10:raise RuntimeError("Ambiguous city boundary")
-   bfc={"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":name,"source":"Overture Maps division_area","subtype":props.get("subtype")},"geometry":mapping(poly)}]}
+   if matches:
+    matches.sort(key=lambda x:x[1].area,reverse=True);props,poly,feature=matches[0]
+    if len(matches)>1 and abs(matches[0][1].area-matches[1][1].area)<1e-10:raise RuntimeError("Ambiguous city boundary")
+    boundary_source="Overture Maps division_area (exact name match)"
+   else:
+    # Explicit approximate extent fallback; never label it as an official boundary.
+    poly=box(w,s,e,n);props={}
+    boundary_source="configured_bbox_extent (approximate; no exact administrative boundary)"
+    print("WARNING",slug,"using configured bbox extent, not official city limits",flush=True)
+   bfc={"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":name,"source":boundary_source,"subtype":props.get("subtype")},"geometry":mapping(poly)}]}
    bfile=bd/"city-boundary.geojson";save(bfile,json.dumps(bfc).encode());saved.append(bfile)
    for dest,types in TYPES.items():
     for typ in types:
@@ -66,7 +72,7 @@ def main():
         g=g.intersection(poly)
         if not g.is_empty:f["geometry"]=mapping(g);features.append(f)
       except Exception:pass
-     result={"type":"FeatureCollection","source":"Overture Maps","source_type":typ,"boundary_source":"Overture division_area","feature_count":len(features),"features":features}
+     result={"type":"FeatureCollection","source":"Overture Maps","source_type":typ,"boundary_source":boundary_source,"feature_count":len(features),"features":features}
      save(out,json.dumps(result,separators=(",",":")).encode());saved.append(out)
      print("SAVED",slug,typ,len(features),flush=True)
      checkpoint(saved,slug)
@@ -82,7 +88,7 @@ def main():
      except Exception as ex:save(p,json.dumps({"status":"failed_retryable","error":str(ex)}).encode())
     saved.append(p)
    report=folder/"12_provenance"/"import-report.json"
-   save(report,json.dumps({"city":name,"boundary":"verified exact Overture division_area name match","boundary_bbox":list(poly.bounds),"overture_layers":len(TYPES),"updated":datetime.now(timezone.utc).isoformat(),"imagery_catalogues":"metadata discovery attempted; image downloads pending licence validation"},indent=2).encode());saved.append(report)
+   save(report,json.dumps({"city":name,"boundary":boundary_source,"boundary_bbox":list(poly.bounds),"overture_layers":len(TYPES),"updated":datetime.now(timezone.utc).isoformat(),"imagery_catalogues":"metadata discovery attempted; image downloads pending licence validation"},indent=2).encode());saved.append(report)
    checkpoint(saved,slug);print("CITY CHECKPOINT",slug,flush=True)
   except Exception as ex:
    print("FAILED",slug,str(ex),flush=True);failed.append(slug)
