@@ -393,8 +393,11 @@ def main() -> None:
         print("No city input folders found; no assignments or textures were created.")
         return
     for city_dir in dirs:
-        if not (city_dir / "buildings.geojson").is_file():
-            print(f"SKIP {city_dir}: buildings.geojson is missing")
+        buildings_path = city_dir / "buildings.geojson"
+        if not buildings_path.is_file():
+            buildings_path = city_dir / "building-footprints.geojson"
+        if not buildings_path.is_file():
+            print(f"SKIP {city_dir}: no buildings.geojson or building-footprints.geojson")
             continue
         result = build_queue(city_dir, args.max_distance_m)
         atomic_json(city_dir / "review_queue.json", result)
