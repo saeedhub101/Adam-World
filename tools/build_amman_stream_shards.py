@@ -89,7 +89,8 @@ def make_elements(feature, layer, part=False):
         tags={"building":cls,"adam:source":"Overture Maps"}
         if part: tags["building:part"]="yes"
         fields={"height":"height","min_height":"min_height","num_floors":"building:levels",
-                "num_floors_underground":"building:levels:underground","roof_height":"roof:height",
+                "num_floors_underground":"building:levels:underground","underground_height":"adam:underground:height",
+                "plinth_height":"building:plinth:height","roof_height":"roof:height",
                 "roof_shape":"roof:shape","roof_material":"roof:material","roof_color":"roof:colour",
                 "facade_material":"building:material","facade_color":"building:colour",
                 "facade_type":"building:use","use":"building:use","name":"name","names":"name",
