@@ -1590,7 +1590,7 @@ async function loadArea(lat,lon,spawn){
       const inventory=await readOfflineJson('data/regions/philippines/manila/rizal-park/rizal-park-inventory.json');
       for(const item of (inventory.trees||[])){
         if(!Number.isFinite(item.latitude)||!Number.isFinite(item.longitude))continue;
-        trees.push({id:Number(String(item.id||'').replace(/\\D/g,''))||900000+trees.length,
+        trees.push({id:Number(String(item.id||'').replace(/\D/g,''))||900000+trees.length,
           p:proj(item.latitude,item.longitude),
           tags:{natural:'tree',height:item.height_m?String(item.height_m):'',name:item.common_name||'NPDC inventoried tree',
             species:item.scientific_name||'',genus:item.family||'',leaf_cycle:'deciduous',
