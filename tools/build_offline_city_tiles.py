@@ -76,7 +76,164 @@ def normalize_osm_element(element, lat0, lon0, kx):
     }
 
 
+def _osm_id(value):
+    if value is None:
+        return None
+    text = str(value).strip()
+    for prefix in ("way/", "relation/", "node/"):
+        if text.startswith(prefix):
+            text = text[len(prefix):]
+            break
+    try:
+        return int(text)
+    except (TypeError, ValueError):
+        return None
+
+
+def _feature_tags(feature):
+    props = dict(feature.get("properties") or {})
+    nested = props.get("tags")
+    tags = dict(nested) if isinstance(nested, dict) else {}
+    # OpenFreeMap properties are already flattened; OSM details preserve tags
+    # in the nested object. Keep useful source attributes without overwriting tags.
+    for key, value in props.items():
+        if value is not None and key not in {
+            "tags", "osm_feature_id", "osm_id", "osm_way_id", "osm_type",
+            "source", "source_feature_id"
+        }:
+            tags.setdefault(str(key), value)
+    return tags
+
+
+def _geojson_way_elements(path, only_building_parts=False):
+    if not path.is_file():
+        return []
+    data = read_json(path)
+    output = []
+    used_ids = set()
+    for feature in data.get("features", []):
+        props = feature.get("properties") or {}
+        tags = _feature_tags(feature)
+        if only_building_parts:
+            if not tags.get("building:part"):
+                continue
+        elif not (tags.get("building") or tags.get("building:part")):
+            continue
+        raw_id = (props.get("osm_feature_id") or props.get("osm_way_id") or
+                  props.get("osm_id") or props.get("source_feature_id") or
+                  feature.get("id"))
+        way_id = _osm_id(raw_id)
+        if way_id is None:
+            # Stable local IDs for non-OSM OpenFreeMap feature IDs. These remain
+            # unique and never masquerade as a real OSM identifier.
+            seed = str(raw_id or len(output))
+            way_id = 8_000_000_000 + (sum((i + 1) * ord(c) for i, c in enumerate(seed)) % 900_000_000)
+        geometry = feature.get("geometry") or {}
+        kind, coords = geometry.get("type"), geometry.get("coordinates") or []
+        polygons = [coords] if kind == "Polygon" else (coords if kind == "MultiPolygon" else [])
+        for polygon_index, polygon in enumerate(polygons):
+            if not polygon:
+                continue
+            ring = polygon[0]
+            points = []
+            for point in ring:
+                if not isinstance(point, (list, tuple)) or len(point) < 2:
+                    continue
+                lon, lat = float(point[0]), float(point[1])
+                if math.isfinite(lat) and math.isfinite(lon):
+                    points.append({"lat": lat, "lon": lon})
+            if len(points) < 4:
+                continue
+            # OSM ways use their original ID for the first outer ring. Additional
+            # multipolygon components get deterministic synthetic IDs while
+            # retaining the original ID in tags for provenance/facade matching.
+            element_id = way_id if polygon_index == 0 else way_id * 1000 + polygon_index
+            while element_id in used_ids:
+                element_id += 1
+            used_ids.add(element_id)
+            element_tags = dict(tags)
+            element_tags.setdefault("building", "yes")
+            element_tags["adam:source_osm_id"] = str(way_id)
+            element_tags["adam:source_geometry"] = str(data.get("source") or "GeoJSON")
+            output.append({
+                "type": "way", "id": element_id, "tags": element_tags,
+                "geometry": points,
+            })
+    return output
+
+
 def source_elements(slug):
+    # Use the newly imported GeoJSON as the authoritative building geometry.
+    # Preserve the rest of the offline OSM world (roads, water, parks, transit),
+    # replacing only its building ways with the OpenFreeMap footprints enriched
+    # by the matching OSM Overpass tags. No GLB conversion is involved.
+    footprints_path = SOURCE / slug / "building-footprints.geojson"
+    details_path = SOURCE / slug / "building-details.geojson"
+    if footprints_path.is_file():
+        details = _geojson_way_elements(details_path)
+        detail_by_id = {}
+        building_parts = []
+        for item in details:
+            tags = item.get("tags") or {}
+            source_id = _osm_id(tags.get("adam:source_osm_id") or item.get("id"))
+            if tags.get("building:part"):
+                building_parts.append(item)
+            elif source_id is not None:
+                detail_by_id[source_id] = tags
+
+        footprints = _geojson_way_elements(footprints_path)
+        footprint_ids = set()
+        for item in footprints:
+            tags = item.get("tags") or {}
+            source_id = _osm_id(tags.get("adam:source_osm_id") or item.get("id"))
+            if source_id is not None:
+                footprint_ids.add(source_id)
+                merged = dict(detail_by_id.get(source_id) or {})
+                merged.update(tags)
+                # Preserve explicit OSM detail tags over vector-tile defaults.
+                for key, value in (detail_by_id.get(source_id) or {}).items():
+                    if value not in (None, ""):
+                        merged[key] = value
+                item["tags"] = merged
+
+        # Keep OSM building-part geometries that have no exact matching outer
+        # footprint. They describe real sub-volumes, not invented facade detail.
+        unmatched_parts = [
+            item for item in building_parts
+            if _osm_id((item.get("tags") or {}).get("adam:source_osm_id") or item.get("id"))
+            not in footprint_ids
+        ]
+
+        full = FULL_SOURCE / slug / "elements.json"
+        preserved = []
+        source_path = f"data/facades/cities/{slug}/building-footprints.geojson"
+        source_kind = "openfreemap-footprints+osm-details"
+        if full.is_file():
+            full_data = read_json(full)
+            preserved = [
+                item for item in (full_data.get("elements") or [])
+                if not ((item.get("tags") or {}).get("building") or
+                        (item.get("tags") or {}).get("building:part"))
+            ]
+            route_file = full.parent / "transit-routes.json"
+            if route_file.is_file():
+                route_data = read_json(route_file)
+                preserved.extend(route_data.get("elements") or [])
+                source_kind += "+full-osm-nonbuilding+transit"
+            else:
+                source_kind += "+full-osm-nonbuilding"
+            source_path += f" + {full.relative_to(ROOT)}"
+        else:
+            # The legacy GeoJSON fallback may contain only buildings; retain
+            # it only when there is no complete non-building extract to preserve.
+            legacy = SOURCE / slug / "buildings.geojson"
+            if legacy.is_file():
+                source_path += f" + {legacy.relative_to(ROOT)}"
+        combined = preserved + footprints + unmatched_parts
+        if combined:
+            return combined, source_path, source_kind
+
+    # Backward-compatible path for cities not yet imported by the new pipeline.
     full = FULL_SOURCE / slug / "elements.json"
     if full.is_file():
         data = read_json(full)
