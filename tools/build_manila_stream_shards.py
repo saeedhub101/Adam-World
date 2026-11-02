@@ -3,7 +3,7 @@
 OpenFreeMap transportation GeoJSON, and OSM building-detail supplements.
 """
 from __future__ import annotations
-import gzip, hashlib, json, math, os
+import csv, gzip, hashlib, json, math, os
 from collections import OrderedDict, defaultdict
 from pathlib import Path
 
@@ -12,6 +12,9 @@ PBF_ROOT = Path(os.environ.get("ADAM_CITY_MANILA_PBF", ROOT / "Adam-City-source/
 TRANSPORT = ROOT / "data/facades/cities/manila/transportation.geojson"
 DETAILS = ROOT / "data/reference/adam-city/manila/ermita/ermita-building-details.geojson"
 OSM_CONTEXT = ROOT / "data/offline-world/manila/elements.json"
+BUILDING_CSV = Path(os.environ.get("ADAM_CITY_BUILDING_CSV", ROOT / "Adam-City-source/building-data/buildings.csv"))
+POI_CSV = Path(os.environ.get("ADAM_CITY_POI_CSV", ROOT / "Adam-City-source/ermita/maps/generated/ermita-public_services.csv"))
+ACCESS_CSV = Path(os.environ.get("ADAM_CITY_ACCESS_CSV", ROOT / "Adam-City-source/ermita/maps/generated/ermita-accessibility.csv"))
 OUT = ROOT / "data/offline-city-stream/manila"
 LAT0, LON0 = 14.57394, 120.98283
 KY, KX, CELL, HALO = 111132.0, 111320.0 * math.cos(math.radians(LAT0)), 1000.0, 240.0
@@ -116,6 +119,30 @@ def emit_polygon(writer, source, rawid, rings, tags, layer):
 
 PRIMARY_CENTROIDS = []
 
+def read_building_csv_index():
+    index={}
+    if not BUILDING_CSV.is_file(): return index
+    mapping={"name":"name","official_name":"official_name","alternate_names":"alt_name",
+      "street":"addr:street","house_number":"addr:housenumber","postcode":"addr:postcode",
+      "full_address":"addr:full","building_type":"building","building_part":"building:part",
+      "building_use":"building:use","height_m":"height","floor_count":"building:levels",
+      "underground_floor_count":"building:levels:underground","minimum_height_m":"min_height",
+      "roof_shape":"roof:shape","roof_material":"roof:material","roof_colour":"roof:colour",
+      "facade_material":"building:material","facade_colour":"building:colour",
+      "window_material":"building:windows:material","window_colour":"building:windows:colour",
+      "door_material":"building:doors:material","door_colour":"building:doors:colour",
+      "year_built_or_opened":"start_date","architect":"architect","heritage_status":"heritage"}
+    with BUILDING_CSV.open(encoding="utf-8",newline="") as f:
+        for row in csv.DictReader(f):
+            key=str(row.get("osm_feature_id") or "").split("/")[-1]
+            if not key: continue
+            tags={}
+            for src,dst in mapping.items():
+                value=row.get(src)
+                if value not in (None,""): tags[dst]=value.strip()
+            if tags: index[key]=tags
+    return index
+
 def read_osm_detail_index():
     data=json.loads(DETAILS.read_text(encoding="utf-8"))
     index={}
@@ -128,7 +155,7 @@ def read_osm_detail_index():
 
 MATCHED_OSM_IDS=set()
 
-def read_pbf(writer, osm_index):
+def read_pbf(writer, osm_index, building_index):
     try: import mapbox_vector_tile
     except ImportError as e: raise SystemExit("Install mapbox-vector-tile before importing Manila PBF") from e
     files=sorted(PBF_ROOT.rglob("*.pbf"))
@@ -154,10 +181,12 @@ def read_pbf(writer, osm_index):
                 if raw is None: continue
                 key=str(raw).split("/")[-1]
                 supplement=osm_index.get(key)
-                if supplement:
+                audited=building_index.get(key)
+                if supplement or audited:
                     MATCHED_OSM_IDS.add(key)
-                    for k,v in supplement.items():
-                        if v not in (None,"") and tags.get(k) in (None,""): tags[k]=text(v)
+                    for source_tags in (supplement or {},audited or {}):
+                        for k,v in source_tags.items():
+                            if v not in (None,"") and tags.get(k) in (None,""): tags[k]=text(v)
             emit_polygon(writer,"omt",f.get("id",count),rings,tags,"openmaptiles_buildings")
             count+=1
         # Preserve named facilities and address-number points from the same tiles.
@@ -228,6 +257,23 @@ def read_osm_details(writer, data, primary_ids):
             else: matched+=1
     return matched,unmatched
 
+def read_thematic_csv(writer):
+    count=0
+    for path,layer in ((POI_CSV,"osm_public_services"),(ACCESS_CSV,"osm_accessibility")):
+        if not path.is_file(): continue
+        with path.open(encoding="utf-8",newline="") as f:
+            for row in csv.DictReader(f):
+                try: lat=float(row["latitude"]); lon=float(row["longitude"])
+                except (KeyError,TypeError,ValueError): continue
+                try: tags=json.loads(row.get("tags_json") or "{}")
+                except json.JSONDecodeError: tags={}
+                if row.get("name") and not tags.get("name"): tags["name"]=row["name"]
+                tags["adam:source"]="OpenStreetMap supplemental CSV"
+                raw=row.get("osm_feature_id") or f"{lat:.7f}:{lon:.7f}"
+                writer.add({"type":"node","id":sid(layer,raw),"lat":lat,"lon":lon,"tags":tags},layer)
+                count+=1
+    return count
+
 def read_context(writer):
     if not OSM_CONTEXT.is_file(): return 0
     data=json.loads(OSM_CONTEXT.read_text(encoding="utf-8")); n=0
@@ -250,16 +296,18 @@ def read_context(writer):
 def main():
     writer=Shards()
     osm_data,osm_index=read_osm_detail_index()
-    omt=read_pbf(writer,osm_index)
+    building_index=read_building_csv_index()
+    omt=read_pbf(writer,osm_index,building_index)
     read_transport(writer)
     matched,unmatched=read_osm_details(writer,osm_data,MATCHED_OSM_IDS)
+    thematic=read_thematic_csv(writer)
     context=read_context(writer)
     writer.close()
     manifest={"schema_version":1,"city":"Manila","source":"Adam-City OpenMapTiles PBF + OpenFreeMap transportation GeoJSON + OSM supplemental details",
       "origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,"cell_halo_m":HALO,
       "dataset_version":hashlib.sha256(json.dumps([sorted(writer.cells),dict(writer.counts)],sort_keys=True).encode()).hexdigest()[:16],
       "cells":sorted(writer.cells),"counts":dict(writer.counts),"openmaptiles_building_features":omt,
-      "osm_building_fallback_features":unmatched,"osm_context_features":context,
+      "osm_building_fallback_features":unmatched,"osm_context_features":context,"thematic_supplement_features":thematic,
       "osm_detail_matched_count":matched,"terrain":"disabled_flat_ground",
       "attribution":["© OpenFreeMap / OpenMapTiles","© OpenStreetMap contributors"],
       "license":"OpenStreetMap data ODbL 1.0; OpenFreeMap/OpenMapTiles attribution required"}
