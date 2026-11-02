@@ -1,5 +1,6 @@
 package com.explorer.world3d;
 
+import android.content.res.AssetManager;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -19,6 +20,7 @@ final class Terrain {
     private static final ConcurrentHashMap<Long, float[]> dem = new ConcurrentHashMap<>();
     private static volatile File cacheDir;
     private static volatile Decoder decoder;
+    private static volatile AssetManager assets;
     static volatile boolean enabled = false;
     static volatile float base = 0f;
     static volatile boolean baseSet = false;
@@ -27,9 +29,10 @@ final class Terrain {
 
     private Terrain() {}
 
-    static void init(File dir, Decoder d) {
+    static void init(File dir, Decoder d, AssetManager manager) {
         cacheDir = dir;
         decoder = d;
+        assets = manager;
         if (dir != null) dir.mkdirs();
     }
 
@@ -74,6 +77,13 @@ final class Terrain {
             byte[] data = null;
             if (f != null && f.exists() && f.length() > 100) {
                 try { data = readAll(new FileInputStream(f)); } catch (IOException ignore) { data = null; }
+            }
+            if (data == null && assets != null) {
+                try {
+                    data = readAll(assets.open("cities/tabarbour/terrain/" + Z + "/" + tx + "/" + ty + ".png"));
+                } catch (IOException missingBundledTile) {
+                    data = null;
+                }
             }
             if (data == null) {
                 String url = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/" + Z + "/" + tx + "/" + ty + ".png";
