@@ -50,8 +50,8 @@ final class TileLoader extends Thread {
     private static final double AMMAN_KX = 111320.0 * Math.cos(Math.toRadians(AMMAN_LAT0));
     private static final double AMMAN_KY = 111132.0;
     private static final String OFFLINE_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-city-stream/amman";
-    private static final long OFFLINE_CACHE_MAX_BYTES = 512L * 1024L * 1024L;
-    private static final long ONLINE_CACHE_MAX_BYTES = 256L * 1024L * 1024L;
+    private static final long OFFLINE_CACHE_MAX_BYTES = 384L * 1024L * 1024L;
+    private static final long ONLINE_CACHE_MAX_BYTES = 128L * 1024L * 1024L;
     private static final long CACHE_MAX_AGE_MS = 3L * 24L * 3600L * 1000L;
     volatile boolean offlineAmman = false;
     private volatile Set<String> offlineCells;
@@ -59,7 +59,7 @@ final class TileLoader extends Thread {
     private final LinkedHashMap<String, JSONObject> offlineShardCache =
             new LinkedHashMap<String, JSONObject>(12, 0.75f, true) {
                 @Override protected boolean removeEldestEntry(Map.Entry<String, JSONObject> eldest) {
-                    return size() > 10;
+                    return size() > 4;
                 }
             };
 
