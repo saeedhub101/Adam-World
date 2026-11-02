@@ -175,14 +175,16 @@ def source_elements(slug):
     if footprints_path.is_file():
         details = _geojson_way_elements(details_path)
         detail_by_id = {}
+        detail_buildings = []
         building_parts = []
         for item in details:
             tags = item.get("tags") or {}
             source_id = _osm_id(tags.get("adam:source_osm_id") or item.get("id"))
             if tags.get("building:part"):
                 building_parts.append(item)
-            elif source_id is not None:
+            elif tags.get("building") and source_id is not None:
                 detail_by_id[source_id] = tags
+                detail_buildings.append(item)
 
         footprints = _geojson_way_elements(footprints_path)
         footprint_ids = set()
@@ -201,6 +203,11 @@ def source_elements(slug):
 
         # Keep OSM building-part geometries that have no exact matching outer
         # footprint. They describe real sub-volumes, not invented facade detail.
+        unmatched_buildings = [
+            item for item in detail_buildings
+            if _osm_id((item.get("tags") or {}).get("adam:source_osm_id") or item.get("id"))
+            not in footprint_ids
+        ]
         unmatched_parts = [
             item for item in building_parts
             if _osm_id((item.get("tags") or {}).get("adam:source_osm_id") or item.get("id"))
@@ -232,7 +239,7 @@ def source_elements(slug):
             legacy = SOURCE / slug / "buildings.geojson"
             if legacy.is_file():
                 source_path += f" + {legacy.relative_to(ROOT)}"
-        combined = preserved + footprints + unmatched_parts
+        combined = preserved + footprints + unmatched_buildings + unmatched_parts
         if combined:
             return combined, source_path, source_kind
 
