@@ -390,9 +390,13 @@ final class TileBuilder {
         undergroundDepth = Math.max(0f, Math.min(60f, undergroundDepth));
         float mappedRoofHeight = measure(tg(tags, "roof:height"));
         if (!(mappedRoofHeight > 0f)) mappedRoofHeight = Float.NaN;
-        // Keep each footprint vertex on its sampled terrain elevation; preserve the mapped base offset.
-        for (int i = 0; i < n; i++) roofY[i] = ground[i] + h;
-        float yTop = hMax + h;
+        String rshape = tg(tags, "roof:shape");
+        float roofRise = Float.isFinite(mappedRoofHeight) ? Math.max(0f, Math.min(20f, mappedRoofHeight))
+                : (rshape.matches("gabled|hipped|pyramidal|skillion") ? 2.0f : 0f);
+        float wallHeight = Math.max(1f, h - roofRise);
+        // OSM height is the total height; roof:height is the roof portion, not an extra height.
+        for (int i = 0; i < n; i++) roofY[i] = ground[i] + wallHeight;
+        float yTop = hMax + wallHeight;
         boolean glass = h >= 40f || (bld.matches("office|commercial|hotel") && h >= 24f && rnd(id, 9) < 0.6f);
         GeoBuf buf = glass ? td.bufs[B_GLASS] : td.bufs[B_FACADE];
         float cr, cg, cb;
@@ -408,8 +412,7 @@ final class TileBuilder {
         else if (rmat.matches("metal|tin|zinc")) { rr = 0.55f * rf; rg = 0.58f * rf; rb = 0.60f * rf; }
         else if (rmat.matches("concrete")) { rr = 0.62f; rg = 0.62f; rb = 0.60f; }
         else if (bld.matches("house|detached|semidetached_house|bungalow|residential") && rnd(id, 8) < 0.7f) { rr = 0.60f * rf; rg = 0.30f * rf; rb = 0.22f * rf; }
-        String rshape = tg(tags, "roof:shape");
-        float vMax = (yTop - hMin - minHeight + 0.08f) / 13.6f, lo = 0.78f;
+        float vMax = (yTop - hMin - minHeight + undergroundDepth + 0.08f) / 13.6f, lo = 0.78f;
         float minx = 1e9f, maxx = -1e9f, minz = 1e9f, maxz = -1e9f;
         for (int i = 0; i < n; i++) {
             int j = (i + 1) % n;
@@ -437,7 +440,7 @@ final class TileBuilder {
         float floors = measure(tg(tags, "building:levels"));
         if (!(floors > 0f)) floors = Math.max(1f, Math.round(h / 3.2f));
         floors = Math.max(1f, Math.min(100f, floors));
-        float floorStep = Math.max(2.2f, (h - minHeight) / floors);
+        float floorStep = Math.max(2.2f, (wallHeight - minHeight) / floors);
         for (int edge = 0; edge < n; edge++) {
             int next = (edge + 1) % n;
             float ax = px[edge], az = pz[edge], bx = px[next], bz = pz[next];
@@ -520,9 +523,7 @@ final class TileBuilder {
             float ax0 = 0, az0 = 0;
             for (int i = 0; i < n; i++) { ax0 += px[i]; az0 += pz[i]; }
             ax0 /= n; az0 /= n;
-            float rh = Float.isFinite(mappedRoofHeight)
-                    ? Math.max(0.25f, Math.min(mappedRoofHeight, Math.max(0.5f, h * 0.45f)))
-                    : Math.min(3.2f, (float) Math.sqrt(parea) / 4f);
+            float rh = roofRise > 0f ? roofRise : Math.min(3.2f, (float) Math.sqrt(parea) / 4f);
             for (int i = 0; i < n; i++) {
                 int j = (i + 1) % n;
                 buf.v(px[i], roofY[i], pz[i], 0.01f, 0.01f, rr, rg, rb);
@@ -551,8 +552,7 @@ final class TileBuilder {
                 across[i] = (float) (nx * (px[i] - mx) + nz * (pz[i] - mz));
                 minAcross = Math.min(minAcross, across[i]); maxAcross = Math.max(maxAcross, across[i]);
             }
-            float rise = Float.isFinite(mappedRoofHeight)
-                    ? Math.max(0.25f, Math.min(mappedRoofHeight, Math.max(0.5f, h * 0.45f))) : 2.0f;
+            float rise = roofRise > 0f ? roofRise : 2.0f;
             float span = Math.max(0.01f, maxAcross - minAcross);
             int[] tr = Poly.earClip(px, pz);
             for (int i = 0; i + 2 < tr.length; i += 3) {
