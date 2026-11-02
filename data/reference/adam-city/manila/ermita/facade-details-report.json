@@ -1,0 +1,29 @@
+{
+  "status": "success",
+  "source": "OpenStreetMap contributors",
+  "license": "ODbL 1.0; attribution and share-alike obligations apply",
+  "output_glb": "ermita/3d/generated/ermita-buildings-facade-details.glb",
+  "output_signage_index": "ermita/3d/generated/facade-signage-index.csv",
+  "building_polygon_parts": 1468,
+  "glb_bytes": 91546316,
+  "model_center_epsg3857_m": {
+    "x": 13467659.266042639,
+    "y": 1641420.5583208972,
+    "z": 115.0
+  },
+  "facade_skin_segments": 7376,
+  "roof_surfaces": 1468,
+  "window_panels": 200626,
+  "window_frames": 200626,
+  "window_sills": 200626,
+  "balcony_parts": 1200,
+  "door_placeholders": 6390,
+  "textured_osm_signboards": 339,
+  "placement": "EPSG:3857 meters; recentered using the same building extent as the extrusion model",
+  "limitations": [
+    "Facade skins and roof surfaces use tag-based color variants, but are approximations rather than photo-matched finishes. Windows, frames, sills, balconies, doors and signboards remain procedural details, not surveyed architectural features.",
+    "Floor counts are estimated if OSM building:levels is absent.",
+    "Signboard text is rendered from available OSM name/brand/shop/amenity tags into a shared texture atlas; brand logos and exact photographed sign designs are not reconstructed.",
+    "No facade photographs, photogrammetry, or street-level imagery are included."
+  ]
+}
