@@ -91,6 +91,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         Button loc = btn("📍");
         loc.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { requestLocation(); } });
         row.addView(loc);
+        Button update = btn("تحديث");
+        update.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { UpdateManager.check(MainActivity.this, true); }
+        });
+        row.addView(update);
         timeBtn = btn(TIME_ICONS[0]);
         timeBtn.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
@@ -180,6 +185,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.addView(loading, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         setContentView(root);
+        UpdateManager.check(this, false);
     }
 
     @Override public void onWindowFocusChanged(boolean f) {
@@ -192,7 +198,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
     }
 
-    @Override protected void onResume() { super.onResume(); glView.onResume(); }
+    @Override protected void onResume() { super.onResume(); glView.onResume(); UpdateManager.resumePendingInstall(this); }
     @Override protected void onPause() { glView.onPause(); super.onPause(); }
     @Override protected void onDestroy() { renderer.shutdown(); super.onDestroy(); }
 
