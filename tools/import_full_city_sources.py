@@ -78,9 +78,6 @@ def main():
      subprocess.run(["overturemaps","download",f"--bbox={w},{s},{e},{n}","-f","geojson","--type="+typ,"-o",str(tmp)],cwd=ROOT,check=True,timeout=3600)
      known=len(manifest.get("parts",[]));part_index=0;part_features=[];part_size=0;total_features=sum(p.get("features",0) for p in manifest.get("parts",[]))
      def flush_part():
-      nonlocal_dummy=None
-      global_dummy=None
-      nonlocal_values=None
       nonlocal part_index,part_features,part_size,total_features,manifest
       if not part_features:return
       part_index+=1
@@ -99,18 +96,19 @@ def main():
       checkpoint([outpart,manifest_path],slug)
       part_features=[];part_size=0
      try:
-      for feature in json_items(tmp.open("rb"),"features.item"):
-       if not feature.get("geometry"):continue
-       try:
-        geom=shape(feature["geometry"])
-        if not geom.intersects(poly):continue
-        geom=geom.intersection(poly)
-        if geom.is_empty:continue
-        feature["geometry"]=mapping(geom)
-        encoded=json.dumps(feature,separators=(",",":"),ensure_ascii=False).encode()
-        if part_features and part_size+len(encoded)+1>MAX_PART_BYTES:flush_part()
-        part_features.append(encoded);part_size+=len(encoded)+1
-       except Exception:continue
+      with tmp.open("rb") as stream:
+       for feature in json_items(stream,"features.item"):
+        if not feature.get("geometry"):continue
+        try:
+         geom=shape(feature["geometry"])
+         if not geom.intersects(poly):continue
+         geom=geom.intersection(poly)
+         if geom.is_empty:continue
+         feature["geometry"]=mapping(geom)
+         encoded=json.dumps(feature,separators=(",",":"),ensure_ascii=False).encode()
+         if part_features and part_size+len(encoded)+1>MAX_PART_BYTES:flush_part()
+         part_features.append(encoded);part_size+=len(encoded)+1
+        except Exception:continue
       flush_part()
      finally:tmp.unlink(missing_ok=True)
      manifest["status"]="complete";manifest["feature_count"]=sum(p["features"] for p in manifest["parts"]);manifest["completed_at"]=datetime.now(timezone.utc).isoformat()
