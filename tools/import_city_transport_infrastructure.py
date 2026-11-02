@@ -15,7 +15,7 @@ ENDPOINTS = [
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
 ]
-TRANSPORT_PROFILE = 1
+TRANSPORT_PROFILE = 2
 
 def query_for(lat: float, lon: float, radius: int) -> str:
     around = f"(around:{radius},{lat:.7f},{lon:.7f})"
@@ -39,6 +39,8 @@ def query_for(lat: float, lon: float, radius: int) -> str:
         f'node["railway"~"station|halt|tram_stop|subway_entrance|platform|stop"]{around};'
         f'node["public_transport"~"station|platform|stop_position"]{around};'
         f'node["highway"~"bus_stop|traffic_signals|crossing"]{around};'
+        f'node["man_made"~"water_works|water_tower|wastewater_plant|pumping_station"]{around};'
+        f'node["utility"~"water|sewer|sanitary|stormwater"]{around};'
         ");out geom;"
     )
 
@@ -65,7 +67,7 @@ def fetch_chunk(query: str, offset: int):
 
 def fetch_city(city):
     lat0, lon0 = float(city["center"]["lat"]), float(city["center"]["lon"])
-    target_radius = max(2500, int(city.get("discovery_radius_m", 650)))
+    target_radius = max(2500, int(os.environ.get("ADAM_AMMAN_TRANSPORT_RADIUS_M", city.get("discovery_radius_m", 650)))) if city["slug"] == "amman" else max(2500, int(city.get("discovery_radius_m", 650)))
     offset_m = target_radius * 0.40
     chunk_radius = int(target_radius * 0.78)
     merged = {}
@@ -119,8 +121,11 @@ def checkpoint(slug):
 def main():
     catalog = json.loads(CATALOG.read_text(encoding="utf-8"))
     succeeded, failed = 0, []
+    selected = {x.strip() for x in os.environ.get("ADAM_CITY_SLUGS", "").split(",") if x.strip()}
     for city in catalog.get("cities", []):
         slug = city["slug"]
+        if selected and slug not in selected:
+            continue
         folder = OUTPUT / slug
         elements_path = folder / "elements.json"
         metadata_path = folder / "metadata.json"
@@ -165,7 +170,7 @@ def main():
                 "transport_elements_seen": len(incoming),
                 "transport_elements_added": added,
                 "transport_elements_updated": updated,
-                "transport_layers": ["railways", "stations", "subway_entrances", "tram_stops", "waterway_lines", "waterfalls", "bridges", "tunnels", "road_surface", "smoothness", "lanes", "traffic_calming", "potholes"],
+                "transport_layers": ["railways", "stations", "subway_entrances", "tram_stops", "bus_stops", "waterway_lines", "waterfalls", "water_pipelines", "sewer_networks", "storm_drains", "water_works", "wastewater_plants", "pumping_stations", "bridges", "tunnels", "road_surface", "smoothness", "lanes", "traffic_calming", "potholes"],
                 "transport_source": "OpenStreetMap via public Overpass endpoints",
             })
             metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
