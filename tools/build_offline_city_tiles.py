@@ -224,21 +224,54 @@ def source_elements(slug):
             source_id = _osm_id(tags.get("adam:source_osm_id") or item.get("id"))
             if source_id is not None:
                 footprint_ids.add(source_id)
-                merged = dict(detail_by_id.get(source_id) or {})
-                merged.update(tags)
-                # Preserve explicit OSM detail tags over vector-tile defaults.
+                # OpenFreeMap/OpenMapTiles attributes always win. OSM only
+                # fills properties that the primary vector-tile feature lacks.
+                merged = dict(tags)
                 for key, value in (detail_by_id.get(source_id) or {}).items():
-                    if value not in (None, ""):
+                    if value not in (None, "") and merged.get(key) in (None, ""):
                         merged[key] = value
                 item["tags"] = merged
 
         # Keep OSM building-part geometries that have no exact matching outer
         # footprint. They describe real sub-volumes, not invented facade detail.
-        unmatched_buildings = [
-            item for item in detail_buildings
-            if _osm_id((item.get("tags") or {}).get("adam:source_osm_id") or item.get("id"))
-            not in footprint_ids
-        ]
+        # Some providers can expose the same real footprint under a different
+        # feature identifier. Suppress near-identical OSM geometry duplicates
+        # before treating OSM as a missing-building source.
+        primary_shapes = []
+        for item in footprints:
+            points = item.get("geometry") or []
+            if len(points) < 4:
+                continue
+            try:
+                poly = shape({"type": "Polygon", "coordinates": [[
+                    [float(p["lon"]), float(p["lat"])] for p in points
+                ]]})
+                if not poly.is_empty and poly.area > 0:
+                    primary_shapes.append(poly)
+            except (KeyError, TypeError, ValueError):
+                continue
+        unmatched_buildings = []
+        for item in detail_buildings:
+            source_id = _osm_id((item.get("tags") or {}).get("adam:source_osm_id") or item.get("id"))
+            if source_id in footprint_ids:
+                continue
+            points = item.get("geometry") or []
+            duplicate = False
+            if len(points) >= 4 and primary_shapes:
+                try:
+                    candidate = shape({"type": "Polygon", "coordinates": [[
+                        [float(p["lon"]), float(p["lat"])] for p in points
+                    ]]})
+                    if not candidate.is_empty and candidate.area > 0:
+                        for primary in primary_shapes:
+                            smaller = min(candidate.area, primary.area)
+                            if smaller > 0 and candidate.intersection(primary).area / smaller >= 0.88:
+                                duplicate = True
+                                break
+                except (KeyError, TypeError, ValueError):
+                    pass
+            if not duplicate:
+                unmatched_buildings.append(item)
         unmatched_parts = [
             item for item in building_parts
             if _osm_id((item.get("tags") or {}).get("adam:source_osm_id") or item.get("id"))
