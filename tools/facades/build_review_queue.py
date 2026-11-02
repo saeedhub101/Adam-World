@@ -211,12 +211,14 @@ def photo_metadata(feature: dict[str, Any]) -> dict[str, Any]:
 
 def building_id(feature: dict[str, Any]) -> str:
     p = feature.get("properties") or {}
-    raw = p.get("osm_way_id") or p.get("osm_id") or p.get("id") or feature.get("id")
+    raw = p.get("osm_way_id") or p.get("osm_id") or p.get("id") or p.get("source_feature_id") or feature.get("id")
     if raw is None:
         return ""
     value = str(raw)
-    if value.startswith("way/"):
-        value = value.split("/", 1)[1]
+    for prefix in ("way/", "openfreemap/"):
+        if value.startswith(prefix):
+            value = value.split("/", 1)[1]
+            break
     return value if value.isdigit() and int(value) > 0 else ""
 
 
@@ -262,7 +264,10 @@ def aerial_candidates(building: dict[str, Any], items: list[dict[str, Any]]) -> 
     return found
 
 def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
-    buildings_fc = read_fc(city_dir / "buildings.geojson")
+    buildings_path = city_dir / "buildings.geojson"
+    if not buildings_path.is_file():
+        buildings_path = city_dir / "building-footprints.geojson"
+    buildings_fc = read_fc(buildings_path)
     photos_fc = read_fc(city_dir / "panoramax-items.geojson", required=False)
     kartaview_fc = read_fc(city_dir / "kartaview-items.geojson", required=False)
     aerial_fc = read_fc(city_dir / "aerial-items.geojson", required=False)
@@ -334,7 +339,7 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
         })
     queue.sort(key=lambda x: int(x["osm_way_id"]))
     source_hash = hashlib.sha256()
-    for name in ("buildings.geojson", "panoramax-items.geojson", "kartaview-items.geojson", "aerial-items.geojson"):
+    for name in (buildings_path.name, "panoramax-items.geojson", "kartaview-items.geojson", "aerial-items.geojson"):
         path = city_dir / name
         source_hash.update(name.encode())
         if path.exists():
