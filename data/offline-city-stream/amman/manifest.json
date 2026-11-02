@@ -5267,15 +5267,15 @@
     },
     "-3_-2": {
       "file": "shards/-3_-2.jsonl.gz",
-      "bytes": 151219
+      "bytes": 151550
     },
     "-3_-1": {
       "file": "shards/-3_-1.jsonl.gz",
-      "bytes": 171640
+      "bytes": 172114
     },
     "-3_0": {
       "file": "shards/-3_0.jsonl.gz",
-      "bytes": 168937
+      "bytes": 169282
     },
     "-3_1": {
       "file": "shards/-3_1.jsonl.gz",
@@ -5427,15 +5427,15 @@
     },
     "-2_-2": {
       "file": "shards/-2_-2.jsonl.gz",
-      "bytes": 306126
+      "bytes": 306338
     },
     "-2_-1": {
       "file": "shards/-2_-1.jsonl.gz",
-      "bytes": 250717
+      "bytes": 251020
     },
     "-2_0": {
       "file": "shards/-2_0.jsonl.gz",
-      "bytes": 229513
+      "bytes": 229666
     },
     "-2_1": {
       "file": "shards/-2_1.jsonl.gz",
@@ -5583,19 +5583,19 @@
     },
     "-1_-3": {
       "file": "shards/-1_-3.jsonl.gz",
-      "bytes": 152927
+      "bytes": 153018
     },
     "-1_-2": {
       "file": "shards/-1_-2.jsonl.gz",
-      "bytes": 240554
+      "bytes": 240644
     },
     "-1_-1": {
       "file": "shards/-1_-1.jsonl.gz",
-      "bytes": 264180
+      "bytes": 264534
     },
     "-1_0": {
       "file": "shards/-1_0.jsonl.gz",
-      "bytes": 267975
+      "bytes": 268212
     },
     "-1_1": {
       "file": "shards/-1_1.jsonl.gz",
@@ -5747,11 +5747,11 @@
     },
     "0_-3": {
       "file": "shards/0_-3.jsonl.gz",
-      "bytes": 133701
+      "bytes": 133793
     },
     "0_-2": {
       "file": "shards/0_-2.jsonl.gz",
-      "bytes": 107524
+      "bytes": 107617
     },
     "0_-1": {
       "file": "shards/0_-1.jsonl.gz",
@@ -5767,7 +5767,7 @@
     },
     "0_2": {
       "file": "shards/0_2.jsonl.gz",
-      "bytes": 236841
+      "bytes": 236917
     },
     "0_3": {
       "file": "shards/0_3.jsonl.gz",
@@ -5911,15 +5911,15 @@
     },
     "1_-3": {
       "file": "shards/1_-3.jsonl.gz",
-      "bytes": 171993
+      "bytes": 172077
     },
     "1_-2": {
       "file": "shards/1_-2.jsonl.gz",
-      "bytes": 233161
+      "bytes": 234415
     },
     "1_-1": {
       "file": "shards/1_-1.jsonl.gz",
-      "bytes": 190526
+      "bytes": 191654
     },
     "1_0": {
       "file": "shards/1_0.jsonl.gz",
@@ -5927,11 +5927,11 @@
     },
     "1_1": {
       "file": "shards/1_1.jsonl.gz",
-      "bytes": 116500
+      "bytes": 116617
     },
     "1_2": {
       "file": "shards/1_2.jsonl.gz",
-      "bytes": 141238
+      "bytes": 141362
     },
     "1_3": {
       "file": "shards/1_3.jsonl.gz",
@@ -6075,15 +6075,15 @@
     },
     "2_-2": {
       "file": "shards/2_-2.jsonl.gz",
-      "bytes": 208077
+      "bytes": 209266
     },
     "2_-1": {
       "file": "shards/2_-1.jsonl.gz",
-      "bytes": 246942
+      "bytes": 248102
     },
     "2_0": {
       "file": "shards/2_0.jsonl.gz",
-      "bytes": 197210
+      "bytes": 197290
     },
     "2_1": {
       "file": "shards/2_1.jsonl.gz",
@@ -8630,7 +8630,8 @@
     "land_cover": 5696,
     "land_use": 2080,
     "water": 877,
-    "infrastructure": 1086
+    "infrastructure": 1086,
+    "osm_context": 115
   },
   "shard_count": 1720
 }
