@@ -337,7 +337,7 @@ final class TileBuilder {
         else if (rmat.matches("concrete")) { rr = 0.62f; rg = 0.62f; rb = 0.60f; }
         else if (bld.matches("house|detached|semidetached_house|bungalow|residential") && rnd(id, 8) < 0.7f) { rr = 0.60f * rf; rg = 0.30f * rf; rb = 0.22f * rf; }
         String rshape = tg(tags, "roof:shape");
-        float vMax = (yTop - yBot) / 13.6f, lo = 0.78f;
+        float vMax = (yTop - hMin + 0.08f) / 13.6f, lo = 0.78f;
         float minx = 1e9f, maxx = -1e9f, minz = 1e9f, maxz = -1e9f;
         for (int i = 0; i < n; i++) {
             int j = (i + 1) % n;
