@@ -157,8 +157,9 @@ def cells_for(geom,box):
     halo_lon = 240.0 / KX
     halo_lat = 240.0 / KY
     minx,miny,maxx,maxy=geom.bounds
-    x0=math.floor((minx-LON0)*KX/CELL); x1=math.floor((maxx-LON0)*KX/CELL)
-    z0=math.floor(-(maxy-LAT0)*KY/CELL); z1=math.floor(-(miny-LAT0)*KY/CELL)
+    # Expand the candidate cell range as well as the intersection test.
+    x0=math.floor((minx-halo_lon-LON0)*KX/CELL); x1=math.floor((maxx+halo_lon-LON0)*KX/CELL)
+    z0=math.floor(-((maxy+halo_lat)-LAT0)*KY/CELL); z1=math.floor(-((miny-halo_lat)-LAT0)*KY/CELL)
     for x in range(x0,x1+1):
         w=LON0+x*CELL/KX; e=LON0+(x+1)*CELL/KX
         for z in range(z0,z1+1):
