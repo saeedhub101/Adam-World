@@ -147,6 +147,8 @@ def sources():
     definitions=[
       ("building","02_buildings_overture/building",False),
       ("building_part","02_buildings_overture/building_part",True),
+      # Overture road segments are the authoritative road geometry for offline Amman.
+      ("transport","09_transport_overture/segment",False),
       ("land","10_landcover_overture/land",False),
       ("land_cover","10_landcover_overture/land_cover",False),
       ("land_use","10_landcover_overture/land_use",False),
@@ -196,6 +198,8 @@ def build():
         writer.close()
         if not writer.cells:
             raise RuntimeError("No renderable features found in imported Amman data")
+        if writer.counts.get("transport", 0) <= 0:
+            raise RuntimeError("No Overture road segments were converted; refusing to publish an offline Amman package without roads")
         shard_dir.mkdir(parents=True)
         metadata={}
         for cell in sorted(writer.cells,key=lambda value:tuple(map(int,value.split("_")))):
@@ -208,7 +212,7 @@ def build():
             raw.unlink()
         version=fingerprint.hexdigest()[:16]
         manifest={"schema_version":1,"city":"Amman","source_directory":"data/full-city-imports/amman",
-          "source_datasets":["Overture buildings","Overture land cover","Overture water","Overture infrastructure"],
+          "source_datasets":["Overture buildings","Overture building parts","Overture road segments","Overture land cover","Overture water","Overture infrastructure"],
           "dataset_version":version,"origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,
           "cells":sorted(writer.cells,key=lambda value:tuple(map(int,value.split("_")))),
           "shards":metadata,"element_counts_by_layer":dict(writer.counts),"shard_count":len(metadata)}
