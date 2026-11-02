@@ -311,23 +311,29 @@ def source_elements(slug):
             source_kind += "+openfreemap-road-geometry-and-labels"
         else:
             primary_roads = []
-            source_kind += "+temporary-legacy-osm-road-fallback"
+            source_kind += "+openfreemap-road-layer-missing-no-osm-road-substitution"
         combined = preserved + primary_roads + footprints + unmatched_buildings + unmatched_parts
         if combined:
             return combined, source_path, source_kind
 
-    # Backward-compatible path for cities not yet imported by the new pipeline.
+    # Strict fallback for a city not yet imported from OpenFreeMap: retain
+    # non-road/non-building context only. Never promote raw OSM buildings or
+    # road ways to primary geometry when the provider tiles are absent.
     full = FULL_SOURCE / slug / "elements.json"
     if full.is_file():
         data = read_json(full)
-        elements = data.get("elements") or []
-        if elements:
-            route_file = full.parent / "transit-routes.json"
-            if route_file.is_file():
-                route_data = read_json(route_file)
-                elements.extend(route_data.get("elements") or [])
-            kind = "full-osm+transit-routes" if route_file.is_file() else "full-osm"
-            return elements, str(full.relative_to(ROOT)), kind
+        elements = [
+            item for item in (data.get("elements") or [])
+            if not ((item.get("tags") or {}).get("building") or
+                    (item.get("tags") or {}).get("building:part") or
+                    (item.get("type") == "way" and (item.get("tags") or {}).get("highway")))
+        ]
+        route_file = full.parent / "transit-routes.json"
+        if route_file.is_file():
+            route_data = read_json(route_file)
+            elements.extend(route_data.get("elements") or [])
+        kind = "osm-nonroad-context-only" + ("+transit-routes" if route_file.is_file() else "")
+        return elements, str(full.relative_to(ROOT)), kind
     buildings = read_json(SOURCE / slug / "buildings.geojson")
     elements = []
     for feature in buildings.get("features", []):
