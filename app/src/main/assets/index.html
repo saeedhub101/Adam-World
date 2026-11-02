@@ -4,12 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>مدينة 3D</title>
+<link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
 <script src="vendor/three.min.js"></script>
 <script src="vendor/GLTFLoader.js"></script>
 <script src="vendor/SkeletonUtils.js"></script>
 <style>
   html,body{margin:0;height:100%;background:#000;font-family:sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
-  canvas{display:block;position:absolute;inset:0;touch-action:none}
+  #worldMap{position:absolute;inset:0;z-index:0;background:#b8c9d3}canvas{display:block;position:absolute;inset:0;z-index:1;touch-action:none}
   #ui{position:absolute;left:8px;right:8px;top:8px;z-index:5;display:flex;flex-direction:column;gap:6px;pointer-events:none}
   #ui>*{pointer-events:auto}
   .row{display:flex;gap:6px}
@@ -42,6 +44,7 @@
 </style>
 </head>
 <body>
+<div id="worldMap" aria-label="الخريطة العالمية"></div>
 <div id="ui">
   <div class="row">
     <input id="q" placeholder="ابحث عن مدينة أو مكان…" />
@@ -92,6 +95,37 @@
 
 <script>
 const $=id=>document.getElementById(id);
+
+// Global MapLibre world base: roads, land, water and 3D building tiles remain
+// visible even when the player leaves every locally imported city region.
+let worldMap=null,worldMapReady=false,lastWorldMapSync=0;
+try{
+  worldMap=new maplibregl.Map({
+    container:'worldMap',
+    style:'https://tiles.openfreemap.org/styles/liberty',
+    center:[35.93939340,31.95165805],
+    zoom:16,
+    pitch:54,
+    bearing:0,
+    attributionControl:true,
+    interactive:false,
+    renderWorldCopies:true,
+    fadeDuration:0
+  });
+  worldMap.on('load',()=>{worldMapReady=true;});
+  worldMap.on('error',e=>console.warn('Global map tile/style issue:',e&&e.error?e.error:e));
+}catch(e){console.warn('Global MapLibre initialization failed:',e);}
+function syncGlobalMap(now){
+  if(!worldMap||!worldMapReady||now-lastWorldMapSync<240)return;
+  lastWorldMapSync=now;
+  const tx=S.mode==='drive'?S.cx:S.px,tz=S.mode==='drive'?S.cz:S.pz;
+  const ll=unproj(tx,tz);
+  const distance=S.camDistance*(S.mode==='drive'?1.6:1);
+  const zoom=clamp(17.35-Math.log2(Math.max(3.2,distance)/5.2),12.2,19.2);
+  const pitch=clamp(66-S.camPitch*42,4,68);
+  const bearing=(((-S.camYaw*180/Math.PI)%360)+360)%360;
+  worldMap.jumpTo({center:[ll[1],ll[0]],zoom,pitch,bearing});
+}
 function showRecoverableError(message,title){
   const dialog=$('errorDialog'),text=$('errorText'),loadingBox=$('loading');
   if(loadingBox){loadingBox.style.display='none';loadingBox.onclick=null;loadingBox.style.pointerEvents='none';}
@@ -124,7 +158,8 @@ function angDiff(a,b){let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+
 function rnd(id,k){k=k||0;const x=Math.sin(id*12.9898+k*78.233)*43758.5453;return x-Math.floor(x);}
 
 /* ---------- المشهد ---------- */
-const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
+const renderer=new THREE.WebGLRenderer({antialias:false,alpha:true,powerPreference:'high-performance'});
+renderer.setClearColor(0x000000,0);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
 renderer.setSize(innerWidth,innerHeight);
 document.body.prepend(renderer.domElement);
@@ -235,11 +270,11 @@ const matStreetPole=new THREE.MeshLambertMaterial({color:0x555b62}),matBusSign=n
 // Neutral fallback only where no mapped OSM land-cover polygon exists.
  // It is not presented as satellite/aerial ground truth.
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(8000,8000),new THREE.MeshLambertMaterial({color:0x928b7e}));
-ground.rotation.x=-Math.PI/2;ground.position.y=-0.02;scene.add(ground);
+ground.rotation.x=-Math.PI/2;ground.position.y=-0.02;scene.add(ground);ground.visible=false;
 
 /* ---------- السماء والوقت ---------- */
 const skyMat=new THREE.MeshBasicMaterial({side:THREE.BackSide,fog:false,depthWrite:false});
-const sky=new THREE.Mesh(new THREE.SphereGeometry(1400,16,12),skyMat);sky.renderOrder=-1;scene.add(sky);
+const sky=new THREE.Mesh(new THREE.SphereGeometry(1400,16,12),skyMat);sky.renderOrder=-1;scene.add(sky);sky.visible=false;
 const TIMES=[
  {n:'☀️',top:'#4f8fd6',hor:'#cfe5f5',fog:0xcfe5f5,hc:0xe6f0ff,hg:0x777060,hi:0.95,si:0.85,sc:0xffffff,sp:[200,300,120],em:0,lamp:0x666666,stars:false,fn:150,ff:1100},
  {n:'🌇',top:'#2f3f73',hor:'#f2a65e',fog:0xe9b087,hc:0xffd0a8,hg:0x504030,hi:0.65,si:0.8,sc:0xffa860,sp:[300,70,-100],em:0.35,lamp:0xffd9a0,stars:false,fn:120,ff:900},
@@ -2045,6 +2080,7 @@ let last=performance.now(),lastCheck=0;
 function frame(now){
   requestAnimationFrame(frame);
   const dt=Math.min((now-last)/1000,0.1);last=now;
+  syncGlobalMap(now);
   if(!bldgs&&!agents)return;
   const mag=loading?0:Math.min(1,Math.hypot(S.sx,S.sy));
   waterTexture.offset.x=(waterTexture.offset.x+dt*0.012)%1;
