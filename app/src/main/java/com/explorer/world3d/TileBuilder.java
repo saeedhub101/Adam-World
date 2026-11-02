@@ -145,7 +145,15 @@ final class TileBuilder {
                 float[][] pc=resample(xs,zs,8f);
                 ribbon(pc[0],pc[1],2.4f,0.25f,td.bufs[B_ROADN],1f,12f,0.12f,0.42f,0.88f);
             } else if (isWaterUtility(tags)) {
-                addWaterUtilityLine(td,tags,xs,zs);
+                if (tg(tags,"man_made").matches("pipeline") || waterway.matches("drain|ditch|sewer")) {
+                    if (g.length() >= 2) addWaterUtilityLine(td,tags,xs,zs);
+                } else {
+                    float[][] utilityPolygon=clean(xs,zs);
+                    if (utilityPolygon!=null && overlaps(utilityPolygon,xMin,xMax,zMin,zMax)) {
+                        float[] utilityCenter=centroid(utilityPolygon[0],utilityPolygon[1]);
+                        addUtilityMarker(td,utilityCenter[0],utilityCenter[1],tags);
+                    }
+                }
             } else if (waterway.matches("river|stream|canal|ditch|drain|wadi|tidal_channel")) {
                 float w = waterway.equals("river") ? 14f : waterway.equals("canal") ? 8f : 3f;
                 String ws = tg(tags, "width");
@@ -724,7 +732,9 @@ final class TileBuilder {
     }
 
     private static void addWaterUtilityLine(TileData td, JSONObject tags, float[] xs, float[] zs) {
-        ArrayList<float[]> pieces=clipLine(xs,zs,-1e9f,1e9f,-1e9f,1e9f);
+        double west=td.ix*Geo.dLon, east=(td.ix+1)*Geo.dLon;
+        double south=td.iz*Geo.D_LAT, north=(td.iz+1)*Geo.D_LAT;
+        ArrayList<float[]> pieces=clipLine(xs,zs,Geo.x(west),Geo.x(east),Geo.z(north),Geo.z(south));
         String substance=tg(tags,"substance"), utility=tg(tags,"utility"), man=tg(tags,"man_made");
         boolean sewer=substance.matches("sewage|wastewater") || utility.matches("sewer|sanitary");
         float width=man.equals("pipeline")?1.15f:man.equals("pumping_station")?3f:1.7f;
