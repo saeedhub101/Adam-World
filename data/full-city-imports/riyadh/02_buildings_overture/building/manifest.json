@@ -52,7 +52,12 @@
       "file": "part-00010.geojson",
       "bytes": 36699823,
       "features": 65229
+    },
+    {
+      "file": "part-00011.geojson",
+      "bytes": 36699972,
+      "features": 65613
     }
   ],
-  "feature_count": 641598
+  "feature_count": 707211
 }
