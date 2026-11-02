@@ -1,0 +1,13 @@
+{
+  "status": "partial",
+  "source": "Overture Maps",
+  "source_type": "building",
+  "parts": [
+    {
+      "file": "part-00001.geojson",
+      "bytes": 36699758,
+      "features": 64097
+    }
+  ],
+  "feature_count": 64097
+}
