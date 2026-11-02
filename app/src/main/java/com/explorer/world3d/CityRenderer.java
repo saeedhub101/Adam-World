@@ -93,6 +93,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private float lookDx, lookDy;
     private volatile float gamepadLookX, gamepadLookY;
     public volatile int timeIdx = 0;
+    public volatile boolean undergroundCutaway = false;
+
+    public void toggleUndergroundCutaway() { undergroundCutaway = !undergroundCutaway; }
     private long lastErrToast;
     private final Random rng = new Random();
 
@@ -500,7 +503,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniformMatrix4fv(uModel, 1, false, tmp, 0);
         groundMesh.draw();
         GLES20.glUniformMatrix4fv(uModel, 1, false, ident, 0);
-        for (Mesh m : terrain.values()) m.draw();
+        if (!undergroundCutaway) {
+            for (Mesh m : terrain.values()) m.draw();
+        }
 
         // المربعات
         for (Tile t : tiles.values()) {
