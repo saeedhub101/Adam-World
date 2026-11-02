@@ -161,3 +161,27 @@ architectural checklist, not as proof that the current procedural mesh is exact:
 - [ ] Traffic lights change state and vehicles stop at red/amber approaches and resume at green.
 - [ ] Multiple locally bundled vehicle and pedestrian models have distinct silhouettes, textures and animation.
 - [ ] Android APK build, archive validation and signature verification succeed.
+
+
+## Coordinate and landmark alignment correction — 2026-11-02
+
+- Roman Theatre OSM way `608094627` now uses the polygon centroid for its
+  runtime anchor instead of the arithmetic mean of its vertices.
+- The procedural amphitheatre is fitted inside the mapped footprint with a
+  small safety margin. Seating bands, individual seats, stair blocks, outer
+  wall, orchestra, stage, podium, columns, front details and side wings are
+  checked against the actual OSM polygon before being added. This prevents
+  generated pieces from spilling into neighbouring streets or buildings.
+- MapLibre remains the global basemap behind the transparent Three.js canvas,
+  but its camera is now derived from the actual Three.js camera after each
+  camera update: center, perspective-derived zoom, pitch and compass bearing
+  use the same world axes. The previous rough joystick-derived zoom/pitch and
+  reversed east-west heading approximation were removed.
+- The MapLibre canvas and Three.js canvas now have separate scoped CSS rules,
+  avoiding the global canvas selector from assigning the game canvas stacking
+  behaviour to MapLibre's internal canvas.
+- Source changes are committed on `main`. A successful Android build and
+  visual inspection on-device are still required before this correction can
+  be called fully verified. In particular, compare the theatre from the front
+  and both sides, and confirm MapLibre roads/buildings remain registered to
+  the game ground while walking and driving.
