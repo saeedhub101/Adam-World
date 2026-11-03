@@ -40,6 +40,11 @@ jobs:
       - name: Validate importer
         run: python -m py_compile tools/facades/import_manila_buildings_openfreemap_openmaptiles.py
 
+      - name: Configure incremental checkpoint commits
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Import both building sources and atomically replace buildings.geojson
         run: python -u tools/facades/import_manila_buildings_openfreemap_openmaptiles.py
 
