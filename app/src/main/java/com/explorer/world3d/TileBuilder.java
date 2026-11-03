@@ -504,8 +504,7 @@ final class TileBuilder {
 
     private static boolean isBalconyPart(JSONObject tags) {
         String part = tg(tags, "building:part").toLowerCase(java.util.Locale.US);
-        return part.equals("balcony") || tg(tags, "balcony").equals("yes")
-                || tg(tags, "adam:structure_type").equals("balcony");
+        return part.equals("balcony") || tg(tags, "adam:structure_type").equals("balcony");
     }
 
     /** Render mapped balcony parts as elevated slabs with a light perimeter rail. */
