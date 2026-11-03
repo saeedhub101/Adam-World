@@ -755,7 +755,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
     private void drawPerson(float x,float y,float z,float yaw,float phase,int variant) {
         if(humanModels==null||humanModels.length==0)return;
-        int id=Math.floorMod(variant,humanModels.length);
+        int id=(variant%humanModels.length+humanModels.length)%humanModels.length;
         Matrix.setIdentityM(base,0);
         float bob=(float)Math.sin(phase*2f)*.025f;
         Matrix.translateM(base,0,x,y+bob,z);
