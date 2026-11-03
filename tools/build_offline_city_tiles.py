@@ -6,6 +6,8 @@ OSM supplies supplementary building tags/missing building geometry and non-road
 context only. No data is downloaded by this script.
 """
 from __future__ import annotations
+
+import os
 import argparse
 import json
 import math
