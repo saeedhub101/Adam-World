@@ -1,0 +1,86 @@
+name: Generate Manila facade windows and doors GeoJSON
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/facades/generate_manila_facade_details.py"
+      - ".github/workflows/manila-facade-details-geojson.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: manila-facade-details-geojson
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install geometry dependencies
+        run: python -m pip install --disable-pip-version-check shapely pyproj
+      - name: Validate generator
+        run: python -m py_compile tools/facades/generate_manila_facade_details.py
+      - name: Verify canonical buildings source is committed
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          source = Path("data/facades/cities/manila/buildings.geojson")
+          if not source.is_file() or source.stat().st_size == 0:
+              raise SystemExit(f"Missing canonical source: {source}")
+          data = json.loads(source.read_text(encoding="utf-8"))
+          if data.get("type") != "FeatureCollection" or not data.get("features"):
+              raise SystemExit("Canonical buildings.geojson is not a non-empty FeatureCollection")
+          print(f"CANONICAL SOURCE READY: {len(data['features'])} features; {source.stat().st_size:,} bytes")
+          PY
+      - name: Generate windows, doors and balconies GeoJSON
+        run: python -u tools/facades/generate_manila_facade_details.py
+      - name: Validate generated GeoJSON
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          city = Path("data/facades/cities/manila")
+          for rel in ("layers/facade-windows.geojson", "layers/facade-doors.geojson", "layers/facade-balconies.geojson"):
+              path = city / rel
+              data = json.loads(path.read_text(encoding="utf-8"))
+              if data.get("type") != "FeatureCollection" or not isinstance(data.get("features"), list):
+                  raise SystemExit(f"Invalid output: {path}")
+              if rel != "layers/facade-balconies.geojson" and not data["features"]:
+                  raise SystemExit(f"Required output is empty: {path}")
+              print(f"VALID {path}: {len(data['features'])} building records; {path.stat().st_size:,} bytes")
+          report = json.loads((city / "facade-details-report.json").read_text(encoding="utf-8"))
+          if report.get("status") != "success":
+              raise SystemExit("Facade report is not successful")
+          PY
+      - name: Save generated GeoJSON into main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/facades/cities/manila/layers/facade-windows.geojson \
+                  data/facades/cities/manila/layers/facade-doors.geojson \
+                  data/facades/cities/manila/layers/facade-balconies.geojson \
+                  data/facades/cities/manila/facade-details-report.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Generate Manila facade windows and doors GeoJSON"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
+            echo "Generated Manila facade GeoJSON is already current."
+          fi
