@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build Manila offline building/transport shards plus spatial facade-window runtime shards.
+"""Retired legacy Manila stream builder; the Android runtime reads offline-world/manila directly.
 """
 from __future__ import annotations
 import csv, gzip, hashlib, json, math, os, re
@@ -15,7 +15,7 @@ TRANSPORT = ROOT / "data/facades/cities/manila/transportation.geojson"
 OSM_CONTEXT = ROOT / "data/offline-world/manila/elements.json"
 POI_CSV = Path(os.environ.get("ADAM_CITY_POI_CSV", ROOT / "Adam-City-source/ermita/maps/generated/ermita-public_services.csv"))
 ACCESS_CSV = Path(os.environ.get("ADAM_CITY_ACCESS_CSV", ROOT / "Adam-City-source/ermita/maps/generated/ermita-accessibility.csv"))
-OUT = ROOT / "data/offline-city-stream/manila"
+OUT = ROOT / "data/offline-world/manila/runtime"
 LAT0, LON0 = 14.57394, 120.98283
 KY, KX, CELL, HALO = 111132.0, 111320.0 * math.cos(math.radians(LAT0)), 1000.0, 240.0
 
@@ -472,6 +472,7 @@ def read_context(writer):
     return n
 
 def main():
+    raise SystemExit("Retired: Manila now loads data/offline-world/manila/elements.json directly; do not regenerate legacy shards.")
     writer=Shards()
     building_stats=read_geojson_buildings(writer)
     read_pbf(writer)
