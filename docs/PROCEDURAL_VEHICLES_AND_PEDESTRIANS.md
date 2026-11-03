@@ -1,27 +1,32 @@
 # Procedural Vehicles and Pedestrians
 
-All new vehicle and pedestrian meshes are generated in Java at runtime from parametric geometry. This system does not load GLB vehicle models or download model assets.
+All vehicle and pedestrian geometry is generated in Java at runtime. The renderer does not load vehicle GLB models or download character/vehicle assets.
 
-## Current implementation
+## Procedural vehicles
 
-- Vehicle mesh generator: `ProceduralVehicleModels.java`.
-- Human mesh generator: `ProceduralHumanModels.java`.
-- Renderer integration: `CityRenderer.java`.
-- Player vehicle selection and aircraft lift controls: `MainActivity.java`.
-- Vehicle-specific movement and flight altitude: `Game.java`.
+`ProceduralVehicleModels.java` generates sedan, SUV, pickup, bus, police car, motorcycle, bicycle, tank, helicopter and airplane geometry. The player can cycle through all ten types with **نوع المركبة** and summon/enter using the vehicle control. Traffic uses road vehicles; aircraft and the tank remain player-selectable.
 
-Vehicle types currently generated: sedan, SUV, pickup, bus, police car, motorcycle, bicycle, tank, helicopter and airplane. Road traffic can spawn sedans, SUVs, pickups, buses, police cars, motorcycles and bicycles. The player can cycle through all ten types using **نوع المركبة**, then use **🚗** to summon/enter or exit. Aircraft use the joystick for forward speed and steering, and the up/down controls for lift.
+- Parametric ring bodies and Bezier-shaped profiles generate the main hulls/fuselages.
+- Vehicle windows are separate transparent meshes with Fresnel-weighted cubemap reflections.
+- Cars, buses, motorcycles and bicycles use separate wheel meshes. Their wheels rotate from travelled distance; front wheels steer with the steering input.
+- Tank tread links are animated around a loop from vehicle speed.
+- Helicopter rotor blades rotate continuously.
+- Aircraft lift and steering remain connected to the existing flight controls.
 
-The body and fuselage use longitudinal parametric rings with Bezier profile shaping. Vehicle details include separate colored glass surfaces, lights, bumpers, wheel/tire/rim geometry, tank tracks and turret, helicopter rotor/tail, and airplane wings. A vehicle-only microfacet-style lighting branch adds metallic highlights and a small analytic surface perturbation. Pedestrians use six generated body/clothing/skin/hair variants with smooth ellipsoid geometry and facial details.
+## Materials and lighting
 
-## Known limitations — not release-verified
+`ProceduralMaterialMaps.java` creates independent runtime textures for tangent-frame normal detail, roughness, and metalness, plus a cubemap environment used for reflective vehicle paint and glass.
 
-This is the first procedural foundation, not a claim of finished photorealism. The current renderer still needs:
-- a real tangent-space normal-map pipeline and per-material roughness/metalness maps;
-- transparent/reflection-aware glass and environment reflections;
-- rotating/steering wheel meshes, articulated tank tracks, animated helicopter rotor and airplane control surfaces;
-- more detailed aircraft/tank silhouettes and vehicle-specific suspension, braking and collision handling;
-- articulated pedestrian rigs, walk-cycle animation, higher-detail facial geometry and clothing folds;
-- Android build, on-device performance profiling and visual QA on low/mid-range devices.
+The vehicle shader uses a microfacet BRDF, Fresnel response, independent material maps and the environment cubemap. The normal map is sampled through triplanar tangent frames. The current cubemap is a generated sky/horizon/ground environment; it is not yet a live capture of nearby buildings or a dynamic reflection probe. Material maps are generated procedurally and are not downloaded image assets.
 
-Do not describe the current microfacet shader as full image-based PBR or the procedural surface perturbation as a baked normal map. Verify a successful Android build and inspect screenshots/device rendering before marking this feature complete.
+## Articulated pedestrians
+
+`ProceduralHumanRig.java` generates six pedestrian appearance variants as separate body-part meshes. `CityRenderer.java` animates shoulder, elbow, hip, knee and foot transforms with a phase-driven walk cycle. The meshes include skin, hair, eyes, nose, brows, mouth, collar, pocket/seam details, hands, shoes and varied clothing colours.
+
+The player avatar still uses its existing dedicated character rendering path; the articulated rig currently drives pedestrian agents.
+
+## Verification and remaining limits
+
+This implementation is not yet certified as photorealistic. The normal map uses tangent frames from triplanar projections rather than authored per-mesh UV tangent attributes. The cubemap currently reflects a generated sky/horizon/ground, not the live city scene. Human faces and clothing remain procedural low-poly forms, not scanned or photorealistic people. Suspension, aircraft control-surface animation, skeletal skinning and collision refinements remain future work.
+
+A successful Android release build and on-device visual/performance test are required before treating this feature as release-complete.
