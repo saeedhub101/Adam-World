@@ -1012,7 +1012,8 @@ final class TileBuilder {
                 GeoBuf roadBuf = (w >= 7f ? td.bufs[B_ROADW] : td.bufs[B_ROADN]);
                 ribbonOffset(px, pz, w, yOffset, roadBuf, 1f, 12f, rr, rg, rb);
                 if (tabarbour && hw.matches("residential|living_street|unclassified|service"))
-                    addTabarbourSpeedBumps(roadBuf, px, pz, w, id);
+                    long roadSeed = (((long) Math.round(px[0] * 10f)) << 32) ^ (long) Math.round(pz[0] * 10f);
+                    addTabarbourSpeedBumps(roadBuf, px, pz, w, roadSeed);
             } else {
                 ribbonOffset(px, pz, w, yOffset, td.bufs[B_SIDEWALK], w / 2f, 2f, rr, rg, rb);
             }
