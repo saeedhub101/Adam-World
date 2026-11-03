@@ -403,7 +403,8 @@ def read_pbf(writer, osm_index, building_index, overture_index):
                     elif cls in ("bus_stop","bus_station"): t.setdefault("highway","bus_stop")
                 if len(t)>1:
                     writer.add({"type":"node","id":sid("omt-"+lname,f.get("id",0)),"lat":lat,"lon":lon,"tags":t},"openmaptiles_"+lname)
-    if not count: raise SystemExit("No zoom-14 building features decoded from Manila PBF tiles")
+    if not count and not PRIMARY_POLYGONS:
+        raise SystemExit("No building footprints found in Overture, OpenMapTiles or OSM GeoJSON sources")
     return count
 
 def read_transport(writer):
