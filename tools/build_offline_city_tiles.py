@@ -286,6 +286,83 @@ def _geojson_overture_elements(path, part=False):
     return output
 
 
+
+def _geojson_openbuildingmap_elements(path):
+    """Decode OpenBuildingMap GEM height strings into explicit metres and storeys."""
+    if not path.is_file():
+        return []
+    output = []
+    for feature in read_json(path).get("features", []):
+        props = dict(feature.get("properties") or {})
+        geom = feature.get("geometry") or {}
+        kind, coords = geom.get("type"), geom.get("coordinates") or []
+        polygons = [coords] if kind == "Polygon" else (coords if kind == "MultiPolygon" else [])
+        raw_height = str(props.get("height") or "")
+        height_m = None
+        floors = None
+        floor_range = None
+        for token in raw_height.split("+"):
+            if ":" not in token:
+                continue
+            code, raw_value = token.split(":", 1)
+            numbers = []
+            import re
+            for value in re.findall(r"\\d+(?:\\.\\d+)?", raw_value):
+                try: numbers.append(float(value))
+                except ValueError: pass
+            if not numbers:
+                continue
+            if code == "HHT":
+                height_m = max(numbers)
+            elif code == "H":
+                floors = max(numbers)
+            elif code == "HBET":
+                floor_range = numbers
+        if floors is None and floor_range:
+            floors = sum(floor_range) / len(floor_range)
+        source_id = props.get("source_id")
+        source_name = {0: "OpenStreetMap", 1: "Google Open Buildings", 2: "Microsoft Global ML Building Footprints"}.get(
+            int(source_id) if str(source_id).isdigit() else -1, "Unknown")
+        tags = {"building": "yes", "adam:source": "OpenBuildingMap",
+                "adam:source_dataset": source_name, "adam:obm_height_code": raw_height}
+        if height_m is not None and height_m > 0:
+            tags["height"] = str(height_m)
+            tags["adam:height_source"] = "OpenBuildingMap/GHSL 2023A; GEM HHT"
+        if floors is not None and floors > 0:
+            tags["building:levels"] = str(floors)
+            tags["adam:floors_source"] = "OpenBuildingMap/GEM taxonomy"
+            if floor_range:
+                tags["adam:floors_quality"] = "estimated_range"
+        occupancy = str(props.get("occupancy") or "")
+        if occupancy:
+            tags["adam:occupancy_gem"] = occupancy
+            prefix = occupancy[:3]
+            tags["building"] = {"RES": "residential", "COM": "commercial", "MIX": "yes",
+                                "IND": "industrial", "EDU": "school", "GOV": "government",
+                                "AGR": "farm", "ASS": "civic"}.get(prefix, "yes")
+        try:
+            sid = int(props.get("id")) if int(source_id) == 0 else None
+        except (TypeError, ValueError):
+            sid = None
+        if sid is not None:
+            tags["adam:source_osm_id"] = str(sid)
+        tags["adam:source_geometry"] = "OpenBuildingMap OSM/Google/Microsoft conflation"
+        seed = str(props.get("id") or len(output))
+        synthetic_id = 6000000000 + (sum((i + 1) * ord(ch) for i, ch in enumerate(seed)) % 900000000)
+        for polygon_index, polygon in enumerate(polygons):
+            if not polygon:
+                continue
+            points = []
+            for point in polygon[0]:
+                if isinstance(point, (list, tuple)) and len(point) >= 2:
+                    lon, lat = float(point[0]), float(point[1])
+                    if math.isfinite(lat) and math.isfinite(lon):
+                        points.append({"lat": lat, "lon": lon})
+            if len(points) >= 4:
+                output.append({"type": "way", "id": synthetic_id + polygon_index,
+                               "tags": dict(tags), "geometry": points})
+    return output
+
 def _merge_overture_building_attributes(primary, overture):
     """Join Overture's multi-source attributes to primary footprints; append only unmatched real footprints."""
     primary_by_osm = {}
@@ -655,13 +732,16 @@ def source_elements(slug, lat0, lon0):
         overture_buildings = _geojson_overture_elements(SOURCE / slug / "overture-building-details.geojson")
         overture_parts = _geojson_overture_elements(SOURCE / slug / "overture-building-parts.geojson", part=True)
         overture_additions = _merge_overture_building_attributes(footprints + detail_buildings, overture_buildings)
-        # Re-read enriched OSM detail tags so exact OSM IDs transfer Overture
+        obm_buildings = _geojson_openbuildingmap_elements(SOURCE / slug / "openbuildingmap-buildings.geojson")
+        obm_additions = _merge_overture_building_attributes(footprints + detail_buildings + overture_additions, obm_buildings)
+        # Re-read enriched OSM detail tags so exact OSM IDs transfer source
         # heights/floors/names to their OpenFreeMap primary footprints.
         for item in detail_buildings:
             source_id = _osm_id((item.get("tags") or {}).get("adam:source_osm_id") or item.get("id"))
             if source_id is not None:
                 detail_by_id[source_id] = item.get("tags") or {}
-        address_assignments = _merge_address_points(slug, footprints + detail_buildings + overture_additions)
+        address_assignments = _merge_address_points(
+            slug, footprints + detail_buildings + overture_additions + obm_additions)
         if address_assignments:
             print(f"MERGED {address_assignments} Tabarbour address points into building footprints", flush=True)
         footprint_ids = set()
@@ -751,7 +831,7 @@ def source_elements(slug, lat0, lon0):
         unmatched_overture_parts = [x for x in overture_parts
             if _osm_id((x.get("tags") or {}).get("adam:source_osm_id") or x.get("id")) not in known_part_ids]
         combined = (preserved + primary_roads + footprints + unmatched_buildings +
-                    unmatched_parts + overture_additions + unmatched_overture_parts)
+                    unmatched_parts + overture_additions + unmatched_overture_parts + obm_additions)
         if combined:
             return combined, source_path, source_kind
 
