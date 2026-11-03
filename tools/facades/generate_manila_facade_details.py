@@ -237,7 +237,7 @@ def main():
         for writer in writers: writer.finish()
     except Exception:
         for writer in writers:
-            if not writer.file.closed: writer.file.close()
+            if writer.file is not None and not writer.file.closed: writer.file.close()
         raise
     report={"status":"success","city":"Manila","source_file":str(SOURCE.relative_to(ROOT)),
         "source_feature_count":len(source_features),"building_polygon_parts":building_parts,
