@@ -154,7 +154,7 @@ def process_city(city: Path, limit: int, delay: float = 0.0) -> dict:
     target.parent.mkdir(parents=True, exist_ok=True)
     fd, temp = tempfile.mkstemp(prefix=target.name + ".", dir=target.parent)
     try:
-        with open(fd, "w", encoding="utf-8", closefd=True) as stream:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
             stream.write(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
         os.replace(temp, target)
     finally:

@@ -36,7 +36,7 @@ jobs:
           persist-credentials: true
           filter: blob:none
           sparse-checkout: |
-            /tools/facades/
+            /tools/
             /data/facades/cities/manila/
             /app/src/main/assets/facades/
           sparse-checkout-cone-mode: false
