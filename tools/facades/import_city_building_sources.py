@@ -98,14 +98,26 @@ def import_openfreemap(city,bbox,refresh,git_checkpoint):
     west,south,east,north=bbox
     groups=defaultdict(list); props={}
     fetched=0
+    missing_tiles=[]
+    expected_tiles=0
     for x in range(tile_x(west,z),tile_x(east,z)+1):
         for y in range(tile_y(north,z),tile_y(south,z)+1):
+            expected_tiles += 1
             url=template.replace("{z}",str(z)).replace("{x}",str(x)).replace("{y}",str(y))
-            try:
-                tile=mapbox_vector_tile.decode(get_bytes(url),default_options={"y_coord_down":True})
-                fetched+=1
-            except Exception as exc:
-                print(f"WARN {city.name}: tile {z}/{x}/{y}: {exc}",flush=True); continue
+            tile=None
+            last_error=None
+            for attempt in range(3):
+                try:
+                    tile=mapbox_vector_tile.decode(get_bytes(url),default_options={"y_coord_down":True})
+                    last_error=None
+                    break
+                except Exception as exc:
+                    last_error=exc
+                    time.sleep(attempt+1)
+            if tile is None:
+                missing_tiles.append(f"{z}/{x}/{y}: {last_error}")
+                continue
+            fetched+=1
             layer=tile.get("building") or {}
             for f in layer.get("features",[]):
                 g=f.get("geometry") or {}
@@ -120,6 +132,8 @@ def import_openfreemap(city,bbox,refresh,git_checkpoint):
                 fid=p.get("osm_id") or p.get("osm_way_id") or f.get("id")
                 key=str(fid) if fid is not None else f"xy:{round(geom.centroid.x,6)}:{round(geom.centroid.y,6)}"
                 groups[key].append(geom); props[key]=p
+    if missing_tiles or fetched != expected_tiles:
+        raise RuntimeError(f"Incomplete OpenFreeMap building tile coverage: {fetched}/{expected_tiles}; " + " | ".join(missing_tiles[:12]))
     features=[]
     for key,parts in groups.items():
         try: geom=unary_union(parts)
