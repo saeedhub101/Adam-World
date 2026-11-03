@@ -38,6 +38,16 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Import every vector layer at zooms 1 through 16
         run: python -u tools/facades/import_manila_buildings_openfreemap_openmaptiles.py
+      - name: Commit imported Manila GeoJSON immediately
+        run: |
+          git add data/facades/cities/manila
+          if ! git diff --cached --quiet; then
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Save imported Manila vector layers and buildings GeoJSON"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
+            echo "No imported GeoJSON changes to commit."
+          fi
       - name: Rebuild Manila offline shards from canonical buildings GeoJSON
         run: python -u tools/build_manila_stream_shards.py
       - name: Commit all layer GeoJSON and rebuilt game data
