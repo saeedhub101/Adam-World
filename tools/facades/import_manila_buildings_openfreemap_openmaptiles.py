@@ -8,6 +8,7 @@ return usable building polygons and the merged output validates.
 """
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import math
@@ -62,7 +63,12 @@ def fetch(url, attempts=4):
         try:
             req = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/x-protobuf"})
             with urlopen(req, timeout=45) as response:
-                return response.read()
+                payload = response.read()
+                # Some vector-tile hosts return gzip-compressed PBF bodies.
+                # urllib does not transparently decompress HTTP content.
+                if payload.startswith(b"\\x1f\\x8b"):
+                    payload = gzip.decompress(payload)
+                return payload
         except (HTTPError, URLError, TimeoutError, OSError) as exc:
             errors.append(str(exc))
             if isinstance(exc, HTTPError) and exc.code not in (408, 429, 500, 502, 503, 504):
