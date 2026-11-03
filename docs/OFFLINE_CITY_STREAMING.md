@@ -18,6 +18,15 @@
 - `data/offline-world/<city>/elements.json` remains a source of supplementary non-road context and building gaps; its OSM road ways are excluded whenever primary OpenFreeMap transportation is present.
 - `tools/build_offline_city_tiles.py` packages these prioritized sources into 250 m tiles and writes a manifest per city.
 
+### Manila Local source override (2026-11-03)
+
+- `data/facades/cities/manila/buildings.geojson` is the **only** building source for Manila Local. The current committed file contains 2,642 polygon features. Its geometry and available properties (names, addresses, heights, levels, materials and other tags) are passed directly into the spatial shards.
+- Manila Local does not read `building-details.geojson`, `building-footprints.geojson`, Overture building/building-part extracts, or the building layer inside the PBF tiles. These sources must not be merged into or substituted for `buildings.geojson`.
+- OpenMapTiles PBF is retained only for road geometry and non-building POIs/address points. PBF-derived road names are discarded because nearest-line matching can attach a neighbouring street's name to the wrong road.
+- `data/facades/cities/manila/transportation.geojson` is always read. Its named street geometries are rendered as label-only overlays when PBF road surfaces exist, so the street label follows its own source line without duplicating or moving the road. If PBF road geometry is unavailable, the transportation file supplies the road lines as well.
+- The Manila manifest records the exact building source, building/name/height/level counts, street-label source and number of imported label features. The Android release workflow validates both canonical GeoJSON files and no longer requires obsolete OSM/Overture building extracts.
+
+
 ## Spatial streaming
 
 - The player position is projected against the selected city's fixed catalog origin.
