@@ -90,16 +90,10 @@ final class TileLoader extends Thread {
     void refreshTabarbourDataset() {
         synchronized (this) {
             tabarbourOfflineDir.mkdirs();
-            File[] cached = tabarbourOfflineDir.listFiles();
-            if (cached != null) {
-                for (File file : cached) {
-                    String name = file.getName();
-                    if (file.isFile() && (name.equals("manifest.json")
-                            || name.matches("tile_-?\\d+_-?\\d+\\.json"))) {
-                        file.setLastModified(0L);
-                    }
-                }
-            }
+            // Refresh only the small manifest. Cell files are immutable and keyed
+            // by the manifest dataset_version, so Home never redownloads the city.
+            File manifest = new File(tabarbourOfflineDir, "manifest.json");
+            if (manifest.isFile()) manifest.setLastModified(0L);
             synchronized (bundledCityTileCache) {
                 bundledCityTileCache.clear();
             }
@@ -239,6 +233,7 @@ final class TileLoader extends Thread {
     }
 
     /** Fetch Tabarbour spatial cells from the repository; no city data is bundled in the APK. */
+    /** Fetch only nearby immutable Tabarbour cells; cache by the manifest's content version. */
     private JSONObject loadBundledCityRoot(double south, double west, double north, double east) throws Exception {
         final String slug = offlineCitySlug;
         if (!"tabarbour".equals(slug)) return emptyElements();
@@ -258,10 +253,14 @@ final class TileLoader extends Thread {
             }
             manifest = new JSONObject(readFile(manifestFile));
             if (!"tabarbour".equals(manifest.optString("slug")) || manifest.optJSONObject("center") == null
-                    || manifest.optJSONArray("tiles") == null) {
-                throw new IOException("Invalid Tabarbour online manifest");
+                    || manifest.optJSONArray("tiles") == null || !manifest.optBoolean("complete", false)
+                    || !"complete".equals(manifest.optString("status"))) {
+                throw new IOException("Tabarbour stream manifest is incomplete or invalid");
             }
         }
+        String datasetVersion = manifest.optString("dataset_version", "legacy");
+        if (datasetVersion.isEmpty() || !datasetVersion.matches("[A-Za-z0-9_-]{1,80}"))
+            throw new IOException("Invalid Tabarbour dataset version");
         JSONObject center = manifest.getJSONObject("center");
         double lat0 = center.getDouble("lat"), lon0 = center.getDouble("lon");
         double tileSize = manifest.optDouble("tile_size_m", 250.0);
@@ -281,23 +280,22 @@ final class TileLoader extends Thread {
         HashSet<String> seen = new HashSet<>();
         for (int x = minX; x <= maxX; x++) for (int z = minZ; z <= maxZ; z++) {
             if (!expectedTiles.contains(x + "_" + z)) continue;
-            String tileKey = "tabarbour:" + x + ":" + z;
+            String tileKey = "tabarbour:" + datasetVersion + ":" + x + ":" + z;
             JSONObject tile;
             synchronized (bundledCityTileCache) { tile = bundledCityTileCache.get(tileKey); }
             if (tile == null) {
-                File tileFile = new File(tabarbourOfflineDir, "tile_" + x + "_" + z + ".json");
-                if (!tileFile.isFile() || tileFile.length() == 0
-                        || System.currentTimeMillis() - tileFile.lastModified() > 5L * 60 * 1000) {
+                File tileFile = new File(tabarbourOfflineDir,
+                        "tile_" + datasetVersion + "_" + x + "_" + z + ".json");
+                if (!tileFile.isFile() || tileFile.length() == 0) {
                     String url = TABARBOUR_DATA_BASE + "/tile_" + x + "_" + z + ".json";
                     try {
                         byte[] bytes = downloadBytes(url);
                         File tmp = new File(tileFile.getPath() + ".tmp");
                         try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
-                        if (!tmp.renameTo(tileFile)) { tmp.delete(); throw new IOException("Cannot cache Tabarbour tile " + tileKey); }
+                        if (!tmp.renameTo(tileFile)) { tmp.delete(); throw new IOException("Cannot cache Tabarbour cell " + tileKey); }
                         pruneTabarbourCache(tileFile);
-                    } catch (IOException refreshError) {
-                        // Keep a previously verified cell usable when the network is unavailable.
-                        if (!tileFile.isFile() || tileFile.length() == 0) throw refreshError;
+                    } catch (IOException downloadError) {
+                        if (!tileFile.isFile() || tileFile.length() == 0) throw downloadError;
                     }
                 }
                 try {

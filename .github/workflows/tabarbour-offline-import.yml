@@ -208,6 +208,7 @@ jobs:
         run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "OSM context and elevation"
 
       - name: Build spatial streaming tiles outside APK
+        id: build_tabarbour_stream
         continue-on-error: true
         run: |
           mkdir -p data/offline-world/tabarbour/stream
@@ -229,7 +230,7 @@ jobs:
           print(f"VALID merged Tabarbour stream: {m['element_count']} elements")
           PY
       - name: Publish spatial streaming tiles immediately
-        if: always()
+        if: steps.build_tabarbour_stream.outcome == 'success'
         run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "spatial streaming tiles"
 
       - name: Verify what was produced without blocking other stages

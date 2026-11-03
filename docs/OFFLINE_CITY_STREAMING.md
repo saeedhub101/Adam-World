@@ -158,3 +158,11 @@ The native offline Amman stream is generated exclusively from the already import
 - HDX is queried for the exact public dataset title **Buildings of Jordan**. A supported resource is clipped to Tabarbour before saving. If the exact package/resource is absent or cannot be read, a status report is written and the workflow continues; no substitute dataset is silently selected. The actual dataset licence is retained from HDX metadata and must be reviewed before redistribution.
 - Both sources are added to the existing provenance-preserving merge. Explicit OSM identity is preferred; spatial reconciliation requires high overlap and close centroids. Unmatched valid polygons can be added, while uncertain overlaps remain separate with source provenance for QA. Building parts remain separate from parent footprints.
 - Footprints alone do not provide verified names, house numbers, heights, storeys, materials or facade appearance. Those fields are retained only when a source explicitly supplies them; no values are fabricated. Existing footprints and source files are never deleted by the importer.
+
+
+## Tabarbour stream integrity and cache (2026-11-03)
+
+- The stream builder must use the canonical merged multi-source building manifest; it must fail rather than publish OSM context-only data as a complete city.
+- Tile files are built in a staging directory. The old complete manifest remains published until all replacement cells validate; the new complete manifest is published last. Stale cells not referenced by the new manifest are removed.
+- Each complete manifest carries a content-derived `dataset_version` and building count. Android caches cells by that version and never redownloads an unchanged cell merely because Home was pressed.
+- Home refreshes the small manifest only. Existing immutable versioned cell files remain available, and a changed dataset version naturally selects a new cache namespace.

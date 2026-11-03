@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import argparse
+import hashlib
 import json
 import math
 import shutil
@@ -1075,6 +1076,20 @@ def main():
         lat0, lon0 = float(center["lat"]), float(center["lon"])
         kx = 111320.0 * math.cos(math.radians(lat0))
         raw_elements, source_path, source_kind = source_elements(slug, lat0, lon0)
+        if slug == "tabarbour":
+            if not source_kind.startswith("tabarbour-canonical-merged-multisource-buildings"):
+                raise SystemExit(f"Refusing to publish incomplete Tabarbour sources: {source_kind}")
+            merged_manifest = read_json(city_source / "merged" / "manifest.json")
+            expected_buildings = int(merged_manifest.get("merged_building_count", 0))
+            actual_buildings = sum(
+                1 for item in raw_elements
+                if (item.get("tags") or {}).get("building") or (item.get("tags") or {}).get("building:part")
+            )
+            if expected_buildings < 20000 or actual_buildings < 20000:
+                raise SystemExit(
+                    f"Tabarbour merged building source incomplete: {actual_buildings} renderable of {expected_buildings}"
+                )
+            print(f"VALID Tabarbour canonical building source: {actual_buildings} features", flush=True)
         buckets = defaultdict(list)
         seen = set()
 
@@ -1094,48 +1109,68 @@ def main():
         # Tabarbour is a remotely streamed city dataset, never Android assets.
         city_out = (FULL_SOURCE / slug / "stream") if slug == "tabarbour" else (OUTPUT / slug)
         city_out.mkdir(parents=True, exist_ok=True)
-        tiles = []
         ordered_buckets = sorted(buckets.items())
-        partial_manifest = {
-            "schema_version": 1, "slug": slug, "name": city["name"],
-            "center": center, "tile_size_m": TILE_METERS,
-            "source": source_path, "source_kind": source_kind,
-            "status": "building", "complete": False,
-            "expected_tile_count": len(ordered_buckets), "tiles": [],
-        }
-        atomic_json(city_out / "manifest.json", partial_manifest)
-        for tile_index, ((ix, iz), elements) in enumerate(ordered_buckets, 1):
-            filename = f"tile_{ix}_{iz}.json"
-            atomic_json(city_out / filename, {"elements": elements})
-            tiles.append({
-                "file": filename, "ix": ix, "iz": iz,
-                "min_x": ix * TILE_METERS, "max_x": (ix + 1) * TILE_METERS,
-                "min_z": iz * TILE_METERS, "max_z": (iz + 1) * TILE_METERS,
-                "count": len(elements),
-            })
-            if tile_index % max(1, args.checkpoint_every) == 0:
-                partial_manifest["tiles"] = list(tiles)
-                partial_manifest["completed_tile_count"] = tile_index
-                partial_manifest["element_count"] = sum(item["count"] for item in tiles)
-                atomic_json(city_out / "manifest.json", partial_manifest)
-                print(f"TILE CHECKPOINT {slug}: {tile_index}/{len(ordered_buckets)} tiles", flush=True)
+        # Build into a private staging directory. The last published manifest and
+        # its referenced cells remain intact if this build is interrupted.
+        staging = Path(tempfile.mkdtemp(prefix=".stream-build-", dir=city_out))
+        tiles = []
+        digest = hashlib.sha256()
+        try:
+            for tile_index, ((ix, iz), elements) in enumerate(ordered_buckets, 1):
+                filename = f"tile_{ix}_{iz}.json"
+                tile_path = staging / filename
+                atomic_json(tile_path, {"elements": elements})
+                digest.update(filename.encode("utf-8"))
+                with tile_path.open("rb") as handle:
+                    for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                        digest.update(chunk)
+                tiles.append({
+                    "file": filename, "ix": ix, "iz": iz,
+                    "min_x": ix * TILE_METERS, "max_x": (ix + 1) * TILE_METERS,
+                    "min_z": iz * TILE_METERS, "max_z": (iz + 1) * TILE_METERS,
+                    "count": len(elements),
+                })
+                if tile_index % max(1, args.checkpoint_every) == 0:
+                    print(f"TILE BUILD CHECKPOINT {slug}: {tile_index}/{len(ordered_buckets)} tiles (staged, not published)", flush=True)
 
-        manifest = {
-            "schema_version": 1, "slug": slug, "name": city["name"],
-            "center": center,
-            "coverage_radius_m": float(city.get("discovery_radius_m", 650)),
-            "tile_size_m": TILE_METERS,
-            "source": source_path, "source_kind": source_kind,
-            "status": "complete", "complete": True,
-            "element_count": sum(len(v) for v in buckets.values()),
-            "tiles": tiles,
-        }
-        elevation_source = city_source / "elevation-grid.json"
-        if slug == "amman" and elevation_source.is_file():
-            shutil.copy2(elevation_source, city_out / "elevation-grid.json")
-            manifest["elevation_grid"] = "elevation-grid.json"
-            manifest["elevation_source"] = "Copernicus DEM GLO-30"
-        atomic_json(city_out / "manifest.json", manifest)
+            manifest = {
+                "schema_version": 1, "slug": slug, "name": city["name"],
+                "center": center,
+                "coverage_radius_m": float(city.get("discovery_radius_m", 650)),
+                "tile_size_m": TILE_METERS,
+                "source": source_path, "source_kind": source_kind,
+                "status": "complete", "complete": True,
+                "element_count": sum(len(v) for v in buckets.values()),
+                "expected_tile_count": len(tiles), "tiles": tiles,
+                "dataset_version": digest.hexdigest()[:24],
+            }
+            if slug == "tabarbour":
+                manifest["building_count"] = sum(
+                    1 for items in buckets.values() for item in items
+                    if (item.get("tags") or {}).get("building") or (item.get("tags") or {}).get("building:part")
+                )
+            elevation_source = city_source / "elevation-grid.json"
+            if slug == "amman" and elevation_source.is_file():
+                shutil.copy2(elevation_source, staging / "elevation-grid.json")
+                manifest["elevation_grid"] = "elevation-grid.json"
+                manifest["elevation_source"] = "Copernicus DEM GLO-30"
+            if slug == "tabarbour" and (
+                manifest["building_count"] < 20000 or manifest["element_count"] < 20000
+            ):
+                raise RuntimeError(
+                    f"Refusing incomplete Tabarbour stream: buildings={manifest['building_count']} elements={manifest['element_count']}"
+                )
+            atomic_json(staging / "manifest.json", manifest)
+            # Publish immutable cell files first and the complete manifest last.
+            for item in tiles:
+                os.replace(staging / item["file"], city_out / item["file"])
+            active_files = {item["file"] for item in tiles}
+            for old_cell in city_out.glob("tile_*.json"):
+                if old_cell.name not in active_files:
+                    old_cell.unlink()
+            os.replace(staging / "manifest.json", city_out / "manifest.json")
+        finally:
+            shutil.rmtree(staging, ignore_errors=True)
         count = manifest["element_count"]
         total_elements += count
         total_tiles += len(tiles)
