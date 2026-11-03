@@ -85,7 +85,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private Textures tex;
     private Mesh cube, groundMesh, skyQuad, kidHead, seaMesh;
     private Mesh[] vehicleModels;
-    private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN
+    private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN;
     private final HashMap<Long, Mesh> terrain = new HashMap<>();
     private final float[] proj = new float[16], view = new float[16], vp = new float[16];
     private final float[] ident = new float[16], tmp = new float[16], base = new float[16];
