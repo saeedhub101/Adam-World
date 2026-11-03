@@ -119,8 +119,10 @@ PBF_ROAD_COUNT=0
 def read_pbf(writer):
     try: import mapbox_vector_tile
     except ImportError as e: raise SystemExit("Install mapbox-vector-tile before importing Manila PBF") from e
-    files=sorted(PBF_ROOT.rglob("*.pbf"))
-    if not files: raise SystemExit(f"No Manila PBF files found under {PBF_ROOT}")
+    files=sorted(PBF_ROOT.rglob("*.pbf")) if PBF_ROOT.is_dir() else []
+    if not files:
+        print(f"SKIP optional PBF roads/POIs: no files under {PBF_ROOT}; using transportation.geojson for Manila roads and names", flush=True)
+        return 0
     count=0
     for path in files:
         try:
@@ -314,9 +316,9 @@ def main():
     writer=Shards()
     building_stats=read_geojson_buildings(writer)
     read_pbf(writer)
-    # Always import dedicated street-name geometry. With PBF roads these are
-    # label-only overlays; without PBF roads they also provide road surfaces.
-    transport_stats=read_transport(writer,label_only=PBF_ROAD_COUNT>0)
+    # GeoJSON transportation is the available canonical road source. It carries
+    # both road geometry and names; PBF supplements are optional, never required.
+    transport_stats=read_transport(writer,label_only=False)
     thematic=read_thematic_csv(writer)
     context=read_context(writer)
     writer.close()
