@@ -202,6 +202,26 @@ final class TileBuilder {
                 if (nm.isEmpty()) nm = tg(tags, "name:en");
                 if (nm.isEmpty()) nm = tg(tags, "ref");
                 addRoad(td, tags, hw, nm, names, xs, zs, xMin, xMax, zMin, zMax, tabarbour);
+            } else if (tg(tags,"railway").equals("platform") || tg(tags,"public_transport").equals("platform")) {
+                boolean elevatedPlatform = (!tg(tags,"bridge").isEmpty() && !tg(tags,"bridge").equals("no"))
+                        || measure(tg(tags,"layer")) > 0f;
+                float platformY = 0.24f + (elevatedPlatform ? bridgeDeckOffset(tags,true,false,true) : 0f);
+                float[][] platform = clean(xs,zs);
+                if (platform != null && Math.abs(Poly.area(platform[0],platform[1])) >= 2f
+                        && overlaps(platform,xMin,xMax,zMin,zMax)) {
+                    int[] tris = Poly.earClip(platform[0],platform[1]);
+                    GeoBuf platformBuf = td.bufs[B_ROADN];
+                    for (int i=0;i+2<tris.length;i+=3) {
+                        for (int k=0;k<3;k++) {
+                            int v=tris[i+k];
+                            platformBuf.v(platform[0][v],Terrain.h(platform[0][v],platform[1][v])+platformY,
+                                    platform[1][v],0,0,0.46f,0.48f,0.50f);
+                        }
+                        platformBuf.fixTri();
+                    }
+                } else {
+                    addClippedRibbon(td,xs,zs,3.2f,platformY,td.bufs[B_ROADN],0.46f,0.48f,0.50f);
+                }
             } else if (tg(tags,"railway").matches("rail|light_rail|tram|subway|narrow_gauge|monorail")) {
                 boolean railBridge = !tg(tags,"bridge").isEmpty() && !tg(tags,"bridge").equals("no");
                 boolean railTunnel = !tg(tags,"tunnel").isEmpty() && !tg(tags,"tunnel").equals("no");
@@ -1080,8 +1100,8 @@ final class TileBuilder {
         }
         if (sourceWidth > 0.5f && sourceWidth <= 120f) w = sourceWidth;
         String surface = tg(tags, "surface").toLowerCase(java.util.Locale.US);
-        boolean bridge = tg(tags, "bridge").equals("yes");
-        boolean tunnel = tg(tags, "tunnel").equals("yes");
+        boolean bridge = !tg(tags, "bridge").isEmpty() && !tg(tags, "bridge").equals("no");
+        boolean tunnel = !tg(tags, "tunnel").isEmpty() && !tg(tags, "tunnel").equals("no");
         boolean veh = w >= 4.5f && !hw.equals("pedestrian");
         boolean labelOnly = tg(tags, "adam:label_only").equals("yes");
         for (ArrayList<float[]> pc : clipLine(xs, zs, xMin, xMax, zMin, zMax)) {
