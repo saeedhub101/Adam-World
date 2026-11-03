@@ -4,8 +4,9 @@
 
 - The Android game must not request OpenStreetMap/Overpass for road geometry or the map base. OpenStreetMap/Overpass is permitted only for supplementary missing building footprints/building parts when the player leaves pre-imported city coverage.
 - Three.js is bundled into the APK at `app/src/main/assets/vendor/three.min.js`.
-- City geometry is packaged under `app/src/main/assets/cities/<city>/`.
-- The native Android bridge reads these assets synchronously; the game requests only nearby spatial tiles.
+- Amman and Manila retain their existing city-specific delivery contracts.
+- Tabarbour is never packaged in the APK: every Tabarbour source and derived dataset lives under `data/offline-world/tabarbour/`, including `stream/` and `terrain/`.
+- Tabarbour is remotely streamed from `data/offline-world/tabarbour/stream/`; the Android client downloads only nearby cells into its bounded app-private cache.
 - Optional Panoramax/OpenAerialMap evidence lookup is user-triggered and is not part of startup or movement.
 
 ## Repository sources
@@ -140,3 +141,11 @@ Photorealistic facade texturing remains a separate, evidence-gated production ph
 ## Source boundary correction (2026-11-02)
 
 The native offline Amman stream is generated exclusively from the already imported directory `data/full-city-imports/amman/`. The shard builder must not read `data/facades`, `data/offline-world`, `data/offline-city`, external APIs, or any other city/source folder. It does not modify or replace those existing datasets. The generated compressed spatial cache is a separate derived output under `data/offline-city-stream/amman/`; it is not a second source dataset.
+
+
+## Tabarbour single-folder storage rule (2026-11-03)
+
+- All Tabarbour-owned files must live under `data/offline-world/tabarbour/`: city configuration, building footprints/details/parts, addresses, roads and road names, OSM context, transit routes, aerial and Panoramax catalogues, facade review queues, elevation source grids, terrain tiles, spatial stream tiles, manifests and future verified facade assets.
+- Do not write Tabarbour data to `data/facades/cities/tabarbour/` or `app/src/main/assets/cities/tabarbour/`. The importer workflow migrates existing files into the single offline-world folder and removes the obsolete locations after a successful publish.
+- The global city catalog may remain at `data/facades/cities/catalog.json`; it is registry metadata, not a Tabarbour dataset.
+- `TileLoader` reads the remote manifest and cells from `https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-world/tabarbour/stream`. The APK contains only the loader/runtime code, not Tabarbour city content.
