@@ -10,6 +10,7 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:hardwareAccelerated="true"
+        android:largeHeap="true"
         android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
         <provider
             android:name="androidx.core.content.FileProvider"
