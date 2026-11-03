@@ -472,7 +472,6 @@ def read_context(writer):
     return n
 
 def main():
-    raise SystemExit("Retired: Manila now loads data/offline-world/manila/elements.json directly; do not regenerate legacy shards.")
     writer=Shards()
     building_stats=read_geojson_buildings(writer)
     read_pbf(writer)
