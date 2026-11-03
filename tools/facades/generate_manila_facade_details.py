@@ -17,9 +17,11 @@ ROOT = Path(__file__).resolve().parents[2]
 CITY = ROOT / "data/facades/cities/manila"
 SOURCE = CITY / "buildings.geojson"
 OUT = CITY / "layers"
-WINDOWS_OUT = OUT / "facade-windows.geojson"
-DOORS_OUT = OUT / "facade-doors.geojson"
-BALCONIES_OUT = OUT / "facade-balconies.geojson"
+MAX_CHUNK_BYTES = 35_000_000  # safely below GitHub's 100 MB hard limit
+MAX_POLYGONS_PER_FEATURE = 1000
+WINDOWS_STEM = "facade-windows"
+DOORS_STEM = "facade-doors"
+BALCONIES_STEM = "facade-balconies"
 REPORT_OUT = CITY / "facade-details-report.json"
 TO_METERS = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True).transform
 TO_LONLAT = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True).transform
@@ -99,18 +101,75 @@ def as_feature(kind, building_id, name, height, levels, polygons):
         "geometry":{"type":"MultiPolygon","coordinates":polygons}}
 
 class FeatureWriter:
-    def __init__(self, path, name):
-        self.path, self.tmp = path, path.with_suffix(path.suffix+".tmp")
-        self.file = self.tmp.open("w",encoding="utf-8")
-        self.file.write('{"type":"FeatureCollection","name":'+json.dumps(name)+',"features":[')
+    """Write bounded-size, independently valid GeoJSON chunks."""
+    def __init__(self, directory, stem, name):
+        self.directory, self.stem, self.name = directory, stem, name
+        self.file = None
+        self.tmp = None
+        self.current_path = None
+        self.current_bytes = 0
+        self.current_count = 0
         self.count = 0
+        self.files = []
+        self.total_bytes = 0
+        self.chunk_index = 0
+
+    def _open_chunk(self):
+        self.chunk_index += 1
+        filename = f"{self.stem}-{self.chunk_index:04d}.geojson"
+        self.current_path = self.directory / filename
+        self.tmp = self.current_path.with_suffix(".geojson.tmp")
+        self.file = self.tmp.open("w", encoding="utf-8")
+        header = '{"type":"FeatureCollection","name":' + json.dumps(self.name) + ',"features":['
+        self.file.write(header)
+        self.current_bytes = len(header.encode("utf-8"))
+        self.current_count = 0
+
+    def _close_chunk(self):
+        if self.file is None:
+            return
+        self.file.write("]}\\n")
+        self.file.close()
+        self.tmp.replace(self.current_path)
+        size = self.current_path.stat().st_size
+        if size > MAX_CHUNK_BYTES:
+            raise RuntimeError(f"Chunk exceeds safe size limit: {self.current_path} ({size:,} bytes)")
+        self.files.append({"file": str(self.current_path.relative_to(ROOT)), "features": self.current_count, "bytes": size})
+        self.total_bytes += size
+        self.file = self.tmp = self.current_path = None
+
     def add(self, feature):
-        if feature is None: return
-        if self.count: self.file.write(",")
-        self.file.write(json.dumps(feature,ensure_ascii=False,separators=(",",":")))
-        self.count += 1
+        if feature is None:
+            return
+        coordinates = feature.get("geometry", {}).get("coordinates", [])
+        if not coordinates:
+            return
+        # A single source record may contain thousands of separate building surfaces.
+        # Split those into smaller features so no individual record can become enormous.
+        for offset in range(0, len(coordinates), MAX_POLYGONS_PER_FEATURE):
+            piece = dict(feature)
+            piece["id"] = f"{feature.get('id', self.stem)}:{offset // MAX_POLYGONS_PER_FEATURE + 1}"
+            piece["geometry"] = {"type": "MultiPolygon", "coordinates": coordinates[offset:offset + MAX_POLYGONS_PER_FEATURE]}
+            encoded = json.dumps(piece, ensure_ascii=False, separators=(",", ":"))
+            encoded_bytes = len(encoded.encode("utf-8"))
+            extra = encoded_bytes + (1 if self.current_count else 0)
+            if self.file is None:
+                self._open_chunk()
+            elif self.current_count and self.current_bytes + extra + 3 > MAX_CHUNK_BYTES:
+                self._close_chunk()
+                self._open_chunk()
+            if self.current_count:
+                self.file.write(",")
+                self.current_bytes += 1
+            self.file.write(encoded)
+            self.current_bytes += encoded_bytes
+            self.current_count += 1
+            self.count += 1
+
     def finish(self):
-        self.file.write("]}\n"); self.file.close(); self.tmp.replace(self.path)
+        if self.file is None:
+            self._open_chunk()  # even an empty optional layer is a valid collection
+        self._close_chunk()
 
 def main():
     if not SOURCE.is_file() or SOURCE.stat().st_size == 0: raise SystemExit(f"Missing canonical source: {SOURCE}")
@@ -120,9 +179,13 @@ def main():
     if data.get("type")!="FeatureCollection" or not isinstance(data.get("features"),list) or not data["features"]:
         raise SystemExit("buildings.geojson must be a non-empty FeatureCollection")
     source_features = data["features"]
-    writers = [FeatureWriter(WINDOWS_OUT,"Manila facade windows"),
-               FeatureWriter(DOORS_OUT,"Manila facade doors"),
-               FeatureWriter(BALCONIES_OUT,"Manila facade balconies")]
+    # Remove only chunks owned by this generator; never touch the canonical input.
+    for stem in (WINDOWS_STEM, DOORS_STEM, BALCONIES_STEM):
+        for stale in OUT.glob(stem + "-*.geojson*"):
+            stale.unlink()
+    writers = [FeatureWriter(OUT, WINDOWS_STEM, "Manila facade windows"),
+               FeatureWriter(OUT, DOORS_STEM, "Manila facade doors"),
+               FeatureWriter(OUT, BALCONIES_STEM, "Manila facade balconies")]
     windows, doors, balconies = writers
     skipped = invalid = building_parts = window_count = door_count = balcony_count = 0
     try:
@@ -179,10 +242,11 @@ def main():
     report={"status":"success","city":"Manila","source_file":str(SOURCE.relative_to(ROOT)),
         "source_feature_count":len(source_features),"building_polygon_parts":building_parts,
         "skipped_features_or_parts":skipped,"invalid_features":invalid,
+        "chunk_limits":{"max_file_bytes":MAX_CHUNK_BYTES,"max_polygons_per_feature":MAX_POLYGONS_PER_FEATURE},
         "outputs":{
-            str(WINDOWS_OUT.relative_to(ROOT)):{"building_features":windows.count,"window_surfaces":window_count,"bytes":WINDOWS_OUT.stat().st_size},
-            str(DOORS_OUT.relative_to(ROOT)):{"building_features":doors.count,"door_surfaces":door_count,"bytes":DOORS_OUT.stat().st_size},
-            str(BALCONIES_OUT.relative_to(ROOT)):{"building_features":balconies.count,"balcony_surfaces":balcony_count,"bytes":BALCONIES_OUT.stat().st_size}},
+            WINDOWS_STEM:{"geojson_features":windows.count,"window_surfaces":window_count,"chunks":windows.files,"total_bytes":windows.total_bytes},
+            DOORS_STEM:{"geojson_features":doors.count,"door_surfaces":door_count,"chunks":doors.files,"total_bytes":doors.total_bytes},
+            BALCONIES_STEM:{"geojson_features":balconies.count,"balcony_surfaces":balcony_count,"chunks":balconies.files,"total_bytes":balconies.total_bytes}},
         "method":"Adapted from Adam-City Ermita: 3m window spacing, estimated floors, 0.95m x 1.9m doors, deterministic occasional balconies.",
         "geometry":"3D GeoJSON MultiPolygon; WGS84 longitude/latitude and third ordinate = height above building ground in metres.",
         "limitations":["Details are procedural placeholders, not measured or photo-verified.",
