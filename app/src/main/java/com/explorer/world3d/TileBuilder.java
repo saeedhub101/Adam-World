@@ -346,16 +346,22 @@ final class TileBuilder {
     }
 
     private static float bHeight(JSONObject t, long id, String b) {
-        // Prefer mapped OSM height and floor data. Provider render_height is used
-        // only when OSM has no explicit height/levels for this footprint.
+        // Use explicit metric heights from source data first. OpenFreeMap's
+        // render_height is a cartographic fallback (often a generic 5 m), not
+        // a surveyed building height, so it must never override missing data.
         float h = measure(tg(t, "height"));
-        if (h > 0f) return Math.max(3f, h);
+        if (!(h > 0f)) h = measure(tg(t, "building:height"));
+        if (!(h > 0f)) h = measure(tg(t, "height:meters"));
+        if (h > 0f) return Math.max(2.5f, h);
         float levels = measure(tg(t, "building:levels"));
-        if (levels > 0f) return Math.max(3f, levels * 3.2f + 0.5f);
-        h = measure(tg(t, "render_height_m"));
-        if (!(h > 0f)) h = measure(tg(t, "render_height"));
-        if (h > 0f) return Math.max(3f, h);
-        // Explicitly conservative class fallback when the source has no height.
+        if (!(levels > 0f)) levels = measure(tg(t, "num_floors"));
+        if (!(levels > 0f)) levels = measure(tg(t, "levels"));
+        if (levels > 0f) {
+            float roof = measure(tg(t, "roof:height"));
+            if (!(roof > 0f)) roof = 0f;
+            return Math.max(2.5f, levels * 3.2f + roof);
+        }
+        // Explicitly conservative class fallback when no source supplies height/floors.
         if (b.equals("roof") || b.equals("carport") || b.equals("garage") || b.equals("garages")) return 3.5f;
         if (b.matches("house|detached|shed|hut|cabin|semidetached_house|bungalow|residential")) return 6.5f;
         if (b.matches("apartments|commercial|office|hotel|retail|hospital|university|school")) return 10.5f;
