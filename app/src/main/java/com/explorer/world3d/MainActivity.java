@@ -359,7 +359,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         loading.setTextSize(18);
         loading.setGravity(Gravity.CENTER);
         loading.setBackgroundColor(0xE00A0C14);
-        root.addView(loading, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        loading.setPadding(dp(18), dp(9), dp(18), dp(9));
+        loading.setClickable(false);
+        loading.setFocusable(false);
+        FrameLayout.LayoutParams loadingParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        loadingParams.setMargins(dp(8), dp(104), dp(8), 0);
+        root.addView(loading, loadingParams);
 
         setContentView(root);
         glView.requestFocus();
