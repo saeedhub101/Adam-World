@@ -1,0 +1,179 @@
+{
+  "city": "Manila",
+  "zooms": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "sources": [
+    "OpenFreeMap",
+    "OpenMapTiles"
+  ],
+  "source_zoom_tile_summary": {
+    "OpenFreeMap": {
+      "1": {
+        "tiles_with_data": 1,
+        "empty_tiles": 0
+      },
+      "2": {
+        "tiles_with_data": 1,
+        "empty_tiles": 0
+      },
+      "3": {
+        "tiles_with_data": 1,
+        "empty_tiles": 0
+      },
+      "4": {
+        "tiles_with_data": 1,
+        "empty_tiles": 0
+      },
+      "5": {
+        "tiles_with_data": 1,
+        "empty_tiles": 0
+      },
+      "6": {
+        "tiles_with_data": 1,
+        "empty_tiles": 0
+      },
+      "7": {
+        "tiles_with_data": 2,
+        "empty_tiles": 0
+      },
+      "8": {
+        "tiles_with_data": 2,
+        "empty_tiles": 0
+      },
+      "9": {
+        "tiles_with_data": 4,
+        "empty_tiles": 0
+      },
+      "10": {
+        "tiles_with_data": 4,
+        "empty_tiles": 0
+      },
+      "11": {
+        "tiles_with_data": 4,
+        "empty_tiles": 0
+      },
+      "12": {
+        "tiles_with_data": 7,
+        "empty_tiles": 0
+      },
+      "13": {
+        "tiles_with_data": 17,
+        "empty_tiles": 0
+      },
+      "14": {
+        "tiles_with_data": 48,
+        "empty_tiles": 0
+      },
+      "15": {
+        "tiles_with_data": 0,
+        "empty_tiles": 161
+      },
+      "16": {
+        "tiles_with_data": 0,
+        "empty_tiles": 579
+      }
+    },
+    "OpenMapTiles": {
+      "1": {
+        "tiles_with_data": 1,
+        "empty_tiles": 0
+      },
+      "2": {
+        "tiles_with_data": 1,
+        "empty_tiles": 0
+      },
+      "3": {
+        "tiles_with_data": 1,
+        "empty_tiles": 0
+      },
+      "4": {
+        "tiles_with_data": 1,
+        "empty_tiles": 0
+      },
+      "5": {
+        "tiles_with_data": 1,
+        "empty_tiles": 0
+      },
+      "6": {
+        "tiles_with_data": 1,
+        "empty_tiles": 0
+      },
+      "7": {
+        "tiles_with_data": 2,
+        "empty_tiles": 0
+      },
+      "8": {
+        "tiles_with_data": 2,
+        "empty_tiles": 0
+      },
+      "9": {
+        "tiles_with_data": 4,
+        "empty_tiles": 0
+      },
+      "10": {
+        "tiles_with_data": 4,
+        "empty_tiles": 0
+      },
+      "11": {
+        "tiles_with_data": 4,
+        "empty_tiles": 0
+      },
+      "12": {
+        "tiles_with_data": 7,
+        "empty_tiles": 0
+      },
+      "13": {
+        "tiles_with_data": 17,
+        "empty_tiles": 0
+      },
+      "14": {
+        "tiles_with_data": 48,
+        "empty_tiles": 0
+      },
+      "15": {
+        "tiles_with_data": 0,
+        "empty_tiles": 161
+      },
+      "16": {
+        "tiles_with_data": 0,
+        "empty_tiles": 579
+      }
+    }
+  },
+  "layer_feature_counts": {
+    "aeroway": 33,
+    "boundary": 166,
+    "building": 1759,
+    "housenumber": 4064,
+    "landcover": 1066,
+    "landuse": 1692,
+    "park": 2,
+    "place": 276,
+    "poi": 25027,
+    "transportation": 9273,
+    "transportation_name": 5741,
+    "water": 241,
+    "water_name": 21,
+    "waterway": 517
+  },
+  "total_layers": 14,
+  "total_features": 49878,
+  "native_zoom_policy": "Request z1-z16 exactly; empty responses are recorded, never fabricated or silently overzoomed.",
+  "outputs": "data/facades/cities/manila/layers/*.geojson"
+}
