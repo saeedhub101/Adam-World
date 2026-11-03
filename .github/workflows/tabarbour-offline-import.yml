@@ -140,11 +140,13 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile tools/build_offline_city_tiles.py
+          mkdir -p data/offline-world/tabarbour/stream
+          find data/offline-world/tabarbour/stream -maxdepth 1 -name 'tile_*.json' -delete
           python tools/build_offline_city_tiles.py --city tabarbour
-          test -s data/offline-world/tabarbour/manifest.json
-          test "$(find data/offline-world/tabarbour -maxdepth 1 -name 'tile_*.json' | wc -l)" -gt 0
+          test -s data/offline-world/tabarbour/stream/manifest.json
+          test "$(find data/offline-world/tabarbour/stream -maxdepth 1 -name 'tile_*.json' | wc -l)" -gt 0
           test -s data/offline-world/tabarbour/terrain/manifest.json
-          python -m json.tool data/offline-world/tabarbour/manifest.json >/dev/null
+          python -m json.tool data/offline-world/tabarbour/stream/manifest.json >/dev/null
           python -m json.tool data/offline-world/tabarbour/terrain/manifest.json >/dev/null
 
       - name: Verify external Tabarbour dataset and publish checkpoint
@@ -153,7 +155,7 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          base = Path("data/offline-world/tabarbour")
+          base = Path("data/offline-world/tabarbour/stream")
           manifest = json.loads((base / "manifest.json").read_text())
           tiles = list(base.glob("tile_*.json"))
           if manifest.get("slug") != "tabarbour":
