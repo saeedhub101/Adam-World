@@ -47,7 +47,6 @@ final class TileLoader extends Thread {
     private final Context context;
     private final File cacheDir;
     private final File offlineDir;
-    private final File manilaOfflineDir;
     private final File tabarbourOfflineDir;
     private final ErrorCallback cb;
     private final ArrayList<int[]> order = new ArrayList<>();
@@ -56,12 +55,7 @@ final class TileLoader extends Thread {
     private static final double AMMAN_KX = 111320.0 * Math.cos(Math.toRadians(AMMAN_LAT0));
     private static final double AMMAN_KY = 111132.0;
     private static final String OFFLINE_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-city-stream/amman";
-    private static final String MANILA_OFFLINE_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-city-stream/manila";
     private static final String TABARBOUR_DATA_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-world/tabarbour/stream";
-    private static final double MANILA_LAT0 = 14.57394;
-    private static final double MANILA_LON0 = 120.98283;
-    private static final double MANILA_KX = 111320.0 * Math.cos(Math.toRadians(MANILA_LAT0));
-    private static final double MANILA_KY = 111132.0;
     private static final long OFFLINE_CACHE_MAX_BYTES = 384L * 1024L * 1024L;
     private static final long ONLINE_CACHE_MAX_BYTES = 128L * 1024L * 1024L;
     private static final long CACHE_MAX_AGE_MS = 3L * 24L * 3600L * 1000L;
@@ -80,19 +74,8 @@ final class TileLoader extends Thread {
             };
     private volatile Set<String> offlineCells;
     private volatile String offlineDatasetVersion;
-    private volatile Set<String> offlineWindowTiles;
-    private final LinkedHashMap<String, JSONObject> offlineWindowShardCache =
-            new LinkedHashMap<String, JSONObject>(12, 0.75f, true) {
-                @Override protected boolean removeEldestEntry(Map.Entry<String, JSONObject> eldest) {
-                    return size() > 1;
-                }
-            };
-    private final LinkedHashMap<String, JSONObject> offlineShardCache =
-            new LinkedHashMap<String, JSONObject>(12, 0.75f, true) {
-                @Override protected boolean removeEldestEntry(Map.Entry<String, JSONObject> eldest) {
-                    return size() > 1;
-                }
-            };
+    // Canonical Manila data is bundled from data/offline-world/manila/.
+    private volatile JSONObject manilaSourceRoot;
 
     /** Mark cached Tabarbour cells stale when Home is pressed so the merged dataset is reloaded. */
     void refreshTabarbourDataset() {
@@ -111,7 +94,6 @@ final class TileLoader extends Thread {
         this.context = context.getApplicationContext();
         this.cacheDir = cacheDir;
         this.offlineDir = new File(cacheDir, "offline-amman");
-        this.manilaOfflineDir = new File(cacheDir, "offline-manila");
         this.tabarbourOfflineDir = new File(cacheDir, "offline-tabarbour");
         this.cb = cb;
         cacheDir.mkdirs();
@@ -148,8 +130,7 @@ final class TileLoader extends Thread {
     void trimMemory() {
         ready.clear();
         synchronized (bundledCityTileCache) { bundledCityTileCache.clear(); }
-        synchronized (offlineWindowShardCache) { offlineWindowShardCache.clear(); }
-        synchronized (offlineShardCache) { offlineShardCache.clear(); }
+        manilaSourceRoot = null;
         bundledCityRoot = null;
         bundledCityManifest = null;
     }
@@ -157,10 +138,8 @@ final class TileLoader extends Thread {
     void resetOfflineShardState() {
         // These references are volatile; avoid blocking the GL thread on a network-held monitor.
         offlineCells = null;
-        offlineWindowTiles = null;
         offlineDatasetVersion = null;
-        synchronized (offlineWindowShardCache) { offlineWindowShardCache.clear(); }
-        synchronized (offlineShardCache) { offlineShardCache.clear(); }
+        manilaSourceRoot = null;
     }
 
     @Override public void run() {
@@ -214,7 +193,7 @@ final class TileLoader extends Thread {
         if (offlineAmman) {
             root = loadOfflineRoot(south, west, north, east);
         } else if (offlineManila) {
-            root = loadManilaRoot(ix, iz, south, west, north, east);
+            root = loadManilaRoot(south, west, north, east);
         } else if (offlineCitySlug != null) {
             root = loadBundledCityRoot(south, west, north, east);
         } else {
@@ -456,127 +435,45 @@ final class TileLoader extends Thread {
         return result;
     }
 
-    private JSONObject loadManilaRoot(int tileX, int tileZ, double south, double west, double north, double east) throws Exception {
-        ensureManilaManifest();
-        double lat = (south + north) * 0.5, lon = (west + east) * 0.5;
-        int sx = (int) Math.floor((lon - MANILA_LON0) * MANILA_KX / 1000.0);
-        int sz = (int) Math.floor(-(lat - MANILA_LAT0) * MANILA_KY / 1000.0);
-        String cell = sx + "_" + sz;
-        String version = offlineDatasetVersion == null ? "current" : offlineDatasetVersion;
-        if (!offlineCells.contains(cell)) {
-            JSONObject empty = emptyElements();
-            appendManilaWindowTile(empty, tileX, tileZ, version);
-            return empty;
-        }
-        String key = version + ":" + cell;
-        JSONObject cached;
-        synchronized (offlineShardCache) { cached = offlineShardCache.get(key); }
-        if (cached != null) {
-            JSONObject filtered = filterManilaRoot(cached, south, west, north, east);
-            appendManilaWindowTile(filtered, tileX, tileZ, version);
-            return filtered;
-        }
-        manilaOfflineDir.mkdirs();
-        File versionDir = new File(manilaOfflineDir, version); versionDir.mkdirs();
-        File shard = new File(versionDir, cell + ".jsonl.gz");
-        if (!shard.isFile() || shard.length() == 0) {
-            byte[] bytes = downloadBytes(MANILA_OFFLINE_BASE + "/shards/" + cell + ".jsonl.gz");
-            File tmp = new File(shard.getPath() + ".tmp");
-            try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
-            if (!tmp.renameTo(shard)) { tmp.delete(); throw new IOException("Cannot cache Manila shard " + cell); }
-            pruneOfflineCache(shard);
-        }
-        // Stream JSONL records and retain only features intersecting this render tile.
-        // Never materialize/cache the complete 1 km shard: that duplicated the whole
-        // city cell in Java heap and caused OutOfMemoryError on mobile devices.
-        JSONArray elements = new JSONArray();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                new GZIPInputStream(new FileInputStream(shard)), "UTF-8"), 32768)) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.trim().isEmpty()) continue;
-                JSONObject element = new JSONObject(line);
-                if (intersectsTile(element, south, west, north, east)) elements.put(element);
-            }
-        } catch (Exception ex) { throw ex; }
-        JSONObject filtered = new JSONObject(); filtered.put("elements", elements);
-        appendManilaWindowTile(filtered, tileX, tileZ, version);
-        return filtered;
-    }
+    /** Read the canonical Manila dataset from data/offline-world/manila/elements.json. */
+    private JSONObject loadManilaRoot(double south, double west, double north, double east) throws Exception {
+        JSONObject source = manilaSourceRoot;
+        if (source == null) {
+            synchronized (this) {
+                source = manilaSourceRoot;
+                if (source == null) {
+                    JSONObject metadata;
+                    try (InputStream in = context.getAssets().open("metadata.json");
+                         ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                        byte[] buffer = new byte[16384];
+                        int count;
+                        while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+                        metadata = new JSONObject(out.toString("UTF-8"));
+                    }
+                    if (!"manila".equals(metadata.optString("slug"))
+                            || !"data/offline-world/manila/elements.json".equals(metadata.optString("stored_as"))) {
+                        throw new IOException("Invalid bundled offline-world Manila metadata");
+                    }
 
-    /** Load only the window surfaces belonging to this exact game tile. */
-    private void appendManilaWindowTile(JSONObject root, int tileX, int tileZ, String version) throws Exception {
-        String cell = tileX + "_" + tileZ;
-        Set<String> available = offlineWindowTiles;
-        if (available == null || !available.contains(cell)) return;
-        String key = version + ":" + cell;
-        JSONObject cached;
-        synchronized (offlineWindowShardCache) { cached = offlineWindowShardCache.get(key); }
-        if (cached == null) {
-            File versionDir = new File(manilaOfflineDir, version);
-            versionDir.mkdirs();
-            File shard = new File(versionDir, "window_" + cell + ".jsonl.gz");
-            if (!shard.isFile() || shard.length() == 0) {
-                byte[] bytes = downloadBytes(MANILA_OFFLINE_BASE + "/window-shards/" + cell + ".jsonl.gz");
-                File tmp = new File(shard.getPath() + ".tmp");
-                try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
-                if (!tmp.renameTo(shard)) { tmp.delete(); throw new IOException("Cannot cache Manila window shard " + cell); }
-                pruneOfflineCache(shard);
-            }
-            // Window records are also streamed; keep only this game tile's surfaces.
-            JSONArray elements = new JSONArray();
-            double south = tileZ * Geo.D_LAT, north = (tileZ + 1) * Geo.D_LAT;
-            double west = tileX * Geo.dLon, east = (tileX + 1) * Geo.dLon;
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    new GZIPInputStream(new FileInputStream(shard)), "UTF-8"), 32768)) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.trim().isEmpty()) continue;
-                    JSONObject element = new JSONObject(line);
-                    if (intersectsTile(element, south, west, north, east)) elements.put(element);
+                    try (InputStream in = context.getAssets().open("elements.json");
+                         ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                        byte[] buffer = new byte[32768];
+                        int count;
+                        while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+                        source = new JSONObject(out.toString("UTF-8"));
+                    }
+                    JSONArray elements = source.optJSONArray("elements");
+                    int expectedCount = metadata.optInt("element_count", -1);
+                    if (elements == null || elements.length() == 0
+                            || (expectedCount > 0 && elements.length() != expectedCount)) {
+                        throw new IOException("Bundled offline-world Manila elements are incomplete");
+                    }
+                    manilaSourceRoot = source;
                 }
             }
-            cached = new JSONObject(); cached.put("elements", elements);
-            synchronized (offlineWindowShardCache) { offlineWindowShardCache.put(key, cached); }
         }
-        JSONArray target = root.optJSONArray("elements");
-        JSONArray windows = cached.optJSONArray("elements");
-        if (target == null || windows == null) return;
-        for (int i = 0; i < windows.length(); i++) target.put(windows.getJSONObject(i));
-    }
-
-    private void ensureManilaManifest() throws Exception {
-        if (offlineCells != null && offlineDatasetVersion != null) return;
-        synchronized (this) {
-            if (offlineCells != null && offlineDatasetVersion != null) return;
-            manilaOfflineDir.mkdirs();
-            File manifestFile = new File(manilaOfflineDir, "manifest.json");
-            if (!manifestFile.isFile() || System.currentTimeMillis() - manifestFile.lastModified() > 5L * 60 * 1000) {
-                try {
-                    byte[] bytes = downloadBytes(MANILA_OFFLINE_BASE + "/manifest.json");
-                    File tmp = new File(manifestFile.getPath() + ".tmp");
-                    try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
-                    if (!tmp.renameTo(manifestFile)) { tmp.delete(); throw new IOException("Cannot cache Manila manifest"); }
-                } catch (IOException networkError) {
-                    if (!manifestFile.isFile() || manifestFile.length() == 0) throw networkError;
-                }
-            }
-            JSONObject manifest = new JSONObject(readFile(manifestFile));
-            JSONArray list = manifest.optJSONArray("cells");
-            if (list == null || list.length() == 0) throw new IOException("Invalid Manila offline manifest");
-            HashSet<String> cells = new HashSet<>();
-            for (int i=0;i<list.length();i++) cells.add(list.optString(i));
-            JSONArray windowList = manifest.optJSONArray("window_tiles");
-            HashSet<String> windowTiles = new HashSet<>();
-            if (windowList != null) for (int i=0;i<windowList.length();i++) windowTiles.add(windowList.optString(i));
-            String nextVersion = manifest.optString("dataset_version", "current");
-            if (offlineDatasetVersion != null && !offlineDatasetVersion.equals(nextVersion)) {
-                synchronized (offlineShardCache) { offlineShardCache.clear(); }
-                synchronized (offlineWindowShardCache) { offlineWindowShardCache.clear(); }
-            }
-            offlineDatasetVersion = nextVersion; offlineCells = cells; offlineWindowTiles = windowTiles;
-            pruneOfflineCache(null);
-        }
+        // Only intersecting features from the current game tile reach TileBuilder.
+        return filterManilaRoot(source, south, west, north, east);
     }
 
     private JSONObject loadOfflineRoot(double south, double west, double north, double east) throws Exception {
@@ -646,7 +543,6 @@ final class TileLoader extends Thread {
             for (int i = 0; i < list.length(); i++) cells.add(list.optString(i));
             String nextVersion = manifest.optString("dataset_version", "current");
             if (offlineDatasetVersion != null && !offlineDatasetVersion.equals(nextVersion)) {
-                synchronized (offlineShardCache) { offlineShardCache.clear(); }
             }
             offlineDatasetVersion = nextVersion;
             offlineCells = cells;
@@ -680,7 +576,7 @@ final class TileLoader extends Thread {
 
     /** Keep offline storage bounded: expire old shards and evict least-recently-used files. */
     private void pruneOfflineCache(File keep) {
-        File activeDir = offlineManila ? manilaOfflineDir : ("tabarbour".equals(offlineCitySlug) ? tabarbourOfflineDir : offlineDir);
+        File activeDir = offlineDir;
         File[] versions = activeDir.listFiles();
         if (versions == null) return;
         long now = System.currentTimeMillis(), total = 0L;
