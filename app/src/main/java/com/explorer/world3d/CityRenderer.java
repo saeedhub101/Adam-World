@@ -125,6 +125,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private float lookDx, lookDy;
     private volatile float gamepadLookX, gamepadLookY;
     public volatile int timeIdx = 0;
+    private int environmentTimeIdx = -1;
     public volatile boolean undergroundCutaway = false;
 
     public void toggleUndergroundCutaway() { undergroundCutaway = !undergroundCutaway; }
@@ -570,6 +571,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         if (tex != null) tex.setCityProfile("tabarbour".equals(loader.offlineCitySlug), loader.offlineManila);
         int ti = timeIdx % TIME.length;
         float[] T = TIME[ti];
+        if(vehicleMaps!=null && environmentTimeIdx!=ti) {\n            vehicleMaps.updateEnvironment(T[12],T[13],T[14],T[15],T[16],T[17],T[9],T[10],T[11]);\n            environmentTimeIdx=ti;\n        }
         GLES20.glClearColor(T[9], T[10], T[11], 1f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
