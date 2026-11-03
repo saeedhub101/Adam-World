@@ -682779,8 +682779,9 @@
   "city": "tabarbour",
   "matching_policy": {
     "automatic_texture_assignment": false,
-    "camera_cone_is_candidate_filter_only": true,
+    "camera_cone_is_candidate_filter_only": false,
     "maximum_discovery_distance_m": 100.0,
+    "photo_source": "Panoramax only; KartaView excluded",
     "proximity_is_not_identity": true,
     "strict_visual_review_gate": {
       "camera_fov_missing_is_manual_calibration_warning": true,
@@ -682789,8 +682790,9 @@
       "requires_camera_azimuth": true,
       "requires_open_redistributable_license": true,
       "requires_real_preview_and_image_assets": true
-    }
+    },
+    "unknown_camera_azimuth_kept_for_manual_review": true
   },
   "schema_version": 1,
-  "source_sha256": "6c1123736bd153ea33a6ec322b32defbc9abc25ec2052337df778ef25028e338"
+  "source_sha256": "381988280e6518b90cf4070ee72d4cd978fcfd51e021e3f31788cc4f7b47c470"
 }
