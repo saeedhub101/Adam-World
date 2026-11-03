@@ -23,7 +23,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         void onToast(String s);
     }
 
-    static final int KEEP_R = 3;
+    static final int KEEP_R = 2;
     private static final String VS =
             "uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam;\n"
             + "attribute vec3 aPos; attribute vec3 aNor; attribute vec2 aUV; attribute vec3 aCol;\n"
@@ -166,6 +166,28 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     public void shutdown() { loader.shutdown(); }
+    /** Called on the GL thread after Android signals memory pressure. */
+    public void trimMemory() {
+        loader.trimMemory();
+        game.agents.clear();
+        int px = Geo.tileX(game.focusX()), pz = Geo.tileZ(game.focusZ());
+        Iterator<Map.Entry<Long, Tile>> it = tiles.entrySet().iterator();
+        while (it.hasNext()) {
+            Tile tile = it.next().getValue();
+            if (Math.abs(tile.ix - px) > 1 || Math.abs(tile.iz - pz) > 1) {
+                tile.release();
+                it.remove();
+                loader.requested.remove(tile.key);
+            }
+        }
+        Iterator<Map.Entry<Long, Mesh>> terrainIt = terrain.entrySet().iterator();
+        while (terrainIt.hasNext()) {
+            Map.Entry<Long, Mesh> entry = terrainIt.next();
+            entry.getValue().release();
+            terrainIt.remove();
+        }
+    }
+
 
     public synchronized void addLook(float dx, float dy) { lookDx += dx; lookDy += dy; }
 
@@ -535,7 +557,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         TileData td;
         int ups = 0;
         long uploadDeadline = System.nanoTime() + 7000000L;
-        while (ups < 2 && System.nanoTime() < uploadDeadline && (td = loader.ready.poll()) != null) {
+        while (ups < 1 && System.nanoTime() < uploadDeadline && (td = loader.ready.poll()) != null) {
             if (td.gen != loader.gen) continue;
             uploadTile(td);
             ups++;
