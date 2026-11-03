@@ -114,7 +114,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private Mesh[] vehicleGlassModels;
     private Mesh wheelMesh;
     private final float[] wheelMatrix = new float[16];
-    private Mesh[] humanModels;
+    private Mesh[][] humanRigModels;
     private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN;
     private final HashMap<Long, Mesh> terrain = new HashMap<>();
     private final float[] proj = new float[16], view = new float[16], vp = new float[16];
@@ -226,7 +226,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         vehicleModels = ProceduralVehicleModels.buildAll();
         vehicleGlassModels = ProceduralVehicleModels.buildGlassAll();
         wheelMesh = Mesh.from(ProceduralVehicleModels.buildWheel());
-        humanModels = ProceduralHumanModels.buildAll();
+        humanRigModels = ProceduralHumanRig.buildAll();
         kidHead = KidHead.load(ctx);
         GeoBuf g = new GeoBuf();
         float E = 4000f, T = E * 2f / 13.3333f;
@@ -748,7 +748,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         drawVehicleGlass(type);
         if(type==ProceduralVehicleModels.TANK) drawTankTracks(speed);
         if(type==ProceduralVehicleModels.HELICOPTER) drawHelicopterRotor();
-        if(type!=ProceduralVehicleModels.TANK && type!=ProceduralVehicleModels.HELICOPTER && type!=ProceduralVehicleModels.AIRPLANE) drawVehicleWheels(type,speed,steering);
+        if(type!=ProceduralVehicleModels.TANK && type!=ProceduralVehicleModels.HELICOPTER && type!=ProceduralVehicleModels.AIRPLANE && type!=ProceduralVehicleModels.BICYCLE && type!=ProceduralVehicleModels.MOTORBIKE) drawVehicleWheels(type,speed,steering);
     }
 
     private void drawVehicleGlass(int type) {
@@ -858,14 +858,41 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform3f(uTint, 1f, 1f, 1f);
     }
 
+    private void drawHumanPart(Mesh mesh,float px,float py,float pz,float rz,
+                               float ox,float oy,float oz,float sx,float sy,float sz) {
+        if(mesh==null)return;
+        System.arraycopy(base,0,wheelMatrix,0,16);
+        Matrix.translateM(wheelMatrix,0,px,py,pz);
+        if(rz!=0f) Matrix.rotateM(wheelMatrix,0,rz,0f,0f,1f);
+        Matrix.translateM(wheelMatrix,0,ox,oy,oz);
+        Matrix.scaleM(wheelMatrix,0,sx,sy,sz);
+        GLES20.glUniformMatrix4fv(uModel,1,false,wheelMatrix,0);
+        GLES20.glUniform3f(uTint,1f,1f,1f);
+        mesh.draw();
+    }
+
     private void drawPerson(float x,float y,float z,float yaw,float phase,int variant) {
-        if(humanModels==null||humanModels.length==0)return;
-        int id=(variant%humanModels.length+humanModels.length)%humanModels.length;
-        Matrix.setIdentityM(base,0);
+        if(humanRigModels==null||humanRigModels.length==0)return;
+        int id=(variant%humanRigModels.length+humanRigModels.length)%humanRigModels.length;
+        Mesh[] rig=humanRigModels[id];
         float bob=(float)Math.sin(phase*2f)*.025f;
+        float swing=(float)Math.sin(phase)*.58f;
+        Matrix.setIdentityM(base,0);
         Matrix.translateM(base,0,x,y+bob,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
-        GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
-        GLES20.glUniform3f(uTint,1f,1f,1f);
-        humanModels[id].draw();
+        drawHumanPart(rig[0],0,1.08f,0,0,0,0,0,1,1,1);
+        drawHumanPart(rig[1],0,1.58f,0,0,0,0,0,1,1,1);
+        drawHumanPart(rig[2],0,1.69f,-.018f,0,0,0,0,1,1,1);
+        drawHumanPart(rig[10],0,1.39f,.10f,0,0,0,0,1,1,1);
+        for(int side=-1;side<=1;side+=2) {
+            float legAngle=(side<0?swing:-swing)*57.29578f;
+            float armAngle=(side<0?-swing:swing)*42f;
+            drawHumanPart(rig[3],side*.21f,1.32f,0,armAngle,side*.075f,-.15f,0,1,1,1);
+            drawHumanPart(rig[4],side*.29f,1.00f,0,armAngle*.42f,side*.012f,-.12f,.01f,1,1,1);
+            drawHumanPart(rig[5],side*.115f,.78f,0,legAngle,0,-.16f,0,1,1,1);
+            drawHumanPart(rig[6],side*.115f,.44f,0,-legAngle*.30f,0,-.11f,0,1,1,1);
+            drawHumanPart(rig[7],side*.115f,.15f,.045f,legAngle,0,-.02f,.06f,1,1,1);
+            drawHumanPart(rig[8],side*.052f,1.625f,.127f,0,0,0,0,1,1,1);
+        }
+        drawHumanPart(rig[9],0,1.535f,.137f,0,0,0,0,1,1,1);
     }}
