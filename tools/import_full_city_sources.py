@@ -22,7 +22,6 @@ def checkpoint(paths,slug):
  subprocess.run(["git","config","user.name","github-actions[bot]"],cwd=ROOT,check=True)
  subprocess.run(["git","config","user.email","41898282+github-actions[bot]@users.noreply.github.com"],cwd=ROOT,check=True)
  subprocess.run(["git","commit","-m","Checkpoint full city data "+slug],cwd=ROOT,check=True)
- subprocess.run(["git","pull","--rebase","origin","main"],cwd=ROOT,check=True)
  subprocess.run(["git","push","origin","HEAD:main"],cwd=ROOT,check=True)
 def main():
  ap=argparse.ArgumentParser();ap.add_argument("--city");ap.add_argument("--refresh",action="store_true");a=ap.parse_args()
@@ -65,7 +64,9 @@ def main():
      if manifest_path.exists() and not a.refresh:
       try: manifest=json.loads(manifest_path.read_text())
       except Exception: manifest={}
-      if manifest.get("status")=="complete":
+      if manifest.get("status")=="empty" and manifest.get("empty_reason")=="source_returned_zero_features":
+      print("SKIP VERIFIED EMPTY",slug,typ,flush=True);continue
+     if manifest.get("status")=="complete":
        parts=manifest.get("parts",[])
        if parts and all((layer_dir/p["file"]).is_file() and (layer_dir/p["file"]).stat().st_size==p["bytes"] for p in parts):
         print("SKIP COMPLETE",slug,typ,len(parts),"parts",flush=True);continue
@@ -76,7 +77,7 @@ def main():
       manifest={"status":"partial","source":"Overture Maps","source_type":typ,"parts":[]}
      tmp=layer_dir/"download.raw.geojson"
      subprocess.run(["overturemaps","download",f"--bbox={w},{s},{e},{n}","-f","geojson","--type="+typ,"-o",str(tmp)],cwd=ROOT,check=True,timeout=3600)
-     known=len(manifest.get("parts",[]));part_index=0;part_features=[];part_size=0;total_features=sum(p.get("features",0) for p in manifest.get("parts",[]))
+     known=len(manifest.get("parts",[]));part_index=0;part_features=[];part_size=0;total_features=sum(p.get("features",0) for p in manifest.get("parts",[]));raw_feature_count=0;matched_feature_count=0
      def flush_part():
       nonlocal part_index,part_features,part_size,total_features,manifest
       if not part_features:return
@@ -98,12 +99,14 @@ def main():
      try:
       with tmp.open("rb") as stream:
        for feature in json_items(stream,"features.item"):
+        raw_feature_count+=1
         if not feature.get("geometry"):continue
         try:
          geom=shape(feature["geometry"])
          if not geom.intersects(poly):continue
          geom=geom.intersection(poly)
          if geom.is_empty:continue
+         matched_feature_count+=1
          feature["geometry"]=mapping(geom)
          encoded=json.dumps(feature,separators=(",",":"),ensure_ascii=False).encode()
          if part_features and part_size+len(encoded)+1>MAX_PART_BYTES:flush_part()
@@ -111,7 +114,14 @@ def main():
         except Exception:continue
       flush_part()
      finally:tmp.unlink(missing_ok=True)
-     manifest["status"]="complete";manifest["feature_count"]=sum(p["features"] for p in manifest["parts"]);manifest["completed_at"]=datetime.now(timezone.utc).isoformat()
+     manifest["feature_count"]=sum(p["features"] for p in manifest["parts"]);manifest["raw_feature_count"]=raw_feature_count;manifest["matched_feature_count"]=matched_feature_count
+     if matched_feature_count==0 and raw_feature_count>0:
+      manifest["status"]="partial";manifest["empty_reason"]="download_returned_features_but_none_intersected_city_boundary";save(manifest_path,json.dumps(manifest,indent=2).encode());checkpoint([manifest_path],slug)
+      raise RuntimeError(f"{typ}: downloaded {raw_feature_count} features but 0 intersected city boundary; refusing false complete manifest")
+     if matched_feature_count==0:
+      manifest["status"]="empty";manifest["empty_reason"]="source_returned_zero_features"
+     else:manifest["status"]="complete"
+     manifest["completed_at"]=datetime.now(timezone.utc).isoformat()
      save(manifest_path,json.dumps(manifest,indent=2).encode());saved.append(manifest_path)
      checkpoint([manifest_path],slug)
      print("SAVED",slug,typ,manifest["feature_count"],"features in",len(manifest["parts"]),"parts",flush=True)
