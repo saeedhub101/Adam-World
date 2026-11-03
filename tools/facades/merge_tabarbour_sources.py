@@ -195,7 +195,8 @@ def main():
    "adam:source_observations":rec["observations"],
    "adam:building_parts":rec.get("building_parts",[]),
    "adam:entrances":rec.get("entrances",[]),
-   "adam:addresses":rec.get("addresses",[]),\n   "adam:facade_photo_candidates":rec.get("photo_candidates",[])
+   "adam:addresses":rec.get("addresses",[]),
+   "adam:facade_photo_candidates":rec.get("photo_candidates",[])
   }})
  # Chunk output so the game and repository do not create millions of tiny files.
  outdir=CITY/"merged"; outdir.mkdir(parents=True,exist_ok=True)
