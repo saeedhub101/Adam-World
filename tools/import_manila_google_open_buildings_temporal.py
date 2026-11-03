@@ -85,7 +85,7 @@ def remote_bounds(url):
 
 def download(url,target):
  target.parent.mkdir(parents=True,exist_ok=True)
- tmp=target.with_suffix(target.suffix+".part")
+ tmp=target.with_name(target.stem+".part"+target.suffix)
  last=None
  for attempt in range(1,4):
   try:
