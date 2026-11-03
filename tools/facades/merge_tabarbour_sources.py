@@ -146,26 +146,41 @@ def main():
      part_count+=1
  # Attach entrances and address nodes by point-in-footprint or <= 2m boundary proximity.
  point_counts=Counter()
+ point_records=list(records.values())
+ point_geoms=[shape(r["_geometry"]) for r in point_records]
+ point_tree=STRtree(point_geoms) if point_geoms else None
  for filename in POINTS:
   for i,f in enumerate(read_fc(filename)):
    g=f.get("geometry")
-   if not g or g.get("type")!="Point": continue
+   if not g or g.get("type")!="Point" or point_tree is None: continue
    try: point=shape(g)
    except Exception: continue
    best=None; bestdist=float("inf")
-   for rec in records.values():
-    try:
-     bg=shape(rec["_geometry"]); dist=bg.distance(point)
-     if bg.buffer(0.00002).covers(point) and dist<bestdist:
-      best=rec; bestdist=dist
-    except Exception: pass
+   for hit in point_tree.query(point.buffer(0.00002)):
+    idx=int(hit) if isinstance(hit,(int,)) or hasattr(hit,"__index__") else next((j for j,x in enumerate(point_geoms) if x is hit),-1)
+    if idx<0: continue
+    rec=point_records[idx]; bg=point_geoms[idx]; dist=bg.distance(point)
+    if bg.buffer(0.00002).covers(point) and dist<bestdist:
+     best=rec; bestdist=dist
    if best is not None:
     item={"source":props(f).get("source") or ("Overture Maps" if "overture" in filename else "OpenStreetMap"),"source_feature_id":str(f.get("id") or i),"properties":props(f),"geometry":g}
     if "entrance" in props(f) or "door" in props(f): best.setdefault("entrances",[]).append(item); point_counts["entrances"]+=1
     else: best.setdefault("addresses",[]).append(item); point_counts["addresses"]+=1
- # Photos remain unassigned evidence until visual identity and camera direction are verified.
+ # Panoramax candidates are attached only as unverified evidence from the review queue.
  photo_features=[]
  for filename in PHOTOS: photo_features.extend(read_fc(filename))
+ photo_candidate_count=0
+ review_path=CITY/"review_queue.json"
+ if review_path.is_file():
+  review=json.loads(review_path.read_text(encoding="utf-8"))
+  for item in review.get("buildings",[]):
+   oid=str(item.get("osm_way_id") or "")
+   rec=records.get("osm:way/"+oid)
+   if rec is None: continue
+   candidates=item.get("facade_photo_candidates",[])
+   if candidates:
+    rec["photo_candidates"]=candidates
+    photo_candidate_count+=len(candidates)
  # Final records, conflicts and provenance.
  final=[]
  for key,rec in sorted(records.items()):
@@ -180,7 +195,7 @@ def main():
    "adam:source_observations":rec["observations"],
    "adam:building_parts":rec.get("building_parts",[]),
    "adam:entrances":rec.get("entrances",[]),
-   "adam:addresses":rec.get("addresses",[])
+   "adam:addresses":rec.get("addresses",[]),\n   "adam:facade_photo_candidates":rec.get("photo_candidates",[])
   }})
  # Chunk output so the game and repository do not create millions of tiny files.
  outdir=CITY/"merged"; outdir.mkdir(parents=True,exist_ok=True)
@@ -199,6 +214,6 @@ def main():
   "merge_policy":"Explicit OSM identity first. Spatial merge only when polygon IoU >= 0.78 and centroids are within about 4m. Parts remain parts; entrances and addresses attach only within 2m of a footprint. Photos are not assigned as verified facades.",
   "chunks":chunks}
  atomic(outdir/"manifest.json",report)
- atomic(outdir/"source-report.json",{"source_feature_counts":counts,"missing_or_empty":missing,"panoramax_photo_count":len(photo_features),"attached_building_parts":part_count,"attached_entrances":point_counts["entrances"],"attached_addresses":point_counts["addresses"]})
+ atomic(outdir/"source-report.json",{"source_feature_counts":counts,"missing_or_empty":missing,"panoramax_photo_count":len(photo_features),"panoramax_building_photo_candidate_count":photo_candidate_count,"attached_building_parts":part_count,"attached_entrances":point_counts["entrances"],"attached_addresses":point_counts["addresses"]})
  print(json.dumps(report,ensure_ascii=False))
 if __name__=="__main__": main()
