@@ -46,8 +46,7 @@ public class CityGLView extends GLSurfaceView {
     private static float trigger(MotionEvent e, int axis, int fallback) {
         float v = e.getAxisValue(axis);
         if (Math.abs(v) < 0.08f) v = e.getAxisValue(fallback);
-        // بعض أيدي التحكم ترسل الزناد ضمن المجال [-1,1] وأخرى [0,1].
-        return Math.max(0f, Math.min(1f, (v + 1f) * 0.5f));
+        return Math.max(0f, Math.min(1f, v));
     }
 
     /** USB/Bluetooth pads: left stick + hat move, right stick looks, triggers throttle/brake. */
