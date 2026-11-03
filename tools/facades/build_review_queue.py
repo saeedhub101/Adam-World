@@ -399,11 +399,16 @@ def main() -> None:
         print("No city input folders found; no assignments or textures were created.")
         return
     for city_dir in dirs:
-        buildings_path = city_dir / "buildings.geojson"
-        if not buildings_path.is_file():
-            buildings_path = city_dir / "building-footprints.geojson"
-        if not buildings_path.is_file():
-            print(f"SKIP {city_dir}: no buildings.geojson or building-footprints.geojson")
+        # Use the already-imported Manila building layer when compatibility
+        # filenames are absent. Do not fetch or import any new source data.
+        candidates = (
+            city_dir / "buildings.geojson",
+            city_dir / "building-footprints.geojson",
+            city_dir / "layers" / "building-layer.geojson",
+        )
+        buildings_path = next((p for p in candidates if p.is_file() and p.stat().st_size > 0), None)
+        if buildings_path is None:
+            print(f"SKIP {city_dir}: no existing building footprints found")
             continue
         result = build_queue(city_dir, args.max_distance_m)
         atomic_json(city_dir / "review_queue.json", result)
