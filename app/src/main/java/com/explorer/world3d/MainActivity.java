@@ -410,6 +410,25 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     }
 
     @Override protected void onResume() { super.onResume(); glView.onResume(); UpdateManager.resumePendingInstall(this); }
+
+    @Override public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        if (renderer != null && glView != null
+                && level >= android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+            glView.queueEvent(new Runnable() {
+                @Override public void run() { renderer.trimMemory(); }
+            });
+        }
+    }
+
+    @Override public void onLowMemory() {
+        super.onLowMemory();
+        if (renderer != null && glView != null) {
+            glView.queueEvent(new Runnable() {
+                @Override public void run() { renderer.trimMemory(); }
+            });
+        }
+    }
     @Override protected void onPause() { glView.onPause(); super.onPause(); }
     @Override protected void onDestroy() { renderer.shutdown(); super.onDestroy(); }
 
