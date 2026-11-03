@@ -10,6 +10,10 @@ spec.loader.exec_module(mod)
 
 
 class CandidateQueueTests(unittest.TestCase):
+    def test_canonical_osm_feature_id_is_recognized(self):
+        self.assertEqual(mod.building_id({"properties": {"osm_feature_id": "way/987654"}}), "987654")
+        self.assertEqual(mod.building_id({"properties": {"tags": {"osm_id": "way/12345"}}}), "12345")
+
     def test_bearing_and_angle_wrap(self):
         self.assertAlmostEqual(mod.angle_delta(359, 1), 2)
         self.assertAlmostEqual(mod.bearing_deg((0, 0), (1, 0)), 90, delta=0.1)

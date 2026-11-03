@@ -6,7 +6,11 @@ on:
     branches: [main]
     paths:
       - "tools/facades/build_review_queue.py"
+      - "tools/facades/visual_verify_facades.py"
       - "tools/facades/build_existing_manila_photo_gallery.py"
+      - "tools/facades/build_verified_glbs.py"
+      - "tools/facades/validate_manifest.py"
+      - "tools/facades/tests/**"
       - ".github/workflows/manila-existing-facade-rebuild.yml"
       - "data/facades/cities/manila/layers/building-layer.geojson"
       - "data/facades/cities/manila/panoramax-items.geojson"
@@ -17,45 +21,74 @@ permissions:
   contents: write
 
 concurrency:
-  group: manila-existing-facade-rebuild
+  group: adam-world-main-writers
   cancel-in-progress: false
 
 jobs:
   reconcile:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: true
+          filter: blob:none
+          sparse-checkout: |
+            /tools/facades/
+            /data/facades/cities/manila/
+            /app/src/main/assets/facades/
+          sparse-checkout-cone-mode: false
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Build candidates from existing building and Panoramax files
+      - name: Install local CV and GLB dependencies
+        run: python -m pip install --disable-pip-version-check numpy opencv-python-headless trimesh Pillow shapely
+
+      - name: Compile and test
         run: |
-          python -m py_compile tools/facades/build_review_queue.py tools/facades/build_existing_manila_photo_gallery.py
+          python -m py_compile tools/facades/build_review_queue.py tools/facades/visual_verify_facades.py tools/facades/build_existing_manila_photo_gallery.py tools/facades/build_verified_glbs.py tools/facades/validate_manifest.py
+          python -m unittest discover -s tools/facades/tests -p 'test_*.py'
+
+      - name: Match canonical footprints to existing Panoramax metadata
+        run: |
+          set -euo pipefail
           python tools/facades/build_review_queue.py --city manila
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("data/facades/cities/manila/review_queue.json")
+          q=json.loads(p.read_text())
+          assert q.get("building_count",0)>0, "Review queue is empty: refusing false success"
+          print(f"QUEUE_OK buildings={q['building_count']}")
+          PY
 
-      - name: Reconcile only photos already stored in the repository
-        run: |
-          python tools/facades/build_existing_manila_photo_gallery.py
+      - name: Screen only images already in the repository
+        run: python tools/facades/visual_verify_facades.py --city manila --limit-per-building 3
 
-      - name: Commit each completed batch to main
+      - name: Rebuild local-photo gallery
+        run: python tools/facades/build_existing_manila_photo_gallery.py
+
+      - name: Validate human-approved records and build GLBs
         run: |
+          python tools/facades/validate_manifest.py
+          python tools/facades/build_verified_glbs.py
+
+      - name: Commit results with retry-safe fast-forward
+        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/facades/cities/manila/review_queue.json \
-                  data/facades/cities/manila/facade-review/existing-photo-audit.json \
-                  data/facades/cities/manila/facade-review/index.html
-          if git diff --cached --quiet; then
-            echo "No changes; existing review outputs are already current."
-          else
-            git commit -m "Reconcile existing Manila facade photos with buildings"
-            git push origin HEAD:main
-          fi
+          git add data/facades/cities/manila/review_queue.json data/facades/cities/manila/visual_verification.json data/facades/cities/manila/facade-review/existing-photo-audit.json data/facades/cities/manila/facade-review/index.html app/src/main/assets/facades/
+          if git diff --cached --quiet; then echo "No output changes"; exit 0; fi
+          git commit -m "Screen existing Manila facade photos and rebuild approved facades"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then exit 0; fi
+            if [ "$attempt" -eq 3 ]; then exit 1; fi
+            sleep "$((attempt * 3))"
+          done

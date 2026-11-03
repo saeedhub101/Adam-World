@@ -57,15 +57,17 @@ def main() -> None:
 
     cities={}
     for folder in sorted(p for p in args.cities_root.iterdir() if p.is_dir()):
-        p=folder/"buildings.geojson"
-        if p.is_file():
-            fc=load_json(p)
-            for feat in fc.get("features",[]):
-                props=feat.get("properties") or {}
-                raw=props.get("osm_way_id") or props.get("osm_id") or props.get("id") or feat.get("id")
-                if raw is None: continue
-                osm=str(raw).split("/")[-1]
-                if osm.isdigit(): cities[(folder.name,osm)]=feat
+        candidates=(folder/"layers"/"building-layer.geojson",folder/"buildings.geojson",folder/"building-footprints.geojson")
+        source=next((p for p in candidates if p.is_file() and p.stat().st_size>0),None)
+        if source is None: continue
+        fc=load_json(source)
+        for feat in fc.get("features",[]):
+            props=feat.get("properties") or {}
+            tags=props.get("tags") if isinstance(props.get("tags"),dict) else {}
+            raw=props.get("osm_feature_id") or props.get("osm_way_id") or props.get("osm_id") or tags.get("osm_id") or props.get("id") or feat.get("id")
+            if raw is None: continue
+            match=re.fullmatch(r"(?:way/)?([1-9][0-9]*)",str(raw).strip(),re.I)
+            if match: cities[(folder.name,match.group(1))]=feat
 
     grouped={}
     for item in assignments:
@@ -90,7 +92,7 @@ def main() -> None:
         if ASSET_ROOT.resolve() not in image_path.parents or not image_path.is_file(): fail(f"{city}/{osm}: local image missing: {rel}")
         if not rel.parts or rel.parts[0]!="verified": fail(f"{city}/{osm}: approved images must be stored under facades/verified/")
         key=(city,osm)
-        if key not in cities: fail(f"{city}/{osm}: no matching OSM footprint in data/facades/cities/{city}/buildings.geojson")
+        if key not in cities: fail(f"{city}/{osm}: no matching OSM footprint in canonical building layer or compatibility GeoJSON")
         grouped.setdefault(key,[]).append((item,image_path))
 
     built=0

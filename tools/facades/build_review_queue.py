@@ -211,15 +211,17 @@ def photo_metadata(feature: dict[str, Any]) -> dict[str, Any]:
 
 def building_id(feature: dict[str, Any]) -> str:
     p = feature.get("properties") or {}
-    raw = p.get("osm_way_id") or p.get("osm_id") or p.get("id") or p.get("source_feature_id") or feature.get("id")
+    tags = p.get("tags") if isinstance(p.get("tags"), dict) else {}
+    raw = (p.get("osm_feature_id") or p.get("osm_way_id") or p.get("osm_id")
+           or p.get("source_feature_id") or tags.get("osm_id")
+           or p.get("id") or feature.get("id"))
     if raw is None:
         return ""
-    value = str(raw)
-    for prefix in ("way/", "openfreemap/"):
-        if value.startswith(prefix):
-            value = value.split("/", 1)[1]
-            break
-    return value if value.isdigit() and int(value) > 0 else ""
+    value = str(raw).strip()
+    match = re.fullmatch(r"(?:way/)?([1-9][0-9]*)", value, re.I)
+    if not match:
+        match = re.search(r"(?:^|\\|)id:([1-9][0-9]*)$", value, re.I)
+    return match.group(1) if match else ""
 
 
 def aerial_candidates(building: dict[str, Any], items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -268,9 +270,9 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
     # layers/building-layer.geojson. Older folders may still use the two
     # compatibility filenames below; use them only when present.
     candidates = (
+        city_dir / "layers" / "building-layer.geojson",
         city_dir / "buildings.geojson",
         city_dir / "building-footprints.geojson",
-        city_dir / "layers" / "building-layer.geojson",
     )
     buildings_path = next((path for path in candidates if path.is_file() and path.stat().st_size > 0), None)
     if buildings_path is None:
@@ -286,7 +288,9 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
         center = centroid_lonlat(b.get("geometry") or {})
         if not osm_id or not center:
             continue
-        bp = b.get("properties") or {}
+        raw_props = b.get("properties") or {}
+        bp = dict(raw_props.get("tags") or {}) if isinstance(raw_props.get("tags"), dict) else {}
+        bp.update({k: v for k, v in raw_props.items() if k != "tags"})
         key = osm_id
         if key in seen:
             continue
@@ -342,6 +346,13 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
             "texture_assignment_allowed": False,
         })
     queue.sort(key=lambda x: int(x["osm_way_id"]))
+    if not queue:
+        sample = [(f.get("properties") or {}).get("osm_feature_id") or f.get("id")
+                  for f in buildings_fc["features"][:5]]
+        raise ValueError(
+            f"{buildings_path}: {len(buildings_fc['features'])} features but zero usable OSM way IDs; "
+            f"sample identifiers={sample}"
+        )
     source_hash = hashlib.sha256()
     for name in (buildings_path.name, "panoramax-items.geojson", "aerial-items.geojson"):
         path = city_dir / name
@@ -402,9 +413,9 @@ def main() -> None:
         # Use the already-imported Manila building layer when compatibility
         # filenames are absent. Do not fetch or import any new source data.
         candidates = (
+            city_dir / "layers" / "building-layer.geojson",
             city_dir / "buildings.geojson",
             city_dir / "building-footprints.geojson",
-            city_dir / "layers" / "building-layer.geojson",
         )
         buildings_path = next((p for p in candidates if p.is_file() and p.stat().st_size > 0), None)
         if buildings_path is None:
