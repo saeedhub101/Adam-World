@@ -4,11 +4,14 @@ The Manila offline game mode uses the existing game renderer and loads nearby sp
 
 ## Source priority
 
-1. **Primary geometry:** the existing `saeedhub101/Adam-City/Manila/vector-tiles/` OpenMapTiles PBF tiles. Zoom-14 building polygons and transportation geometry are converted into local game elements.
-2. **Primary street names and transport geometry:** OpenMapTiles `transportation` and `transportation_name` layers. The existing OpenFreeMap transportation GeoJSON is a fallback if the PBF tiles contain no road geometry.
-3. **Canonical Manila building details and footprints:** `data/facades/cities/manila/building-details.geojson` and `building-footprints.geojson`. These are populated from the preserved 1,533-feature OSM detail extract (1,528 polygon footprints) and are consumed by the shard builder. The audited `Adam-City/building-data/buildings.csv` adds matching attributes. Supplemental fields fill blank primary fields; they do not replace primary footprints.
-4. **Building facade attributes and parts:** Overture Maps Manila's existing `data/full-city-imports/manila/02_buildings_overture/building/` (107,912 building features) and `building_part/` (758 parts) supply available facade/roof material and colour, floors, heights and building-part geometry. The shard builder merges these into the local Manila stream. The separate photo-texture review file currently has zero human-verified assignments, so no unverified street photo is painted onto a building.
-5. **Places and accessibility:** OpenMapTiles `poi` and `housenumber` layers, OSM public-services and accessibility CSVs, and the saved Manila OSM context extract. These add available hospitals, hotels, named facilities, address numbers, crossings, signals, entrances, pedestrian links, transit and utility features.
+1. **Building footprints:** `data/facades/cities/manila/building-footprints.geojson` supplies the saved polygon geometry when the newer consolidated `buildings.geojson` is absent or has no usable features. When a matching feature exists in `buildings.geojson`, its geometry takes priority.
+2. **Building details:** `building-details.geojson` is joined to footprint records by OSM feature ID. Its available names, addresses, building use, heights, levels, roof/facade materials, colours and `building:part` tags fill missing properties. Unmatched building polygons/parts and mapped building nodes are also retained. Duplicate IDs are merged rather than rendered twice.
+3. **Consolidated building data:** `buildings.geojson` remains the preferred consolidated input when populated; an empty file must not stop the build or suppress the existing footprint/detail datasets.
+4. **Roads and named streets:** OpenMapTiles PBF supplies road geometry and non-building POIs/address points. `transportation.geojson` supplies OpenFreeMap/OpenMapTiles road geometry and street-name lines.
+5. **Other context:** saved public-services/accessibility CSVs and the Manila OSM context extract add non-building features. The context importer excludes building ways so it cannot create duplicate building meshes.
+
+The preserved `building-footprints.geojson` contains 1,528 polygon features. `building-details.geojson` contains 1,533 features: 1,528 polygons and five mapped nodes; 222 polygon records carry a `building:part` tag. These are source counts, not a claim of full municipal Manila coverage.
+
 
 ## Normalized building properties
 
