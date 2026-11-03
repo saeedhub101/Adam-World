@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Build incremental 1 km Manila offline shards from Adam-City OpenMapTiles PBF,
-OpenFreeMap transportation GeoJSON, and OSM building-detail supplements.
+"""Build 1 km Manila offline shards from buildings.geojson, PBF road/POI data,
+and the dedicated OpenFreeMap transportation street-name geometry.
 """
 from __future__ import annotations
 import csv, gzip, hashlib, json, math, os, re
