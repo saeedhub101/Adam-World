@@ -28,7 +28,8 @@ ROOT = Path(__file__).resolve().parents[2]
 CITY_DIR = ROOT / "data/facades/cities/manila"
 CITY_CONFIG = CITY_DIR / "city.json"
 OUTPUT = CITY_DIR / "buildings.geojson"
-ZOOM = 14
+ZOOMS = (13, 14)
+BOUNDARY = ROOT / "data/full-city-imports/manila/01_admin_boundary/city-boundary.geojson"
 SOURCES = {
     "OpenFreeMap": "https://tiles.openfreemap.org/planet/latest/{z}/{x}/{y}.pbf",
     "OpenMapTiles": "https://openmaptiles.data.gouv.fr/data/planet-vector/{z}/{x}/{y}.pbf",
@@ -37,13 +38,18 @@ USER_AGENT = "AdamWorld-Manila-BuildingGeoJSON/1.0"
 
 
 def bounds_from_config():
-    cfg = json.loads(CITY_CONFIG.read_text(encoding="utf-8"))
-    lat = float(cfg["center"]["lat"])
-    lon = float(cfg["center"]["lon"])
-    radius = float(cfg.get("discovery_radius_m", 900))
-    dlat = radius / 111320.0
-    dlon = radius / (111320.0 * max(0.01, math.cos(math.radians(lat))))
-    return (lon - dlon, lat - dlat, lon + dlon, lat + dlat), (lat, lon, radius)
+    if not BOUNDARY.is_file():
+        raise RuntimeError(f"Manila administrative boundary is missing: {BOUNDARY}")
+    doc = json.loads(BOUNDARY.read_text(encoding="utf-8"))
+    parts = [shape(feature["geometry"]) for feature in doc.get("features", []) if feature.get("geometry")]
+    if not parts:
+        raise RuntimeError("Manila administrative boundary contains no geometry")
+    boundary = unary_union(parts)
+    if boundary.is_empty or not boundary.is_valid:
+        boundary = boundary.buffer(0)
+    if boundary.is_empty:
+        raise RuntimeError("Manila administrative boundary is invalid or empty")
+    return boundary, boundary.bounds
 
 
 def tile_range(west, south, east, north, z):
@@ -66,7 +72,7 @@ def fetch(url, attempts=4):
                 payload = response.read()
                 # Some vector-tile hosts return gzip-compressed PBF bodies.
                 # urllib does not transparently decompress HTTP content.
-                if payload.startswith(b"\\x1f\\x8b"):
+                if payload.startswith(bytes((0x1f, 0x8b))):
                     payload = gzip.decompress(payload)
                 return payload
         except (HTTPError, URLError, TimeoutError, OSError) as exc:
@@ -86,7 +92,7 @@ def tile_xy_to_lonlat(gx, gy, z, extent):
     return lon, lat
 
 
-def convert_geometry(raw_geometry, tile_x, tile_y, z, extent, clip_box):
+def convert_geometry(raw_geometry, tile_x, tile_y, z, extent, clip_geometry):
     geom = shape(raw_geometry)
     def project(x, y, zcoord=None):
         if hasattr(x, "__iter__"):
@@ -99,7 +105,7 @@ def convert_geometry(raw_geometry, tile_x, tile_y, z, extent, clip_box):
         geom = geom.buffer(0)
     if geom.is_empty:
         return None
-    geom = geom.intersection(clip_box)
+    geom = geom.intersection(clip_geometry)
     if geom.is_empty:
         return None
     polys = []
@@ -128,14 +134,14 @@ def feature_key(feature, geom):
     ).hexdigest()
 
 
-def import_source(name, template, xs, ys, bbox):
-    clip_box = box(*bbox)
+def import_source(name, template, bbox, clip_geometry, z):
+    xs, ys = tile_range(bbox[0], bbox[1], bbox[2], bbox[3], z)
     geometries = defaultdict(list)
     properties = {}
     tile_count = 0
     for x in xs:
         for y in ys:
-            url = template.format(z=ZOOM, x=x, y=y)
+            url = template.format(z=z, x=x, y=y)
             payload = fetch(url)
             if not payload:
                 continue
@@ -148,7 +154,7 @@ def import_source(name, template, xs, ys, bbox):
                 raw_geom = feature.get("geometry") or {}
                 if raw_geom.get("type") not in ("Polygon", "MultiPolygon"):
                     continue
-                geom = convert_geometry(raw_geom, x, y, ZOOM, extent, clip_box)
+                geom = convert_geometry(raw_geom, x, y, z, extent, clip_geometry)
                 if geom is None or geom.area <= 0:
                     continue
                 key = feature_key(feature, geom)
@@ -208,7 +214,7 @@ def merge_sources(imports):
     return features
 
 
-def write_atomic(features, bbox, center, tile_counts):
+def write_atomic(features, bbox, tile_counts):
     if not features:
         raise RuntimeError("merged GeoJSON contains no buildings; refusing to replace the current file")
     doc = {
@@ -219,9 +225,9 @@ def write_atomic(features, bbox, center, tile_counts):
         "source_data_lineage": "Both providers publish OpenStreetMap-derived data; these are not independent non-OSM surveys.",
         "attribution": "© OpenFreeMap; © OpenMapTiles; © OpenStreetMap contributors",
         "license": "OpenStreetMap data is licensed under ODbL 1.0; provider attribution required",
-        "zoom": ZOOM,
+        "zooms": list(ZOOMS),
         "coverage_bbox_wsen": list(bbox),
-        "city_center_lat_lon_radius_m": list(center),
+        "coverage": "Exact Manila administrative boundary from data/full-city-imports/manila/01_admin_boundary/city-boundary.geojson",
         "tile_counts_by_source": tile_counts,
         "feature_count": len(features),
         "geometry_note": "MVT building polygons were converted to WGS84 GeoJSON and merged by vector feature ID where available.",
@@ -243,18 +249,33 @@ def write_atomic(features, bbox, center, tile_counts):
 
 
 def main():
-    bbox, center = bounds_from_config()
-    xs, ys = tile_range(bbox[0], bbox[1], bbox[2], bbox[3], ZOOM)
+    boundary, bbox = bounds_from_config()
     imports = {}
     tile_counts = {}
     for name, template in SOURCES.items():
-        print(f"IMPORT {name}: zoom={ZOOM}, x={min(xs)}..{max(xs)}, y={min(ys)}..{max(ys)}", flush=True)
-        data, count = import_source(name, template, xs, ys, bbox)
-        imports[name] = data
-        tile_counts[name] = count
-        print(f"OK {name}: {len(data)} unique building features from {count} tiles", flush=True)
+        print(f"IMPORT {name}: city boundary bbox={bbox}", flush=True)
+        combined = {}
+        total_tiles = 0
+        for z in ZOOMS:
+            data, count = import_source(name, template, bbox, boundary, z)
+            total_tiles += count
+            for key, value in data.items():
+                if key not in combined:
+                    combined[key] = value
+                else:
+                    old_geom, old_props = combined[key]
+                    new_geom, new_props = value
+                    props = dict(old_props)
+                    for prop, val in new_props.items():
+                        if val not in (None, "") and props.get(prop) in (None, ""):
+                            props[prop] = val
+                    combined[key] = (unary_union([old_geom, new_geom]), props)
+            print(f"OK {name} z{z}: {len(data)} unique building features from {count} tiles", flush=True)
+        imports[name] = combined
+        tile_counts[name] = total_tiles
+        print(f"OK {name}: {len(combined)} merged features across zooms {ZOOMS}", flush=True)
     features = merge_sources(imports)
-    write_atomic(features, bbox, center, tile_counts)
+    write_atomic(features, bbox, tile_counts)
     print(json.dumps({
         "output": str(OUTPUT.relative_to(ROOT)),
         "features": len(features),
