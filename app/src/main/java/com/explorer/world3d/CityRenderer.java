@@ -4,6 +4,7 @@ import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
+import android.util.Log;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -86,6 +87,19 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             + "  else { gl_FragColor=vec4(mix(lit,uFog,f),1.0); }\n"
             + " }\n"
             + "}";
+    // ES 2.0 guarantees only 16 fragment uniform vectors. The full PBR/glass
+    // shader exceeds that minimum on some devices, so retain a compatible path.
+    private static final String FS_COMPAT =
+            "#ifdef GL_FRAGMENT_PRECISION_HIGH\\nprecision highp float;\\n#else\\nprecision mediump float;\\n#endif\\n"
+            + "uniform sampler2D uTex; uniform sampler2D uEmis; uniform vec3 uTint;\\n"
+            + "uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uAmb; uniform vec3 uFog;\\n"
+            + "uniform float uFogN; uniform float uFogF; uniform float uEmisK; uniform float uWater; uniform float uTime;\\n"
+            + "varying vec2 vUV; varying vec3 vCol; varying vec3 vNor; varying float vDist; varying vec3 vWorld; varying vec3 vRel;\\n"
+            + "void main(){ float f=clamp((vDist-uFogN)/max(uFogF-uFogN,0.001),0.0,1.0);\\n"
+            + " if(uWater>0.5){ vec2 p=vWorld.xz; float wave=0.5+0.5*sin(p.x*0.22+p.y*0.17+uTime); vec3 c=mix(vec3(0.02,0.16,0.23),uFog,0.18+0.24*wave); gl_FragColor=vec4(mix(c,uFog,f),1.0); }\\n"
+            + " else { vec3 n=normalize(vNor); if(!gl_FrontFacing)n=-n; float d=max(dot(n,normalize(uSunDir)),0.0); vec4 tx=texture2D(uTex,vUV); vec3 base=tx.rgb*vCol*uTint; vec3 lit=base*(uAmb*(0.75+0.25*n.y)+uSunCol*d)+texture2D(uEmis,vUV).rgb*uEmisK; gl_FragColor=vec4(mix(lit,uFog,f),tx.a); } }";
+    private boolean advancedShader = false;
+
     private static final String SKY_VS =
             "attribute vec2 aP; varying float vY;\n"
             + "void main(){ gl_Position=vec4(aP,0.999,1.0); vY=aP.y*0.5+0.5; }";
@@ -194,7 +208,14 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     @Override public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glDisable(GLES20.GL_CULL_FACE);
-        prog = link(VS, FS, new String[]{"aPos", "aNor", "aUV", "aCol"});
+        try {
+            prog = link(VS, FS, new String[]{"aPos", "aNor", "aUV", "aCol"});
+            advancedShader = true;
+        } catch (RuntimeException incompatiblePbrShader) {
+            Log.w("AdamWorldGL", "PBR shader unavailable; using GLES 2.0 compatible renderer", incompatiblePbrShader);
+            prog = link(VS, FS_COMPAT, new String[]{"aPos", "aNor", "aUV", "aCol"});
+            advancedShader = false;
+        }
         uVP = GLES20.glGetUniformLocation(prog, "uVP");
         uModel = GLES20.glGetUniformLocation(prog, "uModel");
         uCam = GLES20.glGetUniformLocation(prog, "uCam");
@@ -222,10 +243,10 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         uHor = GLES20.glGetUniformLocation(skyProg, "uHor");
 
         tex = new Textures();
-        vehicleMaps = ProceduralMaterialMaps.create();
+        vehicleMaps = advancedShader ? ProceduralMaterialMaps.create() : null;
         cube = makeCube();
         vehicleModels = ProceduralVehicleModels.buildAll();
-        vehicleGlassModels = ProceduralVehicleModels.buildGlassAll();
+        vehicleGlassModels = advancedShader ? ProceduralVehicleModels.buildGlassAll() : null;
         wheelMesh = Mesh.from(ProceduralVehicleModels.buildWheel());
         humanRigModels = ProceduralHumanRig.buildAll();
         GeoBuf g = new GeoBuf();
@@ -709,6 +730,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     private void bindVehicleMaps() {
+        if (!advancedShader || vehicleMaps == null) return;
         GLES20.glActiveTexture(GLES20.GL_TEXTURE2); GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, vehicleMaps.normal);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE3); GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, vehicleMaps.roughness);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE4); GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, vehicleMaps.metalness);
@@ -743,7 +765,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     private void drawVehicleGlass(int type) {
-        if(vehicleGlassModels==null || type<0 || type>=vehicleGlassModels.length || vehicleGlassModels[type]==null) return;
+        if(!advancedShader || vehicleGlassModels==null || type<0 || type>=vehicleGlassModels.length || vehicleGlassModels[type]==null) return;
         bindVehicleMaps();
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA,GLES20.GL_ONE_MINUS_SRC_ALPHA);
