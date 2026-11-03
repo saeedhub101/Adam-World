@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PBF_ROOT = Path(os.environ.get("ADAM_CITY_MANILA_PBF", ROOT / "Adam-City-source/Manila/vector-tiles"))
+BUILDINGS = ROOT / "data/facades/cities/manila/buildings.geojson"
 TRANSPORT = ROOT / "data/facades/cities/manila/transportation.geojson"
 DETAILS = ROOT / "data/facades/cities/manila/building-details.geojson"
 FOOTPRINTS = ROOT / "data/facades/cities/manila/building-footprints.geojson"
@@ -300,7 +301,6 @@ def read_pbf(writer, osm_index, building_index, overture_index):
         # PBF transportation is the primary road source across the imported tile coverage.
         global PBF_ROAD_COUNT
         road_layer=tile.get("transportation")
-        name_layer=tile.get("transportation_name")
         road_records=[]
         if road_layer:
             ex=road_layer.get("extent",4096)
@@ -323,58 +323,17 @@ def read_pbf(writer, osm_index, building_index, overture_index):
                 for part in lines(rg):
                     local=[(float(p[0]),float(p[1])) for p in part if len(p)>=2]
                     if len(local)>=2: road_records.append([local,tags,rf.get("id",len(road_records)),ex])
-        if name_layer and road_records:
-            for nf in name_layer.get("features",[]):
-                np=nf.get("properties") or {}; ng=nf.get("geometry") or {}
-                nm=text(np.get("name") or np.get("ref"))
-                if not nm: continue
-                for part in lines(ng):
-                    local=[(float(p[0]),float(p[1])) for p in part if len(p)>=2]
-                    if not local: continue
-                    cx=sum(p[0] for p in local)/len(local); cy=sum(p[1] for p in local)/len(local)
-                    best=None; bestd=1e30
-                    for rec in road_records:
-                        d=min((cx-p[0])**2+(cy-p[1])**2 for p in rec[0])
-                        if d<bestd: bestd=d; best=rec
-                    if best is not None and bestd<2500: best[1]["name"]=nm
+        # PBF supplies road geometry only. Street names are loaded independently
+        # from transportation.geojson so a nearest-line guess cannot mislabel a road.
         for local,tags,rawid,ex in road_records:
             pts=[]
             for px,py in local:
                 lon,lat=tile_lonlat(px+x*ex,py+y*ex,z,ex); pts.append({"lon":lon,"lat":lat})
+            tags.pop("name",None)
             writer.add({"type":"way","id":sid("omt-transport",rawid),"tags":dict(tags),"geometry":pts},"openmaptiles_transportation")
             PBF_ROAD_COUNT+=1
 
-        layer=tile.get("building") or tile.get("buildings") or {"extent":4096,"features":[]}
-        extent=layer.get("extent",4096)
-        for f in layer.get("features",[]):
-            g=f.get("geometry") or {}
-            rings=mvt_geometry(g,x,y,z,extent)
-            if not rings: continue
-            p=f.get("properties") or {}; tags=tags_from_omt(p)
-            rawids=[f.get("id"),p.get("id"),p.get("osm_id"),p.get("osm_way_id"),p.get("source_id")]
-            for raw in rawids:
-                if raw is None: continue
-                key=str(raw).split("/")[-1]
-                supplement=osm_index.get(key)
-                audited=building_index.get(key)
-                overture=overture_index.get(osm_source_key(key))
-                if supplement or audited or overture:
-                    MATCHED_OSM_IDS.add(key)
-                    if overture:
-                        MATCHED_OVERTURE_IDS.add(key)
-                    for source_tags in (supplement or {},audited or {},overture or {}):
-                        for k,v in source_tags.items():
-                            if v not in (None,"") and tags.get(k) in (None,""): tags[k]=text(v)
-            outer=rings[0] if rings else []
-            # Overture polygons are the primary footprints; keep OpenMapTiles
-            # geometry only where no Overture polygon already covers the same building.
-            if outer and overlaps_primary(outer):
-                continue
-            emit_polygon(writer,"omt",f.get("id",count),rings,tags,"openmaptiles_buildings")
-            if outer:
-                PRIMARY_CENTROIDS.append((sum(p[0] for p in outer)/len(outer),sum(p[1] for p in outer)/len(outer)))
-                add_primary_polygon(outer)
-            count+=1
+        # buildings.geojson is the sole source of Manila building polygons.
         # Preserve named facilities and address-number points from the same tiles.
         for lname in ("poi","housenumber"):
             lyr=tile.get(lname)
@@ -403,23 +362,82 @@ def read_pbf(writer, osm_index, building_index, overture_index):
                     elif cls in ("bus_stop","bus_station"): t.setdefault("highway","bus_stop")
                 if len(t)>1:
                     writer.add({"type":"node","id":sid("omt-"+lname,f.get("id",0)),"lat":lat,"lon":lon,"tags":t},"openmaptiles_"+lname)
-    if not count and not PRIMARY_POLYGONS:
-        raise SystemExit("No building footprints found in Overture, OpenMapTiles or OSM GeoJSON sources")
     return count
 
-def read_transport(writer):
+def read_geojson_buildings(writer):
+    """Import every Manila building exclusively from the canonical buildings.geojson."""
+    if not BUILDINGS.is_file() or BUILDINGS.stat().st_size == 0:
+        raise SystemExit(f"Missing or empty canonical Manila buildings file: {BUILDINGS}")
+    data=json.loads(BUILDINGS.read_text(encoding="utf-8"))
+    if data.get("type") != "FeatureCollection" or not isinstance(data.get("features"),list):
+        raise SystemExit(f"Invalid Manila buildings GeoJSON FeatureCollection: {BUILDINGS}")
+    added=0; named=0; with_height=0; with_levels=0
+    for i,feature in enumerate(data["features"]):
+        props=feature.get("properties") or {}
+        building=text(props.get("building"))
+        if not building or building.lower()=="no":
+            continue
+        rings=polygons(feature.get("geometry") or {})
+        if not rings:
+            continue
+        tags={}
+        for key,value in props.items():
+            if value not in (None,"",[],{}):
+                tags[key]=text(value)
+        tags["building"]=building
+        tags["adam:source"]="Manila buildings.geojson"
+        osm_id=props.get("osm_way_id") or props.get("osm_id")
+        if osm_id not in (None,""):
+            tags["adam:source_osm_id"]=text(osm_id)
+        feature_id=feature.get("id") or osm_id or i
+        emit_polygon(writer,"manila-buildings-geojson",feature_id,rings,tags,"manila_buildings_geojson")
+        for ring in rings:
+            if ring: add_primary_polygon(ring)
+        added+=1
+        if tags.get("name") or tags.get("name:ar") or tags.get("official_name"): named+=1
+        if tags.get("height"): with_height+=1
+        if tags.get("building:levels"): with_levels+=1
+    if added == 0:
+        raise SystemExit(f"No usable building polygons in canonical Manila file: {BUILDINGS}")
+    return {"features":added,"named":named,"with_height":with_height,"with_levels":with_levels}
+
+def read_transport(writer, label_only=False):
+    """Use transportation.geojson for street labels, never nearest-road name guessing."""
+    if not TRANSPORT.is_file() or TRANSPORT.stat().st_size == 0:
+        raise SystemExit(f"Missing or empty Manila transportation GeoJSON: {TRANSPORT}")
     data=json.loads(TRANSPORT.read_text(encoding="utf-8"))
-    for i,f in enumerate(data.get("features",[])):
-        p=f.get("properties") or {}; g=f.get("geometry") or {}
-        tags={"adam:source":"OpenFreeMap/OpenMapTiles"}
-        for k in ("class","subclass","highway","railway","route","name","ref","layer","bridge","tunnel","oneway","surface","width"):
-            if p.get(k) not in (None,""): tags[k]=text(p[k])
-        if "highway" not in tags and tags.get("class") in ("path","footway","pedestrian","steps","track"):
-            tags["highway"]=tags["class"]
-        if "name" in tags: tags["name:source"]="OpenFreeMap/OpenMapTiles transportation_name"
+    added=0; named=0
+    road_classes={"motorway","trunk","primary","secondary","tertiary","minor","residential",
+        "unclassified","service","living_street","road","street","path","footway","pedestrian",
+        "steps","cycleway","track","busway","raceway"}
+    street_suffix=re.compile(r"\\b(street|st|road|rd|avenue|ave|boulevard|blvd|highway|hwy|drive|dr|lane|ln|circle|circ|place|plaza|way|parkway|pkwy|expressway|esplanade)\\b",re.I)
+    for i,feature in enumerate(data.get("features",[])):
+        p=feature.get("properties") or {}; g=feature.get("geometry") or {}
+        highway=text(p.get("highway") or p.get("class") or p.get("subclass")).lower()
+        if highway not in road_classes:
+            continue
+        name=text(p.get("name") or p.get("name:latin") or p.get("name_en") or p.get("name_int") or p.get("name:en"))
+        if highway in ("path","footway","pedestrian","steps","cycleway","track") and name and not street_suffix.search(name):
+            continue
+        if label_only and not name:
+            continue
+        tags={"adam:source":"OpenFreeMap transportation.geojson"}
+        for key in ("class","subclass","highway","railway","route","ref","layer","bridge","tunnel","oneway","surface","width","name:ar","name:en","name:latin"):
+            if p.get(key) not in (None,""): tags[key]=text(p[key])
+        if name:
+            tags["name"]=name
+            named+=1
+        if label_only: tags["adam:label_only"]="yes"
+        if name: tags["name:source"]="OpenFreeMap transportation.geojson"
         for j,line in enumerate(lines(g)):
             pts=coords_to_points(line)
-            if len(pts)>=2: writer.add({"type":"way","id":sid("ofm-road",f.get("id",i),j),"tags":tags,"geometry":pts},"openfreemap_transportation")
+            if len(pts)>=2:
+                writer.add({"type":"way","id":sid("ofm-road-name" if label_only else "ofm-road",feature.get("id",i),j),
+                    "tags":dict(tags),"geometry":pts},"openfreemap_street_labels" if label_only else "openfreemap_transportation")
+                added+=1
+    if label_only and named == 0:
+        raise SystemExit("No named Manila streets found in transportation.geojson")
+    return {"features":added,"named":named}
 
 def read_city_footprints(writer):
     if not FOOTPRINTS.is_file() or FOOTPRINTS.stat().st_size == 0: return 0
@@ -547,18 +565,14 @@ def read_context(writer):
     return n
 
 def main():
-    for required in (DETAILS, FOOTPRINTS):
-        if not required.is_file() or required.stat().st_size == 0:
-            raise SystemExit(f"Missing or empty canonical Manila source: {required}")
+    if not BUILDINGS.is_file() or BUILDINGS.stat().st_size == 0:
+        raise SystemExit(f"Missing or empty canonical Manila buildings file: {BUILDINGS}")
     writer=Shards()
-    osm_data,osm_index=read_osm_detail_index()
-    building_index=read_building_csv_index()
-    overture_index,overture_footprints=read_overture_buildings(writer)
-    omt=read_pbf(writer,osm_index,building_index,overture_index)
-    if PBF_ROAD_COUNT == 0: read_transport(writer)
-    footprint_count=read_city_footprints(writer)
-    overture_part_count=read_overture_parts(writer)
-    matched,unmatched=read_osm_details(writer,osm_data,MATCHED_OSM_IDS)
+    building_stats=read_geojson_buildings(writer)
+    read_pbf(writer,{}, {}, {})
+    # Always import dedicated street-name geometry. With PBF roads these are
+    # label-only overlays; without PBF roads they also provide road surfaces.
+    transport_stats=read_transport(writer,label_only=PBF_ROAD_COUNT>0)
     thematic=read_thematic_csv(writer)
     context=read_context(writer)
     writer.close()
@@ -568,18 +582,21 @@ def main():
         with shard.open("rb") as f:
             while block:=f.read(1024*1024): h.update(block)
         shard_hashes[shard.stem]=h.hexdigest()
-    manifest={"schema_version":1,"city":"Manila","source":"Adam-City OpenMapTiles PBF + OpenFreeMap transportation GeoJSON + OSM supplemental details",
-      "building_deduplication":"polygon-containment-and-vertex-overlap-v2",
+    manifest={"schema_version":2,"city":"Manila","source":"buildings.geojson (sole building source) + OpenMapTiles PBF road geometry/POIs + OpenFreeMap transportation.geojson street names",
+      "building_source":"data/facades/cities/manila/buildings.geojson",
+      "building_features":building_stats["features"],"building_named_features":building_stats["named"],
+      "building_features_with_height":building_stats["with_height"],"building_features_with_levels":building_stats["with_levels"],
+      "transportation_name_source":"data/facades/cities/manila/transportation.geojson",
+      "transportation_label_features":transport_stats["features"],"transportation_named_features":transport_stats["named"],
+      "building_deduplication":"canonical-buildings-geojson-only-v1",
       "origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,"cell_halo_m":HALO,
       "dataset_version":hashlib.sha256(json.dumps(shard_hashes,sort_keys=True).encode()).hexdigest()[:16],
       "shard_sha256":shard_hashes,
-      "cells":sorted(writer.cells),"counts":dict(writer.counts),"openmaptiles_building_features":omt,"openmaptiles_transportation_features":PBF_ROAD_COUNT,
-      "osm_building_fallback_features":unmatched,"openfreemap_footprint_features":footprint_count,"overture_building_part_features":overture_part_count,"osm_context_features":context,"thematic_supplement_features":thematic,
-      "osm_detail_matched_count":matched,"overture_building_attribute_matches":len(MATCHED_OVERTURE_IDS),
-      "overture_building_attribute_records":len(overture_index),"overture_building_footprint_features":overture_footprints,
+      "cells":sorted(writer.cells),"counts":dict(writer.counts),"openmaptiles_transportation_features":PBF_ROAD_COUNT,
+      "osm_context_features":context,"thematic_supplement_features":thematic,
       "terrain":"disabled_flat_ground",
       "attribution":["© OpenFreeMap / OpenMapTiles","© OpenStreetMap contributors"],
       "license":"OpenStreetMap data ODbL 1.0; OpenFreeMap/OpenMapTiles attribution required"}
     (OUT/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    print(json.dumps({k:manifest[k] for k in ("dataset_version","counts","openmaptiles_building_features","osm_building_fallback_features","osm_context_features","cells")},ensure_ascii=False))
+    print(json.dumps({k:manifest[k] for k in ("dataset_version","building_features","building_named_features","building_features_with_height","building_features_with_levels","transportation_label_features","transportation_named_features","counts","openmaptiles_transportation_features","cells")},ensure_ascii=False))
 if __name__=="__main__": main()
