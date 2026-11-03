@@ -375,6 +375,14 @@ def read_geojson_buildings(writer):
         if geometry.get("type") not in ("Polygon", "MultiPolygon"):
             continue
         tags = _building_tags(feature)
+        # Preserve the source vector-tile render estimate as the runtime's
+        # last-resort height, after surveyed height and floor-count tags.
+        if not any(tags.get(k) for k in ("height", "building:height", "height:meters",
+                                          "building:levels", "num_floors", "levels")):
+            if tags.get("render_height") not in (None, ""):
+                tags["adam:render_height_m"] = text(tags["render_height"])
+        if not tags.get("min_height") and tags.get("render_min_height") not in (None, ""):
+            tags["min_height"] = text(tags["render_min_height"])
         building = text(tags.get("building") or tags.get("building:part"))
         if not building or building.lower() == "no":
             continue
@@ -391,7 +399,7 @@ def read_geojson_buildings(writer):
         added += 1
         if tags.get("name") or tags.get("name:ar") or tags.get("official_name"):
             named += 1
-        if any(tags.get(k) for k in ("height", "building:height", "height:meters", "adam:render_height_m")):
+        if any(tags.get(k) for k in ("height", "building:height", "height:meters", "adam:render_height_m", "render_height")):
             with_height += 1
         if any(tags.get(k) for k in ("building:levels", "num_floors", "levels")):
             with_levels += 1
