@@ -229,9 +229,9 @@ final class TileBuilder {
                 float railWidth = tg(tags,"railway").equals("rail") ? 4.2f : 3.2f;
                 addClippedRibbon(td,xs,zs,railWidth,railDeck,td.bufs[B_ROADN],0.25f,0.27f,0.29f);
                 if (railBridge) {
-                    double west=td.ix*Geo.dLon,east=(td.ix+1)*Geo.dLon;
-                    double south=td.iz*Geo.D_LAT,north=(td.iz+1)*Geo.D_LAT;
-                    for (ArrayList<float[]> piece : clipLine(xs,zs,Geo.x(west),Geo.x(east),Geo.z(north),Geo.z(south))) {
+                    double railWest=td.ix*Geo.dLon,railEast=(td.ix+1)*Geo.dLon;
+                    double railSouth=td.iz*Geo.D_LAT,railNorth=(td.iz+1)*Geo.D_LAT;
+                    for (ArrayList<float[]> piece : clipLine(xs,zs,Geo.x(railWest),Geo.x(railEast),Geo.z(railNorth),Geo.z(railSouth))) {
                         float[][] clipped=toArrays(piece);
                         if (clipped!=null) addBridgeParapets(clipped[0],clipped[1],railWidth,railDeck,td.bufs[B_ROADN],1.2f);
                     }
