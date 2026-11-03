@@ -40,6 +40,7 @@ final class TileLoader extends Thread {
 
     volatile int ptx, ptz, gen = 0;
     volatile boolean running = true, havePlayer = false;
+    private volatile HttpURLConnection activeConnection;
     final ConcurrentLinkedQueue<TileData> ready = new ConcurrentLinkedQueue<>();
     final Set<Long> requested = ConcurrentHashMap.newKeySet();
     final ConcurrentHashMap<Long, Long> failedAt = new ConcurrentHashMap<>();
@@ -120,7 +121,23 @@ final class TileLoader extends Thread {
         setDaemon(true);
     }
 
-    void shutdown() { running = false; interrupt(); }
+    void shutdown() { running = false; cancelCurrentLoad(); }
+
+    /** Abort the previous city network request so the next selection is not queued behind it. */
+    void cancelCurrentLoad() {
+        HttpURLConnection c = activeConnection;
+        activeConnection = null;
+        if (c != null) c.disconnect();
+        interrupt();
+    }
+
+    private void trackConnection(HttpURLConnection c) {
+        activeConnection = c;
+    }
+
+    private void clearConnection(HttpURLConnection c) {
+        if (activeConnection == c) activeConnection = null;
+    }
 
     void resetOfflineShardState() {
         synchronized (this) { offlineCells = null; offlineDatasetVersion = null; }
@@ -155,14 +172,18 @@ final class TileLoader extends Thread {
                     if (g == gen) { ready.add(td); failedAt.remove(k); }
                     else requested.remove(k);
                 } catch (InterruptedException ie) {
-                    return;
+                    requested.remove(k);
+                    if (!running) return;
+                    continue;
                 } catch (Exception ex) {
                     requested.remove(k);
+                    if (g != gen) continue;
                     failedAt.put(k, System.currentTimeMillis());
                     if (cb != null) cb.onError();
                 }
             } catch (InterruptedException ie) {
-                return;
+                if (!running) return;
+                continue;
             }
         }
     }
@@ -649,8 +670,9 @@ final class TileLoader extends Thread {
         return root;
     }
 
-    private static byte[] downloadBytes(String url) throws IOException {
+    private byte[] downloadBytes(String url) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+        trackConnection(c);
         try {
             c.setConnectTimeout(15000);
             c.setReadTimeout(90000);
@@ -664,11 +686,12 @@ final class TileLoader extends Thread {
                 while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
             }
             return out.toByteArray();
-        } finally { c.disconnect(); }
+        } finally { clearConnection(c); c.disconnect(); }
     }
 
-    static String http(String url, String body) throws IOException {
+    private String http(String url, String body) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+        trackConnection(c);
         try {
             c.setRequestMethod("POST");
             c.setConnectTimeout(15000);
@@ -682,6 +705,7 @@ final class TileLoader extends Thread {
             if (c.getResponseCode() != 200) throw new IOException("HTTP " + c.getResponseCode());
             return readAll(c.getInputStream());
         } finally {
+            clearConnection(c);
             c.disconnect();
         }
     }
