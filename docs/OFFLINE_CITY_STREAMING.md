@@ -177,3 +177,11 @@ The native offline Amman stream is generated exclusively from the already import
 - Tile files are built in a staging directory. The old complete manifest remains published until all replacement cells validate; the new complete manifest is published last. Stale cells not referenced by the new manifest are removed.
 - Each complete manifest carries a content-derived `dataset_version` and building count. Android caches cells by that version and never redownloads an unchanged cell merely because Home was pressed.
 - Home refreshes the small manifest only. Existing immutable versioned cell files remain available, and a changed dataset version naturally selects a new cache namespace.
+
+## Bridge clearance and suspended balcony parts (2026-11-03)
+
+- Road bridges use mapped `bridge:height` or `layer` first. When the bridge is explicitly mapped but has no usable vertical value, the renderer uses a conservative 4.8 m deck offset so the ground road remains passable below it.
+- Pedestrian/cycle bridges use mapped elevation where available and a 4.8 m clearance fallback. Elevated light-rail/metro/tram bridge ribbons use mapped elevation or a 5.0 m fallback; their rail geometry is no longer drawn at road level over the vehicle carriageway.
+- A mapped `building:part=balcony` is drawn as a suspended slab and perimeter railing, not as a full-height building extrusion. It does not add a ground-level collision footprint.
+- Other elevated building parts with a mapped `min_height` or `building:min_level` are rendered from their raised base and excluded from ground-level collision, allowing traffic to pass below the overhang.
+- The clearance fallback is a rendering/gameplay approximation only, not a claim that an unmapped bridge was surveyed at that exact height. Existing mapped bridge heights/layers take precedence.
