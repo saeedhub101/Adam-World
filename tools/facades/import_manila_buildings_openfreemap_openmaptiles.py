@@ -13,6 +13,7 @@ import hashlib
 import json
 import math
 import os
+import subprocess
 import tempfile
 import time
 from collections import defaultdict
@@ -28,6 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CITY_DIR = ROOT / "data/facades/cities/manila"
 CITY_CONFIG = CITY_DIR / "city.json"
 OUTPUT = CITY_DIR / "buildings.geojson"
+CHECKPOINT_DIR = CITY_DIR / ".import-checkpoints"
 ZOOMS = (13, 14)
 BOUNDARY = ROOT / "data/full-city-imports/manila/01_admin_boundary/city-boundary.geojson"
 SOURCES = {
@@ -248,6 +250,56 @@ def write_atomic(features, bbox, tile_counts):
             os.unlink(tmp)
 
 
+def checkpoint_path(source_name, zoom):
+    safe = source_name.lower().replace(" ", "-")
+    return CHECKPOINT_DIR / f"{safe}-z{zoom}.json"
+
+
+def save_checkpoint(source_name, zoom, data, tile_count):
+    """Persist a completed source/zoom stage and push it to main immediately."""
+    CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+    path = checkpoint_path(source_name, zoom)
+    payload = {
+        "source": source_name, "zoom": zoom, "tile_count": tile_count,
+        "features": {
+            key: {"geometry": mapping(geom), "properties": props}
+            for key, (geom, props) in data.items()
+        },
+    }
+    fd, tmp = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=CHECKPOINT_DIR)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+            f.write("\\n")
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+    # Each completed stage is versioned on main before the next stage starts.
+    subprocess.run(["git", "add", str(path.relative_to(ROOT))], cwd=ROOT, check=True)
+    changed = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0
+    if changed:
+        subprocess.run(["git", "commit", "-m", f"Checkpoint Manila {source_name} z{zoom} import"], cwd=ROOT, check=True)
+        subprocess.run(["git", "pull", "--rebase", "origin", "main"], cwd=ROOT, check=True)
+        subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT, check=True)
+    print(f"SAVED CHECKPOINT {source_name} z{zoom}: {len(data)} features -> {path.relative_to(ROOT)}", flush=True)
+
+
+def load_checkpoint(source_name, zoom):
+    path = checkpoint_path(source_name, zoom)
+    if not path.is_file():
+        return None
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    if doc.get("source") != source_name or doc.get("zoom") != zoom:
+        raise RuntimeError(f"Checkpoint identity mismatch: {path}")
+    data = {
+        key: (shape(item["geometry"]), item.get("properties") or {})
+        for key, item in doc.get("features", {}).items()
+    }
+    print(f"RESUME {source_name} z{zoom}: loaded {len(data)} saved features", flush=True)
+    return data, int(doc.get("tile_count") or 0)
+
+
 def main():
     boundary, bbox = bounds_from_config()
     imports = {}
@@ -257,7 +309,12 @@ def main():
         combined = {}
         total_tiles = 0
         for z in ZOOMS:
-            data, count = import_source(name, template, bbox, boundary, z)
+            saved = load_checkpoint(name, z)
+            if saved is None:
+                data, count = import_source(name, template, bbox, boundary, z)
+                save_checkpoint(name, z, data, count)
+            else:
+                data, count = saved
             total_tiles += count
             for key, value in data.items():
                 if key not in combined:
