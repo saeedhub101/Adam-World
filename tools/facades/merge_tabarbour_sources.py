@@ -102,7 +102,7 @@ def main():
  if geoms:
   tree=STRtree(geoms)
   for rec in list(base):
-   if rec["osm_id"] or len(rec["observations"])>1: continue
+   if rec["id"] not in records or rec["osm_id"] or len(rec["observations"])>1: continue
    geom=shape(rec["_geometry"])
    try: hits=tree.query(geom)
    except Exception: continue
