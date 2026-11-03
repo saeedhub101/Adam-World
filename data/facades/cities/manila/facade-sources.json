@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "city": "manila",
-  "runtime": "tools/build_manila_stream_shards.py merges buildings.geojson, building-footprints.geojson and building-details.geojson. Populated buildings.geojson geometry has priority; footprints fill missing geometry; details enrich matching IDs and add unmatched building/building-part polygons and mapped building nodes. OpenMapTiles PBF is used for roads and non-building POIs; transportation.geojson supplies street geometry and names.",
+  "runtime": "The game building geometry and properties are read exclusively from data/facades/cities/manila/buildings.geojson. building-footprints.geojson and building-details.geojson are not merged or used as building geometry. Generated facade-windows-*.geojson files remain a separate facade layer. OpenMapTiles PBF supplies optional POIs only; transportation.geojson supplies road geometry and names.",
   "photo_facade_textures": {
     "verified_assignments": 0,
     "status": "No human-verified building/photo matches are currently available; no candidate photo may be assigned automatically."
@@ -11,13 +11,11 @@
     "© OpenFreeMap / OpenMapTiles"
   ],
   "building_source": {
-    "source": "Merged Manila building datasets",
+    "source": "Canonical buildings.geojson only",
     "paths": [
-      "data/facades/cities/manila/buildings.geojson",
-      "data/facades/cities/manila/building-footprints.geojson",
-      "data/facades/cities/manila/building-details.geojson"
+      "data/facades/cities/manila/buildings.geojson"
     ],
-    "runtime_role": "combined geometry and attribute source; geometry priority is buildings.geojson, then building-footprints.geojson, with building-details.geojson enriching by source ID and adding unmatched buildings/parts"
+    "runtime_role": "sole source of building polygons and properties; no footprint/detail supplementation"
   },
   "street_source": {
     "source": "OpenFreeMap/OpenMapTiles transportation GeoJSON",
@@ -27,10 +25,22 @@
     "runtime_role": "always imported for named street-label geometry; labels overlay PBF road surfaces without replacing them"
   },
   "building_source_feature_counts": {
-    "building_footprints": 1528,
-    "building_details": 1533,
-    "building_detail_polygons": 1528,
-    "building_detail_nodes": 5,
-    "building_parts": 222
+    "buildings_geojson": 1759
+  },
+  "separate_facade_layers": {
+    "windows": {
+      "path_pattern": "data/facades/cities/manila/layers/facade-windows-*.geojson",
+      "source": "generated from buildings.geojson",
+      "separate_from_building_geometry": true,
+      "procedural_placeholder": true
+    },
+    "doors": {
+      "path_pattern": "data/facades/cities/manila/layers/facade-doors-*.geojson",
+      "runtime_enabled": false
+    },
+    "balconies": {
+      "path_pattern": "data/facades/cities/manila/layers/facade-balconies-*.geojson",
+      "runtime_enabled": false
+    }
   }
 }

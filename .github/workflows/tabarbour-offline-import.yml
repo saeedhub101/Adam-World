@@ -209,7 +209,6 @@ jobs:
 
       - name: Build spatial streaming tiles outside APK
         id: build_tabarbour_stream
-        continue-on-error: true
         run: |
           mkdir -p data/offline-world/tabarbour/stream
           python -m py_compile tools/build_offline_city_tiles.py
@@ -225,7 +224,7 @@ jobs:
           m=json.loads(p.read_text())
           if not str(m.get("source_kind","")).startswith("tabarbour-canonical-merged-multisource-buildings"):
               raise SystemExit(f"Tabarbour stream is not built from merged footprints: {m.get('source_kind')}")
-          if int(m.get("element_count",0)) < 20000:
+          if int(m.get("building_count",0)) < 20000 or int(m.get("element_count",0)) < 20000:
               raise SystemExit(f"Tabarbour stream unexpectedly lacks merged buildings: {m.get('element_count')}")
           print(f"VALID merged Tabarbour stream: {m['element_count']} elements")
           PY

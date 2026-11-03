@@ -1028,6 +1028,10 @@ def source_elements(slug, lat0, lon0):
         if combined:
             return combined, source_path, source_kind
 
+    # Never silently publish a terrain-only legacy fallback when Tabarbour's merged source exists.
+    if slug == "tabarbour" and (city_source / "merged" / "manifest.json").is_file():
+        raise RuntimeError("Tabarbour merged manifest exists but its building source was not assembled")
+
     # Strict fallback for a city not yet imported from OpenFreeMap: retain
     # non-road/non-building context only. Never promote raw OSM buildings or
     # road ways to primary geometry when the provider tiles are absent.
