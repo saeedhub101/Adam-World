@@ -658,7 +658,13 @@ def source_elements(slug, lat0, lon0):
         footprints = _geojson_way_elements(footprints_path)
         overture_buildings = _geojson_overture_elements(SOURCE / slug / "overture-building-details.geojson")
         overture_parts = _geojson_overture_elements(SOURCE / slug / "overture-building-parts.geojson", part=True)
-        overture_additions = _merge_overture_building_attributes(footprints, overture_buildings)
+        overture_additions = _merge_overture_building_attributes(footprints + detail_buildings, overture_buildings)
+        # Re-read enriched OSM detail tags so exact OSM IDs transfer Overture
+        # heights/floors/names to their OpenFreeMap primary footprints.
+        for item in detail_buildings:
+            source_id = _osm_id((item.get("tags") or {}).get("adam:source_osm_id") or item.get("id"))
+            if source_id is not None:
+                detail_by_id[source_id] = item.get("tags") or {}
         address_assignments = _merge_address_points(slug, footprints + detail_buildings + overture_additions)
         if address_assignments:
             print(f"MERGED {address_assignments} Tabarbour address points into building footprints", flush=True)
@@ -745,7 +751,7 @@ def source_elements(slug, lat0, lon0):
         # Overture building parts are retained as true sub-volumes; avoid
         # exact duplicate OSM parts by their original OSM identity.
         known_part_ids = {_osm_id((x.get("tags") or {}).get("adam:source_osm_id") or x.get("id"))
-                          for x in unmatched_parts + footprints}
+                          for x in unmatched_parts + footprints + detail_buildings}
         unmatched_overture_parts = [x for x in overture_parts
             if _osm_id((x.get("tags") or {}).get("adam:source_osm_id") or x.get("id")) not in known_part_ids]
         combined = (preserved + primary_roads + footprints + unmatched_buildings +
