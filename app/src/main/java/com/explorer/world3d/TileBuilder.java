@@ -206,7 +206,16 @@ final class TileBuilder {
                 boolean railBridge = !tg(tags,"bridge").isEmpty() && !tg(tags,"bridge").equals("no");
                 boolean railTunnel = !tg(tags,"tunnel").isEmpty() && !tg(tags,"tunnel").equals("no");
                 float railDeck = 0.24f + bridgeDeckOffset(tags, railBridge, railTunnel, true);
-                addClippedRibbon(td,xs,zs,tg(tags,"railway").equals("rail")?4.2f:3.2f,railDeck,td.bufs[B_ROADN],0.25f,0.27f,0.29f);
+                float railWidth = tg(tags,"railway").equals("rail") ? 4.2f : 3.2f;
+                addClippedRibbon(td,xs,zs,railWidth,railDeck,td.bufs[B_ROADN],0.25f,0.27f,0.29f);
+                if (railBridge) {
+                    double west=td.ix*Geo.dLon,east=(td.ix+1)*Geo.dLon;
+                    double south=td.iz*Geo.D_LAT,north=(td.iz+1)*Geo.D_LAT;
+                    for (ArrayList<float[]> piece : clipLine(xs,zs,Geo.x(west),Geo.x(east),Geo.z(north),Geo.z(south))) {
+                        float[][] clipped=toArrays(piece);
+                        if (clipped!=null) addBridgeParapets(clipped[0],clipped[1],railWidth,railDeck,td.bufs[B_ROADN],1.2f);
+                    }
+                }
             } else if (tg(tags,"route").matches("bus|trolleybus")) {
                 addClippedRibbon(td,xs,zs,2.4f,0.25f,td.bufs[B_ROADN],0.12f,0.42f,0.88f);
             } else if (isWaterUtility(tags)) {
@@ -1104,6 +1113,7 @@ final class TileBuilder {
                 if (!bridge && !tunnel) ribbon(px, pz, w + 4.2f, 0.20f, td.bufs[B_SIDEWALK], (w + 4.2f) / 2f, 2f, 1f, 1f, 1f);
                 GeoBuf roadBuf = (w >= 7f ? td.bufs[B_ROADW] : td.bufs[B_ROADN]);
                 ribbonOffset(px, pz, w, yOffset, roadBuf, 1f, 12f, rr, rg, rb);
+                if (bridge) addBridgeParapets(px, pz, w, yOffset, roadBuf, footOrCycle ? 1.15f : 0.85f);
                 if (tabarbour && hw.matches("residential|living_street|unclassified|service")) {
                     long roadSeed = (((long) Math.round(px[0] * 10f)) << 32) ^ (long) Math.round(pz[0] * 10f);
                     addTabarbourSpeedBumps(roadBuf, px, pz, w, roadSeed);
@@ -1121,6 +1131,33 @@ final class TileBuilder {
                 float[] o = new float[4];
                 addDecal(td, rp, rp.total * 0.5f, name, o);
                 for (float s = 125f; s < rp.total - 8f; s += 150f) addDecal(td, rp, s, name, o);
+            }
+        }
+    }
+
+    /** Side parapets make elevated road, rail and pedestrian bridge decks legible. */
+    private static void addBridgeParapets(float[] px, float[] pz, float width, float yOffset,
+                                          GeoBuf target, float railHeight) {
+        if (px.length < 2 || width < 1f) return;
+        float half = width * 0.5f + 0.06f;
+        float r = 0.43f, g = 0.45f, b = 0.47f;
+        for (int i = 0; i < px.length - 1; i++) {
+            float dx = px[i + 1] - px[i], dz = pz[i + 1] - pz[i];
+            float len = (float) Math.hypot(dx, dz);
+            if (len < 0.1f) continue;
+            float nx = -dz / len, nz = dx / len;
+            for (int side : new int[]{-1, 1}) {
+                float ox = nx * half * side, oz = nz * half * side;
+                float x0 = px[i] + ox, z0 = pz[i] + oz;
+                float x1 = px[i + 1] + ox, z1 = pz[i + 1] + oz;
+                float y0 = Terrain.h(x0, z0) + yOffset;
+                float y1 = Terrain.h(x1, z1) + yOffset;
+                target.v(x0,y0,z0,0,0,r,g,b);
+                target.v(x1,y1,z1,1,0,r,g,b);
+                target.v(x1,y1+railHeight,z1,1,1,r,g,b); target.fixTri();
+                target.v(x0,y0,z0,0,0,r,g,b);
+                target.v(x1,y1+railHeight,z1,1,1,r,g,b);
+                target.v(x0,y0+railHeight,z0,0,1,r,g,b); target.fixTri();
             }
         }
     }
