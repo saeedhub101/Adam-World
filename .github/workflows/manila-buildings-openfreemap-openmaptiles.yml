@@ -1,10 +1,5 @@
 name: Manila All Vector Layers z1-z16 — OpenFreeMap + OpenMapTiles
 on:
-  push:
-    branches: [main]
-    paths:
-      - "tools/facades/import_manila_buildings_openfreemap_openmaptiles.py"
-      - ".github/workflows/manila-buildings-openfreemap-openmaptiles.yml"
   workflow_dispatch:
 permissions:
   contents: write
