@@ -941,7 +941,7 @@ def main():
                 buckets[(ix, iz)].append(element)
 
         # Tabarbour is a remotely streamed city dataset, never Android assets.
-        city_out = (FULL_SOURCE / slug) if slug == "tabarbour" else (OUTPUT / slug)
+        city_out = (FULL_SOURCE / slug / "stream") if slug == "tabarbour" else (OUTPUT / slug)
         city_out.mkdir(parents=True, exist_ok=True)
         tiles = []
         for (ix, iz), elements in sorted(buckets.items()):
