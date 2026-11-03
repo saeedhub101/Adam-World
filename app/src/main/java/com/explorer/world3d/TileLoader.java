@@ -452,16 +452,19 @@ final class TileLoader extends Thread {
         int sx = (int) Math.floor((lon - MANILA_LON0) * MANILA_KX / 1000.0);
         int sz = (int) Math.floor(-(lat - MANILA_LAT0) * MANILA_KY / 1000.0);
         String cell = sx + "_" + sz;
-        if (!offlineCells.contains(cell)) return emptyElements();
         String version = offlineDatasetVersion == null ? "current" : offlineDatasetVersion;
+        if (!offlineCells.contains(cell)) {
+            JSONObject empty = emptyElements();
+            appendManilaWindowTile(empty, tileX, tileZ, version);
+            return empty;
+        }
         String key = version + ":" + cell;
-        synchronized (offlineShardCache) {
-            JSONObject cached = offlineShardCache.get(key);
-            if (cached != null) {
-                JSONObject filtered = filterManilaRoot(cached, south, west, north, east);
-                appendManilaWindowTile(filtered, tileX, tileZ, version);
-                return filtered;
-            }
+        JSONObject cached;
+        synchronized (offlineShardCache) { cached = offlineShardCache.get(key); }
+        if (cached != null) {
+            JSONObject filtered = filterManilaRoot(cached, south, west, north, east);
+            appendManilaWindowTile(filtered, tileX, tileZ, version);
+            return filtered;
         }
         manilaOfflineDir.mkdirs();
         File versionDir = new File(manilaOfflineDir, version); versionDir.mkdirs();
