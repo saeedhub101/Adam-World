@@ -74,16 +74,9 @@ jobs:
                   raise SystemExit(f"Invalid committed source layer: {path}")
           print(f"SOURCE DATA VERIFIED: {len(layer_files)} layers; {len(features)} buildings; {sum(p.stat().st_size for p in layer_files):,} layer bytes")
           PY
-      - name: Rebuild Manila offline shards from canonical buildings GeoJSON
-        run: python -u tools/build_manila_stream_shards.py
-      - name: Commit all layer GeoJSON and rebuilt game data
-        if: success()
+      - name: Confirm committed source layers remain the only import output
         run: |
-          git add data/facades/cities/manila data/offline-city-stream/manila
-          if ! git diff --cached --quiet; then
-            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Import all Manila vector layers at zooms 1-16"
-            git pull --rebase origin main
-            git push origin HEAD:main
-          else
-            echo "No generated changes to commit."
-          fi
+          git status --short
+          test -s data/offline-world/manila/elements.json
+          test -s data/offline-world/manila/metadata.json
+          echo "Manila source imports are saved; Android reads the committed offline-world dataset directly."
