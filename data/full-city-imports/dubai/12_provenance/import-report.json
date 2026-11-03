@@ -1,0 +1,13 @@
+{
+  "city": "Dubai",
+  "boundary": "configured_bbox_extent (approximate; no exact administrative boundary)",
+  "boundary_bbox": [
+    54.95,
+    24.8,
+    55.75,
+    25.5
+  ],
+  "overture_layers": 4,
+  "updated": "2026-11-03T03:58:17.466364+00:00",
+  "imagery_catalogues": "metadata discovery attempted; image downloads pending licence validation"
+}
