@@ -68,7 +68,7 @@ jobs:
             fi
             # Sparse checkout: stage only files visible to this workflow.
             # Do not name legacy paths that no longer exist.
-            git add -A
+            git add -A -- data/offline-world/tabarbour
             if git diff --cached --quiet; then
               echo "CHECKPOINT unchanged: $label"
               exit 0
