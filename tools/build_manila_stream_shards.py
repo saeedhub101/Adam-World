@@ -108,6 +108,130 @@ class Shards:
                     while b:=src.read(1024*1024): dst.write(b)
             p.unlink()
 
+
+WINDOWS_SOURCE_DIR = ROOT / "data/facades/cities/manila/layers"
+WINDOWS_REPORT = ROOT / "data/facades/cities/manila/facade-details-report.json"
+WINDOW_TILE_DLAT = 0.003
+WINDOW_TILE_DLON = WINDOW_TILE_DLAT / math.cos(math.radians(LAT0))
+
+class WindowShards:
+    """Spatially index each generated window surface to the exact 333 m game tile."""
+    def __init__(self):
+        self.folder = OUT / "window-shards"
+        self.folder.mkdir(parents=True, exist_ok=True)
+        for pattern in ("*.jsonl", "*.jsonl.gz"):
+            for old in self.folder.glob(pattern):
+                old.unlink()
+        self.handles = OrderedDict()
+        self.cells = set()
+        self.count = 0
+
+    def add_surface(self, ring, source_feature_id, surface_index, building_source_id):
+        if not isinstance(ring, list) or len(ring) < 4:
+            return
+        points = []
+        for p in ring:
+            if not isinstance(p, (list, tuple)) or len(p) < 3:
+                return
+            lon, lat, height = float(p[0]), float(p[1]), float(p[2])
+            if not (math.isfinite(lon) and math.isfinite(lat) and math.isfinite(height)):
+                return
+            points.append({"lon": lon, "lat": lat, "height_m": height})
+        sample = points[:4]
+        lon = sum(p["lon"] for p in sample) / len(sample)
+        lat = sum(p["lat"] for p in sample) / len(sample)
+        ix = math.floor(lon / WINDOW_TILE_DLON)
+        iz = math.floor(lat / WINDOW_TILE_DLAT)
+        cell = f"{ix}_{iz}"
+        element = {
+            "type": "way",
+            "id": sid("manila-facade-window", f"{source_feature_id}:{surface_index}"),
+            "tags": {
+                "adam:facade_window": "yes",
+                "adam:window_source": "facade-windows GeoJSON",
+                "adam:building_source_id": str(building_source_id or ""),
+                "adam:z_reference": "building_ground_relative_m"
+            },
+            "geometry": points
+        }
+        handle = self.handles.pop(cell, None)
+        if handle is None:
+            handle = (self.folder / (cell + ".jsonl")).open("a", encoding="utf-8")
+        self.handles[cell] = handle
+        if len(self.handles) > 40:
+            self.handles.popitem(last=False)[1].close()
+        handle.write(json.dumps(element, ensure_ascii=False, separators=(",", ":")) + "\n")
+        self.cells.add(cell)
+        self.count += 1
+
+    def close(self):
+        for handle in self.handles.values():
+            handle.close()
+        self.handles.clear()
+        hashes = {}
+        for path in sorted(self.folder.glob("*.jsonl")):
+            target = self.folder / (path.stem + ".jsonl.gz")
+            with path.open("rb") as source, target.open("wb") as raw:
+                with gzip.GzipFile(fileobj=raw, mode="wb", compresslevel=1) as zipped:
+                    while block := source.read(1024 * 1024):
+                        zipped.write(block)
+            path.unlink()
+        for path in sorted(self.folder.glob("*.jsonl.gz")):
+            digest = hashlib.sha256()
+            with path.open("rb") as source:
+                while block := source.read(1024 * 1024):
+                    digest.update(block)
+            hashes[path.stem] = digest.hexdigest()
+        return hashes
+
+def read_facade_windows():
+    """Convert saved 3D GeoJSON window polygons into tile-local runtime shards."""
+    if not WINDOWS_REPORT.is_file():
+        raise SystemExit(f"Missing Manila facade window report: {WINDOWS_REPORT}")
+    report = json.loads(WINDOWS_REPORT.read_text(encoding="utf-8"))
+    if report.get("status") != "success":
+        raise SystemExit("Manila facade window report is not successful")
+    expected = int(report.get("outputs", {}).get("facade-windows", {}).get("window_surfaces", 0))
+    files = sorted(WINDOWS_SOURCE_DIR.glob("facade-windows-*.geojson"))
+    if not files or expected <= 0:
+        raise SystemExit("Saved Manila facade-windows GeoJSON chunks are missing or empty")
+    writer = WindowShards()
+    feature_count = 0
+    for file_index, path in enumerate(files, 1):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"Cannot read facade windows chunk {path}: {exc}")
+        features = data.get("features") if data.get("type") == "FeatureCollection" else None
+        if not isinstance(features, list):
+            raise SystemExit(f"Invalid facade windows FeatureCollection: {path}")
+        for feature in features:
+            feature_count += 1
+            props = feature.get("properties") or {}
+            geometry = feature.get("geometry") or {}
+            if geometry.get("type") != "MultiPolygon":
+                continue
+            source_id = str(feature.get("id") or feature_count)
+            building_id = props.get("building_source_id", "")
+            surface_index = 0
+            for polygon in geometry.get("coordinates") or []:
+                if not polygon:
+                    continue
+                surface_index += 1
+                writer.add_surface(polygon[0], source_id, surface_index, building_id)
+        print(f"WINDOW CHUNK {file_index}/{len(files)}: {path.name}; surfaces={writer.count:,}; tiles={len(writer.cells):,}", flush=True)
+    if writer.count != expected:
+        raise SystemExit(f"Window surface count mismatch: expected {expected:,}, indexed {writer.count:,}")
+    hashes = writer.close()
+    return {
+        "source_features": feature_count,
+        "surfaces": writer.count,
+        "tiles": sorted(writer.cells),
+        "sha256": hashes,
+        "tile_count": len(writer.cells),
+        "source_files": len(files)
+    }
+
 def emit_polygon(writer, source, rawid, rings, tags, layer):
     for i,ring in enumerate(rings):
         pts=coords_to_points(ring,True)
@@ -358,6 +482,7 @@ def main():
     thematic=read_thematic_csv(writer)
     context=read_context(writer)
     writer.close()
+    window_stats=read_facade_windows()
     shard_hashes={}
     for shard in sorted((OUT/"shards").glob("*.jsonl.gz")):
         h=hashlib.sha256()
@@ -378,13 +503,21 @@ def main():
       "building_deduplication":"none; canonical buildings.geojson features preserved independently",
       "excluded_building_sources":["data/facades/cities/manila/building-footprints.geojson","data/facades/cities/manila/building-details.geojson"],
       "origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,"cell_halo_m":HALO,
-      "dataset_version":hashlib.sha256(json.dumps(shard_hashes,sort_keys=True).encode()).hexdigest()[:16],
+      "dataset_version":hashlib.sha256(json.dumps({"shards":shard_hashes,"windows":window_stats["sha256"]},sort_keys=True).encode()).hexdigest()[:16],
       "shard_sha256":shard_hashes,
+      "window_source":"data/facades/cities/manila/layers/facade-windows-*.geojson",
+      "window_source_files":window_stats["source_files"],
+      "window_source_features":window_stats["source_features"],
+      "window_surfaces":window_stats["surfaces"],
+      "window_tile_size_m":333.396,
+      "window_tiles":window_stats["tiles"],
+      "window_tile_count":window_stats["tile_count"],
+      "window_shard_sha256":window_stats["sha256"],
       "cells":sorted(writer.cells),"counts":dict(writer.counts),"openmaptiles_transportation_features":PBF_ROAD_COUNT,
       "osm_context_features":context,"thematic_supplement_features":thematic,
       "terrain":"disabled_flat_ground",
       "attribution":["© OpenFreeMap / OpenMapTiles","© OpenStreetMap contributors"],
       "license":"OpenStreetMap data ODbL 1.0; OpenFreeMap/OpenMapTiles attribution required"}
     (OUT/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    print(json.dumps({k:manifest[k] for k in ("dataset_version","building_features","building_named_features","building_features_with_height","building_features_with_levels","transportation_label_features","transportation_named_features","counts","openmaptiles_transportation_features","cells")},ensure_ascii=False))
+    print(json.dumps({k:manifest[k] for k in ("dataset_version","building_features","building_named_features","building_features_with_height","building_features_with_levels","transportation_label_features","transportation_named_features","counts","openmaptiles_transportation_features","window_surfaces","window_tile_count","cells")},ensure_ascii=False))
 if __name__=="__main__": main()

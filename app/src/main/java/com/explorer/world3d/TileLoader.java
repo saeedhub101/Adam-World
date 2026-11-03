@@ -80,6 +80,13 @@ final class TileLoader extends Thread {
             };
     private volatile Set<String> offlineCells;
     private volatile String offlineDatasetVersion;
+    private volatile Set<String> offlineWindowTiles;
+    private final LinkedHashMap<String, JSONObject> offlineWindowShardCache =
+            new LinkedHashMap<String, JSONObject>(12, 0.75f, true) {
+                @Override protected boolean removeEldestEntry(Map.Entry<String, JSONObject> eldest) {
+                    return size() > 6;
+                }
+            };
     private final LinkedHashMap<String, JSONObject> offlineShardCache =
             new LinkedHashMap<String, JSONObject>(12, 0.75f, true) {
                 @Override protected boolean removeEldestEntry(Map.Entry<String, JSONObject> eldest) {
@@ -140,7 +147,9 @@ final class TileLoader extends Thread {
     void resetOfflineShardState() {
         // These references are volatile; avoid blocking the GL thread on a network-held monitor.
         offlineCells = null;
+        offlineWindowTiles = null;
         offlineDatasetVersion = null;
+        synchronized (offlineWindowShardCache) { offlineWindowShardCache.clear(); }
         synchronized (offlineShardCache) { offlineShardCache.clear(); }
     }
 
@@ -195,7 +204,7 @@ final class TileLoader extends Thread {
         if (offlineAmman) {
             root = loadOfflineRoot(south, west, north, east);
         } else if (offlineManila) {
-            root = loadManilaRoot(south, west, north, east);
+            root = loadManilaRoot(ix, iz, south, west, north, east);
         } else if (offlineCitySlug != null) {
             root = loadBundledCityRoot(south, west, north, east);
         } else {
@@ -437,7 +446,7 @@ final class TileLoader extends Thread {
         return result;
     }
 
-    private JSONObject loadManilaRoot(double south, double west, double north, double east) throws Exception {
+    private JSONObject loadManilaRoot(int tileX, int tileZ, double south, double west, double north, double east) throws Exception {
         ensureManilaManifest();
         double lat = (south + north) * 0.5, lon = (west + east) * 0.5;
         int sx = (int) Math.floor((lon - MANILA_LON0) * MANILA_KX / 1000.0);
@@ -448,7 +457,11 @@ final class TileLoader extends Thread {
         String key = version + ":" + cell;
         synchronized (offlineShardCache) {
             JSONObject cached = offlineShardCache.get(key);
-            if (cached != null) return filterManilaRoot(cached, south, west, north, east);
+            if (cached != null) {
+                JSONObject filtered = filterManilaRoot(cached, south, west, north, east);
+                appendManilaWindowTile(filtered, tileX, tileZ, version);
+                return filtered;
+            }
         }
         manilaOfflineDir.mkdirs();
         File versionDir = new File(manilaOfflineDir, version); versionDir.mkdirs();
@@ -468,7 +481,43 @@ final class TileLoader extends Thread {
         } catch (Exception ex) { shard.delete(); throw ex; }
         JSONObject result = new JSONObject(); result.put("elements", elements);
         synchronized (offlineShardCache) { offlineShardCache.put(key, result); }
-        return filterManilaRoot(result, south, west, north, east);
+        JSONObject filtered = filterManilaRoot(result, south, west, north, east);
+        appendManilaWindowTile(filtered, tileX, tileZ, version);
+        return filtered;
+    }
+
+    /** Load only the window surfaces belonging to this exact game tile. */
+    private void appendManilaWindowTile(JSONObject root, int tileX, int tileZ, String version) throws Exception {
+        String cell = tileX + "_" + tileZ;
+        Set<String> available = offlineWindowTiles;
+        if (available == null || !available.contains(cell)) return;
+        String key = version + ":" + cell;
+        JSONObject cached;
+        synchronized (offlineWindowShardCache) { cached = offlineWindowShardCache.get(key); }
+        if (cached == null) {
+            File versionDir = new File(manilaOfflineDir, version);
+            versionDir.mkdirs();
+            File shard = new File(versionDir, "window_" + cell + ".jsonl.gz");
+            if (!shard.isFile() || shard.length() == 0) {
+                byte[] bytes = downloadBytes(MANILA_OFFLINE_BASE + "/window-shards/" + cell + ".jsonl.gz");
+                File tmp = new File(shard.getPath() + ".tmp");
+                try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
+                if (!tmp.renameTo(shard)) { tmp.delete(); throw new IOException("Cannot cache Manila window shard " + cell); }
+                pruneOfflineCache(shard);
+            }
+            JSONArray elements = new JSONArray();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    new GZIPInputStream(new FileInputStream(shard)), "UTF-8"), 32768)) {
+                String line;
+                while ((line = reader.readLine()) != null) if (!line.trim().isEmpty()) elements.put(new JSONObject(line));
+            } catch (Exception ex) { shard.delete(); throw ex; }
+            cached = new JSONObject(); cached.put("elements", elements);
+            synchronized (offlineWindowShardCache) { offlineWindowShardCache.put(key, cached); }
+        }
+        JSONArray target = root.optJSONArray("elements");
+        JSONArray windows = cached.optJSONArray("elements");
+        if (target == null || windows == null) return;
+        for (int i = 0; i < windows.length(); i++) target.put(windows.getJSONObject(i));
     }
 
     private void ensureManilaManifest() throws Exception {
@@ -492,11 +541,15 @@ final class TileLoader extends Thread {
             if (list == null || list.length() == 0) throw new IOException("Invalid Manila offline manifest");
             HashSet<String> cells = new HashSet<>();
             for (int i=0;i<list.length();i++) cells.add(list.optString(i));
+            JSONArray windowList = manifest.optJSONArray("window_tiles");
+            HashSet<String> windowTiles = new HashSet<>();
+            if (windowList != null) for (int i=0;i<windowList.length();i++) windowTiles.add(windowList.optString(i));
             String nextVersion = manifest.optString("dataset_version", "current");
             if (offlineDatasetVersion != null && !offlineDatasetVersion.equals(nextVersion)) {
                 synchronized (offlineShardCache) { offlineShardCache.clear(); }
+                synchronized (offlineWindowShardCache) { offlineWindowShardCache.clear(); }
             }
-            offlineDatasetVersion = nextVersion; offlineCells = cells;
+            offlineDatasetVersion = nextVersion; offlineCells = cells; offlineWindowTiles = windowTiles;
             pruneOfflineCache(null);
         }
     }
