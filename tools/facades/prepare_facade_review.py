@@ -132,7 +132,7 @@ def process_city(city: Path, limit: int, hd_limit: int) -> dict:
         "schema_version": 1, "city": city.name,
         "policy": "Panoramax only. Preview candidates with a declared license are downloaded for human review even when camera metadata is incomplete. Download does not verify building identity or authorize texture reuse.",
         "source_policy": "KartaView is excluded completely.",
-        "eligible_building_candidates": len(chosen), "downloaded_valid_images": len(reviewed),
+        "manual_review_candidates": len(chosen), "strict_reuse_eligible_candidates": sum(1 for x in chosen if x.get("strictly_eligible")), "downloaded_valid_images": len(reviewed),
         "downloaded_hd_images": hd_downloaded, "failed_or_rejected_images": len(failed), "items": reviewed, "rejected": failed,
     }
     out.mkdir(parents=True, exist_ok=True)
@@ -152,7 +152,7 @@ def process_city(city: Path, limit: int, hd_limit: int) -> dict:
         )
     page = '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Adam World facade review — ' + html.escape(city.name) + '</title><style>body{font:15px system-ui;background:#111820;color:#edf2f7;margin:20px}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}article{background:#202b36;padding:12px;border-radius:8px}img{width:100%;height:220px;object-fit:contain;background:#080c10}a{color:#82c7ff}</style><h1>Facade evidence review — ' + html.escape(city.name) + '</h1><p>Only machine-screened preview images. Verify the exact building and facade visually before assigning any texture.</p><main>' + ''.join(cards) + '</main></html>'
     (out / "index.html").write_text(page, encoding="utf-8")
-    print(f"REVIEW_GALLERY city={city.name} strict_candidates={len(chosen)} images_ok={len(reviewed)} rejected={len(failed)}")
+    print(f"REVIEW_GALLERY city={city.name} manual_candidates={len(chosen)} images_ok={len(reviewed)} rejected={len(failed)}")
     return {"city": city.name, "eligible": len(chosen), "downloaded": len(reviewed), "hd_downloaded": hd_downloaded, "failed": len(failed)}
 
 def main():
