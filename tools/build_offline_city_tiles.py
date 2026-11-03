@@ -182,48 +182,84 @@ def _geojson_way_elements(path, only_building_parts=False):
 
 
 def _geojson_transportation_elements(path):
-    """Convert OpenFreeMap/OpenMapTiles road lines and label lines to game ways."""
+    """Build road centerlines once and merge label-layer names without drawing duplicate roads."""
     if not path.is_file():
         return []
-    data=read_json(path)
-    output=[]
-    for feature in data.get("features",[]):
-        props=dict(feature.get("properties") or {})
-        tags=dict(props.get("tags") or {})
-        tags.update({str(k):v for k,v in props.items() if v is not None and k!="tags"})
+    data = read_json(path)
+    roads, labels = [], []
+    try:
+        from shapely.geometry import LineString
+    except Exception:
+        LineString = None
+    for feature in data.get("features", []):
+        props = dict(feature.get("properties") or {})
+        tags = dict(props.get("tags") or {})
+        tags.update({str(k): v for k, v in props.items() if v is not None and k != "tags"})
         if not tags.get("highway"):
             continue
-        geom=feature.get("geometry") or {}
-        kind,coords=geom.get("type"),geom.get("coordinates") or []
-        lines=[coords] if kind=="LineString" else (coords if kind=="MultiLineString" else [])
-        explicit_osm_id=props.get("osm_id") or props.get("osm_way_id")
-        raw_id=explicit_osm_id or feature.get("id") or len(output)
-        source_id=str(raw_id)
+        geom = feature.get("geometry") or {}
+        kind, coords = geom.get("type"), geom.get("coordinates") or []
+        parts = [coords] if kind == "LineString" else (coords if kind == "MultiLineString" else [])
+        raw_id = props.get("osm_id") or props.get("osm_way_id") or feature.get("id") or len(roads)
+        source_id = str(raw_id)
         for prefix in ("openfreemap-transportation/", "openfreemap-transportation_name/"):
             if source_id.startswith(prefix):
-                source_id=source_id[len(prefix):]
+                source_id = source_id[len(prefix):]
                 break
-        # A bare vector-tile feature ID is not proof of an OSM way ID.
-        # Preserve an OSM ID only when the source property explicitly provides it
-        # or the feature ID carries an explicit way/<id> path.
-        osm_id=_osm_id(explicit_osm_id) if explicit_osm_id is not None else (
-            _osm_id(source_id) if source_id.startswith("way/") else None)
-        if osm_id is not None:
-            tags["adam:source_osm_id"]=str(osm_id)
-        seed=str(raw_id)
-        base_id=9_000_000_000+(sum((i+1)*ord(ch) for i,ch in enumerate(seed))%800_000_000)
-        for line_index,line in enumerate(lines):
-            points=[]
-            for point in line:
-                if not isinstance(point,(list,tuple)) or len(point)<2: continue
-                lon,lat=float(point[0]),float(point[1])
-                if math.isfinite(lat) and math.isfinite(lon): points.append({"lat":lat,"lon":lon})
-            if len(points)<2: continue
-            tags_out=dict(tags)
-            tags_out["adam:source_geometry"]="OpenFreeMap/OpenMapTiles"
-            output.append({"type":"way","id":base_id+line_index,"tags":tags_out,"geometry":points})
-    return output
-
+        explicit_id = props.get("osm_id") or props.get("osm_way_id")
+        osm_id = _osm_id(explicit_id) if explicit_id is not None else (_osm_id(source_id) if source_id.startswith("way/") else None)
+        for part in parts:
+            points = []
+            for point in part:
+                if not isinstance(point, (list, tuple)) or len(point) < 2:
+                    continue
+                lon, lat = float(point[0]), float(point[1])
+                if math.isfinite(lat) and math.isfinite(lon):
+                    points.append({"lat": lat, "lon": lon})
+            if len(points) < 2:
+                continue
+            item = {"type": "way", "id": 0, "tags": dict(tags), "geometry": points}
+            item["tags"]["adam:source_geometry"] = "OpenFreeMap/OpenMapTiles"
+            if osm_id is not None:
+                item["tags"]["adam:source_osm_id"] = str(osm_id)
+            if tags.get("adam:label_only") == "yes":
+                labels.append((osm_id, item))
+            else:
+                seed = str(raw_id) + ":" + str(len(roads))
+                item["id"] = 9000000000 + (sum((i + 1) * ord(ch) for i, ch in enumerate(seed)) % 800000000)
+                roads.append(item)
+    by_osm = defaultdict(list)
+    for road in roads:
+        rid = _osm_id((road.get("tags") or {}).get("adam:source_osm_id"))
+        if rid is not None:
+            by_osm[rid].append(road)
+    for osm_id, label in labels:
+        lt = label.get("tags") or {}
+        name = lt.get("name") or lt.get("name:ar") or lt.get("name:latin") or lt.get("ref")
+        if not name:
+            continue
+        candidates = by_osm.get(osm_id, []) if osm_id is not None else []
+        if not candidates and LineString is not None:
+            try:
+                line = LineString([(p["lon"], p["lat"]) for p in label["geometry"]])
+                nearest = []
+                for road in roads:
+                    other = LineString([(p["lon"], p["lat"]) for p in road["geometry"]])
+                    nearest.append((line.distance(other), road))
+                if nearest:
+                    distance, road = min(nearest, key=lambda item: item[0])
+                    if distance <= 0.00008:
+                        candidates = [road]
+            except Exception:
+                candidates = []
+        for road in candidates:
+            rt = road["tags"]
+            if not rt.get("name"):
+                rt["name"] = name
+            for key in ("name:ar", "name:en", "ref"):
+                if not rt.get(key) and lt.get(key):
+                    rt[key] = lt[key]
+    return roads
 
 def _point_in_ring(lon, lat, points):
     inside = False
