@@ -4,14 +4,12 @@ The Manila offline game mode uses the existing game renderer and loads nearby sp
 
 ## Source priority
 
-1. **Building footprints:** `data/facades/cities/manila/building-footprints.geojson` supplies the preserved Ermita OSM polygon geometry (derived from the saved `ermita-building-details.geojson` extract) when the consolidated `buildings.geojson` has no usable matching feature. When a matching feature exists in `buildings.geojson`, its geometry takes priority. This is the owner-approved Manila-specific exception to the general preference for OpenFreeMap/OpenMapTiles building geometry.
-2. **Building details:** `building-details.geojson` is joined to footprint records by OSM feature ID. Its available names, addresses, building use, heights, levels, roof/facade materials, colours and `building:part` tags fill missing properties. Unmatched building polygons/parts and mapped building nodes are also retained. Duplicate IDs are merged rather than rendered twice.
-3. **Consolidated building data:** `buildings.geojson` remains the preferred consolidated input when populated; an empty file must not stop the build or suppress the existing footprint/detail datasets.
-4. **Roads and named streets:** OpenMapTiles PBF supplies road geometry and non-building POIs/address points. `transportation.geojson` supplies OpenFreeMap/OpenMapTiles road geometry and street-name lines.
-5. **Other context:** saved public-services/accessibility CSVs and the Manila OSM context extract add non-building features. The context importer excludes building ways so it cannot create duplicate building meshes.
+1. **Local building geometry and attributes:** `data/facades/cities/manila/buildings.geojson` is the sole canonical building source for the local Manila game renderer. Its Polygon/MultiPolygon geometry and available OSM attributes (including name, address, height, floor count, building parts, roof and facade tags) are preserved into spatial runtime shards without inventing missing values.
+2. **Runtime delivery:** `tools/build_manila_stream_shards.py` partitions those saved buildings into compressed 1 km spatial cells under `data/offline-world/manila/runtime/`. The Android game reads only the nearby cell and filters it to the current render tile; it never parses the 48 MB source GeoJSON into one in-memory object.
+3. **Roads and named streets:** `transportation.geojson` supplies OpenFreeMap/OpenMapTiles road geometry and street-name lines. Optional OpenMapTiles PBF data supplements roads and non-building POIs/address points.
+4. **Other context:** the saved `data/offline-world/manila/elements.json` extract contributes non-building context only. Building ways and parts from that extract are excluded to prevent duplicate or competing building meshes.
 
-The preserved `building-footprints.geojson` contains 1,528 polygon features. `building-details.geojson` contains 1,533 features: 1,528 polygons and five mapped nodes; 222 polygon records carry a `building:part` tag. These are source counts, not a claim of full municipal Manila coverage.
-
+The separate `building-footprints.geojson` and `building-details.geojson` files remain preserved source datasets, but they are not substituted for the explicitly selected canonical `buildings.geojson` building layer in this renderer path.
 
 ## Normalized building properties
 
@@ -22,7 +20,9 @@ The existing PBF enrichment report explicitly distinguishes internal building id
 ## Progressive loading and cache
 
 - Source features are partitioned into approximately 1 km spatial cells with a 240 m overlap halo.
-- The game requests only the cell containing each nearby render tile; it does not load the whole Manila dataset at once.
+- The game requests only the cell containing each nearby render tile from `data/offline-world/manila/runtime/shards/`; it does not load the whole Manila dataset at once.
+- The Android APK packages the committed runtime manifest and compressed cells as local assets, so Manila building display does not require a first-run network download.
+- The runtime manifest records `data/facades/cities/manila/buildings.geojson` as the only building geometry source; the raw `offline-world/manila/elements.json` file is supplemental context only.
 - Each 1 km shard is spatially filtered to the current render tile before TileBuilder processes it; this avoids rescanning every feature in a full shard for each game tile.
 - Initial background prefetch is limited to a 5×5 tile neighborhood, with the nearest tile requested first.
 - Compressed JSONL shards are downloaded independently and decoded on the background loader thread.
