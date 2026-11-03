@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "delivery": {
+    "packaged_in_apk": false,
+    "download_base": "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/vehicle-assets/",
+    "storage": "app-private-files/vehicles",
+    "offline_after_download": true
+  },
+  "vehicles": [
+    {
+      "id": "dodge-challenger-lbperformance",
+      "display_name": "2015 Dodge Challenger LB Performance",
+      "file": "2015_dodge_challenger_lbperformance.glb",
+      "url": "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/vehicle-assets/2015_dodge_challenger_lbperformance.glb",
+      "size_bytes": 10947480,
+      "git_blob_sha1": "d484349434a05c644fbf75a44365fc724635d61c",
+      "type": "car",
+      "source": "https://sketchfab.com/3d-models/2015-dodge-challenger-lbperformance-db846e9b985e4ae4934a5d9b6d1683f2",
+      "creator": "Ddiaz Design",
+      "declared_license": "CC BY-NC-SA",
+      "rights_note": "The model description references Need for Speed Unbound. Verify third-party rights before any commercial distribution."
+    },
+    {
+      "id": "md-500",
+      "display_name": "MD 500 Helicopter",
+      "file": "md_500.glb",
+      "url": "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/vehicle-assets/md_500.glb",
+      "size_bytes": 11460364,
+      "git_blob_sha1": "8f4e2b6e93d18df8b2f9c5d956e17d2454e5c1ba",
+      "type": "helicopter",
+      "source": "https://sketchfab.com/3d-models/md-500-8f3123774eb549cd80a84c6e3fc9359d",
+      "creator": "VTX",
+      "declared_license": "CC BY-NC-SA"
+    }
+  ]
+}
