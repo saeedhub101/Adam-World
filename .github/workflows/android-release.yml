@@ -60,43 +60,6 @@ jobs:
             /gradle.properties
           sparse-checkout-cone-mode: false
 
-      - name: Install Manila PBF decoder dependency
-        run: python3 -m pip install --disable-pip-version-check mapbox-vector-tile
-
-      - name: Rebuild and save Manila offline building shards
-        run: |
-          set -euo pipefail
-          python3 tools/build_manila_stream_shards.py
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          p = Path("data/offline-city-stream/manila/manifest.json")
-          m = json.loads(p.read_text(encoding="utf-8"))
-          if not m.get("building_source_files", {}).get("building_footprints"):
-              raise SystemExit("Manila footprint source was not consumed")
-          if not m.get("building_features_with_height", 0):
-              raise SystemExit("Manila merged shards contain no explicit building heights")
-          if not m.get("building_features_with_levels", 0):
-              raise SystemExit("Manila merged shards contain no mapped floor counts")
-          if not m.get("building_features_with_color", 0):
-              raise SystemExit("Manila merged shards contain no source-mapped building colors/materials")
-          print(
-              "MANILA HEIGHT RESTORED: "
-              f"{m['building_features']} buildings; "
-              f"{m['building_features_with_height']} explicit heights; "
-              f"{m['building_features_with_levels']} floor-count features."
-          )
-          PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/offline-city-stream/manila/manifest.json data/offline-city-stream/manila/shards/
-          if ! git diff --cached --quiet; then
-            git commit -m "Refresh Manila offline building shards [skip ci]"
-            git push origin HEAD:main
-          else
-            echo "Manila offline shards already match the merged source data."
-          fi
-
       - name: Verify saved offline city data (no imports or downloads)
         run: |
           set -euo pipefail
