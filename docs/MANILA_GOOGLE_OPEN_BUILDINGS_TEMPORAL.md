@@ -4,17 +4,17 @@ This is a complete ingestion of the Google Open Buildings 2.5D Temporal source f
 
 ## Source contents imported
 
-The Earth Engine collection `GOOGLE/Research/open-buildings-temporal/v1` has exactly three original raster bands, for annual snapshots 2016–2023:
+The public Google Research GeoTIFF distribution has exactly three original raster bands, for annual snapshots 2016–2023:
 
 - `building_presence`: model confidence that a pixel belongs to a building.
 - `building_height`: estimated building height above local ground, metres.
 - `building_fractional_count`: fractional building-count signal used for estimating counts over areas.
 
-All three bands are retained together in GeoTIFF tiles for every year. Annual inventory and derived statistics are written to `source-inventory.json`. No band is intentionally omitted.
+All three original bands are retained in their source GeoTIFF tiles for every year. The importer scans the public Philippines URL lists, checks remote GeoTIFF bounds against the existing Manila boundary, and downloads only intersecting tiles. Annual inventory, scan errors, tile bounds, source URLs and download results are written to `source-inventory.json`. No band is intentionally omitted.
 
 ## Spatial resolution and interpretation
 
-Exports use 4 m pixel spacing, matching the dataset's stated effective information resolution. Google publishes the rasters on a 0.5 m grid, but explicitly says the effective resolution is approximately 4 m; 0.5 m output pixels must not be interpreted as independent 0.5 m observations.
+The importer preserves the original 0.5 m GeoTIFF files without resampling. Google states that the effective information resolution is approximately 4 m; 0.5 m output pixels must not be interpreted as independent 0.5 m observations.
 
 The presence band is an uncalibrated model-confidence score, not a probability. Height must be interpreted together with presence and is an estimate, not a surveyed measurement. Height accuracy was not quantitatively evaluated in the Global South; buildings are capped at 100 m. Annual results can shift spatially and temporally, and small adjacent buildings may merge. Therefore these rasters are supplemental evidence, not replacements for verified building footprints, official heights, or floor counts.
 
@@ -34,6 +34,6 @@ The importer resumes by validating existing tile files. It does not delete exist
 - Input imagery: Copernicus Sentinel-2.
 - Attribution: Google Research Open Buildings; Copernicus Sentinel-2 / ESA.
 
-## Workflow authentication
+## Download and checkpoints
 
-GitHub Actions must have repository secrets `GEE_SERVICE_ACCOUNT_JSON` (service-account key JSON) and `GEE_PROJECT_ID` (Earth Engine-enabled Google Cloud project ID). The workflow fails clearly if these are absent; it does not report an import as successful without authentication and validated rasters.
+The workflow uses Google's publicly hosted GeoTIFF URL lists mirrored in the DEPRIMAP bulk-download index. It does not require an Earth Engine account or API key. For each year, the importer scans the Philippines tile list, reads remote GeoTIFF metadata through HTTP range requests, downloads only tiles intersecting Manila, validates the three bands, and commits each downloaded tile and its provenance sidecar to `main` immediately. Missing, unreadable, or failed source tiles are recorded and prevent the year from being marked complete.
