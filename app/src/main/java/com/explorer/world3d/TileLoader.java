@@ -50,7 +50,6 @@ final class TileLoader extends Thread {
     private final File offlineDir;
     private final File manilaOfflineDir;
     private final File tabarbourOfflineDir;
-    private volatile Map<String, JSONObject> manilaSupplementalTags;
     private final ErrorCallback cb;
     private final ArrayList<int[]> order = new ArrayList<>();
     private static final double AMMAN_LAT0 = 31.9522646;
@@ -446,77 +445,6 @@ final class TileLoader extends Thread {
         JSONObject result = new JSONObject();
         result.put("elements", selected);
         return result;
-    }
-
-    /** Read mapped Manila building attributes directly from the two source GeoJSON files.
-     * Geometry always remains the canonical buildings.geojson-derived tile geometry.
-     * Source tags only fill attributes that are absent on the canonical feature.
-     */
-    private void applyManilaSupplementalTags(JSONObject root) throws Exception {
-        Map<String, JSONObject> index = manilaSupplementalTags;
-        if (index == null) {
-            synchronized (this) {
-                index = manilaSupplementalTags;
-                if (index == null) {
-                    index = new HashMap<>();
-                    String[] files = {"building-footprints.geojson", "building-details.geojson"};
-                    for (String name : files) {
-                        File cached = new File(manilaOfflineDir, name);
-                        if (!cached.isFile() || cached.length() == 0
-                                || System.currentTimeMillis() - cached.lastModified() > 24L * 3600L * 1000L) {
-                            try {
-                                byte[] bytes = downloadBytes("https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/facades/cities/manila/" + name);
-                                File tmp = new File(cached.getPath() + ".tmp");
-                                try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
-                                if (!tmp.renameTo(cached)) { tmp.delete(); throw new IOException("Cannot cache Manila source " + name); }
-                            } catch (IOException networkError) {
-                                if (!cached.isFile() || cached.length() == 0) throw networkError;
-                            }
-                        }
-                        JSONObject collection = new JSONObject(readFile(cached));
-                        JSONArray features = collection.optJSONArray("features");
-                        if (features == null) continue;
-                        for (int i = 0; i < features.length(); i++) {
-                            JSONObject feature = features.optJSONObject(i);
-                            JSONObject properties = feature == null ? null : feature.optJSONObject("properties");
-                            if (properties == null) continue;
-                            String type = properties.optString("type", "way");
-                            String id = properties.optString("id", "");
-                            if (id.isEmpty()) continue;
-                            String key = type + ":" + id;
-                            JSONObject sourceTags = properties.optJSONObject("tags");
-                            if (sourceTags == null) continue;
-                            JSONObject target = index.get(key);
-                            if (target == null) { target = new JSONObject(); index.put(key, target); }
-                            java.util.Iterator<String> keys = sourceTags.keys();
-                            while (keys.hasNext()) {
-                                String tag = keys.next();
-                                String value = sourceTags.optString(tag, "");
-                                if (!value.isEmpty() && !target.has(tag)) target.put(tag, value);
-                            }
-                        }
-                    }
-                    manilaSupplementalTags = index;
-                }
-            }
-        }
-        JSONArray elements = root.optJSONArray("elements");
-        if (elements == null) return;
-        for (int i = 0; i < elements.length(); i++) {
-            JSONObject element = elements.optJSONObject(i);
-            if (element == null || !"way".equals(element.optString("type"))) continue;
-            JSONObject supplemental = index.get("way:" + element.optString("id", ""));
-            if (supplemental == null) continue;
-            JSONObject tags = element.optJSONObject("tags");
-            if (tags == null) tags = new JSONObject();
-            java.util.Iterator<String> keys = supplemental.keys();
-            while (keys.hasNext()) {
-                String key = keys.next();
-                String current = tags.optString(key, "");
-                if (current.isEmpty()) tags.put(key, supplemental.optString(key, ""));
-            }
-            element.put("tags", tags);
-        }
     }
 
     private JSONObject loadManilaRoot(int tileX, int tileZ, double south, double west, double north, double east) throws Exception {
