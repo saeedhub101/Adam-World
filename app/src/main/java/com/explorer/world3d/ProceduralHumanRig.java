@@ -3,7 +3,7 @@ package com.explorer.world3d;
 /** Articulated procedural pedestrian rig. Every part is generated from smooth parametric ellipsoids. */
 final class ProceduralHumanRig {
     static final int VARIANTS = 6;
-    static final int PARTS = 11;
+    static final int PARTS = 16;
     private static final float PI=(float)Math.PI;
     private static final float[][] SKIN={{.72f,.48f,.34f},{.86f,.65f,.51f},{.58f,.36f,.25f},{.78f,.55f,.42f},{.91f,.72f,.59f},{.66f,.43f,.31f}};
     private static final float[][] SHIRT={{.10f,.28f,.48f},{.72f,.19f,.13f},{.16f,.42f,.29f},{.24f,.24f,.29f},{.78f,.64f,.24f},{.36f,.22f,.48f}};
@@ -25,6 +25,11 @@ final class ProceduralHumanRig {
             out[v][8]=ellipsoid(.018f,.012f,.012f,EYE);
             out[v][9]=ellipsoid(.035f,.008f,.012f,new float[]{.38f,.16f,.14f});
             out[v][10]=ellipsoid(.10f,.055f,.035f,new float[]{.82f,.82f,.78f});
+            out[v][11]=ellipsoid(.018f,.034f,.025f,SKIN[v]);
+            out[v][12]=ellipsoid(.025f,.007f,.010f,HAIR);
+            out[v][13]=ellipsoid(.055f,.065f,.015f,SHIRT[v]);
+            out[v][14]=ellipsoid(.008f,.075f,.008f,new float[]{.78f,.78f,.73f});
+            out[v][15]=ellipsoid(.055f,.060f,.055f,SKIN[v]);
         }
         return out;
     }
