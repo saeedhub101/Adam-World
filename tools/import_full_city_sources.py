@@ -65,7 +65,7 @@ def main():
       try: manifest=json.loads(manifest_path.read_text())
       except Exception: manifest={}
       if manifest.get("status")=="empty" and manifest.get("empty_reason")=="source_returned_zero_features":
-      print("SKIP VERIFIED EMPTY",slug,typ,flush=True);continue
+        print("SKIP VERIFIED EMPTY",slug,typ,flush=True);continue
      if manifest.get("status")=="complete":
        parts=manifest.get("parts",[])
        if parts and all((layer_dir/p["file"]).is_file() and (layer_dir/p["file"]).stat().st_size==p["bytes"] for p in parts):
