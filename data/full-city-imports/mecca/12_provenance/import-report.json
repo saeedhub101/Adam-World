@@ -1,0 +1,13 @@
+{
+  "city": "Mecca",
+  "boundary": "configured_bbox_extent (approximate; no exact administrative boundary)",
+  "boundary_bbox": [
+    39.55,
+    21.15,
+    40.1,
+    21.8
+  ],
+  "overture_layers": 4,
+  "updated": "2026-11-03T04:16:59.699007+00:00",
+  "imagery_catalogues": "metadata discovery attempted; image downloads pending licence validation"
+}
