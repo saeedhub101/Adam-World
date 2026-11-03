@@ -83,7 +83,7 @@ def main():
       manifest["status"]="empty";manifest["empty_reason"]="source_returned_zero_features";manifest["feature_count"]=0;manifest["raw_feature_count"]=0;manifest["matched_feature_count"]=0;manifest["completed_at"]=datetime.now(timezone.utc).isoformat()
       save(manifest_path,json.dumps(manifest,indent=2).encode());saved.append(manifest_path);checkpoint([manifest_path],slug)
       print("SAVED",slug,typ,0,"features (source returned no output)",flush=True);continue
-     known=len(manifest.get("parts",[]));part_index=0;part_features=[];part_size=0;total_features=sum(p.get("features",0) for p in manifest.get("parts",[]));raw_feature_count=0;matched_feature_count=0
+     known=len(manifest.get("parts",[]));part_index=0;part_features=[];part_size=0;total_features=sum(p.get("features",0) for p in manifest.get("parts",[]));raw_feature_count=0;matched_feature_count=0;serialization_or_geometry_errors=0
      def flush_part():
       nonlocal part_index,part_features,part_size,total_features,manifest
       if not part_features:return
@@ -104,7 +104,7 @@ def main():
       part_features=[];part_size=0
      try:
       with tmp.open("rb") as stream:
-       for feature in json_items(stream,"features.item"):
+       for feature in json_items(stream,"features.item",use_float=True):
         raw_feature_count+=1
         if not feature.get("geometry"):continue
         try:
@@ -112,15 +112,23 @@ def main():
          if not geom.intersects(poly):continue
          geom=geom.intersection(poly)
          if geom.is_empty:continue
-         matched_feature_count+=1
          feature["geometry"]=mapping(geom)
-         encoded=json.dumps(feature,separators=(",",":"),ensure_ascii=False).encode()
+         # Count only features that were successfully serialized and queued for output.
+         encoded=json.dumps(feature,separators=(",",":"),ensure_ascii=False,allow_nan=False).encode()
          if part_features and part_size+len(encoded)+1>MAX_PART_BYTES:flush_part()
          part_features.append(encoded);part_size+=len(encoded)+1
-        except Exception:continue
+         matched_feature_count+=1
+        except Exception as feature_error:
+         serialization_or_geometry_errors+=1
+         if serialization_or_geometry_errors<=3:
+          print("REJECT FEATURE",slug,typ,type(feature_error).__name__,str(feature_error)[:240],flush=True)
+         continue
       flush_part()
      finally:tmp.unlink(missing_ok=True)
-     manifest["feature_count"]=sum(p["features"] for p in manifest["parts"]);manifest["raw_feature_count"]=raw_feature_count;manifest["matched_feature_count"]=matched_feature_count
+     manifest["feature_count"]=sum(p["features"] for p in manifest["parts"]);manifest["raw_feature_count"]=raw_feature_count;manifest["matched_feature_count"]=matched_feature_count;manifest["rejected_feature_count"]=serialization_or_geometry_errors
+     if matched_feature_count>0 and manifest["feature_count"]==0:
+      manifest["status"]="partial";manifest["empty_reason"]="matched_features_not_written";save(manifest_path,json.dumps(manifest,indent=2).encode());checkpoint([manifest_path],slug)
+      raise RuntimeError(f"{typ}: {matched_feature_count} matched features but no GeoJSON parts were written")
      if matched_feature_count==0 and raw_feature_count>0:
       manifest["status"]="partial";manifest["empty_reason"]="download_returned_features_but_none_intersected_city_boundary";save(manifest_path,json.dumps(manifest,indent=2).encode());checkpoint([manifest_path],slug)
       raise RuntimeError(f"{typ}: downloaded {raw_feature_count} features but 0 intersected city boundary; refusing false complete manifest")
