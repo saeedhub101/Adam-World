@@ -276,7 +276,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         if (!g.driving) {
             float d = (float) Math.hypot(g.px - g.cx, g.pz - g.cz);
             if (d < 8f) {
-                g.driving = true; g.cv = 0;
+                g.driving = true; g.cv = 0; g.vehicleType = playerVehicleType; g.altitude = 0f;
                 L.onToast("قيادة: العصا للتسارع والتوجيه");
             } else {
                 float fx = (float) Math.sin(g.pyaw), fz = (float) Math.cos(g.pyaw);
@@ -293,7 +293,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             float x = g.cx + rx * 2.6f, z = g.cz + rz * 2.6f;
             if (blocked(x, z, 0.5f)) { x = g.cx - rx * 2.6f; z = g.cz - rz * 2.6f; }
             if (blocked(x, z, 0.5f)) { x = g.cx; z = g.cz; }
-            g.px = x; g.pz = z; g.pyaw = g.cyaw; g.driving = false; g.cv = 0;
+            g.px = x; g.pz = z; g.pyaw = g.cyaw; g.driving = false; g.cv = 0; g.altitude = 0f; g.liftInput = 0f;
         }
     }
 
@@ -636,11 +636,11 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform1f(uEmisK, 0f);
         for (Game.Agent a : g.agents) {
             if (Math.hypot(a.x - g.camX, a.z - g.camZ) > 350) continue;
-            if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, a.cr, a.cg, a.cb);
+            if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, a.cr, a.cg, a.cb);
             else drawPerson(a.x, Terrain.h(a.x, a.z), a.z, a.yaw, a.ph, 0.6f, a.cr, a.cg, a.cb);
         }
         if (spawned) {
-            drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, 0.75f, 0.22f, 0.17f);
+            drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.altitude, 0.75f, 0.22f, 0.17f);
             if (!g.driving) drawKid(g.px, g.py, g.pz, g.pyaw, g.phase, g.swingAmp);
         }
     }
@@ -673,7 +673,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         cube.draw();
     }
 
-    private void drawVehicle(float x,float z,float yaw,int type,float cr,float cg,float cb) {
+    private void drawVehicle(float x,float z,float yaw,int type,float yOffset,float cr,float cg,float cb) {
         if(vehicleModels==null || type<0 || type>=vehicleModels.length || vehicleModels[type]==null) return;
         float length=(type==ProceduralVehicleModels.AIRPLANE?7.0f:type==ProceduralVehicleModels.BUS?8.3f:5.0f);
         float sy=(float)Math.sin(yaw), cy=(float)Math.cos(yaw);
@@ -681,7 +681,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         float hb=Terrain.h(x-sy*length*.42f,z-cy*length*.42f);
         float pitch=-(float)Math.toDegrees(Math.atan2(hf-hb,length*.84f));
         Matrix.setIdentityM(base,0);
-        Matrix.translateM(base,0,x,(hf+hb)*.5f,z);
+        Matrix.translateM(base,0,x,(hf+hb)*.5f+yOffset,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
         Matrix.rotateM(base,0,pitch,1f,0f,0f);
         GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
@@ -693,6 +693,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
     /** تبديل نوع المركبة الإجرائية التي يستدعيها اللاعب. */
     public void cycleVehicleType() {
+        if(game.driving){L.onToast("اخرج من المركبة أولاً لتغيير النوع");return;}
         playerVehicleType=(playerVehicleType+1)%ProceduralVehicleModels.COUNT;
         L.onToast("المركبة: "+ProceduralVehicleModels.name(playerVehicleType)+" — اضغط 🚗 لاستدعائها أو ركوبها");
     }
