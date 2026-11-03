@@ -541,8 +541,8 @@ final class TileBuilder {
         floors = Math.max(1f, Math.min(100f, floors));
         float floorStep = Math.max(2.2f, (wallHeight - minHeight) / floors);
         if (!manila) {
-        if (!manila) {
-        // Individually modelled recessed-looking window panels and frames.        // Individually modelled recessed-looking window panels and frames.        for (int edge = 0; edge < n; edge++) {
+        // Non-Manila plinth and facade-floor-joint geometry.
+        for (int edge = 0; edge < n; edge++) {
             int next = (edge + 1) % n;
             float ax = px[edge], az = pz[edge], bx = px[next], bz = pz[next];
             float dx = bx - ax, dz = bz - az, len = (float) Math.hypot(dx, dz);
@@ -574,9 +574,8 @@ final class TileBuilder {
                 buf.v(ax+nx*off,ya,az+nz*off,0,1,cr*shade,cg*shade,cb*shade); buf.fixTri();
             }
         }
-        }
-        // A ground-floor entrance is modelled on the longest street-facing facade.        // A ground-floor entrance is modelled on the longest street-facing facade.        // Individually modelled recessed-looking window panels and frames.
-        // Density follows the real footprint perimeter and mapped floor count; no facade image is fabricated.
+        // Individually modelled windows are retained only for the non-Manila city profiles.
+        if (!manila) {
         int windowBudget = 240;
         for (int edge = 0; edge < n && windowBudget > 0; edge++) {
             int next = (edge + 1) % n;
@@ -614,6 +613,7 @@ final class TileBuilder {
                     windowBudget--;
                 }
             }
+        }
         }
         // A ground-floor entrance is modelled on the longest street-facing facade.
         // Its position is a visual fallback because most source footprints do not map door coordinates.
