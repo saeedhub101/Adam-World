@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Generate Manila facade-detail GeoJSON from canonical buildings.geojson only.
 
-Mirrors Adam-City's Ermita facade method: metric wall edges, estimated floors,
-repeated windows, ground-floor doors and occasional balconies. Output is 3D
-GeoJSON, never GLB. Details are procedural placeholders, not surveyed features.
+Generates procedural window and door placeholders from canonical building footprints.
+Balconies are deliberately NOT fabricated: they require source imagery and visual
+confirmation. Output is 3D GeoJSON, never GLB. Details are procedural placeholders, not surveyed features.
 """
 from __future__ import annotations
 import hashlib, json, math, re
@@ -218,11 +218,6 @@ def main():
                                     width=min(1.25,max(.55,usable/count*.55))
                                     wp.append(vertical_rectangle(a,ux,uy,nx,ny,along,width,.065,z,z+wh))
                                     window_count += 1
-                        if height>=12 and seed%3==0 and floor_h>2.4 and length>=9:
-                            bz=min(height-1.4,floor_h*(1+(seed%max(1,levels-1))))
-                            if bz>2.8:
-                                bp.extend(balcony_surfaces(a,ux,uy,nx,ny,length*.5,min(2.8,length*.34),bz))
-                                balcony_count += 2
                         if length>=7 and height>=2.4:
                             dp.append(vertical_rectangle(a,ux,uy,nx,ny,length*.5,.95,.075,0,1.9))
                             door_count += 1
@@ -247,9 +242,10 @@ def main():
             WINDOWS_STEM:{"geojson_features":windows.count,"window_surfaces":window_count,"chunks":windows.files,"total_bytes":windows.total_bytes},
             DOORS_STEM:{"geojson_features":doors.count,"door_surfaces":door_count,"chunks":doors.files,"total_bytes":doors.total_bytes},
             BALCONIES_STEM:{"geojson_features":balconies.count,"balcony_surfaces":balcony_count,"chunks":balconies.files,"total_bytes":balconies.total_bytes}},
-        "method":"Adapted from Adam-City Ermita: 3m window spacing, estimated floors, 0.95m x 1.9m doors, deterministic occasional balconies.",
+        "method":"Procedural placeholders for windows and doors only. Balcony geometry is omitted until confirmed from Panoramax facade photographs; footprints alone are insufficient.",
         "geometry":"3D GeoJSON MultiPolygon; WGS84 longitude/latitude and third ordinate = height above building ground in metres.",
-        "limitations":["Details are procedural placeholders, not measured or photo-verified.",
+        "limitations":["Windows and doors are procedural placeholders, not measured or photo-verified.",
+            "Balconies are intentionally omitted until confirmed from Panoramax facade photographs. The six aerial catalogue items provide roof/coverage context, not reliable balcony geometry.",
             "Floor counts are estimated where building:levels/levels are absent.",
             "Only buildings.geojson supplies building geometry and attributes; no other building file, PBF, remote API or GLB is read or generated.",
             "Renderer must interpret 3D polygon coordinates and add local ground elevation to relative Z."]}
