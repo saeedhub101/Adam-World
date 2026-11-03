@@ -788,6 +788,70 @@ def city_source_dir(slug):
     return (FULL_SOURCE / slug) if slug == "tabarbour" else (SOURCE / slug)
 
 
+def _merged_tabarbour_building_elements(city_source):
+    """Read the canonical reconciled multi-source database from merged/."""
+    merged_dir = city_source / "merged"
+    manifest_path = merged_dir / "manifest.json"
+    if not manifest_path.is_file():
+        return []
+    manifest = read_json(manifest_path)
+    output = []
+    used_ids = set()
+    for chunk in manifest.get("chunks", []):
+        path = merged_dir / str(chunk.get("file") or "")
+        if not path.is_file():
+            raise RuntimeError(f"Missing merged Tabarbour chunk: {path}")
+        data = read_json(path)
+        for feature in data.get("features", []):
+            props = feature.get("properties") or {}
+            geometry = feature.get("geometry") or {}
+            kind, coords = geometry.get("type"), geometry.get("coordinates") or []
+            polygons = [coords] if kind == "Polygon" else (coords if kind == "MultiPolygon" else [])
+            tags = _feature_tags(feature)
+            tags["building"] = tags.get("building") or "yes"
+            tags["adam:source"] = "Tabarbour merged multi-source database"
+            tags["adam:entity_id"] = str(props.get("adam:entity_id") or feature.get("id") or "")
+            if props.get("adam:osm_id"):
+                tags["adam:source_osm_id"] = str(props["adam:osm_id"]).split("/")[-1]
+            for field in ("adam:sources", "adam:observation_count", "height",
+                          "building:levels", "name", "name:ar", "name:en",
+                          "addr:housenumber", "addr:street", "building:colour",
+                          "building:material", "roof:colour", "roof:material",
+                          "adam:building_parts", "adam:entrances", "adam:addresses",
+                          "adam:facade_photo_candidates", "adam:attribute_conflicts"):
+                if props.get(field) not in (None, "", [], {}):
+                    tags[field] = props[field]
+            seed = str(feature.get("id") or len(output))
+            raw_id = _osm_id(props.get("adam:osm_id") or seed)
+            if raw_id is None:
+                raw_id = 8_500_000_000 + (sum((i + 1) * ord(ch) for i, ch in enumerate(seed)) % 400_000_000)
+            for polygon_index, polygon in enumerate(polygons):
+                if not polygon:
+                    continue
+                points = []
+                for point in polygon[0]:
+                    if isinstance(point, (list, tuple)) and len(point) >= 2:
+                        lon, lat = float(point[0]), float(point[1])
+                        if math.isfinite(lat) and math.isfinite(lon):
+                            points.append({"lat": lat, "lon": lon})
+                if len(points) < 4:
+                    continue
+                element_id = raw_id if polygon_index == 0 else raw_id * 1000 + polygon_index
+                while element_id in used_ids:
+                    element_id += 1
+                used_ids.add(element_id)
+                element_tags = dict(tags)
+                element_tags["adam:source_geometry"] = "merged GeoJSON footprint"
+                element_tags["adam:source_osm_id"] = str(props.get("adam:osm_id") or raw_id).split("/")[-1]
+                output.append({"type": "way", "id": element_id, "tags": element_tags, "geometry": points})
+    if len(output) != int(manifest.get("merged_building_count", len(output))):
+        # MultiPolygon features may expand into multiple renderable outer rings.
+        if len(output) < int(manifest.get("merged_building_count", 0)):
+            raise RuntimeError(f"Merged Tabarbour database incomplete: rendered {len(output)} of {manifest.get('merged_building_count')} features")
+    print(f"LOADED canonical merged Tabarbour buildings: {len(output)} features from {len(manifest.get('chunks', []))} chunks", flush=True)
+    return output
+
+
 def source_elements(slug, lat0, lon0):
     city_source = city_source_dir(slug)
     # OpenFreeMap/OpenMapTiles provide primary building and road geometry.
@@ -795,7 +859,10 @@ def source_elements(slug, lat0, lon0):
     # environmental context and transit records are preserved separately.
     footprints_path = city_source / "building-footprints.geojson"
     details_path = city_source / "building-details.geojson"
-    if footprints_path.is_file():
+    if slug == "tabarbour" and (city_source / "merged" / "manifest.json").is_file():
+        footprints = _merged_tabarbour_building_elements(city_source)
+        details = []
+    elif footprints_path.is_file():
         details = _geojson_way_elements(details_path)
         detail_by_id = {}
         detail_buildings = []
@@ -809,9 +876,10 @@ def source_elements(slug, lat0, lon0):
                 detail_by_id[source_id] = tags
                 detail_buildings.append(item)
 
-        footprints = _geojson_way_elements(footprints_path)
-        overture_buildings = _geojson_overture_elements(city_source / "overture-building-details.geojson")
-        overture_parts = _geojson_overture_elements(city_source / "overture-building-parts.geojson", part=True)
+        if not footprints:
+            footprints = _geojson_way_elements(footprints_path)
+        overture_buildings = [] if slug == "tabarbour" and (city_source / "merged" / "manifest.json").is_file() else _geojson_overture_elements(city_source / "overture-building-details.geojson")
+        overture_parts = [] if slug == "tabarbour" and (city_source / "merged" / "manifest.json").is_file() else _geojson_overture_elements(city_source / "overture-building-parts.geojson", part=True)
         overture_additions = _merge_overture_building_attributes(footprints + detail_buildings, overture_buildings)
         obm_buildings = _geojson_openbuildingmap_elements(city_source / "openbuildingmap-buildings.geojson")
         obm_additions = _merge_overture_building_attributes(footprints + detail_buildings + overture_additions, obm_buildings)
