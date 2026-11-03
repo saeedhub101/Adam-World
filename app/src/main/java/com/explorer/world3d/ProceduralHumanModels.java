@@ -52,8 +52,8 @@ final class ProceduralHumanModels {
         }
         for(int j=0;j<rings;j++)for(int k=0;k<seg;k++){
             int n=(k+1)%seg;float[] a=q[j],d=q[j+1];
-            b.quad(a[k*3],a[k*3+1],a[k*3+2],a[n*3],a[n*3+1],a[n*3+2],
-                d[n*3],d[n*3+1],d[n*3+2],d[k*3],d[k*3+1],d[k*3+2],col[0],col[1],col[2]);
+            b.quad(a[k*3],a[k*3+1],a[k*3+2],d[k*3],d[k*3+1],d[k*3+2],
+                d[n*3],d[n*3+1],d[n*3+2],a[n*3],a[n*3+1],a[n*3+2],col[0],col[1],col[2]);
         }
     }
 }
