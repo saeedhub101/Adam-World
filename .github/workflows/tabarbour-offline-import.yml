@@ -36,6 +36,7 @@ jobs:
             /data/facades/cities/catalog.json
             /data/facades/cities/tabarbour/
             /data/offline-world/tabarbour/
+            /app/src/main/assets/cities/tabarbour/
             /tools/facades/import_city_building_sources.py
             /tools/facades/import_tabarbour_overture.py
             /tools/facades/fetch_catalogue_metadata.py
