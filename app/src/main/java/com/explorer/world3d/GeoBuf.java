@@ -5,7 +5,7 @@ import java.util.Arrays;
 /** مخزن رؤوس: موضع(3) + عمودي(3) + UV(2) + لون(3) = 11 رقم لكل رأس. */
 final class GeoBuf {
     static final int STRIDE = 11;
-    float[] a = new float[8192];
+    float[] a = new float[512];
     int n = 0;
 
     private void ensure(int k) {
@@ -13,6 +13,13 @@ final class GeoBuf {
     }
 
     int count() { return n / STRIDE; }
+
+    /** Release the large CPU vertex array immediately after its VBO has been uploaded. */
+    void releaseStorage() {
+        a = new float[0];
+        n = 0;
+    }
+
 
     void v(float x, float y, float z, float u, float v, float r, float g, float b) {
         ensure(STRIDE);
