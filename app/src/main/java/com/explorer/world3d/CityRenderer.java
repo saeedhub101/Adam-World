@@ -111,6 +111,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private ProceduralMaterialMaps vehicleMaps;
     private Mesh cube, groundMesh, skyQuad, kidHead, seaMesh;
     private Mesh[] vehicleModels;
+    private Mesh[] vehicleGlassModels;
+    private Mesh wheelMesh;
+    private final float[] wheelMatrix = new float[16];
     private Mesh[] humanModels;
     private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN;
     private final HashMap<Long, Mesh> terrain = new HashMap<>();
@@ -221,6 +224,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         vehicleMaps = ProceduralMaterialMaps.create();
         cube = makeCube();
         vehicleModels = ProceduralVehicleModels.buildAll();
+        vehicleGlassModels = ProceduralVehicleModels.buildGlassAll();
+        wheelMesh = Mesh.from(ProceduralVehicleModels.buildWheel());
         humanModels = ProceduralHumanModels.buildAll();
         kidHead = KidHead.load(ctx);
         GeoBuf g = new GeoBuf();
@@ -675,11 +680,11 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform1f(uEmisK, 0f);
         for (Game.Agent a : g.agents) {
             if (Math.hypot(a.x - g.camX, a.z - g.camZ) > 350) continue;
-            if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, a.cr, a.cg, a.cb);
+            if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, a.cr, a.cg, a.cb, a.sp * a.dir, 0f);
             else drawPerson(a.x, Terrain.h(a.x, a.z), a.z, a.yaw, a.ph, a.humanType);
         }
         if (spawned) {
-            drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.altitude, 0.75f, 0.22f, 0.17f);
+            drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.altitude, 0.75f, 0.22f, 0.17f, g.cv, g.sx);
             if (!g.driving) drawKid(g.px, g.py, g.pz, g.pyaw, g.phase, g.swingAmp);
         }
     }
@@ -720,7 +725,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
     }
 
-    private void drawVehicle(float x,float z,float yaw,int type,float yOffset,float cr,float cg,float cb) {
+    private void drawVehicle(float x,float z,float yaw,int type,float yOffset,float cr,float cg,float cb,float speed,float steering) {
         if(vehicleModels==null || type<0 || type>=vehicleModels.length || vehicleModels[type]==null) return;
         float length=(type==ProceduralVehicleModels.AIRPLANE?7.0f:type==ProceduralVehicleModels.BUS?8.3f:5.0f);
         float sy=(float)Math.sin(yaw), cy=(float)Math.cos(yaw);
@@ -740,6 +745,73 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         vehicleModels[type].draw();
         GLES20.glUniform1f(uPbr,0f);
         GLES20.glUniform3f(uTint,1f,1f,1f);
+        drawVehicleGlass(type);
+        if(type==ProceduralVehicleModels.TANK) drawTankTracks(speed);
+        if(type==ProceduralVehicleModels.HELICOPTER) drawHelicopterRotor();
+        if(type!=ProceduralVehicleModels.TANK && type!=ProceduralVehicleModels.HELICOPTER && type!=ProceduralVehicleModels.AIRPLANE) drawVehicleWheels(type,speed,steering);
+    }
+
+    private void drawVehicleGlass(int type) {
+        if(vehicleGlassModels==null || type<0 || type>=vehicleGlassModels.length || vehicleGlassModels[type]==null) return;
+        bindVehicleMaps();
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA,GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        GLES20.glDepthMask(false);
+        GLES20.glUniform1f(uPbr,0f);
+        GLES20.glUniform1f(uGlass,1f);
+        GLES20.glUniform3f(uTint,1f,1f,1f);
+        vehicleGlassModels[type].draw();
+        GLES20.glUniform1f(uGlass,0f);
+        GLES20.glDepthMask(true);
+        GLES20.glDisable(GLES20.GL_BLEND);
+    }
+
+    private void drawVehicleWheels(int type,float speed,float steering) {
+        if(wheelMesh==null) return;
+        float halfZ=type==ProceduralVehicleModels.BUS?2.85f:type==ProceduralVehicleModels.PICKUP?1.65f:type==ProceduralVehicleModels.SUV?1.52f:1.38f;
+        float wheelAngle=(float)(System.nanoTime()*1.0e-9*speed/.32f);
+        for(int side=-1;side<=1;side+=2) for(int axle=-1;axle<=1;axle+=2) {
+            System.arraycopy(base,0,wheelMatrix,0,16);
+            Matrix.translateM(wheelMatrix,0,side*.91f,.42f,axle*halfZ);
+            if(axle>0) Matrix.rotateM(wheelMatrix,0,steering*27f,0f,1f,0f);
+            Matrix.rotateM(wheelMatrix,0,(float)Math.toDegrees(wheelAngle),1f,0f,0f);
+            GLES20.glUniformMatrix4fv(uModel,1,false,wheelMatrix,0);
+            GLES20.glUniform3f(uTint,1f,1f,1f);
+            wheelMesh.draw();
+        }
+        GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
+    }
+
+    private void drawVehiclePart(float px,float py,float pz,float angle,float ax,float ay,float az,
+                                 float sx,float sy,float sz,float r,float g,float b) {
+        System.arraycopy(base,0,wheelMatrix,0,16);
+        Matrix.translateM(wheelMatrix,0,px,py,pz);
+        Matrix.rotateM(wheelMatrix,0,angle,ax,ay,az);
+        Matrix.scaleM(wheelMatrix,0,sx,sy,sz);
+        GLES20.glUniformMatrix4fv(uModel,1,false,wheelMatrix,0);
+        GLES20.glUniform3f(uTint,r,g,b);
+        cube.draw();
+    }
+
+    private void drawTankTracks(float speed) {
+        float perimeter=10.8f;
+        float travel=(float)(System.nanoTime()*1.0e-9*speed)%perimeter;
+        for(int side=-1;side<=1;side+=2) for(int i=0;i<28;i++) {
+            float s=(i*perimeter/28f+travel)%perimeter, y=.42f, z=-2.2f, rot=0f;
+            if(s<4.4f){z=-2.2f+s;y=.87f;}
+            else if(s<5.4f){z=2.2f;y=.87f-(s-4.4f);rot=90f;}
+            else if(s<9.8f){z=2.2f-(s-5.4f);y=-.03f;}
+            else {z=-2.2f;y=-.03f+(s-9.8f);rot=90f;}
+            drawVehiclePart(side*1.48f,y,z,rot,1f,0f,0f,.10f,.11f,.25f,.19f,.21f,.18f);
+        }
+        GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
+    }
+
+    private void drawHelicopterRotor() {
+        float angle=(float)((System.nanoTime()*1.0e-9*900.0)%360.0);
+        drawVehiclePart(0,1.55f,0,angle,0f,1f,0f,7.4f,.045f,.18f,.13f,.15f,.13f);
+        drawVehiclePart(0,1.55f,0,angle+90f,0f,1f,0f,7.4f,.045f,.18f,.13f,.15f,.13f);
+        GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
     }
 
     /** تبديل نوع المركبة الإجرائية التي يستدعيها اللاعب. */
