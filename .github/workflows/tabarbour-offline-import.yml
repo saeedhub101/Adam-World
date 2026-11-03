@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/tabarbour-offline-import.yml"
       - "data/facades/cities/catalog.json"
+      - "data/offline-world/tabarbour/**"
       - "data/offline-world/tabarbour/city.json"
       - "tools/facades/import_city_building_sources.py"
       - "tools/facades/import_tabarbour_overture.py"
@@ -34,9 +35,7 @@ jobs:
           fetch-depth: 0
           sparse-checkout: |
             /data/facades/cities/catalog.json
-            /data/facades/cities/tabarbour/
             /data/offline-world/tabarbour/
-            /app/src/main/assets/cities/tabarbour/
             /tools/facades/import_city_building_sources.py
             /tools/facades/import_tabarbour_overture.py
             /tools/facades/fetch_catalogue_metadata.py
@@ -64,9 +63,12 @@ jobs:
             mkdir -p data/offline-world/tabarbour
             cp -a "$snapshot/." data/offline-world/tabarbour/
             if [[ "$label" == *"legacy cleanup"* ]]; then
-              rm -rf data/facades/cities/tabarbour app/src/main/assets/cities/tabarbour
+              test ! -d data/facades/cities/tabarbour
+              test ! -d app/src/main/assets/cities/tabarbour
             fi
-            git add -A data/offline-world/tabarbour data/facades/cities/tabarbour app/src/main/assets/cities/tabarbour
+            # Sparse checkout: stage only files visible to this workflow.
+            # Do not name legacy paths that no longer exist.
+            git add -A
             if git diff --cached --quiet; then
               echo "CHECKPOINT unchanged: $label"
               exit 0
@@ -83,14 +85,11 @@ jobs:
           SH
           chmod +x "$RUNNER_TEMP/checkpoint-tabarbour.sh"
 
-      - name: Consolidate old Tabarbour sources into offline-world
-        continue-on-error: true
+      - name: Verify Tabarbour source location
         run: |
-          mkdir -p data/offline-world/tabarbour
-          if [ -d data/facades/cities/tabarbour ]; then
-            cp -an data/facades/cities/tabarbour/. data/offline-world/tabarbour/
-          fi
           test -s data/offline-world/tabarbour/city.json
+          test ! -d data/facades/cities/tabarbour
+          test ! -d app/src/main/assets/cities/tabarbour
       - name: Publish consolidation immediately
         if: always()
         run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "source consolidation"
@@ -209,5 +208,6 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          rm -rf app/src/main/assets/cities/tabarbour data/facades/cities/tabarbour
+          test ! -d app/src/main/assets/cities/tabarbour
+          test ! -d data/facades/cities/tabarbour
           bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "legacy cleanup and final verification"
