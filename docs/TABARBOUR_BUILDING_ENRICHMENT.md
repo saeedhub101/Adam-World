@@ -70,3 +70,8 @@ numbers.
 Every source stage is independently retryable. Overture/OpenBuildingMap failure
 does not block the existing OSM/OpenFreeMap stages, and the final tile build
 uses whichever verified source files were successfully saved.
+
+
+## Storage location
+
+All Tabarbour source data and derived products are stored only in `data/offline-world/tabarbour/`. The game downloads spatial cells from its `stream/` subfolder on demand; no Tabarbour geometry, imagery, terrain or city metadata is embedded in Android assets or the APK.
