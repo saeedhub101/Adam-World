@@ -5,6 +5,8 @@ plugins {
 def appVersionCode = (project.findProperty("VERSION_CODE") ?: "1").toString().toInteger()
 
 android {
+    // Tabarbour spatial tiles are fetched on demand from the repository, never packaged in APK.
+    sourceSets { main { assets { exclude "cities/tabarbour/**" } } }
     namespace 'com.explorer.world3d'
     compileSdk 34
     buildFeatures { buildConfig true }
