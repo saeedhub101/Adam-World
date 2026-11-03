@@ -1,0 +1,11 @@
+{
+  "status": "empty",
+  "source": "Overture Maps",
+  "source_type": "address",
+  "parts": [],
+  "feature_count": 0,
+  "raw_feature_count": 0,
+  "matched_feature_count": 0,
+  "empty_reason": "source_returned_zero_features",
+  "completed_at": "2026-11-03T03:58:15.729580+00:00"
+}
