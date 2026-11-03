@@ -380,6 +380,11 @@ final class TileBuilder {
             if (!(roof > 0f)) roof = 0f;
             return Math.max(2.5f, levels * 3.2f + roof);
         }
+        // OpenMapTiles render_height is a cartographic estimate, not a survey.
+        // Use it only as a last-resort approximate visual height and label it ≈;
+        // never let it replace explicit height or floor-count measurements.
+        float renderHeight = measure(tg(t, "adam:render_height_m"));
+        if (renderHeight > 0f && renderHeight <= 250f) return Math.max(2.5f, renderHeight);
         // Explicitly conservative class fallback when no source supplies height/floors.
         if (b.equals("roof") || b.equals("carport") || b.equals("garage") || b.equals("garages")) return 3.5f;
         if (b.matches("house|detached|shed|hut|cabin|semidetached_house|bungalow|residential")) return 6.5f;
