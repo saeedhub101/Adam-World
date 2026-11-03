@@ -1,12 +1,6 @@
 name: Adam World Offline City Data Import
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "tools/import_offline_city_map.py"
-      - "data/facades/cities/catalog.json"
-      - ".github/workflows/offline-city-data-import.yml"
   workflow_dispatch:
     inputs:
       city_slugs:
