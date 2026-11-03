@@ -33,7 +33,11 @@ final class Tile {
         double west = ix * Geo.dLon, east = (ix + 1) * Geo.dLon, south = iz * Geo.D_LAT, north = (iz + 1) * Geo.D_LAT;
         cx = (Geo.x(west) + Geo.x(east)) / 2f;
         cz = (Geo.z(north) + Geo.z(south)) / 2f;
-        for (int i = 0; i < meshes.length; i++) meshes[i] = Mesh.from(d.bufs[i]);
+        for (int i = 0; i < meshes.length; i++) {
+            meshes[i] = Mesh.from(d.bufs[i]);
+            // CPU vertex data is no longer needed after the GPU VBO upload.
+            if (d.bufs[i] != null) d.bufs[i].releaseStorage();
+        }
         buildDecals(d);
     }
 
