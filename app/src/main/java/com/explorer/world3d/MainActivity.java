@@ -49,18 +49,37 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private EditText query;
     private Button timeBtn;
     private boolean keyUp, keyDown, keyLeft, keyRight;
+    private int gamepadCameraPreset;
     private final String[] CAMERA_LABELS = {"شارع", "قريب", "مرتفع", "درون"};
     private final String[] CAMERA_PRESETS = {"street", "near", "high", "drone"};
 
     private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density + 0.5f); }
     private void updateRemoteMovement() {
+        if (renderer == null) return;
         renderer.game.sx = (keyRight ? 1f : 0f) - (keyLeft ? 1f : 0f);
         renderer.game.sy = (keyUp ? 1f : 0f) - (keyDown ? 1f : 0f);
+    }
+
+    private void gamepadAction(final int action) {
+        if (glView == null || renderer == null) return;
+        glView.queueEvent(new Runnable() {
+            @Override public void run() {
+                switch (action) {
+                    case 0: renderer.toggleCar(); break; // X: ركوب/خروج
+                    case 1: renderer.game.setCameraPreset(CAMERA_PRESETS[gamepadCameraPreset]); break;
+                    case 2: renderer.game.zoom(0.82f); break;
+                    case 3: renderer.game.zoom(1.22f); break;
+                    case 4: renderer.toggleUndergroundCutaway(); break;
+                    case 5: renderer.timeIdx = (renderer.timeIdx + 1) % TIME_ICONS.length; break;
+                }
+            }
+        });
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         int code = event.getKeyCode();
         boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
+        boolean pressed = down && event.getRepeatCount() == 0;
         if (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_W) {
             keyUp = down; updateRemoteMovement(); return true;
         }
@@ -73,17 +92,49 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (code == KeyEvent.KEYCODE_DPAD_RIGHT || code == KeyEvent.KEYCODE_D) {
             keyRight = down; updateRemoteMovement(); return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_A || code == KeyEvent.KEYCODE_ENTER
-                || code == KeyEvent.KEYCODE_DPAD_CENTER) {
-            if (event.getAction() == KeyEvent.ACTION_UP && event.getRepeatCount() == 0) {
-                glView.queueEvent(new Runnable() {
-                    @Override public void run() { renderer.toggleCar(); }
-                });
+
+        // خريطة موحدة لأزرار يد التحكم: كل زر له وظيفة واضحة.
+        if (code == KeyEvent.KEYCODE_BUTTON_X) {
+            if (pressed) gamepadAction(0);
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_BUTTON_A || code == KeyEvent.KEYCODE_BUTTON_B
+                || code == KeyEvent.KEYCODE_SHIFT_LEFT) {
+            renderer.game.sprint = down;
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_BUTTON_Y) {
+            if (pressed) {
+                gamepadCameraPreset = (gamepadCameraPreset + 1) % CAMERA_PRESETS.length;
+                gamepadAction(1);
             }
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_B || code == KeyEvent.KEYCODE_SHIFT_LEFT) {
-            renderer.game.sprint = down;
+        if (code == KeyEvent.KEYCODE_BUTTON_L1 || code == KeyEvent.KEYCODE_BUTTON_L2) {
+            if (pressed) gamepadAction(2);
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_BUTTON_R1 || code == KeyEvent.KEYCODE_BUTTON_R2) {
+            if (pressed) gamepadAction(3);
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_BUTTON_SELECT) {
+            if (pressed) gamepadAction(4);
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_BUTTON_START) {
+            if (pressed) gamepadAction(5);
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_BUTTON_THUMBL || code == KeyEvent.KEYCODE_BUTTON_THUMBR) {
+            if (pressed) {
+                if (code == KeyEvent.KEYCODE_BUTTON_THUMBL) gamepadAction(0);
+                else gamepadAction(1);
+            }
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_ENTER || code == KeyEvent.KEYCODE_DPAD_CENTER) {
+            if (pressed) gamepadAction(0);
             return true;
         }
         return super.dispatchKeyEvent(event);
