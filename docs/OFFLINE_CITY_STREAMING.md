@@ -4,7 +4,7 @@
 
 - The Android game must not request OpenStreetMap/Overpass for road geometry or the map base. OpenStreetMap/Overpass is permitted only for supplementary missing building footprints/building parts when the player leaves pre-imported city coverage.
 - Three.js is bundled into the APK at `app/src/main/assets/vendor/three.min.js`.
-- Amman and Manila retain their existing city-specific delivery contracts.
+- Amman retains its versioned `offline-city-stream/amman/` delivery contract. Manila is loaded from the committed `data/offline-world/manila/` source.
 - Tabarbour is never packaged in the APK: every Tabarbour source and derived dataset lives under `data/offline-world/tabarbour/`, including `stream/` and `terrain/`.
 - Tabarbour is remotely streamed from `data/offline-world/tabarbour/stream/`; the Android client downloads only nearby cells into its bounded app-private cache.
 - Optional Panoramax/OpenAerialMap evidence lookup is user-triggered and is not part of startup or movement.
@@ -15,17 +15,15 @@
 - `data/facades/cities/<city>/building-footprints.geojson` is the authoritative building footprint geometry from OpenFreeMap/OpenMapTiles.
 - `data/facades/cities/<city>/transportation.geojson` is the authoritative road geometry plus the `transportation_name` label lines from OpenFreeMap/OpenMapTiles.
 - `data/facades/cities/<city>/building-details.geojson` is supplementary OSM data only: it enriches a matching primary footprint with available tags and contributes only unmatched buildings/building parts.
-- `data/offline-world/<city>/elements.json` remains a source of supplementary non-road context and building gaps; its OSM road ways are excluded whenever primary OpenFreeMap transportation is present.
+- For Manila, `data/offline-world/manila/elements.json` is the active local-world source. The APK packages this file and its `metadata.json`; `TileLoader` selects only features intersecting the current render tile. Other city imports may still use this path as supplementary context.
 - `tools/build_offline_city_tiles.py` packages these prioritized sources into 250 m tiles and writes a manifest per city.
 
-### Manila Local building source integration (2026-11-03)
+### Manila local runtime source (2026-11-03)
 
-- The offline shard builder now consumes all three saved building datasets: `buildings.geojson`, `building-footprints.geojson` and `building-details.geojson`.
-- A populated consolidated `buildings.geojson` has geometry priority. The OpenMapTiles/OpenFreeMap footprint file fills missing geometry; the details file enriches matching features by source ID and adds unmatched building/building-part polygons and mapped building nodes.
-- Matching features are merged by source feature ID so the same footprint is not emitted twice. Supplemental properties fill missing values; existing populated primary values are preserved.
-- The current committed footprint/detail extracts contain 1,528 polygons and 1,533 detail features (including five nodes). They cover the saved Ermita extract and must not be described as complete citywide Manila coverage.
-- OpenMapTiles PBF remains the road geometry and non-building POI/address source. `transportation.geojson` supplies the named street geometry. The saved context import excludes building ways to avoid duplicate building meshes.
-- The Android release workflow validates the footprint and details files and checks the merged building counts in the generated Manila manifest. An empty `buildings.geojson` no longer blocks use of the saved footprint/detail data.
+- The native Android Manila mode reads the committed source files directly from `data/offline-world/manila/`: `metadata.json` and `elements.json`.
+- Gradle packages that directory as APK assets. The loader validates the metadata slug, stored source path and element count before accepting the dataset.
+- The loader keeps the parsed 4,972-element source available for the active session, then filters features to the current game tile before passing them to `TileBuilder`; it does not load or request city-wide runtime shards.
+- `data/offline-city-stream/manila/` is retired and must not be recreated. The legacy shard builder is disabled. Facade-window GeoJSON remains saved source data and is not fetched through the retired window-shard runtime.
 
 
 
