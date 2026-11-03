@@ -6,7 +6,8 @@ on:
     paths:
       - ".github/workflows/tabarbour-offline-import.yml"
       - "data/facades/cities/catalog.json"
-      - "data/facades/cities/tabarbour/city.json"
+      - "data/offline-world/tabarbour/city.json"
+      - "data/offline-world/tabarbour/**"
       - "tools/facades/import_city_building_sources.py"
       - "tools/facades/import_tabarbour_overture.py"
       - "tools/facades/fetch_catalogue_metadata.py"
@@ -31,7 +32,7 @@ jobs:
         with:
           fetch-depth: 0
           sparse-checkout: |
-                        /data/facades/cities/catalog.json
+            /data/facades/cities/catalog.json
             /data/facades/cities/tabarbour/
             /data/offline-world/tabarbour/
             /tools/facades/import_city_building_sources.py
