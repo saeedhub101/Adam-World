@@ -21,6 +21,7 @@ final class Terrain {
     private static volatile File cacheDir;
     private static volatile Decoder decoder;
     private static volatile AssetManager assets;
+    private static volatile HttpURLConnection activeConnection;
     static volatile boolean enabled = false;
     static volatile float base = 0f;
     static volatile boolean baseSet = false;
@@ -36,7 +37,13 @@ final class Terrain {
         if (dir != null) dir.mkdirs();
     }
 
-    static void reset() { enabled = false; baseSet = false; flat = false; demFails = 0; base = 0f; }
+    static void cancelPending() {
+        HttpURLConnection c = activeConnection;
+        activeConnection = null;
+        if (c != null) c.disconnect();
+    }
+
+    static void reset() { cancelPending(); enabled = false; baseSet = false; flat = false; demFails = 0; base = 0f; }
 
     /** Terrain is enabled for Amman and the dedicated Tabarbour play area. */
     static boolean isAmman(double lat, double lon) {
@@ -106,13 +113,14 @@ final class Terrain {
                     HttpURLConnection local = null;
                     try {
                         local = (HttpURLConnection) new URL(localUrl).openConnection();
+                        activeConnection = local;
                         local.setConnectTimeout(15000);
                         local.setReadTimeout(30000);
                         local.setRequestProperty("User-Agent", "World3DExplorer/1.0 (android)");
                         if (local.getResponseCode() == 200) data = readAll(local.getInputStream());
                     } catch (IOException missingLocalTile) {
                         data = null;
-                    } finally { if (local != null) local.disconnect(); }
+                    } finally { if (local != null) { if (activeConnection == local) activeConnection = null; local.disconnect(); } }
                 }
                 // A cached tile is the offline fallback if the repository is unreachable.
                 if (data == null && tabarbourSource && f != null && f.exists() && f.length() > 100) {
@@ -123,13 +131,14 @@ final class Terrain {
                 if (data == null) {
                     String url = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/" + Z + "/" + tx + "/" + ty + ".png";
                     HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+                    activeConnection = c;
                     try {
                         c.setConnectTimeout(15000);
                         c.setReadTimeout(30000);
                         c.setRequestProperty("User-Agent", "World3DExplorer/1.0 (android)");
                         if (c.getResponseCode() != 200) throw new IOException("DEM HTTP " + c.getResponseCode());
                         data = readAll(c.getInputStream());
-                    } finally { c.disconnect(); }
+                    } finally { if (activeConnection == c) activeConnection = null; c.disconnect(); }
                 }
                 if (f != null) {
                     try (FileOutputStream o = new FileOutputStream(f)) { o.write(data); } catch (IOException ignore) {}
