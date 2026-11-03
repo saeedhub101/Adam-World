@@ -246,6 +246,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private void teleportInternal(double lat, double lon, boolean offline, String offlineCity) {
         loader.gen++;
         loader.cancelCurrentLoad();
+        Terrain.cancelPending();
         loader.offlineAmman = offline;
         loader.offlineManila = "manila".equals(offlineCity);
         loader.offlineCitySlug = loader.offlineManila ? null : offlineCity;
