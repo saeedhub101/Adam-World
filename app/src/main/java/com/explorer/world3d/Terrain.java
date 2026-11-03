@@ -38,7 +38,7 @@ final class Terrain {
 
     static void reset() { enabled = false; baseSet = false; flat = false; demFails = 0; base = 0f; }
 
-    /** التضاريس مفعّلة داخل نطاق عمّان فقط؛ بقية المدن تستخدم سطحاً مستوياً. */
+    /** Terrain is enabled for Amman and the dedicated Tabarbour play area. */
     static boolean isAmman(double lat, double lon) {
         double p1 = Math.toRadians(31.9522646), p2 = Math.toRadians(lat);
         double dp = p2 - p1, dl = Math.toRadians(lon - 35.9389907);
@@ -48,8 +48,17 @@ final class Terrain {
         return distance <= 12000.0;
     }
 
+    static boolean isTabarbour(double lat, double lon) {
+        double p1 = Math.toRadians(31.997579), p2 = Math.toRadians(lat);
+        double dp = p2 - p1, dl = Math.toRadians(lon - 35.940358);
+        double a = Math.sin(dp / 2) * Math.sin(dp / 2)
+                + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) * Math.sin(dl / 2);
+        double distance = 6371000.0 * 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+        return distance <= 4500.0;
+    }
+
     static void configureForCity(double lat, double lon) {
-        enabled = isAmman(lat, lon);
+        enabled = isAmman(lat, lon) || isTabarbour(lat, lon);
         if (!enabled) { base = 0f; baseSet = false; }
     }
 
@@ -78,7 +87,7 @@ final class Terrain {
             if (f != null && f.exists() && f.length() > 100) {
                 try { data = readAll(new FileInputStream(f)); } catch (IOException ignore) { data = null; }
             }
-            if (data == null && assets != null) {
+            if (data == null && assets != null && !isTabarbour(Geo.lat0, Geo.lon0)) {
                 try {
                     data = readAll(assets.open("cities/tabarbour/terrain/" + Z + "/" + tx + "/" + ty + ".png"));
                 } catch (IOException missingBundledTile) {
