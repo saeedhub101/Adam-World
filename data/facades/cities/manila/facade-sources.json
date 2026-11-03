@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "city": "manila",
-  "runtime": "The game building geometry and properties are read exclusively from data/facades/cities/manila/buildings.geojson. building-footprints.geojson and building-details.geojson are not merged or used as building geometry. Generated facade-windows-*.geojson files are archived source outputs only; they are disabled in the Android runtime and excluded from APK verification. OpenMapTiles PBF supplies optional POIs; transportation.geojson supplies road geometry and names.",
+  "runtime": "Offline Manila building shards merge data/facades/cities/manila/buildings.geojson, building-footprints.geojson and building-details.geojson by normalized OSM feature ID. Primary consolidated geometry and populated primary tags take precedence; supplemental footprint/detail properties fill missing attributes and unmatched building polygons are added once. Generated facade-window GeoJSON remains disabled in the Android runtime.",
   "photo_facade_textures": {
     "verified_assignments": 0,
     "status": "No human-verified building/photo matches are currently available; no candidate photo may be assigned automatically."
