@@ -108,7 +108,7 @@ def main():
    except Exception: continue
    best=None; bestscore=0
    for hit in hits:
-    idx=int(hit) if isinstance(hit,(int,)) else next((i for i,g in enumerate(geoms) if g is hit),-1)
+    idx=int(hit) if isinstance(hit,(int,)) or hasattr(hit,"__index__") else next((i for i,g in enumerate(geoms) if g is hit),-1)
     if idx<0: continue
     other=base[idx]
     if other is rec or other["_rank"]==rec["_rank"]: continue
