@@ -1,187 +1,51 @@
-# Adam World — city realism rebuild checkpoint
+# Adam World — verified implementation status
 
-Last updated: 2026-11-01
-Branch: `main`
+Last reviewed against the current `main` source tree: 2026-11-03.
 
-This document records what is implemented, what is running, and what must not be
-described as complete yet. The game must use repository-owned local assets at
-runtime; source discovery/build workflows may use free public datasets, but no
-paid API or runtime remote map/model dependency is introduced.
+## What the Android app is
 
-## Confirmed repository baseline
+The active application is native Java/OpenGL ES 2.0 (`MainActivity`, `CityGLView`, `CityRenderer`, `TileLoader`, `TileBuilder`). It is not the old Three.js HTML client. It procedurally generates building, road, terrain, human and vehicle meshes from available data.
 
-- Ten playable city destinations are registered in `data/facades/cities/catalog.json`:
-  Amman, Manila, Bangkok, New York, Paris, Dubai, Tokyo, London, Riyadh and Cairo.
-- All ten have committed full OSM extracts under
-  `data/offline-world/<city>/elements.json`.
-- Amman already has a Copernicus DEM GLO-30 grid at
-  `data/facades/cities/amman/elevation-grid.json`.
-- The other nine cities initially lacked elevation grids; all nine were generated and committed during this rebuild.
-- The verified facade manifest is intentionally empty. The existing facade
-  workflow may discover candidate photographs, but proximity is not proof that a
-  photograph depicts a particular building.
-- The Android runtime contains procedural OSM-derived building architecture,
-  including window openings/glazing, sills, trim and conditional balconies. These
-  are generated from each city's OSM building footprints; they are not verified
-  photographic facade reconstructions.
+## City data status
 
-## Changes committed in this rebuild
+| Area | Code path | Verified source status | Runtime caveat |
+|---|---|---|---|
+| Amman Local | `offline-city-stream/amman` | 1,778 manifest-listed 1 km shards; Overture-derived local tiles | Repository download/cache; terrain uses Terrarium sampling |
+| Manila Local | `offline-city-stream/manila` | 1,759 building features; 1,748 with `render_height`; 77 listed cells | Uses `building-layer.geojson` only for building geometry; flat ground; window GeoJSON disabled |
+| Tabarbour Local | `offline-world/tabarbour/stream` | 1,108 listed 250 m cells and 2,229 active-stream elements | The 29,159 merged buildings are not in the active stream manifest |
+| Generic/search | Overpass + Nominatim | Nearby OSM query and place search | Network-dependent; not a global offline basemap |
 
-| Area | Implementation | State |
-|---|---|---|
-| Terrain sampling | DEM triangle sampling matches the rendered terrain triangles; missing DEM samples use a bounded nearest-valid fallback. | Implemented |
-| Terrain outside DEM | Clamp sampling to the nearest DEM edge rather than returning zero elevation. This prevents objects from snapping to sea level outside the raster bounds. | Implemented |
-| Building placement | Building facade/roof vertices sample terrain at their own horizontal coordinates. | Existing implementation retained |
-| Roads and paths | Road ribbons sample terrain at every generated vertex. | Existing implementation retained |
-| Agents | Player, NPCs and vehicles sample local terrain height each frame. | Existing implementation retained |
-| Street names | Increased bold label size and width; labels sit at the sampled local terrain elevation. | Implemented |
-| Roman Theatre | Added a generated limestone block/grain texture and UVs to the existing cavea, seating rows, diazomata, stair aisles and stage masonry. | Improved; not survey/photo exact |
-| Rivers and streams | Renderer supports OSM linear waterway features as terrain-following ribbons and swimming zones. The current OSM import query does not yet fetch river/stream/canal ways (it fetches riverbank polygons), so source coverage is not complete. | Renderer implemented; data pending |
-| Water polygons | OSM water bodies are rendered and recorded for water interaction. | Implemented |
-| Water appearance | Added a tiled moving surface pattern to the water material. | Implemented |
-| Swimming interaction | Player movement slows in mapped water, the rig paddles and the visible full-body Adam cutout tilts into a horizontal floating pose. | Basic interaction implemented |
-| Waterfalls | Renderer supports OSM nodes explicitly tagged `waterway=waterfall` or `natural=waterfall`. The current OSM import query does not yet include those nodes. | Renderer implemented; data pending |
-| Traffic lights | Mapped signal nodes now cycle green/amber/red. | Implemented |
-| Vehicle response | NPC vehicles brake when an active signal is ahead on their road approach and resume on green. | Basic signal response implemented |
-| Vehicle and pedestrian shapes | Replaced box cars and box-bodied people with sedan/SUV/van variants and articulated rounded NPC bodies with varied clothing/skin palettes. | Improved procedural models; not photoreal imported GLBs |
-| Streamed-scene cleanup | Nested landmark geometry and the theatre's owned limestone texture are disposed when the city tile group is replaced. | Implemented |
+## Implemented in native code
 
-Relevant implementation commits:
-- `5f0b8e7625cb0795ea12431867f405f419c1da9c` — DEM sampling and larger terrain-aware street labels.
-- `fb58f6141d5370c476662810556a53371f834664` — linear waterway rendering.
-- `e09e4f608ffd5856eae097aa27bb1792434d1c20` — water polygon ring handling.
-- `2de98a1cd15358784affac53685b5fe8a6305700` — limestone theatre texture, water interaction, traffic signal cycles and mapped waterfalls.
-- `7a845c8bbc15ec8b57941029502112ee92398773` — car road-width data for signal approach detection.
-- `40cbbf9e28df10e42eaacfb87f20906cea0a67f1` — fill sparse DEM voids while retaining source coverage.
-- `f82602ce21153ed3512e8a5b4c6a54927988c63d` — validate original DEM coverage after nodata filling.
-- `b91191c6977caa6968b57765f0c9b812aece5d13` — require all ten DEM assets inside the signed APK.
-- `9ae2307f0cb7092724e6a7bd1fb511c6408c5113` — varied sedan/SUV/van geometry and articulated pedestrian variants.
-- `05e708959c667f429422dc83970dc8f9cb688108` — align NPC forearms and hands.
-- `b19b0fb380ba7553ed06f0b47ea69aa6133e4345` — visible Adam cutout swimming pose.
+- Nearby tile loading in a background thread with request prioritization and bounded ready/cache queues.
+- Compressed JSONL/GZIP streaming for Amman and Manila, with per-render-tile feature filtering.
+- Tabarbour repository-hosted JSON cell loading from the active stream manifest.
+- Building extrusion from explicit heights/floors, normalized render heights, and clearly approximate fallback massing.
+- Mapped building/facade and roof colours/material tags where present.
+- Roads, mapped names, selected land-cover/water features, POIs and traffic/transport elements supported by `TileBuilder`.
+- Terrain sampling for Amman and Tabarbour; Manila remains flat.
+- Procedural player/NPC meshes and ten procedural vehicle categories.
+- Mesh and texture cleanup as render tiles are evicted.
 
-## All-city elevation import — completed
+## Not implemented or not verified
 
-A free, no-key Copernicus DEM importer and GitHub Actions workflow have been added:
+- The current app does not load the legacy GLB model catalog or Three.js GLTFLoader.
+- No photo-verified Manila facade texture is applied to each building mesh.
+- Generated Manila window GeoJSON is not rendered.
+- The Tabarbour merged 29,159-building dataset is not connected to the active runtime stream.
+- The ten-city asset catalog is not the native loader's city registry.
+- Generic locations are not supplied by a permanent offline/global map base; the default loader uses Overpass.
+- A successful signed APK workflow is not proof of on-device visual QA, frame-rate stability or complete geographic coverage.
 
-- `tools/import_copernicus_terrain.py`
-- `.github/workflows/copernicus-terrain-import.yml`
+## Release
 
-The workflow generates a 201 × 201 grid per city, samples a 30 m DEM over a
-3 km radius, rejects grids below 98% coverage, commits each city independently,
-and skips valid existing checkpoints on rerun. It uses public Copernicus COG
-objects, not a paid API.
+The active workflow is `.github/workflows/android-release.yml`. It rebuilds Manila shards, validates Amman/Manila committed shard inventories, builds and signs an APK, verifies the signature and publishes a release. It does not run an emulator/device acceptance suite.
 
-All ten grids are now present in the repository. The importer reported 10/10
-successful cities; nine new city grids were committed incrementally. Verified
-coverage from the stored arrays is 99.5% for Manila and New York and 100% for
-Amman, Bangkok, Paris, Dubai, Tokyo, London, Riyadh and Cairo.
+## Acceptance checklist
 
-Initial run:
-https://github.com/saeedhub101/Adam-World/actions/runs/41344282260
-
-That run's import step succeeded and committed all ten grids. Its final validation
-step initially failed only because the pre-existing Amman grid predates the new
-`coverage_fraction` metadata field. The validation was corrected to calculate
-coverage directly from the elevation array, and the Android workflow now triggers
-a new release build after terrain import completes.
-
-Relevant commits:
-- `91736796edf02c1e15ea9c324feef0ba3bf83c7d` — resumable DEM importer.
-- `b42abff9be044824f5b202bdceaab730c282b7ca` — terrain import workflow.
-- `f6e676105128e29b1d961742d649815dd6761c03` — validation compatible with the existing Amman grid.
-- `96ca6601449c3399c229a203176a1cb9d16dab1d` — Android release is triggered after terrain import.
-
-The corrected workflow rerun completed successfully:
-https://github.com/saeedhub101/Adam-World/actions/runs/41344416095
-
-The Android workflow was triggered by that completion (run 203). Android
-build 205 then passed the stricter APK verification, including an explicit check
-that all ten city folders contain both `elevation-grid.json` and an
-`elevation_grid` manifest entry. The signed release is available here:
-https://github.com/saeedhub101/Adam-World/releases/tag/adam-world-v205
-Build workflow:
-https://github.com/saeedhub101/Adam-World/actions/runs/41344531910
-
-Latest code, including articulated NPC variants, the visible swimming pose and nested-scene cleanup, passed signed Android build 210:
-https://github.com/saeedhub101/Adam-World/actions/runs/41344811178
-Release: https://github.com/saeedhub101/Adam-World/releases/tag/adam-world-v210
-
-The runtime sampler was additionally corrected to treat JSON null cells as DEM
-nodata, not as 0 metres; the nearest-valid sample fallback now handles those
-cells. The terrain importer also fills sparse raster voids with nearest valid
-neighbour elevations so the rendered terrain mesh remains continuous while
-preserving the original source coverage metric.
-
-## Work still required before claiming the requested final realism
-
-1. **Roman Theatre exact match:** the current improvement is procedural limestone
-   masonry, not a photographically matched stone texture or a surveyed exact
-   reconstruction. The final pass still needs verified reference imagery and
-   dimensional comparison. The model must preserve the documented cavea, three
-   seating levels, orchestra, stage, side entrances and access aisles.
-2. **Photographic facades for all cities:** keep the strict building-identity,
-   camera-direction, image-quality and redistribution-licence checks in
-   `docs/FACADE_RECONSTRUCTION_PIPELINE.md`. No candidate may be attached to a
-   building just because it is nearby. Until verified evidence is available, the
-   game shows procedural OSM architecture, not real matching facade photographs.
-3. **Vehicles and pedestrians:** current NPCs are improved procedural Three.js geometry (three vehicle
-   silhouettes and articulated pedestrian variants), not photoreal imported GLB
-   models. Traffic signal behaviour is basic, not a full road-rule simulation.
-   Replace these with multiple licensed local 3D models and animation clips,
-   verify their scale/orientation, and keep all runtime assets inside the APK.
-4. **Water completeness:** the game now renders and interacts with mapped OSM
-   water features. It cannot display a real sea, lake, river or waterfall where
-   the committed OSM extract contains no corresponding geometry. Expand/verify
-   source coverage for the actual playable city windows before claiming all water
-   bodies exist.
-5. **Visual and release validation:** run the Android build after the terrain
-   checkpoints, inspect Amman slopes and the Roman Theatre in-game, test red/amber
-   signal stopping and swimming, then publish and verify the resulting APK. A
-   source-code commit or an in-progress Actions run is not proof of a successful
-   playable build.
-
-## Roman Theatre reference facts
-
-The Jordan Department of Antiquities identifies the Amman Roman Theatre as a
-2nd-century Roman structure for about 6,000 spectators, with cavea, semicircular
-orchestra, stage platform, aditus maximus and scaenae. It records three seating
-levels and restoration beginning in 1957. Use the official record as the
-architectural checklist, not as proof that the current procedural mesh is exact:
-
-- https://www.doa.gov.jo/EN/ListDetails/Archeological_Sites/1157/2
-- https://www.mota.gov.jo/EN/Pages/Amman
-
-## Acceptance checks
-
-- [x] All ten cities have valid committed elevation grids; Android build 205 passed the APK checks for every city's manifest, tile and elevation-grid asset.
-- [ ] On sloped Amman roads, road surfaces, building bases, player, NPCs and vehicles remain on the DEM surface with no y=0 drop.
-- [ ] The Roman Theatre is visually compared with official reference photos from front, side and upper seating views.
-- [ ] Facade photos are assigned only to the exact verified OSM building/facade and baked into that building's GLB/local mesh.
-- [ ] Water surfaces are only shown where mapped source geometry exists; player swimming works in mapped water.
-- [ ] Traffic lights change state and vehicles stop at red/amber approaches and resume at green.
-- [ ] Multiple locally bundled vehicle and pedestrian models have distinct silhouettes, textures and animation.
-- [ ] Android APK build, archive validation and signature verification succeed.
-
-
-## Coordinate and landmark alignment correction — 2026-11-02
-
-- Roman Theatre OSM way `608094627` now uses the polygon centroid for its
-  runtime anchor instead of the arithmetic mean of its vertices.
-- The procedural amphitheatre is fitted inside the mapped footprint with a
-  small safety margin. Seating bands, individual seats, stair blocks, outer
-  wall, orchestra, stage, podium, columns, front details and side wings are
-  checked against the actual OSM polygon before being added. This prevents
-  generated pieces from spilling into neighbouring streets or buildings.
-- MapLibre remains the global basemap behind the transparent Three.js canvas,
-  but its camera is now derived from the actual Three.js camera after each
-  camera update: center, perspective-derived zoom, pitch and compass bearing
-  use the same world axes. The previous rough joystick-derived zoom/pitch and
-  reversed east-west heading approximation were removed.
-- The MapLibre canvas and Three.js canvas now have separate scoped CSS rules,
-  avoiding the global canvas selector from assigning the game canvas stacking
-  behaviour to MapLibre's internal canvas.
-- Source changes are committed on `main`. A successful Android build and
-  visual inspection on-device are still required before this correction can
-  be called fully verified. In particular, compare the theatre from the front
-  and both sides, and confirm MapLibre roads/buildings remain registered to
-  the game ground while walking and driving.
+- [ ] Verify building heights and colours visually in Amman and Manila.
+- [ ] Connect the Tabarbour merged source to the active stream and verify central cells.
+- [ ] Confirm roads and buildings appear at the Tabarbour start point.
+- [ ] Verify terrain alignment and fallback behavior on device.
+- [ ] Verify memory, frame time, tile eviction and city switching on a representative Android device.
+- [ ] Only mark photo facade reconstruction complete after exact-building identity, camera calibration, licence and on-mesh texture validation.

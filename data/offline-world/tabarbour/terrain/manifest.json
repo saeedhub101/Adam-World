@@ -13,7 +13,7 @@
     "lat": 31.997579,
     "lon": 35.940358
   },
-  "radius_m": 3500.0,
+  "radius_m": 3500,
   "tile_count": 25,
   "expected_tile_count": 25,
   "complete": true,
@@ -45,5 +45,14 @@
     "14/9829/6655.png"
   ],
   "encoding": "Terrarium RGB: elevation_m = (R*256 + G + B/256) - 32768",
-  "attribution": "Mapzen Terrarium elevation tiles"
+  "attribution": "Mapzen Terrarium elevation tiles",
+  "runtime_contract": {
+    "consumed_by": "app/src/main/java/com/explorer/world3d/Terrain.java",
+    "manifest_is_read_by_app": false,
+    "tile_zoom": 14,
+    "repository_tile_path": "data/offline-world/tabarbour/terrain/{z}/{x}/{y}.png",
+    "request_order": "Repository Tabarbour tile first; app-private cached tile next if repository fetch fails; AWS Terrarium fallback after that",
+    "elevation_encoding": "Terrarium RGB: (R*256 + G + B/256) - 32768",
+    "relative_reference": "Tabarbour start-point elevation"
+  }
 }

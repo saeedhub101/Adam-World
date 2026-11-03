@@ -16,7 +16,7 @@
     "lat": 31.9522646,
     "lon": 35.9389907
   },
-  "cell_size_m": 1000.0,
+  "cell_size_m": 1000,
   "cell_halo_m": 240,
   "cells": [
     "-27_1",
@@ -8923,5 +8923,14 @@
     "infrastructure": 1086,
     "osm_context": 3777
   },
-  "shard_count": 1778
+  "shard_count": 1778,
+  "runtime_contract": {
+    "consumed_by": "app/src/main/java/com/explorer/world3d/TileLoader.java",
+    "base_path": "data/offline-city-stream/amman",
+    "manifest_index": "cells",
+    "shard_index": "shards",
+    "cell_size_m": 1000,
+    "shard_format": "newline-delimited JSON records compressed with GZIP",
+    "runtime_behavior": "Select the source cell for each nearby render tile, stream records line-by-line, and filter to render-tile bounds"
+  }
 }

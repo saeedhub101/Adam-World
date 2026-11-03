@@ -1,24 +1,21 @@
-# Manila facade-detail GeoJSON
+# Manila facade-detail GeoJSON — archive status
 
-The generator adapts the procedural facade-detail method from Adam-City's Ermita script to Manila.
+## Generator input
 
-## Canonical input
-
-Reads only: data/facades/cities/manila/buildings.geojson
-
-It does not read building-details.geojson, building-footprints.geojson, layers/building-layer.geojson, PBF files, remote APIs, or any other building source. The canonical input is never modified.
+`tools/facades/generate_manila_facade_details.py` reads the saved canonical `data/facades/cities/manila/buildings.geojson` file. It does not read `building-layer.geojson`, the footprints/details supplemental files, PBF tiles or remote APIs.
 
 ## Outputs
 
-Generated layers are split into numbered, independently valid GeoJSON FeatureCollection chunks:
+The generator writes chunked GeoJSON outputs for:
+- `facade-windows-*.geojson`
+- `facade-doors-*.geojson`
+- `facade-balconies-*.geojson`
+- `facade-details-report.json`
 
-- data/facades/cities/manila/layers/facade-windows-0001.geojson and subsequent numbered chunks
-- data/facades/cities/manila/layers/facade-doors-0001.geojson and subsequent numbered chunks
-- data/facades/cities/manila/layers/facade-balconies-0001.geojson and subsequent numbered chunks
-- data/facades/cities/manila/facade-details-report.json
+The report describes generated procedural details. It must not be interpreted as a verified photographic or surveyed facade inventory.
 
-Each source chunk is capped at 35,000,000 bytes. Window coordinates are 3D WGS84 [longitude, latitude, height_m]; the third ordinate is height above the building ground, not absolute terrain elevation.
+## Current Android runtime status
 
-## Runtime status
+The active Manila Android shard builder reads `building-layer.geojson`, not these generated facade-detail files. The current native renderer does not download or render the generated window polygons, and the Android release workflow does not package them as active facade geometry.
 
-The generated `facade-windows-*.geojson` files are retained as archived source outputs only. The Android runtime no longer downloads their `window-shards`, `TileBuilder` does not render their polygons, and the APK workflow does not check out or validate those window files. Building geometry, mapped building colours, and street geometry continue to come from the normal Manila building/transport datasets. No window GeoJSON is included in the APK.
+These files are retained as archived generator outputs. They are not active runtime inputs. Any future reactivation requires an explicit native loader, bounded spatial streaming, duplicate prevention, and on-device memory/performance validation.

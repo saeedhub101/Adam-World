@@ -179,5 +179,14 @@
   "canonical_buildings_file": "data/facades/cities/manila/buildings.geojson",
   "layer_file_names": {
     "building": "building-layer.geojson"
+  },
+  "manifest_role": {
+    "purpose": "Manila OpenFreeMap/OpenMapTiles vector-tile import inventory",
+    "consumed_directly_by_android_runtime": false,
+    "runtime_build_inputs": [
+      "data/facades/cities/manila/layers/building-layer.geojson",
+      "data/facades/cities/manila/transportation.geojson"
+    ],
+    "note": "Layer counts describe the saved vector-tile import archive, not the number of features currently loaded by the Manila game."
   }
 }

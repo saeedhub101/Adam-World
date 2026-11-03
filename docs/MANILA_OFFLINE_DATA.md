@@ -1,39 +1,49 @@
-# Manila Offline Data Pipeline
+# Manila Local — exact data flow
 
-The Manila offline game mode uses the existing game renderer and loads nearby spatial shards only.
+## Runtime source
 
-## Source priority
+The native Android Manila Local mode reads:
 
-1. **Runtime building geometry and properties:** `tools/build_manila_stream_shards.py` merges `buildings.geojson`, `building-footprints.geojson`, and `building-details.geojson` by normalized OSM feature ID. The consolidated `buildings.geojson` keeps geometry priority and all populated primary tags; footprint/detail attributes fill missing values, and unmatched supplemental building polygons are added once. The merged polygons and properties are written to `data/offline-city-stream/manila/shards/*.jsonl.gz`; Android `TileLoader` reads only nearby compressed cells.
-2. **Building colours and materials:** values are read from each building feature's properties/tags. `TileBuilder.buildingColor()` checks `building:colour`, `building:color`, then `colour`; if no explicit colour is available it maps known `building:material` values (brick, concrete, stone, wood, plaster/stucco/render) to a material colour, otherwise Manila uses a neutral fallback. Roof colour/material is handled separately from `roof:colour`, `roof:color`, and `roof:material`.
-3. **Road geometry:** the OpenMapTiles vector-tile PBF `transportation` layer supplies road geometry and mapped bridge/tunnel/oneway/layer attributes. `data/facades/cities/manila/transportation.geojson` is also imported for road geometry and is the source for street-name labels; it avoids guessing names from the nearest road.
-4. **POIs and house numbers:** OpenMapTiles PBF `poi` and `housenumber` layers supply point features. Saved Manila OSM context and thematic CSVs add supplementary non-building context; building ways are excluded from that supplement to avoid duplicate buildings.
-5. **Generated window GeoJSON:** `facade-windows-*.geojson` remains in the repository as archived generated output only. The Android runtime no longer downloads or renders it, and the APK workflow no longer checks out or validates window shards. These files are not included in the APK.
+- Building geometry and properties: `data/facades/cities/manila/layers/building-layer.geojson`, transformed by `tools/build_manila_stream_shards.py` into `data/offline-city-stream/manila/shards/*.jsonl.gz`.
+- Road geometry and street names: `data/facades/cities/manila/transportation.geojson`.
+- POIs and address-related features: available saved OpenMapTiles PBF layers, saved OSM non-building context and optional thematic CSVs when present in the workflow checkout.
+- Tree inventory: the preserved Rizal Park inventory may be loaded from the packaged `old_app/src/main/assets/data` asset source.
 
-Before this merge was restored, the saved runtime manifest reported 1,759 buildings and zero height/level tags because the shard builder had excluded both saved supplemental building files. The saved `building-footprints.geojson` contains 1,528 polygons: 118 with explicit `height` and 743 with `building:levels` (some features have both). `building-details.geojson` contains the corresponding OSM detail extract. The rebuilt manifest must report the merged source counts and the resulting buildings with height/levels; until that shard rebuild completes, the already-committed runtime shards still contain the old fallback-height data. Coverage is the saved Ermita extract, not complete municipal Manila.
+The current Manila shard builder reads the dedicated `building-layer.geojson` only for buildings. It does **not** merge `buildings.geojson`, `building-footprints.geojson` and `building-details.geojson` into the active runtime building layer. Older notes claiming that three-file merge is active are obsolete.
 
-## Normalized building properties
+## Building counts and height
 
-The importer preserves available names, official/alternate names, address and house number, use/class, height, floor counts, underground levels, minimum height, roof shape/material/colour, facade material/colour, window and door material/colour, year, architect and heritage tags. Missing values remain missing. The importer does not invent facade signs, measurements, photographs or building numbers.
+The current Manila manifest reports:
 
-The existing PBF enrichment report explicitly distinguishes internal building identifiers from real street address numbers. Runtime display must not treat an internal identifier as an address.
+| Metric | Count/value |
+|---|---:|
+| Source building features | 1,759 |
+| Features with height | 1,748 |
+| Features without recorded height | 11 |
+| Features with mapped colour/material attributes | 201 |
+| Features with `building:levels` | 0 |
+| Polygon components in source geometries | 213,808 |
 
-## Progressive loading and cache
+The source height property is `render_height`; this layer does not use `height` or `building:levels` as its height field. The shard builder maps the source value to `adam:render_height_m` when explicit height/level measurements are absent. `TileBuilder.bHeight()` uses `adam:render_height_m` as the approximate fallback. It does not read the original GeoJSON at runtime.
 
-- Source features are partitioned into approximately 1 km spatial cells with a 240 m overlap halo.
-- The game requests only the cell containing each nearby render tile; it does not load the whole Manila dataset at once.
-- Each 1 km shard is spatially filtered to the current render tile before TileBuilder processes it; this avoids rescanning every feature in a full shard for each game tile.
-- Initial background prefetch is limited to a 5×5 tile neighborhood, with the nearest tile requested first.
-- Compressed JSONL shards are downloaded independently and decoded on the background loader thread.
-- At most four decoded offline shards are kept in memory; the pending GL upload queue is capped at six tiles.
-- Disk cache is bounded by the same 384 MiB / three-day policy as offline Amman and evicts old shards.
-- City changes clear the in-memory shard cache and reload the correct city's manifest.
-- Far render tiles and their GL meshes are released as the player moves away.
+The positive source values range from 1 m to 247 m; the average positive value is 45.3 m and their sum is 79,011 m. These are cartographic render heights, not verified survey measurements. See `manila-building-layer-height.md`.
 
-## Ground
+## Materials and geometry
 
-Manila uses a flat ground plane. Elevation/DEM terrain is disabled for Manila; no Manila terrain data is imported or requested.
+- The builder preserves source building properties and uses mapped building/facade colour and material tags where available.
+- Roof colour/material tags are handled separately where present.
+- Missing colours use the renderer's neutral/material fallback; no photo-derived colour is invented.
+- A feature's polygon components are geometry parts, not separate building counts.
+- Street labels are built from the named transportation source; no address number is inferred from an internal OSM ID.
 
-## Limitations and provenance
+## Disabled facade-window output
 
-The canonical footprint/detail files are stored directly in `data/facades/cities/manila/`; the build fails fast if either file is missing or empty. Coverage is limited to the committed source tiles and saved OSM/thematic extracts. Missing house numbers, measured heights, facade materials, signs, rail/tram routes, sewer/water networks or detailed sidewalk geometry cannot be fabricated. Every imported element retains a source marker where supported. OpenStreetMap attribution and OpenMapTiles/OpenFreeMap attribution must remain in the project.
+Generated `facade-windows-*.geojson` files are archived outputs. The active Manila builder does not include them in the runtime shard set, the native renderer does not render those window polygons, and the release workflow does not package them as runtime windows. There is no verified photo-textured facade layer in the current Manila runtime.
+
+## Streaming and ground
+
+Manila uses 1 km GZIP JSONL shards and filters records to the current render tile. The manifest currently lists 77 source cells. Manila terrain is deliberately disabled and the renderer returns ground height zero for this mode.
+
+## Workflow
+
+`.github/workflows/android-release.yml` rebuilds Manila shards from `building-layer.geojson`, commits generated outputs to `main`, checks manifest/shard presence, then builds and signs the APK. Its validation does not prove visual correctness on a device.

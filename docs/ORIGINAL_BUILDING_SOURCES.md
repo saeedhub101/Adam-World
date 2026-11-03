@@ -1,63 +1,28 @@
-# Original per-city building source imports
+# Building source inventory and runtime usage
 
-The import pipeline is designed for the ten registered Adam World destination areas:
-Amman, Manila, Bangkok, New York, Paris, Dubai, Tokyo, London, Riyadh and Cairo.
-Each destination is bounded by its own `data/facades/cities/<slug>/city.json`
-centre and `discovery_radius_m`; these are playable discovery windows, not complete
-municipal boundaries.
+This document distinguishes source datasets stored in the repository from the datasets the native Android app currently reads.
 
-## Independent source files
+## Amman Local
 
-For every city, the source importer writes:
+The active runtime path is `data/offline-city-stream/amman/manifest.json` and its compressed shards. The source build pipeline is `tools/build_amman_stream_shards.py`; the source inventory lives under `data/full-city-imports/amman/`. The manifest's source datasets include Overture buildings/building parts, transport, land cover, water, infrastructure, places and addresses. The Android loader consumes the generated shards, not the original full-city GeoJSON/GeoParquet files directly.
 
-- `building-footprints.geojson` — building polygons and the published render
-  height/min-height/colour fields from OpenFreeMap's OpenMapTiles vector tiles
-  (building layer, zoom 14). Geometry is decoded from PBF vector tiles, converted
-  from tile coordinates to WGS84, and fragments sharing a source feature ID are
-  merged. Source attribution: OpenFreeMap © OpenMapTiles; data from OpenStreetMap.
-- `building-details.geojson` — OSM building and building-part geometries with
-  their original available tags, fetched directly from public Overpass instances.
-  This includes tags such as `height`, `building:levels`, `building:material`,
-  `building:colour`, `roof:*`, `addr:*`, `name`, `building:part` and other
-  tags only where OSM contributors have mapped them. Missing tags are not guessed.
-- `buildings.geojson` — the existing OSM footprint file used by the current
-  photo-to-building review tooling. It is retained for compatibility and is not
-  a replacement for either source file above.
+## Manila Local
 
-## Facade evidence versus a finished facade
+The active runtime building source is `data/facades/cities/manila/layers/building-layer.geojson`, converted by `tools/build_manila_stream_shards.py` into `data/offline-city-stream/manila/shards/`. Roads and names are sourced from `transportation.geojson`; PBF and saved OSM/thematic context are supplementary inputs where available. The current builder does not merge the legacy `buildings.geojson`, `building-footprints.geojson` and `building-details.geojson` into this runtime path.
 
-There is no universal ready-made GeoJSON layer that supplies the exact facade,
-windows, doors, balconies, materials and signs for every building. The original
-facade evidence source used by this project is Panoramax street-level photography.
-The existing catalogue importer saves its per-city records in
-`panoramax-items.geojson`; OpenAerialMap records are saved separately in
-`aerial-items.geojson` and may help with roof shape/colour, not facade texture.
+## Tabarbour Local
 
-The review queue links candidate photographs to nearby OSM building edges using
-camera location and azimuth. That is discovery only. A photo becomes facade
-geometry/texture only after exact building identity, facade direction, image
-quality and redistribution licence are visually verified. The verified manifest
-then drives local GLB texture baking. The procedural window/door/balcony geometry
-from the old Ermita script is an approximation, not imported real facade data,
-and must never be labelled as surveyed detail.
+The merged source inventory is `data/offline-world/tabarbour/merged/`, with 29,159 features reported in its manifest. The active native loader reads only `data/offline-world/tabarbour/stream/manifest.json` and listed cells. The merged chunks are not currently the active building stream. See `TABARBOUR_BUILDING_ENRICHMENT.md`.
 
-## Running and resume behaviour
+## Generic locations
 
-Workflow: `.github/workflows/city-building-sources-import.yml`.
+When no local city mode is selected, `TileLoader` requests nearby OSM data through public Overpass endpoints. This is a runtime network fallback and should not be described as an offline source archive.
 
-- Runs on `main`; can be manually refreshed for all cities or one city slug.
-- Writes each city's two source files atomically.
-- Commits and pushes a completed city before moving to the next.
-- Keeps a valid file when its source bounds have not changed; `refresh` requests
-  new source data.
-- A failed source or city does not stop later stages/cities; the final step reports
-  failures rather than silently claiming full success.
-- No API key or paid service is used. Runtime uses only repository-owned assets.
+## Other source archives
 
-## Licences and attribution
+- `data/facades/cities/` contains source inputs, vector-tile exports and facade evidence catalogues.
+- `data/reference/adam-city/` preserves selected Adam-City reference data with provenance limits.
+- `data/regions/philippines/manila/rizal-park/` is regional research and inventory context.
+- `data/full-city-imports/` contains a separate 15-city source-import project. Its per-layer manifests are import records, not proof that those cities are playable in the current Android app.
 
-OpenStreetMap-derived data is ODbL 1.0 and requires attribution; OpenFreeMap/
-OpenMapTiles attribution is retained with the footprint dataset. Panoramax image
-licences are evaluated per image; non-redistributable or unclear licences must be
-rejected. Do not bake a photo into a redistributable GLB unless its licence allows
-that reuse and the required attribution is preserved.
+Always verify a source path against the active Java loader and current workflow before describing it as a runtime input.

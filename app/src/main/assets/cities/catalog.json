@@ -93,5 +93,15 @@
       },
       "discovery_radius_m": 650
     }
-  ]
+  ],
+  "catalog_role": {
+    "purpose": "legacy ten-city asset-packager catalog",
+    "consumed_by_native_java_runtime": false,
+    "native_local_modes": [
+      "amman",
+      "manila",
+      "tabarbour"
+    ],
+    "note": "The native TileLoader uses explicit city-specific runtime manifests/origins. This catalog is not the native app's active city-data index."
+  }
 }

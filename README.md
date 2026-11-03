@@ -1,25 +1,54 @@
 # Adam World
 
-## Building data source policy
+## Current Android game
 
-For building footprints and building geometry, use **OpenFreeMap** and **OpenMapTiles** as the preferred data sources.
+The active Android application is the Gradle module `app`, package `com.explorer.world3d`. It is a native Java game rendered with Android `GLSurfaceView` and OpenGL ES 2.0:
 
-- Prefer building data obtained from OpenFreeMap and OpenMapTiles over raw OSM extracts or direct OSM imports.
-- Do not use raw OSM building files as the fallback or replacement source for the preferred building datasets.
-- Convert and consolidate the selected building data into the project's required **GeoJSON** format (for Manila, `buildings.geojson`), preserving available attributes such as footprint geometry, height, minimum height, and colour.
-- Rebuild the offline/runtime building shards from the validated GeoJSON so the game displays the same imported building data.
-- Validate coverage, feature count, geometry validity, coordinate placement, and available attributes before replacing existing working data. Do not overwrite a valid dataset with an empty or incomplete import.
-- Keep the source and import provenance with the generated data.
+- Entry point: `app/src/main/java/com/explorer/world3d/MainActivity.java`
+- View and input: `CityGLView.java`
+- Renderer: `CityRenderer.java`
+- Spatial loading: `TileLoader.java`
+- OSM feature-to-mesh conversion: `TileBuilder.java`
+- Terrain: `Terrain.java`
 
-This is a standing project rule and must be followed by future building-data import, conversion, and offline-city workflows unless the project owner explicitly changes it.
+The active app does not run the legacy `old_app` HTML/Three.js client. The Gradle settings include only `:app`. The old folder contributes only the explicitly added `old_app/src/main/assets/data` asset directory; its HTML and model manifest are not the current game runtime.
 
-**Explicit Manila Local exception (2026-11-03):** the project owner has now directed the offline Manila renderer to use the already-committed `building-footprints.geojson` and `building-details.geojson` datasets as well as `buildings.geojson`. For this Manila-specific path only, the saved detail extract may enrich matching footprints and add unmatched building/building-part features. Preserve source IDs and attribution, merge rather than duplicate matching features, and keep the OpenFreeMap/OpenMapTiles consolidated building data as the preferred primary geometry whenever it is populated. This exception does not change the source policy for other cities.
+## Local city modes
 
+| Mode | Runtime data | Main geometry source | Ground |
+|---|---|---|---|
+| Amman Local | `data/offline-city-stream/amman/` | Overture-derived spatial shards | Terrarium DEM when available |
+| Manila Local | `data/offline-city-stream/manila/` | `data/facades/cities/manila/layers/building-layer.geojson`, converted to compressed spatial shards | Flat |
+| Tabarbour Local | `data/offline-world/tabarbour/stream/` | Only cells listed in the active stream manifest | Repository Terrarium tiles, then AWS Terrarium fallback |
+| Generic/search location | Overpass requests by nearby tile | Live OSM elements | Flat unless a supported terrain mode is enabled |
 
-## Manila complete vector-tile import
+“Local” means the city-specific dataset is hosted in this repository and cached in app-private storage. It does not mean the first load is guaranteed to work without a network connection.
 
-- Import every published vector-tile layer and every exposed feature attribute from OpenFreeMap and OpenMapTiles at zoom levels **1 through 16 inclusive**.
-- Preserve each layer, feature properties, feature ID where supplied, source, source zoom, and tile coordinates.
-- Save each source layer as GeoJSON under `data/facades/cities/manila/layers/`; name the imported building layer `building-layer.geojson` to keep it distinct from the canonical `data/facades/cities/manila/buildings.geojson` consumed by the offline building-shard builder. Never create `layers/building.geojson`.
-- Commit a checkpoint for every provider/zoom before advancing. Resume completed stages on rerun. Record empty responses; never fabricate data or misrepresent overzoom as native higher-zoom data.
-- Rebuild local Manila building shards from the canonical GeoJSON after import.
+## Important current data facts
+
+- **Manila:** 1,759 source building features; 1,748 have a positive `render_height` value; 11 do not. The source has 213,808 polygon components. The game builder maps `render_height` to `adam:render_height_m`; `TileBuilder.bHeight()` uses that normalized value after explicit height and floor-count tags.
+- **Tabarbour:** `merged/manifest.json` reports 29,159 merged building features. This is not the same as the active `stream/manifest.json`, which reports 2,229 elements across 1,108 listed cells. The native loader reads the stream manifest and its listed cells; it does not directly read the merged chunks. Do not claim the 29,159 merged buildings are already in the active runtime stream.
+- **Amman:** the native loader reads the Amman manifest and compressed JSONL/GZIP shards. It does not load the ten-city catalog as its city-data index.
+
+## Documentation map
+
+- [Current runtime and loading contract](docs/GAME_RUNTIME.md)
+- [Spatial streaming details](docs/OFFLINE_CITY_STREAMING.md)
+- [Manila local data](docs/MANILA_OFFLINE_DATA.md)
+- [Manila render-height statistics](docs/manila-building-layer-height.md)
+- [Tabarbour building data and known stream gap](docs/TABARBOUR_BUILDING_ENRICHMENT.md)
+- [Surface rendering](docs/REAL_WORLD_SURFACE_PIPELINE.md)
+- [Facade evidence limitations](docs/FACADE_RECONSTRUCTION_PIPELINE.md)
+- [Current implementation status](docs/REALISM_REBUILD_STATUS.md)
+
+## Build and release
+
+The active release workflow is `.github/workflows/android-release.yml`. It rebuilds Manila spatial shards from the saved building layer, validates the committed Amman/Manila shard inventories, builds and signs the Android APK, verifies the APK signature, and publishes a GitHub release. A successful build does not replace on-device visual testing.
+
+## Project rules
+
+- Preserve source provenance, IDs, licences and attribution.
+- Do not invent measured heights, addresses, facade details or building identities.
+- Keep Tabarbour-owned source and derived data under `data/offline-world/tabarbour/`.
+- Keep source-import manifests separate from runtime manifests.
+- Do not describe a dataset as active in the game until the native loader actually reads it.

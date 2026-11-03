@@ -32,5 +32,11 @@
       "creator": "VTX",
       "declared_license": "CC BY-NC-SA"
     }
-  ]
+  ],
+  "runtime_status": {
+    "purpose": "external GLB asset and rights inventory",
+    "consumed_by_current_native_renderer": false,
+    "current_vehicle_renderer": "app/src/main/java/com/explorer/world3d/ProceduralVehicleModels.java",
+    "note": "Current gameplay vehicles are procedurally generated Java meshes; entries in this inventory are not proof of an active GLB downloader or runtime loader."
+  }
 }

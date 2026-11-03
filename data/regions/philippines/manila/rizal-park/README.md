@@ -1,38 +1,26 @@
-# Rizal Park (Luneta) — Detailed Collection
+# Rizal Park (Luneta) — research and source inventory
 
-## Official sources to inspect
+This folder is a regional research archive for Rizal Park in Manila. It is not a standalone game scene and its files are not all consumed by the active Android renderer.
+
+## Official source references
 
 - NPDC downloads: https://npdc.gov.ph/downloads/
-- NPDC Rizal Park page: https://npdc.gov.ph/rizal-park/
+- NPDC Rizal Park: https://npdc.gov.ph/rizal-park/
 - NPDC tree inventory: https://npdc.gov.ph/inventory-of-trees/
 - NPDC tree species listings: https://npdc.gov.ph/inventory-of-trees-2/
 
-NPDC's downloads page lists a Rizal Park map, brochure, a 2024 Rizal Park Luneta Tree Inventory download, and tree distribution/thematic maps. The exact files must be acquired and inspected before their records, counts, coordinates, or licence terms can be asserted.
+## Feature groups
 
-## Feature groups to extract
+Keep mapped park boundaries, named sections, monuments, gardens, paths, water features, tree inventory and other points as separate source-backed feature groups. Preserve the original row/reference ID, coordinate text, scientific/common name and source URL.
 
-- Park boundary and named sections
-- Entrances, gates and access points
-- Paths, promenades, crossings and internal circulation
-- Gardens and landscaped areas (including named Chinese/Japanese gardens and other mapped garden spaces)
-- Monuments, statues, memorials and heritage features
-- Fountains, including musical/dancing fountain features where represented
-- Lawns, plazas, open-air event spaces and recreational areas
-- Public toilets, visitor services, administrative facilities and other mapped amenities
-- Tree inventory points/plots, species, categories, heritage trees and distribution maps
-- Named buildings and facilities within or adjacent to the park, with boundary membership checked
-- Nearby road edges and crossings where needed to understand park access
+## Validation
 
-## Park-specific validation
+- Do not turn a park-wide count into exact point locations.
+- Keep source coordinates separate from derived decimal-degree coordinates.
+- Reject malformed/out-of-park coordinates for map placement, but preserve the original source row for review.
+- A missing coordinate is unknown, not a guessed centroid.
+- A partial inventory must remain labelled partial.
 
-1. Compare feature names against NPDC's official map and brochure.
-2. Keep the original name and any normalized display name as separate fields.
-3. Determine whether a tree inventory is point-level, area-level, a species list, or a thematic map; do not fabricate individual tree coordinates from a species list.
-4. Check whether inventory counts refer to individual trees, species categories, website posts or downloadable records. Resolve discrepancies from the actual source files.
-5. Preserve source page/file, page number or map panel for every manually transcribed feature.
-6. Mark features visible only on a static map as approximate unless georeferencing supports more precise geometry.
-7. Record the source's date and whether it appears current.
+## Runtime boundary
 
-## Known caveat
-
-A published list of tree species is not the same thing as a geolocated tree inventory. Likewise, a brochure may identify landmarks without providing coordinates or exact geometry. These should be represented as separate evidence types.
+The active game may load the packaged Rizal Park tree inventory through its explicit asset path. That does not make every research note, landmark list or source PDF an active runtime layer.

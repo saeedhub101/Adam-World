@@ -32,8 +32,8 @@
     "lat": 14.57394,
     "lon": 120.98283
   },
-  "cell_size_m": 1000.0,
-  "cell_halo_m": 240.0,
+  "cell_size_m": 1000,
+  "cell_halo_m": 240,
   "dataset_version": "3722a436c546f080",
   "shard_sha256": {
     "-1_-1.jsonl": "66654c4243c5ea99c83a2376ce8e4be4ed78b0b1ba09f2d6d9e0136b5c639963",
@@ -214,5 +214,32 @@
     "© OpenFreeMap / OpenMapTiles",
     "© OpenStreetMap contributors"
   ],
-  "license": "OpenStreetMap data ODbL 1.0; OpenFreeMap/OpenMapTiles attribution required"
+  "license": "OpenStreetMap data ODbL 1.0; OpenFreeMap/OpenMapTiles attribution required",
+  "height_semantics": {
+    "source_property": "render_height",
+    "source_unit": "metres",
+    "runtime_normalized_property": "adam:render_height_m",
+    "normalization": "tools/build_manila_stream_shards.py copies render_height to adam:render_height_m when explicit height/floor-count tags are absent",
+    "runtime_reader": "TileBuilder.bHeight()",
+    "use": "approximate fallback after explicit metric height and mapped floor-count values",
+    "source_building_features": 1759,
+    "positive_height_features": 1748,
+    "missing_positive_height_features": 11,
+    "minimum_positive_height_m": 1,
+    "maximum_height_m": 247,
+    "average_positive_height_m": 45.3,
+    "sum_positive_heights_m": 79011,
+    "polygon_components": 213808
+  },
+  "runtime_contract": {
+    "consumed_by": "app/src/main/java/com/explorer/world3d/TileLoader.java",
+    "base_path": "data/offline-city-stream/manila",
+    "manifest_index": "cells",
+    "shard_format": "newline-delimited JSON records compressed with GZIP",
+    "cell_size_m": 1000,
+    "building_input": "data/facades/cities/manila/layers/building-layer.geojson",
+    "roads_and_names_input": "data/facades/cities/manila/transportation.geojson",
+    "terrain": "flat",
+    "generated_facade_windows_enabled": false
+  }
 }

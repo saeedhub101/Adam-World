@@ -1,77 +1,47 @@
-# Tabarbour building heights, floors and entrance addresses
+# Tabarbour — building sources, merge and active runtime
 
-The Tabarbour import enriches each real building footprint from independent
-sources. The Android runtime receives only the compact spatial tiles; source
-GeoJSON/GeoPackage files remain in the repository and are not packaged in the APK.
+## Canonical merged source
 
-## Sources queried
+Tabarbour source material is kept under `data/offline-world/tabarbour/`. The merged building checkpoint is:
 
-1. **OpenStreetMap / Overpass** — explicit `height`, `building:levels`,
-   `building:part`, names and `addr:*` tags when contributors mapped them.
-2. **OpenFreeMap / OpenMapTiles** — primary building footprints and rendering
-   attributes. Its `render_height` is not treated as a surveyed height because
-   it can be a generic cartographic fallback.
-3. **Overture Maps** — building and building-part geometry, explicit height,
-   floor count, names, address attributes and per-feature source provenance.
-   Overture conflates upstream OpenStreetMap, Google Open Buildings and
-   Microsoft Global ML Building Footprints data; its `sources` metadata is
-   retained on normalized building tags.
-4. **OpenBuildingMap (GFZ)** — the level-6 Quadkey tile covering Tabarbour.
-   It combines OSM, Google Open Buildings and Microsoft building footprints,
-   and supplies the GEM `height` taxonomy enriched using GHSL 2023A.
-   `HHT:x` is decoded as height in metres, `H:x` as storeys, and `HBET`
-   ranges as estimated storeys. Source dataset identity (OSM/Google/Microsoft)
-   and the original taxonomy string are retained.
+- Manifest: `merged/manifest.json`
+- Output: 12 chunks named `merged/buildings_000.geojson` through `buildings_011.geojson`
+- Reported merged building count: **29,159**
+- Input source counts: OSM 7,223; OpenFreeMap 124; Overture 28,333; OpenBuildingMap 28,753.
+- Attached addresses: 858; attached entrances: 3; attached building parts: 0; Panoramax photos: 0.
 
-Google Open Buildings 2.5D Temporal is not a Tabarbour/Jordan source: Google's
-published country coverage does not include Jordan. Microsoft global ML building
-footprints are useful for missing footprint detection, but are not themselves
-a per-building floor survey. Overture and OpenBuildingMap provide the practical
-multi-source conflation/height enrichment paths for this area.
+The merge policy prefers explicit OSM identity and uses conservative spatial matching. It preserves source provenance and does not treat a nearby Panoramax candidate as a verified facade photo.
 
-## Matching and trust rules
+## Active Android stream — important distinction
 
-- Exact OSM object identity is preferred when a source provides it.
-- Otherwise, a conservative footprint-centroid/area match is used; ambiguous
-  neighbours are not joined.
-- Address points are attached when they fall inside a footprint. Entrance
-  points just outside the footprint are attached only when one building is
-  uniquely nearest within 4 metres.
-- Source attributes fill missing values; explicit OSM values are not silently
-  overwritten by model estimates.
-- A provider `render_height` is not treated as a real building height.
-- A measured/source height is used for extrusion. A source floor count is shown
-  separately. When no source supplies either value, the renderer retains a
-  visibly approximate fallback rather than claiming a survey measurement.
-- House numbers from `addr:housenumber` / Overture address `number` and
-  available names are rendered on the building label. A missing official
-  municipal entrance number is left blank; no number is invented.
+The native Android loader does **not** read `merged/manifest.json` or the 12 merged GeoJSON chunks. It reads only:
 
-## Jordan municipal building numbers
+`data/offline-world/tabarbour/stream/manifest.json`
 
-Greater Amman Municipality's Amman Explorer service has been publicly described
-as supporting address lookup by street name and building number. That confirms
-the municipal address system exists, but it does not establish an open bulk
-download/API for the Tabarbour building-number register. The current importer
-therefore uses published OSM and Overture address records only. An official
-GAM feed can be added if a reusable public endpoint or licensed export is made
-available; cadastral parcel numbers must not be mistaken for building entrance
-numbers.
+and the cell files named by that manifest. The current active stream manifest reports:
 
-## Outputs
+- 1,108 listed cells
+- 250 m cell size
+- 2,229 elements across the listed cells
+- `source_kind: osm-nonroad-context-only+transit-routes`
+- `status: complete` and `complete: true` for that listed stream dataset
 
-- `overture-building-details.geojson`
-- `overture-building-parts.geojson`
-- `overture-address-points.geojson`
-- `openbuildingmap-buildings.geojson`
-- Final spatial tiles under `app/src/main/assets/cities/tabarbour/`, fetched
-  online by the app rather than embedded in the APK.
+This completion flag does not mean the 29,159 merged buildings were published into the stream. The merged source and active runtime stream are currently disconnected. The Java loader checks the manifest's `tiles` array; a `tile_*.json` file that exists in the directory but is not listed is ignored. The stream must be regenerated from the merged building source and its manifest updated before claiming those buildings are playable.
 
-Every source stage is independently retryable. Overture/OpenBuildingMap failure
-does not block the existing OSM/OpenFreeMap stages, and the final tile build
-uses whichever verified source files were successfully saved.
+## Height and property policy
 
+For building features that do reach `TileBuilder`, the renderer prefers explicit metric `height`, then `building:height`/ `height:meters`, then mapped floor counts, then `adam:render_height_m`, then a conservative class fallback. `render_height` is not treated as a surveyed measurement. Missing heights remain estimates and should be labelled approximate.
 
-## Storage location
+Overture/OpenBuildingMap estimated heights and floor counts must retain source provenance and quality flags. Do not overwrite explicit OSM measurements with model estimates. Keep house numbers separate from internal feature IDs.
 
-All Tabarbour source data and derived products are stored only in `data/offline-world/tabarbour/`. The game downloads spatial cells from its `stream/` subfolder on demand; no Tabarbour geometry, imagery, terrain or city metadata is embedded in Android assets or the APK.
+## Terrain
+
+The terrain source is stored in `terrain/`. Its manifest records 25 zoom-14 Terrarium tiles around 31.997579, 35.940358. The Android sampler requests `terrain/{z}/{x}/{y}.png` directly from the repository first, then falls back to AWS Terrarium if the repository tile is unavailable. The game samples relative elevation above the Tabarbour starting point.
+
+## Remaining work
+
+1. Build the active 250 m stream from the canonical merged building chunks plus the required roads and non-building context.
+2. Write each finished cell into the repository during the build and support resumable checkpoints.
+3. Regenerate `stream/manifest.json` with the exact active tile list, element counts, source paths and dataset version.
+4. Verify the central Tabarbour cells are listed and contain building/road features before release.
+5. Test the published stream through the actual Android loader; source merge success alone is not runtime success.

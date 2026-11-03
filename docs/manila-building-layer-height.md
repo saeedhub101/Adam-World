@@ -1,46 +1,47 @@
-# Manila `building-layer.geojson` — Building Height Data
+# Manila `building-layer.geojson` — building height data
 
 ## Source
 
 - Repository: `saeedhub101/Adam-World`
 - File: `data/facades/cities/manila/layers/building-layer.geojson`
-- Height attribute used by this dataset: `render_height`
+- Original height property: `render_height`
+- Runtime-normalized property: `adam:render_height_m`
 
 ## Dataset statistics
 
 | Metric | Value |
 |---|---:|
 | Buildings | 1,759 |
-| Buildings with a recorded height | 1,748 |
-| Buildings without a recorded height | 11 |
-| Actual polygons | 213,808 |
+| Buildings with a recorded positive height | 1,748 |
+| Buildings without a recorded positive height | 11 |
+| Actual polygon components | 213,808 |
 | Lowest positive height | 1 m |
 | Highest height | 247 m |
 | Average positive height | 45.3 m |
 | Sum of positive heights | 79,011 m |
 
-## Important interpretation
+## Exact runtime handling
 
-This file does **not** provide `height` or `building:levels` as the height source. The recorded building heights come from `render_height`.
+The source layer does not provide `height` or `building:levels` as its height field. Its height values are in `render_height`.
 
-Therefore, the game must read `render_height` directly when deriving the displayed building height. It must not assume that `height` or `building:levels` exists, and it must not treat their absence as a zero-height building.
+The current pipeline is:
 
-For a feature with a valid positive `render_height`, use that value as the building's height in metres. If `render_height` is absent, null, invalid, or non-positive, handle the feature through an explicit missing-height fallback rather than silently interpreting it as a measured zero.
+1. `tools/build_manila_stream_shards.py` reads each building feature's properties.
+2. When explicit `height`/floor-count tags are absent, it copies the source `render_height` value into `adam:render_height_m`.
+3. The generated feature is stored in the Manila compressed JSONL/GZIP spatial shards.
+4. `TileBuilder.bHeight()` reads `adam:render_height_m` as an approximate fallback after explicit metric height and floor-count values.
 
-## Zero-height note
+Thus the native app does not open the original GeoJSON file at runtime, and the Java renderer currently reads the normalized tag rather than the raw `render_height` key. The normalized value preserves the source render-height measurement; it is not a newly surveyed height.
 
-A reported zero height is not the maximum height in this dataset. The highest recorded height is **247 m**. The minimum positive recorded height is **1 m**; the positive-height average is **45.3 m**.
+## Interpretation
 
-## Required game-side behavior
+- The highest recorded value is **247 m**; zero is not the maximum.
+- The lowest positive recorded value is **1 m**.
+- The average and sum above include positive recorded values only.
+- The 213,808 figure counts polygon components, not 213,808 separate buildings.
+- The 11 features without a positive recorded value require the renderer's missing-height fallback; absence must not be treated as a measured zero.
+- Render heights are cartographic extrusion values and must be labelled approximate, not verified building surveys.
 
-1. Read `properties.render_height` from each building feature.
-2. Convert and validate the value as metres before using it for vertical scaling.
-3. Preserve the distinction between a missing height and a measured height of zero.
-4. Do not substitute `height` or `building:levels` as the primary source for this layer.
-5. Keep the source file's building and polygon geometry intact; the polygon count is not the building count.
+## Required preservation
 
-## Result
-
-The dataset contains **1,759 buildings**, with height values recorded for **1,748** of them, and **213,808 actual polygons**. The maximum recorded height is **247 metres**.
-
-*Statistics and source-field interpretation documented from the supplied inspection of `building-layer.geojson`.*
+Keep the source `render_height` value, its normalized runtime representation, the source feature ID and the source attribution. Do not silently replace it with `height` or `building:levels` when those fields are absent.

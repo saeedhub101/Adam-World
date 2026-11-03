@@ -1,291 +1,37 @@
-# Verified facade reconstruction pipeline
+# Facade evidence and reconstruction policy
 
 ## Goal
 
-A facade photograph must become texture on the corresponding facade surface of the
-same building mesh. A separate photo panel, billboard, nearby-photo list, or
-nearest-building heuristic is **not** a completed facade reconstruction.
+A facade photograph is useful only when it is verified to depict the exact building and facade side. The final texture must be applied to that building's own surface. A nearby photo, floating card, billboard or generic window overlay is not a reconstructed facade.
 
-## Current runtime limitation
+## Current native runtime limitation
 
-The current game builds OSM buildings into a shared Three.js geometry buffer. That
-is efficient for the existing city view, but it does not yet provide independently
-addressable facade surfaces for image projection. The current imagery catalogue
-lookup only discovers candidate records. It does not establish building identity,
-does not create facade textures, and must not be described as a reconstruction.
+The active Android renderer is Java/OpenGL ES 2.0 and builds buildings procedurally in `TileBuilder`. The current Manila runtime does not render generated `facade-windows-*.geojson` layers and does not apply verified Panoramax photos as building textures. Do not describe the current buildings as photo-textured or GLB-reconstructed.
 
-## Evidence sources
+## Evidence sources and gates
 
-- **Aerial imagery (OpenAerialMap):** roof outline, roof colour/condition and
-  georeferenced building position. Each STAC item must be checked for its footprint,
-  ground sample distance, capture date, asset URL and exact licence. Sentinel-2 is
-  contextual imagery only; its resolution is not sufficient for facade details.
-- **Panoramax:** street-level facade evidence. Read the exact STAC item and retain
-  its photo ID, local capture coordinates, `view:azimuth`, pitch/roll and camera
-  field-of-view/focal metadata when provided. Keep the image's attribution and
-  licence with the asset.
+- Aerial imagery can support roof outline, building location and broad roof colour; it cannot establish detailed street facade appearance.
+- Panoramax or other street-level imagery can provide facade candidates only when capture coordinates, camera direction, field of view, image quality and licence are available.
+- Exact identity must be checked against footprint, facade orientation, visible architectural features and neighbouring geometry.
+- Interior images, wrong buildings, wrong facade sides, people-only views, blurred/occluded photos and non-redistributable images must be rejected.
+- Proximity or camera direction alone is never proof of identity.
+- KartaView must not be used as a substitute evidence source when excluded by project policy.
 
-## Non-negotiable identity gate
+## Required verified assignment record
 
-Distance to an OSM building is only a discovery filter. It is never proof of
-identity. A facade assignment requires human visual confirmation that:
-1. The photo depicts the exact building, not a neighbouring building.
-2. The visible facade is identified against the OSM footprint and building shape.
-3. Camera azimuth and view direction correspond to that facade; perspective and
-   occlusion do not make the mapping misleading.
-4. The image is sufficiently sharp and complete for the details being reconstructed.
-5. The source licence permits the intended local reuse and redistribution.
+Before any image is used, record the image ID, source URL, creator, licence, capture date, camera position/azimuth/pitch, image hash, target building source ID, facade edge/side, verification method and reviewer decision. Keep candidate and verified states distinct.
 
-If any check is unknown, do not create an assignment. Leave that facade with its
-existing neutral OSM-derived material rather than inventing windows, doors, signs,
-colours or stone patterns.
+## Required final geometry stage
 
-## Assignment manifest
-
-The curated manifest is
-`app/src/main/assets/facades/verified_facades.json`. Each entry identifies an exact
-OSM way and facade edge, the exact Panoramax photo, a locally stored image, camera
-pose/FOV, licence and a human review record. Only entries marked
-`human_verified` with all review checks true pass
-`tools/facades/validate_manifest.py`.
-
-The manifest is intentionally empty until a real Amman image has been inspected and
-matched. Never fill it automatically with the nearest OSM building.
-
-## Geometry and texture-baking stages
-
-1. Preserve each building's OSM way ID, footprint ring order, height and roof tags.
-2. Expose facade surfaces with stable per-building/per-edge identifiers while
-   retaining spatial coordinates and correct normals.
-3. For a reviewed photo, calculate the camera projection from its capture position,
-   azimuth, pitch, roll and intrinsics/FOV. Clip the projection to the identified
-   facade plane; do not stretch a full photo across unrelated faces.
-4. Bake the rectified facade image into a material texture atlas (or per-building
-   texture) and attach it to that building's GLB mesh. Roof imagery is baked only
-   to the roof surface.
-5. Keep signage as part of the facade texture/geometry at its observed location.
-   Preserve readable text only where the source resolution supports it.
-6. Export one GLB per building (or a documented GLB tile containing multiple
-   independent building meshes), with embedded/local textures and a provenance
-   manifest. No runtime external image URL is allowed.
-7. Validate the GLB visually from the photo direction and from other sides. Reject
-   wrong-facing, mirrored, stretched, floating or occluded textures.
+A future approved pipeline must:
+1. Build the target building shell from its real footprint and supported height.
+2. Calibrate the image camera against the exact facade plane.
+3. Project/crop the facade image with perspective correction.
+4. Bake the texture into the same building mesh/material.
+5. Preserve doors, windows, balconies and signage only when visible evidence supports them.
+6. Validate coordinates, orientation, scale, UVs, embedded textures and licensing.
+7. Save the output locally and update the runtime asset manifest only after validation.
 
 ## Current status
 
-- Catalogue discovery exists in the Android client.
-- Nearby Panoramax records are candidates only; the previous photo panel is not
-  the required deliverable.
-- No facade image has yet been declared human-verified for the Amman start area.
-- No facade GLB has been generated by this pipeline yet.
-- The next implementation stage is to collect actual catalogue items for the
-  start area, inspect their metadata/licences and thumbnails, and only then curate
-  the first verified building assignment.
-
-
-## Phase 2 validation commands
-
-```sh
-python3 -m py_compile tools/facades/*.py tools/facades/tests/*.py
-python3 -m unittest discover -s tools/facades/tests -v
-python3 tools/facades/fetch_catalogue_metadata.py
-python3 tools/facades/build_review_queue.py
-python3 tools/facades/validate_manifest.py
-```
-
-
-## Current Adam World destinations
-
-The city registry `data/facades/cities/catalog.json` covers all ten current in-game
-destinations: Amman, Manila, Bangkok, New York, Paris, Dubai, Tokyo, London, Riyadh
-and Cairo. Each has a `city.json` discovery centre/radius. These are the current
-game destination areas, not a claim that the entire municipal boundary has been
-covered. Additional cities/areas are added by adding registry entries and city
-folders; the pipeline remains the same.
-
-## Running phase 2
-
-The dedicated workflow `.github/workflows/facade-evidence-harvest.yml` runs on its
-initial main-branch setup commit and can also be started manually. It queries both
-public imagery metadata catalogues for each configured city area. Every returned
-page and its resume cursor is committed and pushed to `main` before moving on, so
-a timeout or interruption does not discard completed pages. A failed source does
-not prevent later sources or cities from being attempted. It downloads metadata,
-not original photo files.
-
-The city review-queue builder needs `buildings.geojson` for each city. Until those
-OSM footprints are present, imagery metadata can still be collected for all
-registered destination areas, but no building/photo candidate pairing or facade
-texture is produced.
-
-
-## First catalogue harvest observations
-
-The initial metadata harvest completed for all ten configured destination areas.
-The current 650 m discovery windows returned Panoramax records in Manila (500),
-New York (286), Paris (500), Tokyo (40) and London (150); the first-page metadata
-queries returned no records in the current windows for Amman, Bangkok, Dubai, Riyadh
-and Cairo. These counts are catalogue records, not verified facade matches; a 500
-record response is a discovery result and not a claim that all images in a city
-have been exhausted.
-
-OpenAerialMap's STAC search returned metadata records in each configured window,
-but some are elevation products rather than optical imagery. For example, the
-Amman result is a Copernicus DSM at 30 m GSD, useful as terrain/elevation evidence
-but not as a building roof photograph. The review-queue processor now classifies
-DEM/DSM products separately and never allows them to become roof texture
-candidates. Even high-resolution optical imagery is only a roof-shape/colour
-candidate; it is not allowed to texture a facade.
-
-## Strict candidate filtering and local image review
-
-The candidate queue now measures camera distance to the nearest edge of each OSM
-footprint rather than to a rough building centroid. A photo is eligible for the
-visual-review gallery only when all of the following are present and pass:
-- capture point within 35 m of the footprint edge;
-- camera azimuth within 25 degrees of the nearest facade bearing;
-- camera azimuth aligned within 25 degrees; a missing field of view is flagged for manual camera calibration rather than silently guessed;
-- a real HTTPS image preview and a downloadable image asset (using Panoramax thumbnail/HD UUID endpoints when federated STAC results omit asset links);
-- an explicit redistributable CC0 / CC-BY / CC-BY-SA / Etalab-2.0 licence (NC and ND licences
-  are rejected); and
-- no invalid facade-level camera pitch when pitch metadata is supplied.
-
-The `prepare_facade_review.py` workflow downloads only the highest-ranked eligible
-preview per building (up to 50 unique photos per city), verifies that the response
-is an actual decodable image with minimum dimensions, and saves it locally with a
-review gallery and provenance fields. It rejects HTML placeholders, non-image
-responses, tiny images and oversized files. It also downloads the ten highest-ranked
-HD Panoramax images per city (when the source serves at least 800×600 pixels), saving
-them under each city's `facade-review/full/` folder for texture baking. Each city
-review pack is checkpointed to `main` as it is completed. Candidate records now
-include the exact OSM facade edge, camera capture coordinates and target point.
-
-**Important:** this gate verifies file validity, source licence metadata and
-geometric camera suitability. It cannot determine from metadata alone whether the
-photo visibly depicts the exact OSM building rather than an adjacent facade. The
-gallery therefore remains `requires_visual_identity_review`; it never writes to
-`verified_facades.json` or applies a texture automatically. Only after the exact
-building and facade are visually confirmed can the full-resolution image be
-downloaded and projected onto that building's wall.
-
-## Lightweight Android game updates
-
-The Android client now supports a small signed-release web-content bundle. When
-only `app/src/main/assets/index.html` changes and no native Android code or offline
-city source data changes, the release includes `adam-world-web-update.zip`.
-The installed app downloads this small bundle, validates its contents, stores it
-inside its private application directory and reloads the game without reinstalling
-the APK. Existing app data is retained. Changes to Java/Kotlin, the manifest,
-Gradle configuration or packaged offline city source data still require a normal
-Android package update. Installing a same-package APK signed with the same release
-key is an in-place Android update and does not delete the app's private data;
-Google Play App Bundle delivery is the recommended route for store-managed
-split/incremental delivery.
-
-## Automatic sequencing and failure recovery
-
-The facade-evidence workflow is also triggered when the offline city-data import
-finishes. It shares the import concurrency lock, so its checkpoint commits cannot
-race the active city importer. KartaView metadata is fetched before review queues
-are built, allowing both Panoramax and KartaView records to enter candidate
-discovery. Source stages use continue-on-error and a final outcome summary: one
-failed catalogue or city does not prevent later sources, queues, image validation
-or repository checkpoint commits from being attempted. A failed run can be resumed
-without discarding already committed metadata or downloaded review images.
-
-
-## Phase 3 — verified facade GLB export
-
-The workflow now runs `tools/facades/build_verified_glbs.py` after evidence
-collection. It exports one local GLB per building only when
-`app/src/main/assets/facades/verified_facades.json` contains a complete,
-human-verified assignment with the exact city slug, OSM way ID, facade edge,
-Panoramax photo ID, camera calibration, licence, and a locally stored image under
-`app/src/main/assets/facades/verified/`.
-
-Each GLB contains the OSM-footprint-derived building shell and roof plus a
-camera-frustum-clipped photo projection on the selected wall. Images are embedded
-in the GLB; the game does not need a runtime image URL. Outputs are saved under
-`app/src/main/assets/facades/glb/<city>/<osm_way_id>.glb` and committed during
-the workflow run.
-
-The exporter refuses missing footprints, unreviewed images, incomplete camera
-calibration, non-redistributable/unspecified licences, unsafe paths, and proximity-
-only matches. An empty manifest is a successful no-op: it reports
-`NO_VERIFIED_FACADES` and creates no fabricated GLBs. The review gallery is
-candidate evidence only; a person must inspect the actual photograph and confirm
-the exact building and facade before an entry can be added to the verified
-manifest. Generated GLBs still require visual QA against the source photo before
-being treated as final game assets.
-
-To run the export locally after approving an assignment:
-
-```sh
-python3 -m pip install numpy trimesh Pillow shapely
-python3 tools/facades/validate_manifest.py
-python3 tools/facades/build_verified_glbs.py
-```
-
-
-## Phase 4 — actual runtime architectural geometry (2026-11-01)
-
-The live Three.js city renderer now constructs building details as geometry attached
-to each OSM footprint, rather than painting window/balcony decals:
-
-- Window openings are cut into the generated facade wall panels; frames, glazing
-  and projecting sills are separate 3D meshes.
-- Residential building types and explicit OSM balcony tags generate balcony
-  slabs, front rails and vertical posts as geometry.
-- Every building receives its own detail budget before the city-wide safety cap,
-  so early buildings cannot consume all window and balcony geometry and leave
-  later buildings as blank blocks.
-- Buildings explicitly tagged with `roof:shape=hipped` or
-  `roof:shape=pyramidal` receive sloped triangular roof geometry using the
-  `roof:height` tag when available. Flat roofs retain a parapet/cornice.
-- Building height and floor count continue to prefer explicit OSM
-  `height`, `building:height`, and `building:levels` values. Missing values
-  remain deterministic estimates, not claimed measurements.
-
-This is real 3D geometry generated locally from the OSM footprint and tags. It is
-not proof that each untagged building's exact window arrangement, balcony layout,
-roof shape or facade colour matches photographs. Exact photo-derived facade
-materials remain blocked on explicit visual identity review and the currently
-empty `verified_facades.json` manifest. Do not label the candidate image galleries
-as completed reconstruction.
-
-The Android web-content build must be run after this renderer change and its
-published preview checked for window coverage, balcony placement, roof geometry,
-frame rate and memory on the target device. Future roof types and per-building
-architectural profiles should be added only from OSM tags or verified imagery,
-not guessed from nearby photographs.
-
-## Cross-source building identity reconciliation (ported from Adam-City)
-
-Adam-City's Ermita source-reconciliation work contributed one reusable rule to this
-pipeline: stable OSM identity is the only automatic cross-provider join key.
-Provider-local numeric IDs and nearby footprints must not be treated as the same
-building. Source geometry and tag differences are retained as competing evidence,
-not silently resolved by choosing one provider.
-
-The city-independent tool is:
-
-```sh
-python3 tools/facades/reconcile_building_sources.py \
-  --input osm=data/facades/cities/amman/buildings.geojson \
-  --input panoramax=data/facades/cities/amman/panoramax-items.geojson \
-  --output data/facades/cities/amman/source-reconciliation.json
-```
-
-Repeat `--input source_name=path` for each actual building-footprint provider.
-Do not pass street-photo catalogues as building-footprint sources. The output keeps
-all observations, source-local IDs, geometry hashes and tag conflicts. It does not
-select a winning footprint, infer identity from proximity, or approve a facade
-photo. Run the unit tests with:
-
-```sh
-python3 -m unittest tools.facades.tests.test_reconcile_building_sources -v
-```
-
-This is a provenance/QA stage before review-queue generation and GLB export. It
-does not replace the existing human-verified photo-to-facade gate.
-
+Candidate/review tools and archived image data exist in the repository, but no evidence here establishes that a verified-photo facade layer is active in the native Android renderer. Treat photo-real facade reconstruction as unfinished until a native loader and verified on-mesh assets are demonstrably used by the game.

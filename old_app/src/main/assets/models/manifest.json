@@ -126,7 +126,7 @@
       "file": "vehicles/city-bus.glb",
       "page": "https://www.innerscene.com/tools/library/3d-parts/low-floor-city-bus-9e7ce899",
       "license": "CC0-1.0",
-      "length_m": 12.0,
+      "length_m": 12,
       "animated": false,
       "description": "Low-floor urban bus exterior with doors, glazing and wheel assemblies.",
       "status": "kept",
@@ -138,7 +138,7 @@
       "file": "vehicles/metro-car.glb",
       "page": "https://www.innerscene.com/tools/library/3d-parts/metro-car-22a0c19c",
       "license": "CC0-1.0",
-      "length_m": 19.0,
+      "length_m": 19,
       "animated": false,
       "description": "Metro passenger rail car; requires mapped railway route and track.",
       "status": "kept",
@@ -310,5 +310,10 @@
       "status": "not_imported",
       "reason": "No verified free, redistributable, sufficiently detailed old Jordanian vehicle model was accepted yet."
     }
-  ]
+  ],
+  "runtime_status": {
+    "purpose": "legacy old_app GLB model inventory",
+    "consumed_by_current_gradle_app": false,
+    "note": "settings.gradle includes only :app. app/build.gradle adds old_app/src/main/assets/data only; it does not package or load old_app/src/main/assets/models."
+  }
 }

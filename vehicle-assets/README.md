@@ -1,8 +1,7 @@
-# Vehicle assets (kept outside the APK)
+# External vehicle GLB inventory
 
-Upload the authorized vehicle model files to this folder:
+The files and `manifest.json` in this directory are an external asset inventory. They are **not loaded by the current native Android game**. The active game generates vehicle meshes in `ProceduralVehicleModels.java`.
 
-- `md-500.glb`
-- `dodge-challenger.glb`
+The manifest records two GLB candidates, their source pages, creator, declared CC BY-NC-SA licence, file sizes and rights notes. CC BY-NC-SA is not a general commercial-use licence. Review the exact source terms and third-party rights before redistribution or commercial use.
 
-Keep the original creator attribution and license information with each model. These files are intended to be hosted as downloadable game assets and must not be added to the Android app's packaged assets or APK. After uploading, the game can download them on demand and retain local copies for offline use.
+Do not claim that these GLBs are downloadable, cached offline or active in gameplay until a native downloader/loader is implemented and tested. Keep this inventory separate from the procedural vehicle renderer.

@@ -1,32 +1,35 @@
-# Procedural Vehicles and Pedestrians
+# Procedural vehicles and pedestrians — native Android renderer
 
-All vehicle and pedestrian geometry is generated in Java at runtime. The renderer does not load vehicle GLB models or download character/vehicle assets.
+All vehicles and pedestrian meshes currently used by the active Android game are generated in Java. The native renderer does not load the GLB inventory under `vehicle-assets/` or the legacy model manifest under `old_app/`.
 
-## Procedural vehicles
+## Vehicles
 
-`ProceduralVehicleModels.java` generates sedan, SUV, pickup, bus, police car, motorcycle, bicycle, tank, helicopter and airplane geometry. The player can cycle through all ten types with **نوع المركبة** and summon/enter using the vehicle control. Traffic uses road vehicles; aircraft and the tank remain player-selectable.
+`ProceduralVehicleModels.java` generates ten selectable mesh categories:
 
-- Parametric ring bodies and Bezier-shaped profiles generate the main hulls/fuselages.
-- Vehicle windows are separate transparent meshes with Fresnel-weighted cubemap reflections.
-- Cars, buses, motorcycles and bicycles use separate wheel meshes. Their wheels rotate from travelled distance; front wheels steer with the steering input.
-- Tank tread links are animated around a loop from vehicle speed.
-- Helicopter rotor blades rotate continuously.
-- Aircraft lift and steering remain connected to the existing flight controls.
+1. Sedan
+2. SUV
+3. Pickup
+4. Bus
+5. Police vehicle
+6. Motorcycle
+7. Bicycle
+8. Tank
+9. Helicopter
+10. Airplane
 
-## Materials and lighting
+These are procedural silhouettes/materials, not licensed city-specific photoreal vehicle models. Their presence in the selector does not imply real route, flight or rail simulation.
 
-`ProceduralMaterialMaps.java` creates independent runtime textures for tangent-frame normal detail, roughness, and metalness, plus a cubemap environment used for reflective vehicle paint and glass.
+## Pedestrians
 
-The vehicle shader uses a microfacet BRDF, Fresnel response, independent material maps and the environment cubemap. The normal map is sampled through triplanar tangent frames. The current cubemap is a generated sky/horizon/ground environment; it is not yet a live capture of nearby buildings or a dynamic reflection probe. Material maps are generated procedurally and are not downloaded image assets.
+`ProceduralHumanRig.java` generates six mesh variants from 16 body parts. `Game.java` manages pedestrian agents and walking phases; `CityRenderer.java` applies the limb transforms.
 
-## Articulated pedestrians
+## Imported vehicle inventory is separate
 
-`ProceduralHumanRig.java` generates six pedestrian appearance variants as separate body-part meshes. `CityRenderer.java` animates shoulder, elbow, hip, knee and foot transforms with a phase-driven walk cycle. The meshes include skin, hair, eyes, nose, brows, mouth, collar, pocket/seam details, hands, shoes and varied clothing colours.
+`vehicle-assets/manifest.json` records two external GLB candidates with CC BY-NC-SA declarations. That manifest is an asset/provenance inventory only; the current native renderer does not load or download those GLBs. The rights notes must be checked before commercial redistribution.
 
-The playable avatar also uses the same procedural rig, scaled to child proportions; the old prebuilt head asset is no longer loaded by the renderer.
+## Remaining work
 
-## Verification and remaining limits
-
-This implementation is not yet certified as photorealistic. The normal map uses tangent frames from triplanar projections rather than authored per-mesh UV tangent attributes. The cubemap currently reflects a generated sky/horizon/ground, not the live city scene. Human faces and clothing remain procedural low-poly forms, not scanned or photorealistic people. Suspension, aircraft control-surface animation, skeletal skinning and collision refinements remain future work.
-
-A successful Android release build and on-device visual/performance test are required before treating this feature as release-complete.
+- Integrate licensed local vehicle models only after verifying redistribution rights, scale, orientation and performance.
+- Add city-specific vehicles only where their form is supported by local evidence.
+- Implement route-following behavior separately from merely rendering a vehicle mesh.
+- Test pedestrian/vehicle collision, traffic response and frame time on device.
