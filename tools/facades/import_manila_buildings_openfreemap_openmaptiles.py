@@ -131,16 +131,32 @@ def main():
   fs=list(items.values()); doc={"type":"FeatureCollection","name":f"Manila {lname}","source":"OpenFreeMap + OpenMapTiles","zooms":list(ZOOMS),"feature_count":len(fs),"features":fs}
   p=OUT/(lname.replace("/","_")+".geojson"); t=p.with_suffix(".geojson.tmp"); t.write_text(json.dumps(doc,ensure_ascii=False,separators=(",",":"))+"\n",encoding="utf-8"); os.replace(t,p); counts[lname]=len(fs)
   print(f"WRITE LAYER {lname}: {len(fs)} -> {p.relative_to(ROOT)}",flush=True)
- if "building" in combined:
-  fs=list(combined["building"].values())
-  geometry_types={}
-  for feature in fs:
-   gt=(feature.get("geometry") or {}).get("type","missing")
-   geometry_types[gt]=geometry_types.get(gt,0)+1
-  print(f"CANONICAL BUILDING GEOMETRY TYPES: {geometry_types}",flush=True)
-  if not fs: raise SystemExit("No polygonal building features survived geometry normalization")
-  d={"type":"FeatureCollection","name":"Manila buildings — OpenFreeMap + OpenMapTiles","source":"OpenFreeMap + OpenMapTiles","zooms":list(ZOOMS),"feature_count":len(fs),"features":fs}
-  t=CITY/"buildings.geojson.tmp"; t.write_text(json.dumps(d,ensure_ascii=False,separators=(",",":"))+"\n",encoding="utf-8"); os.replace(t,CITY/"buildings.geojson")
+ building_layers={name:items for name,items in combined.items() if name.casefold() in ("building","buildings")}
+ if not building_layers:
+  raise SystemExit("No building vector-tile layer was imported; refusing to create an empty canonical buildings.geojson")
+ building_features={}
+ for layer_name,items in building_layers.items():
+  for key,feature in items.items():
+   geom=feature.get("geometry") or {}
+   if geom.get("type") not in ("Polygon","MultiPolygon"):
+    continue
+   # Keep only polygonal building records in the canonical buildings file.
+   props=feature.get("properties") or {}
+   if props.get("building") in (None,"") and props.get("building:part") in (None,""):
+    props["building"]=props.get("class") or "yes"
+   feature["properties"]=props
+   building_features[key]=feature
+ fs=list(building_features.values())
+ geometry_types={}
+ for feature in fs:
+  gt=(feature.get("geometry") or {}).get("type","missing")
+  geometry_types[gt]=geometry_types.get(gt,0)+1
+ print(f"CANONICAL BUILDING GEOMETRY TYPES: {geometry_types}",flush=True)
+ if not fs:
+  raise SystemExit("Building layer exists but contains no valid Polygon/MultiPolygon features; canonical file not overwritten")
+ d={"type":"FeatureCollection","name":"Manila buildings — OpenFreeMap + OpenMapTiles","source":"OpenFreeMap + OpenMapTiles","zooms":list(ZOOMS),"feature_count":len(fs),"features":fs}
+ t=CITY/"buildings.geojson.tmp"; t.write_text(json.dumps(d,ensure_ascii=False,separators=(",",":"))+"\n",encoding="utf-8"); os.replace(t,CITY/"buildings.geojson")
+ print(f"WRITE CANONICAL BUILDINGS: {len(fs)} -> {(CITY/'buildings.geojson').relative_to(ROOT)}",flush=True)
  manifest={"city":"Manila","zooms":list(ZOOMS),"sources":list(SOURCES),"source_zoom_tile_summary":totals,"layer_feature_counts":counts,"total_layers":len(counts),"total_features":sum(counts.values()),"native_zoom_policy":"Request z1-z16 exactly; empty responses are recorded, never fabricated or silently overzoomed.","outputs":"data/facades/cities/manila/layers/*.geojson"}
  (CITY/"all-layers-manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
  print(json.dumps({"layers":len(counts),"features":sum(counts.values()),"building_features":counts.get("building",0)},ensure_ascii=False),flush=True)

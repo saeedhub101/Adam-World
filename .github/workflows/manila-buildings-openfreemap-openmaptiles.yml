@@ -38,16 +38,42 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Import every vector layer at zooms 1 through 16
         run: python -u tools/facades/import_manila_buildings_openfreemap_openmaptiles.py
-      - name: Commit imported Manila GeoJSON immediately
+      # Source-data persistence is a hard gate before any game/shard generation.
+      - name: Commit every imported source layer to main before game build
         run: |
-          git add data/facades/cities/manila
+          git add -A data/facades/cities/manila
           if ! git diff --cached --quiet; then
-            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Save imported Manila vector layers and buildings GeoJSON"
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Save all imported Manila source GeoJSON before game build"
             git pull --rebase origin main
             git push origin HEAD:main
           else
-            echo "No imported GeoJSON changes to commit."
+            echo "Imported source snapshot already committed."
           fi
+      - name: Verify committed source GeoJSON before building shards
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          city = Path("data/facades/cities/manila")
+          canonical = city / "buildings.geojson"
+          if not canonical.is_file() or canonical.stat().st_size == 0:
+              raise SystemExit(f"Canonical buildings GeoJSON missing/empty after source commit: {canonical}")
+          data = json.loads(canonical.read_text(encoding="utf-8"))
+          features = data.get("features") if data.get("type") == "FeatureCollection" else None
+          if not isinstance(features, list) or not features:
+              raise SystemExit("Committed buildings.geojson is not a non-empty FeatureCollection")
+          polygons = [f for f in features if (f.get("geometry") or {}).get("type") in ("Polygon", "MultiPolygon")]
+          if not polygons:
+              raise SystemExit("Committed buildings.geojson has no Polygon/MultiPolygon features")
+          layer_files = sorted((city / "layers").glob("*.geojson"))
+          if not layer_files:
+              raise SystemExit("No imported vector-layer GeoJSON files were committed")
+          for path in layer_files:
+              layer = json.loads(path.read_text(encoding="utf-8"))
+              if layer.get("type") != "FeatureCollection" or not isinstance(layer.get("features"), list):
+                  raise SystemExit(f"Invalid committed source layer: {path}")
+          print(f"SOURCE DATA VERIFIED: {len(layer_files)} layers; {len(features)} buildings; {sum(p.stat().st_size for p in layer_files):,} layer bytes")
+          PY
       - name: Rebuild Manila offline shards from canonical buildings GeoJSON
         run: python -u tools/build_manila_stream_shards.py
       - name: Commit all layer GeoJSON and rebuilt game data
