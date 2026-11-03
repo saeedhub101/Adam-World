@@ -423,7 +423,7 @@ def _merge_overture_building_attributes(primary, overture):
             # Overture includes conflated Google/Microsoft footprints; keep them
             # only when no primary footprint is geometrically equivalent.
             additions.append(item)
-    print(f"OVERTURE JOIN: {matched} existing footprints enriched; {len(additions)} additional source footprints", flush=True)
+    print(f"MULTI-SOURCE JOIN: {matched} existing footprints enriched; {len(additions)} additional source footprints", flush=True)
     return additions
 
 def _geojson_transportation_elements(path):
@@ -860,6 +860,14 @@ def source_elements(slug, lat0, lon0):
         else:
             primary_roads = []
             source_kind += "+openfreemap-road-layer-missing-no-osm-road-substitution"
+        overture_path = SOURCE / slug / "overture-building-details.geojson"
+        obm_path = SOURCE / slug / "openbuildingmap-buildings.geojson"
+        if overture_path.is_file():
+            source_path += f" + {overture_path.relative_to(ROOT)}"
+            source_kind += "+overture-multisource-building-height-floor-name-address-enrichment"
+        if obm_path.is_file():
+            source_path += f" + {obm_path.relative_to(ROOT)}"
+            source_kind += "+openbuildingmap-ghsl-gem-height-floor-enrichment"
         # Overture building parts are retained as true sub-volumes; avoid
         # exact duplicate OSM parts by their original OSM identity.
         known_part_ids = {_osm_id((x.get("tags") or {}).get("adam:source_osm_id") or x.get("id"))
