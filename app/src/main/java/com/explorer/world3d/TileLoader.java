@@ -250,9 +250,17 @@ final class TileLoader extends Thread {
         int maxX = (int) Math.floor(((east - lon0) * kx) / tileSize);
         int minZ = (int) Math.floor((-(north - lat0) * ky) / tileSize);
         int maxZ = (int) Math.floor((-(south - lat0) * ky) / tileSize);
+        JSONArray manifestTiles = manifest.optJSONArray("tiles");
+        HashSet<String> expectedTiles = new HashSet<>();
+        if (manifestTiles != null) for (int i = 0; i < manifestTiles.length(); i++) {
+            JSONObject item = manifestTiles.optJSONObject(i);
+            if (item != null) expectedTiles.add(item.optInt("ix") + "_" + item.optInt("iz"));
+        }
+        if (expectedTiles.isEmpty()) throw new IOException("Tabarbour manifest contains no spatial cells");
         JSONArray selected = new JSONArray();
         HashSet<String> seen = new HashSet<>();
         for (int x = minX; x <= maxX; x++) for (int z = minZ; z <= maxZ; z++) {
+            if (!expectedTiles.contains(x + "_" + z)) continue;
             String tileKey = "tabarbour:" + x + ":" + z;
             JSONObject tile;
             synchronized (bundledCityTileCache) { tile = bundledCityTileCache.get(tileKey); }
@@ -261,11 +269,11 @@ final class TileLoader extends Thread {
                 if (!tileFile.isFile() || tileFile.length() == 0) {
                     String url = TABARBOUR_DATA_BASE + "/tile_" + x + "_" + z + ".json";
                     byte[] bytes;
-                    try { bytes = downloadBytes(url); }
-                    catch (IOException missingTile) { continue; }
+                    bytes = downloadBytes(url);
                     File tmp = new File(tileFile.getPath() + ".tmp");
                     try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
                     if (!tmp.renameTo(tileFile)) { tmp.delete(); throw new IOException("Cannot cache Tabarbour tile " + tileKey); }
+                    pruneTabarbourCache(tileFile);
                 }
                 try {
                     tile = new JSONObject(readFile(tileFile));
@@ -488,6 +496,30 @@ final class TileLoader extends Thread {
             offlineDatasetVersion = nextVersion;
             offlineCells = cells;
             pruneOfflineCache(null);
+        }
+    }
+
+    /** Keep the online Tabarbour cell cache bounded independently from Amman and Manila. */
+    private void pruneTabarbourCache(File keep) {
+        File[] files = tabarbourOfflineDir.listFiles();
+        if (files == null) return;
+        long now = System.currentTimeMillis(), total = 0L;
+        ArrayList<File> cells = new ArrayList<>();
+        for (File file : files) {
+            if (!file.isFile() || !file.getName().startsWith("tile_") || !file.getName().endsWith(".json")) continue;
+            if (now - file.lastModified() > CACHE_MAX_AGE_MS && (keep == null || !file.equals(keep))) {
+                file.delete(); continue;
+            }
+            total += file.length(); cells.add(file);
+        }
+        Collections.sort(cells, new Comparator<File>() {
+            @Override public int compare(File a, File b) { return Long.compare(a.lastModified(), b.lastModified()); }
+        });
+        for (File file : cells) {
+            if (total <= ONLINE_CACHE_MAX_BYTES) break;
+            if (keep != null && file.equals(keep)) continue;
+            long size = file.length();
+            if (file.delete()) total -= size;
         }
     }
 
