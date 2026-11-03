@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 final class TileLoader extends Thread {
     interface ErrorCallback { void onError(); }
 
-    static final int LOAD_R = 2;   // 5×5 مربعات: أولوية للمنطقة القريبة وتقليل أعمال التحميل الأولية
+    static final int LOAD_R = 1;   // 3×3 tiles: lower startup memory; expand as the player moves
     static final String[] SERVERS = {
             "https://overpass-api.de/api/interpreter",
             "https://overpass.kumi.systems/api/interpreter",
@@ -144,6 +144,16 @@ final class TileLoader extends Thread {
         if (activeConnection == c) activeConnection = null;
     }
 
+    /** Drop transient CPU-side tile/JSON references when Android reports memory pressure. */
+    void trimMemory() {
+        ready.clear();
+        synchronized (bundledCityTileCache) { bundledCityTileCache.clear(); }
+        synchronized (offlineWindowShardCache) { offlineWindowShardCache.clear(); }
+        synchronized (offlineShardCache) { offlineShardCache.clear(); }
+        bundledCityRoot = null;
+        bundledCityManifest = null;
+    }
+
     void resetOfflineShardState() {
         // These references are volatile; avoid blocking the GL thread on a network-held monitor.
         offlineCells = null;
@@ -158,7 +168,7 @@ final class TileLoader extends Thread {
             try {
                 if (!havePlayer) { Thread.sleep(200); continue; }
                 // Back-pressure: never let completed tiles accumulate faster than GL uploads.
-                if (ready.size() >= 6) { Thread.sleep(100); continue; }
+                if (ready.size() >= 2) { Thread.sleep(120); continue; }
                 int cx = ptx, cz = ptz, g = gen;
                 int[] pick = null;
                 long k = 0;
