@@ -73,6 +73,33 @@ final class ProceduralMaterialMaps {
         return b;
     }
 
+    void updateEnvironment(float topR,float topG,float topB,
+                            float horR,float horG,float horB,
+                            float fogR,float fogG,float fogB) {
+        float[][] colors = {
+                {horR,horG,horB},{horR,horG,horB},{topR,topG,topB},
+                {fogR*.55f,fogG*.55f,fogB*.55f},{horR,horG,horB},{horR,horG,horB}
+        };
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE5);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_CUBE_MAP,environment);
+        int size=16;
+        for(int face=0;face<6;face++) {
+            Bitmap bitmap=Bitmap.createBitmap(size,size,Bitmap.Config.ARGB_8888);
+            int[] pixels=new int[size*size];
+            for(int y=0;y<size;y++) for(int x=0;x<size;x++) {
+                float k=face==2 ? .70f+.30f*y/(size-1f) : face==3 ? .55f+.45f*y/(size-1f) : .78f+.22f*y/(size-1f);
+                int r=clamp((int)(colors[face][0]*k*255f));
+                int g=clamp((int)(colors[face][1]*k*255f));
+                int b=clamp((int)(colors[face][2]*k*255f));
+                pixels[y*size+x]=0xff000000|r<<16|g<<8|b;
+            }
+            bitmap.setPixels(pixels,0,size,0,0,size,size);
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_CUBE_MAP_POSITIVE_X+face,0,bitmap,0);
+            bitmap.recycle();
+        }
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+    }
+
     private static int createEnvironment() {
         int[] id = new int[1];
         GLES20.glGenTextures(1, id, 0);
