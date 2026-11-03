@@ -4,7 +4,7 @@ The Manila offline game mode uses the existing game renderer and loads nearby sp
 
 ## Source priority
 
-1. **Building footprints:** `data/facades/cities/manila/building-footprints.geojson` supplies the saved polygon geometry when the newer consolidated `buildings.geojson` is absent or has no usable features. When a matching feature exists in `buildings.geojson`, its geometry takes priority.
+1. **Building footprints:** `data/facades/cities/manila/building-footprints.geojson` supplies the preserved Ermita OSM polygon geometry (derived from the saved `ermita-building-details.geojson` extract) when the consolidated `buildings.geojson` has no usable matching feature. When a matching feature exists in `buildings.geojson`, its geometry takes priority. This is the owner-approved Manila-specific exception to the general preference for OpenFreeMap/OpenMapTiles building geometry.
 2. **Building details:** `building-details.geojson` is joined to footprint records by OSM feature ID. Its available names, addresses, building use, heights, levels, roof/facade materials, colours and `building:part` tags fill missing properties. Unmatched building polygons/parts and mapped building nodes are also retained. Duplicate IDs are merged rather than rendered twice.
 3. **Consolidated building data:** `buildings.geojson` remains the preferred consolidated input when populated; an empty file must not stop the build or suppress the existing footprint/detail datasets.
 4. **Roads and named streets:** OpenMapTiles PBF supplies road geometry and non-building POIs/address points. `transportation.geojson` supplies OpenFreeMap/OpenMapTiles road geometry and street-name lines.
