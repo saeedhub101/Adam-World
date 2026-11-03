@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build conservative, city-independent Panoramax facade review queues.
+"""Build conservative, city-independent Panoramax-only facade review queues.
 
 Input per city:
   buildings.geojson       OSM building footprints (FeatureCollection)
@@ -269,10 +269,8 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
         buildings_path = city_dir / "building-footprints.geojson"
     buildings_fc = read_fc(buildings_path)
     photos_fc = read_fc(city_dir / "panoramax-items.geojson", required=False)
-    kartaview_fc = read_fc(city_dir / "kartaview-items.geojson", required=False)
     aerial_fc = read_fc(city_dir / "aerial-items.geojson", required=False)
-    photo_features = photos_fc["features"] + kartaview_fc["features"]
-    photos = [photo_metadata(f) | {"_geometry": f.get("geometry"), "source": (f.get("properties") or {}).get("source", "panoramax")} for f in photo_features]
+    photos = [photo_metadata(f) | {"_geometry": f.get("geometry"), "source": "panoramax"} for f in photos_fc["features"]]
     queue = []
     seen = set()
     for b in buildings_fc["features"]:
@@ -300,8 +298,6 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
             else:
                 delta = angle_delta(az, target_bearing)
                 direction = "within_camera_cone" if delta <= 25.0 else "outside_camera_cone"
-                if direction == "outside_camera_cone":
-                    continue
             eligible, rejection_reasons, quality_score = photo_quality_gate(photo, dist, delta)
             candidates.append({
                 "photo_id": photo["photo_id"],
@@ -339,7 +335,7 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
         })
     queue.sort(key=lambda x: int(x["osm_way_id"]))
     source_hash = hashlib.sha256()
-    for name in (buildings_path.name, "panoramax-items.geojson", "kartaview-items.geojson", "aerial-items.geojson"):
+    for name in (buildings_path.name, "panoramax-items.geojson", "aerial-items.geojson"):
         path = city_dir / name
         source_hash.update(name.encode())
         if path.exists():
@@ -351,7 +347,9 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
         "matching_policy": {
             "maximum_discovery_distance_m": max_distance,
             "proximity_is_not_identity": True,
-            "camera_cone_is_candidate_filter_only": True,
+            "camera_cone_is_candidate_filter_only": False,
+            "unknown_camera_azimuth_kept_for_manual_review": True,
+            "photo_source": "Panoramax only; KartaView excluded",
             "automatic_texture_assignment": False,
             "strict_visual_review_gate": {"max_facade_distance_m": 35, "max_azimuth_delta_deg": 25, "requires_camera_azimuth": True, "camera_fov_missing_is_manual_calibration_warning": True, "requires_open_redistributable_license": True, "requires_real_preview_and_image_assets": True},
         },
