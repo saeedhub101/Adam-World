@@ -410,7 +410,7 @@ def read_transport(writer, label_only=False):
     road_classes={"motorway","trunk","primary","secondary","tertiary","minor","residential",
         "unclassified","service","living_street","road","street","path","footway","pedestrian",
         "steps","cycleway","track","busway","raceway"}
-    street_suffix=re.compile(r"\\b(street|st|road|rd|avenue|ave|boulevard|blvd|highway|hwy|drive|dr|lane|ln|circle|circ|place|plaza|way|parkway|pkwy|expressway|esplanade)\\b",re.I)
+    street_suffix=re.compile(r"\b(street|st|road|rd|avenue|ave|boulevard|blvd|highway|hwy|drive|dr|lane|ln|circle|circ|place|plaza|way|parkway|pkwy|expressway|esplanade)\\b",re.I)
     for i,feature in enumerate(data.get("features",[])):
         p=feature.get("properties") or {}; g=feature.get("geometry") or {}
         highway=text(p.get("highway") or p.get("class") or p.get("subclass")).lower()
@@ -424,6 +424,8 @@ def read_transport(writer, label_only=False):
         tags={"adam:source":"OpenFreeMap transportation.geojson"}
         for key in ("class","subclass","highway","railway","route","ref","layer","bridge","tunnel","oneway","surface","width","name:ar","name:en","name:latin"):
             if p.get(key) not in (None,""): tags[key]=text(p[key])
+        if not tags.get("highway"):
+            tags["highway"]={"minor":"residential","street":"unclassified"}.get(highway,highway)
         if name:
             tags["name"]=name
             named+=1
