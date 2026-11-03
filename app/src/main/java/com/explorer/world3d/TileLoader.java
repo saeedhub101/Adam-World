@@ -47,6 +47,7 @@ final class TileLoader extends Thread {
     private final File cacheDir;
     private final File offlineDir;
     private final File manilaOfflineDir;
+    private final File tabarbourOfflineDir;
     private final ErrorCallback cb;
     private final ArrayList<int[]> order = new ArrayList<>();
     private static final double AMMAN_LAT0 = 31.9522646;
@@ -55,6 +56,7 @@ final class TileLoader extends Thread {
     private static final double AMMAN_KY = 111132.0;
     private static final String OFFLINE_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-city-stream/amman";
     private static final String MANILA_OFFLINE_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-city-stream/manila";
+    private static final String TABARBOUR_DATA_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/app/src/main/assets/cities/tabarbour";
     private static final double MANILA_LAT0 = 14.57394;
     private static final double MANILA_LON0 = 120.98283;
     private static final double MANILA_KX = 111320.0 * Math.cos(Math.toRadians(MANILA_LAT0));
@@ -90,6 +92,7 @@ final class TileLoader extends Thread {
         this.cacheDir = cacheDir;
         this.offlineDir = new File(cacheDir, "offline-amman");
         this.manilaOfflineDir = new File(cacheDir, "offline-manila");
+        this.tabarbourOfflineDir = new File(cacheDir, "offline-tabarbour");
         this.cb = cb;
         cacheDir.mkdirs();
         offlineDir.mkdirs();
@@ -215,74 +218,74 @@ final class TileLoader extends Thread {
         return TileBuilder.build(root, ix, iz);
     }
 
-    /** Load only the bundled spatial cells intersecting this render tile. */
+    /** Fetch Tabarbour spatial cells from the repository; no city data is bundled in the APK. */
     private JSONObject loadBundledCityRoot(double south, double west, double north, double east) throws Exception {
         final String slug = offlineCitySlug;
-        if (slug == null || slug.trim().isEmpty()) return emptyElements();
+        if (!"tabarbour".equals(slug)) return emptyElements();
         JSONObject manifest;
         synchronized (this) {
-            if (bundledCityManifest == null || !slug.equals(bundledManifestSlug)) {
-                StringBuilder json = new StringBuilder(8192);
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                        context.getAssets().open("cities/" + slug + "/manifest.json"), "UTF-8"), 8192)) {
-                    char[] buffer = new char[8192];
-                    int n;
-                    while ((n = reader.read(buffer)) != -1) json.append(buffer, 0, n);
+            tabarbourOfflineDir.mkdirs();
+            File manifestFile = new File(tabarbourOfflineDir, "manifest.json");
+            if (!manifestFile.isFile() || System.currentTimeMillis() - manifestFile.lastModified() > 5L * 60 * 1000) {
+                try {
+                    byte[] bytes = downloadBytes(TABARBOUR_DATA_BASE + "/manifest.json");
+                    File tmp = new File(manifestFile.getPath() + ".tmp");
+                    try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
+                    if (!tmp.renameTo(manifestFile)) { tmp.delete(); throw new IOException("Cannot cache Tabarbour manifest"); }
+                } catch (IOException networkError) {
+                    if (!manifestFile.isFile() || manifestFile.length() == 0) throw networkError;
                 }
-                JSONObject loaded = new JSONObject(json.toString());
-                if (loaded.optJSONObject("center") == null || loaded.optJSONArray("tiles") == null) {
-                    throw new IOException("Invalid bundled offline city manifest: " + slug);
-                }
-                bundledCityManifest = loaded;
-                bundledManifestSlug = slug;
-                bundledCitySlug = slug;
-                synchronized (bundledCityTileCache) { bundledCityTileCache.clear(); }
             }
-            manifest = bundledCityManifest;
+            manifest = new JSONObject(readFile(manifestFile));
+            if (!"tabarbour".equals(manifest.optString("slug")) || manifest.optJSONObject("center") == null
+                    || manifest.optJSONArray("tiles") == null) {
+                throw new IOException("Invalid Tabarbour online manifest");
+            }
         }
         JSONObject center = manifest.getJSONObject("center");
         double lat0 = center.getDouble("lat"), lon0 = center.getDouble("lon");
         double tileSize = manifest.optDouble("tile_size_m", 250.0);
-        double kx = 111320.0 * Math.cos(Math.toRadians(lat0));
-        double ky = 111132.0;
+        double kx = 111320.0 * Math.cos(Math.toRadians(lat0)), ky = 111132.0;
         int minX = (int) Math.floor(((west - lon0) * kx) / tileSize);
         int maxX = (int) Math.floor(((east - lon0) * kx) / tileSize);
         int minZ = (int) Math.floor((-(north - lat0) * ky) / tileSize);
         int maxZ = (int) Math.floor((-(south - lat0) * ky) / tileSize);
         JSONArray selected = new JSONArray();
         HashSet<String> seen = new HashSet<>();
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                String tileKey = slug + ":" + x + ":" + z;
-                JSONObject tile;
-                synchronized (bundledCityTileCache) { tile = bundledCityTileCache.get(tileKey); }
-                if (tile == null) {
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                            context.getAssets().open("cities/" + slug + "/tile_" + x + "_" + z + ".json"), "UTF-8"), 16384)) {
-                        StringBuilder body = new StringBuilder(4096);
-                        char[] buffer = new char[16384];
-                        int n;
-                        while ((n = reader.read(buffer)) != -1) body.append(buffer, 0, n);
-                        tile = new JSONObject(body.toString());
-                        if (tile.optJSONArray("elements") == null) throw new IOException("Invalid offline city tile " + tileKey);
-                        synchronized (bundledCityTileCache) { bundledCityTileCache.put(tileKey, tile); }
-                    } catch (java.io.FileNotFoundException missingCell) {
-                        continue;
-                    }
+        for (int x = minX; x <= maxX; x++) for (int z = minZ; z <= maxZ; z++) {
+            String tileKey = "tabarbour:" + x + ":" + z;
+            JSONObject tile;
+            synchronized (bundledCityTileCache) { tile = bundledCityTileCache.get(tileKey); }
+            if (tile == null) {
+                File tileFile = new File(tabarbourOfflineDir, "tile_" + x + "_" + z + ".json");
+                if (!tileFile.isFile() || tileFile.length() == 0) {
+                    String url = TABARBOUR_DATA_BASE + "/tile_" + x + "_" + z + ".json";
+                    byte[] bytes;
+                    try { bytes = downloadBytes(url); }
+                    catch (IOException missingTile) { continue; }
+                    File tmp = new File(tileFile.getPath() + ".tmp");
+                    try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
+                    if (!tmp.renameTo(tileFile)) { tmp.delete(); throw new IOException("Cannot cache Tabarbour tile " + tileKey); }
                 }
-                JSONArray elements = tile.optJSONArray("elements");
-                if (elements == null) continue;
-                for (int i = 0; i < elements.length(); i++) {
-                    JSONObject element = elements.optJSONObject(i);
-                    if (element == null) continue;
-                    String key = element.optString("type", "") + ":" + element.optString("id", "");
-                    if (seen.add(key)) selected.put(element);
+                try {
+                    tile = new JSONObject(readFile(tileFile));
+                    if (tile.optJSONArray("elements") == null) throw new IOException("Invalid Tabarbour cell " + tileKey);
+                } catch (Exception invalid) {
+                    tileFile.delete();
+                    throw invalid;
                 }
+                synchronized (bundledCityTileCache) { bundledCityTileCache.put(tileKey, tile); }
+            }
+            JSONArray elements = tile.optJSONArray("elements");
+            if (elements == null) continue;
+            for (int i = 0; i < elements.length(); i++) {
+                JSONObject element = elements.optJSONObject(i);
+                if (element == null) continue;
+                String key = element.optString("type", "") + ":" + element.optString("id", "");
+                if (seen.add(key)) selected.put(element);
             }
         }
-        JSONObject result = new JSONObject();
-        result.put("elements", selected);
-        return result;
+        JSONObject result = new JSONObject(); result.put("elements", selected); return result;
     }
 
     /** Preserve the old_app NPDC tree inventory as geolocated tree features in offline Manila. */
@@ -490,7 +493,7 @@ final class TileLoader extends Thread {
 
     /** Keep offline storage bounded: expire old shards and evict least-recently-used files. */
     private void pruneOfflineCache(File keep) {
-        File activeDir = offlineManila ? manilaOfflineDir : offlineDir;
+        File activeDir = offlineManila ? manilaOfflineDir : ("tabarbour".equals(offlineCitySlug) ? tabarbourOfflineDir : offlineDir);
         File[] versions = activeDir.listFiles();
         if (versions == null) return;
         long now = System.currentTimeMillis(), total = 0L;
