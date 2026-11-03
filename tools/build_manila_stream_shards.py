@@ -8,9 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PBF_ROOT = Path(os.environ.get("ADAM_CITY_MANILA_PBF", ROOT / "Adam-City-source/Manila/vector-tiles"))
-BUILDINGS = ROOT / "data/facades/cities/manila/buildings.geojson"
-FOOTPRINTS = ROOT / "data/facades/cities/manila/building-footprints.geojson"
-DETAILS = ROOT / "data/facades/cities/manila/building-details.geojson"
+BUILDING_LAYER = ROOT / "data/facades/cities/manila/layers/building-layer.geojson"
 TRANSPORT = ROOT / "data/facades/cities/manila/transportation.geojson"
 OSM_CONTEXT = ROOT / "data/offline-world/manila/elements.json"
 POI_CSV = Path(os.environ.get("ADAM_CITY_POI_CSV", ROOT / "Adam-City-source/ermita/maps/generated/ermita-public_services.csv"))
@@ -369,129 +367,51 @@ def _building_tags(feature):
     return {str(k):text(v) for k,v in tags.items() if v not in (None,"")}
 
 def read_geojson_buildings(writer):
-    """Merge canonical OpenFreeMap buildings with saved OSM footprints/details.
-
-    Geometry priority: buildings.geojson, then building-footprints.geojson,
-    then polygonal building features from building-details.geojson.
-    Properties from supplements fill missing canonical values only.
-    """
-    primary=_load_feature_collection(BUILDINGS, required=False)
-    footprints=_load_feature_collection(FOOTPRINTS, required=False)
-    details=_load_feature_collection(DETAILS, required=False)
-    if not primary and not footprints and not details:
-        raise SystemExit("All Manila building sources are missing or empty")
-
-    # Keep a single polygon per source feature ID. Primary geometry and
-    # populated primary properties always win; supplements only fill gaps.
-    merged={}
-    order=[]
-    source_counts={"buildings_geojson":len(primary),"building_footprints":len(footprints),"building_details":len(details)}
-    matched={"footprints_to_primary":0,"details_to_existing":0}
-    unmatched_nodes=0
-
-    def is_building_polygon(feature):
-        geometry=feature.get("geometry") or {}
-        if geometry.get("type") not in ("Polygon","MultiPolygon"):
-            return False
-        tags=_building_tags(feature)
-        value=text(tags.get("building") or tags.get("building:part"))
-        return bool(value and value.lower()!="no")
-
-    def merge_feature(feature, source_name):
-        nonlocal unmatched_nodes
-        key=_building_key(feature)
-        existing=merged.get(key)
-        incoming_tags=_building_tags(feature)
-        if existing is not None:
-            props=existing.setdefault("properties",{})
-            base_tags=dict(props.get("tags") or {}) if isinstance(props.get("tags"),dict) else {}
-            # Preserve every populated primary field; fill only missing values.
-            for k,v in incoming_tags.items():
-                if base_tags.get(k) in (None,"",[],{}):
-                    base_tags[k]=v
-            props["tags"]=base_tags
-            # Preserve flattened properties too for compatibility with older readers.
-            for k,v in incoming_tags.items():
-                if props.get(k) in (None,"",[],{}):
-                    props[k]=v
-            if not existing.get("geometry") and feature.get("geometry"):
-                existing["geometry"]=feature["geometry"]
-            if source_name not in existing.setdefault("_adam_sources",[]):
-                existing["_adam_sources"].append(source_name)
-            if source_name=="building_footprints" and "buildings_geojson" in existing["_adam_sources"]:
-                matched["footprints_to_primary"]+=1
-            elif source_name=="building_details":
-                matched["details_to_existing"]+=1
-            return
-
-        if not is_building_polygon(feature):
-            if (feature.get("geometry") or {}).get("type")=="Point":
-                unmatched_nodes+=1
-            return
-        clone=json.loads(json.dumps(feature))
-        clone["_adam_sources"]=[source_name]
-        merged[key]=clone
-        order.append(key)
-
-    for feature in primary:
-        if not is_building_polygon(feature):
+    """Render Manila buildings exclusively from the saved building-layer GeoJSON."""
+    features = _load_feature_collection(BUILDING_LAYER, required=True)
+    added = named = with_height = with_levels = with_color = parts = 0
+    for feature in features:
+        geometry = feature.get("geometry") or {}
+        if geometry.get("type") not in ("Polygon", "MultiPolygon"):
             continue
-        key=_building_key(feature)
-        clone=json.loads(json.dumps(feature))
-        clone["_adam_sources"]=["buildings_geojson"]
-        merged[key]=clone
-        order.append(key)
-
-    for source_name,features in (("building_footprints",footprints),("building_details",details)):
-        for feature in features:
-            merge_feature(feature,source_name)
-
-    added=0; named=0; with_height=0; with_levels=0; with_color=0; parts=0
-    source_usage={name:0 for name in source_counts}
-    for key in order:
-        feature=merged[key]
-        tags=_building_tags(feature)
-        # The merge helper writes the completed tag set to properties.tags.
-        props=feature.get("properties") or {}
-        if isinstance(props.get("tags"),dict):
-            tags.update({str(k):text(v) for k,v in props["tags"].items() if text(v)})
-        rings=polygons(feature.get("geometry") or {})
+        tags = _building_tags(feature)
+        building = text(tags.get("building") or tags.get("building:part"))
+        if not building or building.lower() == "no":
+            continue
+        rings = polygons(geometry)
         if not rings:
             continue
-        building=text(tags.get("building") or tags.get("building:part"))
-        if not building or building.lower()=="no":
-            continue
         if not tags.get("building") and tags.get("building:part"):
-            tags["building"]="yes"
-        sources=feature.get("_adam_sources") or ["buildings_geojson"]
-        tags["adam:source"]="Manila merged building datasets"
-        tags["adam:building_sources"]=";".join(sources)
-        tags["adam:source_feature_id"]=key
-        emit_polygon(writer,"manila-building",key,rings,tags,"manila_buildings")
-        added+=1
-        for source_name in sources:
-            source_usage[source_name]+=1
-        if tags.get("building:part"): parts+=1
-        if tags.get("name") or tags.get("name:ar") or tags.get("official_name"): named+=1
-        if tags.get("height") or tags.get("building:height") or tags.get("height:meters") or tags.get("adam:render_height_m"):
-            with_height+=1
-        if tags.get("building:levels") or tags.get("num_floors") or tags.get("levels"):
-            with_levels+=1
-        if any(tags.get(k) for k in ("building:colour","building:color","facade:colour","facade:color","colour","building:material")):
-            with_color+=1
-
+            tags["building"] = "yes"
+        source_id = _building_key(feature)
+        tags["adam:source"] = "Manila building-layer.geojson"
+        tags["adam:building_sources"] = "building-layer.geojson"
+        tags["adam:source_feature_id"] = source_id
+        emit_polygon(writer, "manila-building-layer", source_id, rings, tags, "manila_buildings")
+        added += 1
+        if tags.get("name") or tags.get("name:ar") or tags.get("official_name"):
+            named += 1
+        if any(tags.get(k) for k in ("height", "building:height", "height:meters", "adam:render_height_m")):
+            with_height += 1
+        if any(tags.get(k) for k in ("building:levels", "num_floors", "levels")):
+            with_levels += 1
+        if any(tags.get(k) for k in ("building:colour", "building:color", "facade:colour",
+                                      "facade:color", "colour", "building:material")):
+            with_color += 1
+        if tags.get("building:part"):
+            parts += 1
     if added == 0:
-        raise SystemExit("No usable Manila building polygons found in buildings/footprints/details GeoJSON")
+        raise SystemExit("No usable building polygons found in Manila building-layer.geojson")
+    count = len(features)
     return {
-        "features":added,"named":named,"with_height":with_height,"with_levels":with_levels,"with_color":with_color,
-        "building_parts":parts,"source_feature_counts":source_counts,
-        "source_usage_counts":source_usage,"matched_features":matched,
-        "detail_nodes":unmatched_nodes,
-        "source_files":{
-            "buildings_geojson":BUILDINGS.is_file() and BUILDINGS.stat().st_size>0,
-            "building_footprints":FOOTPRINTS.is_file() and FOOTPRINTS.stat().st_size>0,
-            "building_details":DETAILS.is_file() and DETAILS.stat().st_size>0
-        }
+        "features": added, "named": named, "with_height": with_height,
+        "with_levels": with_levels, "with_color": with_color,
+        "building_parts": parts,
+        "source_feature_counts": {"building_layer_geojson": count},
+        "source_usage_counts": {"building_layer_geojson": added},
+        "matched_features": {},
+        "detail_nodes": 0,
+        "source_files": {"building_layer_geojson": True}
     }
 
 def read_transport(writer, label_only=False):
@@ -593,9 +513,9 @@ def main():
         with shard.open("rb") as f:
             while block:=f.read(1024*1024): h.update(block)
         shard_hashes[shard.stem]=h.hexdigest()
-    manifest={"schema_version":4,"city":"Manila","source":"merged buildings.geojson + OpenFreeMap/OpenMapTiles building-footprints.geojson + OSM building-details.geojson; OpenMapTiles PBF POIs; OpenFreeMap transportation street geometry/names",
-      "building_source":"merged: data/facades/cities/manila/buildings.geojson + building-footprints.geojson + building-details.geojson",
-      "building_sources":["data/facades/cities/manila/buildings.geojson","data/facades/cities/manila/building-footprints.geojson","data/facades/cities/manila/building-details.geojson"],
+    manifest={"schema_version":5,"city":"Manila","source":"Manila building-layer.geojson; OpenMapTiles PBF POIs; OpenFreeMap transportation street geometry/names",
+      "building_source":"data/facades/cities/manila/layers/building-layer.geojson",
+      "building_sources":["data/facades/cities/manila/layers/building-layer.geojson"],
       "building_source_files":building_stats["source_files"],
       "building_source_feature_counts":building_stats["source_feature_counts"],
       "building_source_usage_counts":building_stats["source_usage_counts"],
@@ -606,7 +526,7 @@ def main():
       "building_features_with_height":building_stats["with_height"],"building_features_with_levels":building_stats["with_levels"],"building_features_with_color":building_stats["with_color"],
       "transportation_name_source":"data/facades/cities/manila/transportation.geojson",
       "transportation_label_features":transport_stats["features"],"transportation_named_features":transport_stats["named"],
-      "building_deduplication":"matched by normalized OSM source feature ID; primary geometry and populated primary tags preserved; supplements fill missing tags and unmatched polygons are added",
+      "building_deduplication":"none; source features are rendered directly from building-layer.geojson",
       "excluded_building_sources":[],
       "origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,"cell_halo_m":HALO,
       "dataset_version":hashlib.sha256(json.dumps({"shards":shard_hashes,"windows":window_stats["sha256"]},sort_keys=True).encode()).hexdigest()[:16],
