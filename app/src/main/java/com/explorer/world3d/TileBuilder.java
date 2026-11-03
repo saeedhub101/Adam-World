@@ -170,12 +170,12 @@ final class TileBuilder {
                     if (buildingLabel.equals(houseNumber)) buildingLabel = "رقم " + houseNumber;
                     else buildingLabel = buildingLabel.isEmpty() ? "رقم " + houseNumber : buildingLabel + " · رقم " + houseNumber;
                 }
-                if (houseNumber.isEmpty()) {
-                    String buildingRef = tg(tags, "ref");
-                    if (buildingRef.isEmpty()) buildingRef = tg(tags, "addr:unit");
-                    if (buildingRef.isEmpty()) buildingRef = tg(tags, "adam:source_osm_id");
-                    if (buildingRef.isEmpty()) buildingRef = Long.toString(id);
-                    buildingLabel = (buildingLabel.isEmpty() ? "مبنى" : buildingLabel) + " · معرّف OSM " + buildingRef;
+                // Do not turn internal OSM IDs into fictional storefront signs.
+                // Only mapped names, brands, business names or real house numbers
+                // are eligible for a facade label.
+                if (houseNumber.isEmpty() && buildingLabel.isEmpty()) {
+                    String explicitRef = tg(tags, "ref");
+                    if (!explicitRef.isEmpty()) buildingLabel = explicitRef;
                 }
                 if (!streetName.isEmpty() && !buildingLabel.contains(streetName))
                     buildingLabel += " · " + streetName;
@@ -195,7 +195,9 @@ final class TileBuilder {
                         ? (estimatedHeight ? "≈" : "") + (Math.round(shownHeight * 10f) / 10f) + " م"
                         : "الارتفاع غير موثق";
                 buildingLabel += " · " + floorLabel + " · " + heightLabel;
-                addFacadeLabel(td, px, pz, buildingLabel, bMinHeight(tags, bHeight(tags, id, bld)), poi);
+                if (!buildingLabel.trim().isEmpty()) {
+                    addFacadeLabel(td, px, pz, buildingLabel, bMinHeight(tags, bHeight(tags, id, bld)), poi);
+                }
             } else if (!hw.isEmpty() && RW.containsKey(hw)) {
                 String nm = tg(tags, "name:ar");
                 if (nm.isEmpty()) nm = tg(tags, "name");
@@ -918,7 +920,7 @@ final class TileBuilder {
         }
         float mxc = 0, mzc = 0;
         for (int i = 0; i < n; i++) { mxc += px[i]; mzc += pz[i]; }
-        if (h >= 25f && Landmarks.nearSigns(mxc / n, mzc / n)) addSigns(td, px, pz, h, hMax, id);
+        // No random billboard panels: Manila signage must come from mapped names or verified photo evidence.
         Footprint f = new Footprint();
         f.xs = px; f.zs = pz; f.minx = minx; f.maxx = maxx; f.minz = minz; f.maxz = maxz;
         // Elevated building parts/overhangs are visible above the street but must not block ground traffic.
