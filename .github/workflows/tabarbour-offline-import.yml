@@ -136,47 +136,44 @@ jobs:
           print(f"VALID Tabarbour elevation: {m['tile_count']} source tiles")
           PY
 
-      - name: Build compact Tabarbour-only Android spatial assets
+      - name: Build Tabarbour spatial tiles outside the Android package
         run: |
           set -euo pipefail
           python -m py_compile tools/build_offline_city_tiles.py
-          rm -rf app/src/main/assets/cities/tabarbour
           python tools/build_offline_city_tiles.py --city tabarbour
-          test -s app/src/main/assets/cities/tabarbour/manifest.json
-          test "$(find app/src/main/assets/cities/tabarbour -maxdepth 1 -name 'tile_*.json' | wc -l)" -gt 0
-          mkdir -p app/src/main/assets/cities/tabarbour/terrain
-          cp -a data/offline-world/tabarbour/terrain/. app/src/main/assets/cities/tabarbour/terrain/
-          test -s app/src/main/assets/cities/tabarbour/terrain/manifest.json
-          python -m json.tool app/src/main/assets/cities/tabarbour/manifest.json >/dev/null
-          python -m json.tool app/src/main/assets/cities/tabarbour/terrain/manifest.json >/dev/null
+          test -s data/offline-world/tabarbour/manifest.json
+          test "$(find data/offline-world/tabarbour -maxdepth 1 -name 'tile_*.json' | wc -l)" -gt 0
+          test -s data/offline-world/tabarbour/terrain/manifest.json
+          python -m json.tool data/offline-world/tabarbour/manifest.json >/dev/null
+          python -m json.tool data/offline-world/tabarbour/terrain/manifest.json >/dev/null
 
-      - name: Verify all Tabarbour assets and publish one conflict-safe checkpoint
+      - name: Verify external Tabarbour dataset and publish checkpoint
         run: |
           set -euo pipefail
           python - <<'PY'
           import json
           from pathlib import Path
-          base = Path("app/src/main/assets/cities/tabarbour")
+          base = Path("data/offline-world/tabarbour")
           manifest = json.loads((base / "manifest.json").read_text())
           tiles = list(base.glob("tile_*.json"))
           if manifest.get("slug") != "tabarbour":
               raise SystemExit("Spatial manifest slug is not Tabarbour")
           if not tiles:
-              raise SystemExit("No spatial cells were generated")
+              raise SystemExit("No Tabarbour spatial cells were generated")
           for path in tiles:
               data = json.loads(path.read_text(encoding="utf-8"))
               if not isinstance(data, dict) or not isinstance(data.get("elements"), list):
                   raise SystemExit(f"Invalid spatial cell: {path}")
           terrain = json.loads((base / "terrain/manifest.json").read_text())
           if terrain.get("city") != "tabarbour" or not terrain.get("complete"):
-              raise SystemExit("Bundled Tabarbour terrain is incomplete")
-          print(f"VERIFIED Tabarbour package: {len(tiles)} spatial cells; {terrain['tile_count']} elevation tiles")
+              raise SystemExit("Tabarbour source terrain is incomplete")
+          print(f"VERIFIED external Tabarbour dataset: {len(tiles)} spatial cells; {terrain['tile_count']} terrain tiles")
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           SNAPSHOT="$RUNNER_TEMP/tabarbour-publish"
           mkdir -p "$SNAPSHOT"
-          for path in data/facades/cities/tabarbour data/offline-world/tabarbour app/src/main/assets/cities/tabarbour; do
+          for path in data/facades/cities/tabarbour data/offline-world/tabarbour; do
             mkdir -p "$SNAPSHOT/$path"
             cp -a "$path/." "$SNAPSHOT/$path/"
           done
@@ -184,23 +181,23 @@ jobs:
           for attempt in 1 2 3 4 5; do
             git fetch origin main
             git reset --hard origin/main
-            for path in data/facades/cities/tabarbour data/offline-world/tabarbour app/src/main/assets/cities/tabarbour; do
+            for path in data/facades/cities/tabarbour data/offline-world/tabarbour; do
               mkdir -p "$path"
               cp -a "$SNAPSHOT/$path/." "$path/"
             done
-            git add data/facades/cities/tabarbour data/offline-world/tabarbour app/src/main/assets/cities/tabarbour
+            git add data/facades/cities/tabarbour data/offline-world/tabarbour
             if git diff --cached --quiet; then
               PUBLISHED=true
               break
             fi
-            git commit -m "Import and package dedicated Tabarbour offline world data"
+            git commit -m "Import Tabarbour offline world data outside APK"
             if git push origin HEAD:main; then
               PUBLISHED=true
               break
             fi
-            echo "main advanced during publish; retrying with the preserved Tabarbour snapshot (attempt $attempt)"
+            echo "main advanced during publish; retrying with preserved Tabarbour data (attempt $attempt)"
           done
           if [ "$PUBLISHED" != true ]; then
-            echo "Could not publish Tabarbour dataset after five safe retries" >&2
+            echo "Could not publish Tabarbour data after five safe retries" >&2
             exit 1
           fi
