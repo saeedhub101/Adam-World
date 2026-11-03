@@ -83,7 +83,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private int prog, skyProg;
     private int uVP, uModel, uCam, uTint, uTex, uEmis, uSunDir, uSunCol, uAmb, uFog, uFogN, uFogF, uEmisK, uTop, uHor, uWater, uDecal, uTime;
     private Textures tex;
-    private Mesh cube, groundMesh, skyQuad, kidHead, seaMesh;\n    private Mesh[] vehicleModels;\n    private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN;
+    private Mesh cube, groundMesh, skyQuad, kidHead, seaMesh;
+    private Mesh[] vehicleModels;
+    private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN;\n    private Mesh[] vehicleModels;\n    private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN;
     private final HashMap<Long, Mesh> terrain = new HashMap<>();
     private final float[] proj = new float[16], view = new float[16], vp = new float[16];
     private final float[] ident = new float[16], tmp = new float[16], base = new float[16];
@@ -184,6 +186,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
         tex = new Textures();
         cube = makeCube();
+        vehicleModels = ProceduralVehicleModels.buildAll();
         kidHead = KidHead.load(ctx);
         GeoBuf g = new GeoBuf();
         float E = 4000f, T = E * 2f / 13.3333f;
@@ -437,8 +440,10 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         if (d < 25f || d > 380f) return;
         Game.Agent a = new Game.Agent();
         a.path = p; a.tile = t; a.s = s; a.dir = rng.nextBoolean() ? 1 : -1;
-        a.car = p.veh && rng.nextFloat() < 0.55f;
+        a.car = p.veh && rng.nextFloat() < 0.72f;
         if (a.car) {
+            int[] roadTypes = {ProceduralVehicleModels.SEDAN, ProceduralVehicleModels.SUV, ProceduralVehicleModels.PICKUP, ProceduralVehicleModels.BUS, ProceduralVehicleModels.POLICE, ProceduralVehicleModels.MOTORBIKE};
+            a.vehicleType = roadTypes[rng.nextInt(roadTypes.length)];
             a.off = p.w / 4f; a.sp = 7f + rng.nextFloat() * 7f;
             float[][] cols = {{.93f, .94f, .95f}, {.17f, .24f, .31f}, {.5f, .55f, .55f}, {.95f, .77f, .06f}, {.16f, .5f, .74f}, {.83f, .33f, 0f}, {.15f, .68f, .38f}, {.07f, .07f, .07f}};
             float[] c = cols[rng.nextInt(cols.length)];
