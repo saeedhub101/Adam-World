@@ -574,6 +574,7 @@ final class TileBuilder {
                 buf.v(ax+nx*off,ya,az+nz*off,0,1,cr*shade,cg*shade,cb*shade); buf.fixTri();
             }
         }
+        }
         // Individually modelled windows are retained only for the non-Manila city profiles.
         if (!manila) {
         int windowBudget = 240;
