@@ -263,7 +263,6 @@ final class TileLoader extends Thread {
                 // Continue building the tile on the flat fallback surface.
             }
         }
-        if (offlineManila) applyManilaSupplementalTags(root);
         return TileBuilder.build(root, ix, iz, "tabarbour".equals(offlineCitySlug), offlineManila);
     }
 
