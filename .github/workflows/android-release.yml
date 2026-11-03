@@ -60,6 +60,9 @@ jobs:
             /gradle.properties
           sparse-checkout-cone-mode: false
 
+      - name: Install Manila PBF decoder dependency
+        run: python3 -m pip install --disable-pip-version-check mapbox-vector-tile
+
       - name: Rebuild and save Manila offline building shards
         run: |
           set -euo pipefail
