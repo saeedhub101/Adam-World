@@ -155,6 +155,10 @@ final class TileBuilder {
                     parentFootprints.add(P);
                 }
                 bcount++;
+                if (isBalconyPart(tags)) {
+                    addBalconyPart(td, tags, px, pz);
+                    continue; // A balcony is a suspended slab/railing, never a ground-level building/collision.
+                }
                 addBuilding(td, tags, id, bld, px, pz, tabarbour, manila);
                 int poi = poiCategory(tags);
                 String buildingLabel = poiName(tags);
@@ -199,7 +203,10 @@ final class TileBuilder {
                 if (nm.isEmpty()) nm = tg(tags, "ref");
                 addRoad(td, tags, hw, nm, names, xs, zs, xMin, xMax, zMin, zMax, tabarbour);
             } else if (tg(tags,"railway").matches("rail|light_rail|tram|subway|narrow_gauge|monorail")) {
-                addClippedRibbon(td,xs,zs,tg(tags,"railway").equals("rail")?4.2f:3.2f,0.24f,td.bufs[B_ROADN],0.25f,0.27f,0.29f);
+                boolean railBridge = !tg(tags,"bridge").isEmpty() && !tg(tags,"bridge").equals("no");
+                boolean railTunnel = !tg(tags,"tunnel").isEmpty() && !tg(tags,"tunnel").equals("no");
+                float railDeck = 0.24f + bridgeDeckOffset(tags, railBridge, railTunnel, true);
+                addClippedRibbon(td,xs,zs,tg(tags,"railway").equals("rail")?4.2f:3.2f,railDeck,td.bufs[B_ROADN],0.25f,0.27f,0.29f);
             } else if (tg(tags,"route").matches("bus|trolleybus")) {
                 addClippedRibbon(td,xs,zs,2.4f,0.25f,td.bufs[B_ROADN],0.12f,0.42f,0.88f);
             } else if (isWaterUtility(tags)) {
@@ -464,6 +471,80 @@ final class TileBuilder {
         b.v(ax, ay, az, 0, 0, r, g, bl);
         b.v(cx, cy, cz, 1, 1, r, g, bl);
         b.v(dx, dy, dz, 0, 1, r, g, bl); b.fixTri();
+    }
+
+    private static boolean isBalconyPart(JSONObject tags) {
+        String part = tg(tags, "building:part").toLowerCase(java.util.Locale.US);
+        return part.equals("balcony") || tg(tags, "balcony").equals("yes")
+                || tg(tags, "adam:structure_type").equals("balcony");
+    }
+
+    /** Render mapped balcony parts as elevated slabs with a light perimeter rail. */
+    private static void addBalconyPart(TileData td, JSONObject tags, float[] px, float[] pz) {
+        int n = px.length;
+        if (n < 3) return;
+        float level = measure(tg(tags, "min_height"));
+        if (!(level > 0f)) level = measure(tg(tags, "building:min_level")) * 3.2f;
+        if (!(level > 0f)) level = measure(tg(tags, "height"));
+        if (!(level >= 2.2f)) level = 3.2f; // conservative first-floor estimate when OSM omits elevation
+        level = Math.max(2.2f, Math.min(80f, level));
+        GeoBuf b = td.bufs[B_FACADE];
+        int[] triangles = Poly.earClip(px, pz);
+        if (triangles == null || triangles.length < 3) return;
+        // Thin concrete/stone slab, following terrain elevation at each vertex.
+        float thickness = 0.16f;
+        for (int i = 0; i + 2 < triangles.length; i += 3) {
+            for (int k = 0; k < 3; k++) {
+                int v = triangles[i + k];
+                float y = Terrain.h(px[v], pz[v]) + level;
+                b.v(px[v], y, pz[v], 0, 0, 0.70f, 0.69f, 0.65f);
+            }
+            b.fixTri();
+            for (int k = 2; k >= 0; k--) {
+                int v = triangles[i + k];
+                float y = Terrain.h(px[v], pz[v]) + level - thickness;
+                b.v(px[v], y, pz[v], 0, 0, 0.48f, 0.47f, 0.44f);
+            }
+            b.fixTri();
+        }
+        // Rails are drawn only around the outside edge; no wall is dropped to street level.
+        for (int i = 0; i < n; i++) {
+            int j = (i + 1) % n;
+            float dx = px[j] - px[i], dz = pz[j] - pz[i];
+            float len = (float) Math.hypot(dx, dz);
+            if (len < 0.5f) continue;
+            float nx = -dz / len, nz = dx / len;
+            float mx = (px[i] + px[j]) * 0.5f + nx * 0.35f;
+            float mz = (pz[i] + pz[j]) * 0.5f + nz * 0.35f;
+            if (Poly.contains(px, pz, mx, mz)) { nx = -nx; nz = -nz; }
+            float y0a = Terrain.h(px[i], pz[i]) + level;
+            float y0b = Terrain.h(px[j], pz[j]) + level;
+            float y1a = y0a + 1.0f, y1b = y0b + 1.0f;
+            float off = 0.045f;
+            float r = 0.32f, g = 0.34f, bl = 0.35f;
+            b.v(px[i]+nx*off,y0a,pz[i]+nz*off,0,0,r,g,bl);
+            b.v(px[j]+nx*off,y0b,pz[j]+nz*off,1,0,r,g,bl);
+            b.v(px[j]+nx*off,y1b,pz[j]+nz*off,1,1,r,g,bl); b.fixTri();
+            b.v(px[i]+nx*off,y0a,pz[i]+nz*off,0,0,r,g,bl);
+            b.v(px[j]+nx*off,y1b,pz[j]+nz*off,1,1,r,g,bl);
+            b.v(px[i]+nx*off,y1a,pz[i]+nz*off,0,1,r,g,bl); b.fixTri();
+        }
+    }
+
+    /** Resolve vertical clearance for a bridge deck without moving the road beneath it. */
+    private static float bridgeDeckOffset(JSONObject tags, boolean bridge, boolean tunnel, boolean railOrFoot) {
+        String raw = tg(tags, bridge ? "bridge:height" : "tunnel:height");
+        float mapped = measure(raw);
+        if (mapped > 0f) return Math.max(0.8f, Math.min(40f, mapped));
+        float layer = measure(tg(tags, "layer"));
+        if (Float.isFinite(layer) && layer != 0f) {
+            float byLayer = layer * 3.2f;
+            if (bridge && layer > 0f) return Math.max(byLayer, railOrFoot ? 5.0f : 4.8f);
+            return byLayer;
+        }
+        if (bridge) return railOrFoot ? 5.0f : 4.8f;
+        if (tunnel) return -2.8f;
+        return 0f;
     }
 
     private static void addBuilding(TileData td, JSONObject tags, long id, String bld, float[] px, float[] pz, boolean tabarbour, boolean manila) {
@@ -808,7 +889,8 @@ final class TileBuilder {
         if (h >= 25f && Landmarks.nearSigns(mxc / n, mzc / n)) addSigns(td, px, pz, h, hMax, id);
         Footprint f = new Footprint();
         f.xs = px; f.zs = pz; f.minx = minx; f.maxx = maxx; f.minz = minz; f.maxz = maxz;
-        Collision.add(td.grid, f);
+        // Elevated building parts/overhangs are visible above the street but must not block ground traffic.
+        if (minHeight < 2.2f) Collision.add(td.grid, f);
     }
 
     /** لوحات إعلانية مضيئة على واجهات المباني قرب تايمز سكوير. */
@@ -1006,10 +1088,8 @@ final class TileBuilder {
                 }
                 continue;
             }
-            float mappedStructureHeight = measure(tg(tags, bridge ? "bridge:height" : "tunnel:height"));
-            float mappedLayer = measure(tg(tags, "layer"));
-            float deckOffset = Float.isFinite(mappedStructureHeight) && mappedStructureHeight > 0f
-                    ? mappedStructureHeight : (Float.isFinite(mappedLayer) ? mappedLayer * 3.2f : 0f);
+            boolean footOrCycle = hw.matches("footway|path|steps|cycleway|pedestrian|bridleway");
+            float deckOffset = bridgeDeckOffset(tags, bridge, tunnel, footOrCycle);
             float yOffset = 0.22f + deckOffset;
             // Asphalt is the default urban carriageway; mapped surface tags override it.
             float rr = bridge ? 0.92f : 1f, rg = bridge ? 0.93f : 1f, rb = bridge ? 0.95f : 1f;
