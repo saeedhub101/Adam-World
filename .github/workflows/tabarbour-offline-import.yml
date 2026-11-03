@@ -217,6 +217,17 @@ jobs:
           test -s data/offline-world/tabarbour/stream/manifest.json
           test "$(find data/offline-world/tabarbour/stream -maxdepth 1 -name 'tile_*.json' | wc -l)" -gt 0
           python -m json.tool data/offline-world/tabarbour/stream/manifest.json >/dev/null
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("data/offline-world/tabarbour/stream/manifest.json")
+          m=json.loads(p.read_text())
+          if not str(m.get("source_kind","")).startswith("tabarbour-canonical-merged-multisource-buildings"):
+              raise SystemExit(f"Tabarbour stream is not built from merged footprints: {m.get('source_kind')}")
+          if int(m.get("element_count",0)) < 20000:
+              raise SystemExit(f"Tabarbour stream unexpectedly lacks merged buildings: {m.get('element_count')}")
+          print(f"VALID merged Tabarbour stream: {m['element_count']} elements")
+          PY
       - name: Publish spatial streaming tiles immediately
         if: always()
         run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "spatial streaming tiles"

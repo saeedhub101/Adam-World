@@ -862,7 +862,7 @@ def source_elements(slug, lat0, lon0):
     if slug == "tabarbour" and (city_source / "merged" / "manifest.json").is_file():
         footprints = _merged_tabarbour_building_elements(city_source)
         details = []
-    elif footprints_path.is_file():
+    if footprints_path.is_file() or (slug == "tabarbour" and (city_source / "merged" / "manifest.json").is_file()):
         details = _geojson_way_elements(details_path)
         detail_by_id = {}
         detail_buildings = []
@@ -881,7 +881,8 @@ def source_elements(slug, lat0, lon0):
         overture_buildings = [] if slug == "tabarbour" and (city_source / "merged" / "manifest.json").is_file() else _geojson_overture_elements(city_source / "overture-building-details.geojson")
         overture_parts = [] if slug == "tabarbour" and (city_source / "merged" / "manifest.json").is_file() else _geojson_overture_elements(city_source / "overture-building-parts.geojson", part=True)
         overture_additions = _merge_overture_building_attributes(footprints + detail_buildings, overture_buildings)
-        obm_buildings = _geojson_openbuildingmap_elements(city_source / "openbuildingmap-buildings.geojson")
+        obm_buildings = ([] if slug == "tabarbour" and (city_source / "merged" / "manifest.json").is_file()
+                         else _geojson_openbuildingmap_elements(city_source / "openbuildingmap-buildings.geojson"))
         obm_additions = _merge_overture_building_attributes(footprints + detail_buildings + overture_additions, obm_buildings)
         # Re-read enriched OSM detail tags so exact OSM IDs transfer source
         # heights/floors/names to their OpenFreeMap primary footprints.
