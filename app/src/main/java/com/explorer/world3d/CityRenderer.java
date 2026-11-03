@@ -57,7 +57,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             + "  vec3 base=tx.rgb*vCol*uTint;\n"
             + "  vec3 lit=base*(uAmb*(0.75+0.25*n.y)+uSunCol*d);\n"
             + "  if(uPbr>0.5){\n"
-            + "   float bump=sin(vWorld.x*68.0)*sin(vWorld.z*68.0); n=normalize(n+vec3(bump*0.012,0.0,bump*0.012));\n"
+            + "   float bump=sin(vWorld.x*68.0)*sin(vWorld.z*68.0); n=normalize(n+vec3(bump*0.012,0.0,bump*0.012)); d=max(dot(n,normalize(uSunDir)),0.0);\n"
             + "   vec3 V=normalize(uCam-vWorld), L=normalize(uSunDir), H=normalize(V+L);\n"
             + "   float rough=0.27, metal=0.58, a=rough*rough, a2=a*a;\n"
             + "   float nh=max(dot(n,H),0.0), nv=max(dot(n,V),0.001), vh=max(dot(V,H),0.0);\n"
@@ -458,7 +458,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         a.path = p; a.tile = t; a.s = s; a.dir = rng.nextBoolean() ? 1 : -1;
         a.car = p.veh && rng.nextFloat() < 0.72f;
         if (a.car) {
-            int[] roadTypes = {ProceduralVehicleModels.SEDAN, ProceduralVehicleModels.SUV, ProceduralVehicleModels.PICKUP, ProceduralVehicleModels.BUS, ProceduralVehicleModels.POLICE, ProceduralVehicleModels.MOTORBIKE};
+            int[] roadTypes = {ProceduralVehicleModels.SEDAN, ProceduralVehicleModels.SUV, ProceduralVehicleModels.PICKUP, ProceduralVehicleModels.BUS, ProceduralVehicleModels.POLICE, ProceduralVehicleModels.MOTORBIKE, ProceduralVehicleModels.BICYCLE};
             a.vehicleType = roadTypes[rng.nextInt(roadTypes.length)];
             a.off = p.w / 4f; a.sp = 7f + rng.nextFloat() * 7f;
             float[][] cols = {{.93f, .94f, .95f}, {.17f, .24f, .31f}, {.5f, .55f, .55f}, {.95f, .77f, .06f}, {.16f, .5f, .74f}, {.83f, .33f, 0f}, {.15f, .68f, .38f}, {.07f, .07f, .07f}};
