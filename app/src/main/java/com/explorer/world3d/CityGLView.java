@@ -43,12 +43,31 @@ public class CityGLView extends GLSurfaceView {
         return Math.abs(primary) > 0.08f ? primary : fallback;
     }
 
-    /** Generic USB/Bluetooth gamepads: left stick moves, right stick looks. */
+    private static float trigger(MotionEvent e, int axis, int fallback) {
+        float v = e.getAxisValue(axis);
+        if (Math.abs(v) < 0.08f) v = e.getAxisValue(fallback);
+        // بعض أيدي التحكم ترسل الزناد ضمن المجال [-1,1] وأخرى [0,1].
+        return Math.max(0f, Math.min(1f, (v + 1f) * 0.5f));
+    }
+
+    /** USB/Bluetooth pads: left stick + hat move, right stick looks, triggers throttle/brake. */
     @Override public boolean onGenericMotionEvent(MotionEvent e) {
-        if ((e.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
-                && e.getAction() == MotionEvent.ACTION_MOVE) {
-            float moveX = stick(e.getAxisValue(MotionEvent.AXIS_X));
-            float moveY = stick(e.getAxisValue(MotionEvent.AXIS_Y));
+        int source = e.getSource();
+        boolean joystick = (source & InputDevice.SOURCE_CLASS_JOYSTICK)
+                == InputDevice.SOURCE_CLASS_JOYSTICK;
+        if (joystick && e.getAction() == MotionEvent.ACTION_MOVE) {
+            float rawX = e.getAxisValue(MotionEvent.AXIS_X);
+            float rawY = e.getAxisValue(MotionEvent.AXIS_Y);
+            float hatX = e.getAxisValue(MotionEvent.AXIS_HAT_X);
+            float hatY = e.getAxisValue(MotionEvent.AXIS_HAT_Y);
+            float moveX = stick(firstActive(rawX, hatX));
+            float moveY = stick(firstActive(rawY, hatY));
+
+            float gas = trigger(e, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS);
+            float brake = trigger(e, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE);
+            if (Math.abs(moveY) < 0.12f && Math.max(gas, brake) > 0.12f) {
+                moveY = brake > gas ? brake : -gas;
+            }
             renderer.game.sx = moveX;
             renderer.game.sy = -moveY;
 
