@@ -264,9 +264,17 @@ def aerial_candidates(building: dict[str, Any], items: list[dict[str, Any]]) -> 
     return found
 
 def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
-    buildings_path = city_dir / "buildings.geojson"
-    if not buildings_path.is_file():
-        buildings_path = city_dir / "building-footprints.geojson"
+    # Manila's committed canonical building source is the 48 MB
+    # layers/building-layer.geojson. Older folders may still use the two
+    # compatibility filenames below; use them only when present.
+    candidates = (
+        city_dir / "buildings.geojson",
+        city_dir / "building-footprints.geojson",
+        city_dir / "layers" / "building-layer.geojson",
+    )
+    buildings_path = next((path for path in candidates if path.is_file() and path.stat().st_size > 0), None)
+    if buildings_path is None:
+        raise FileNotFoundError("No non-empty buildings.geojson, building-footprints.geojson, or layers/building-layer.geojson")
     buildings_fc = read_fc(buildings_path)
     photos_fc = read_fc(city_dir / "panoramax-items.geojson", required=False)
     aerial_fc = read_fc(city_dir / "aerial-items.geojson", required=False)
