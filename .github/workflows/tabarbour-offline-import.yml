@@ -28,6 +28,7 @@ jobs:
     # Checkpoint commits by this workflow must not recursively trigger another import.
     if: github.event_name == 'workflow_dispatch' || github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout Tabarbour sources and tools
         uses: actions/checkout@v4
@@ -103,7 +104,7 @@ jobs:
 
       - name: Install import dependencies
         continue-on-error: true
-        run: python -m pip install --disable-pip-version-check mapbox-vector-tile osm2geojson shapely overturemaps pyogrio
+        run: python -m pip install --disable-pip-version-check mapbox-vector-tile osm2geojson shapely overturemaps pyogrio geopandas
       - name: Checkpoint environment stage
         if: always()
         run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "environment setup"
