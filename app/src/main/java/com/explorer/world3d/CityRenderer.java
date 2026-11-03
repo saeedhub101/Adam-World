@@ -89,7 +89,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private final float[] ident = new float[16], tmp = new float[16], base = new float[16];
     private float aspect = 1f;
     private long lastN = System.nanoTime(), lastUnload, lastAgentMs, lastHudMs, spawnDeadline;
-    private boolean started, needSpawn, spawned;
+    private boolean started, needSpawn, spawned, spawnTimeoutNotified;
     private float lookDx, lookDy;
     private volatile float gamepadLookX, gamepadLookY;
     public volatile int timeIdx = 0;
@@ -207,7 +207,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             started = true;
             loader.offlineAmman = false;
             loader.offlineManila = false;
-            loader.offlineCitySlug = null;
+            loader.offlineCitySlug = "tabarbour";
             Geo.setOrigin(31.997579, 35.940358);
             Terrain.configureForCity(Geo.lat0, Geo.lon0);
             game.reset();
@@ -223,7 +223,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private void beginSpawn() {
         needSpawn = true;
         spawned = false;
-        spawnDeadline = System.currentTimeMillis() + 25000;
+        spawnTimeoutNotified = false;
+        spawnDeadline = System.currentTimeMillis() + 30000;
         loader.havePlayer = true;
         L.onLoading(true, loader.offlineAmman ? "جاري تحميل عمّان المحلية…" : loader.offlineManila ? "جاري تحميل مانيلا المحلية…" : loader.offlineCitySlug != null ? "جاري تحميل المدينة المحلية…" : "جاري تحميل المدينة…");
     }
@@ -244,6 +245,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
     private void teleportInternal(double lat, double lon, boolean offline, String offlineCity) {
         loader.gen++;
+        loader.cancelCurrentLoad();
         loader.offlineAmman = offline;
         loader.offlineManila = "manila".equals(offlineCity);
         loader.offlineCitySlug = loader.offlineManila ? null : offlineCity;
@@ -490,9 +492,14 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             Tile c = tiles.get(Geo.key(Geo.tileX(0f), Geo.tileZ(0f)));
             if (c != null || nowMs > spawnDeadline) {
                 if (!doSpawn(c)) {
-                    // Keep waiting for nearby road and building-collision tiles;
-                    // never release the player at an unchecked city origin.
+                    // Keep retrying while allowing city controls to remain usable.
+                    // A missing/failed tile must never trap the user behind a loading screen.
                     spawnDeadline = nowMs + 5000;
+                    if (!spawnTimeoutNotified && nowMs > spawnDeadline - 4900) {
+                        spawnTimeoutNotified = true;
+                        L.onLoading(false, "");
+                        L.onToast("تأخر تحميل المدينة. يمكنك اختيار مدينة أخرى أو الانتظار؛ سيستمر التحميل في الخلفية.");
+                    }
                 }
             }
         }
