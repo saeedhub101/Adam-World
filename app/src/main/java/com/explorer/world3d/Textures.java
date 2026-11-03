@@ -16,18 +16,30 @@ import java.util.Random;
 final class Textures {
     int sign, facade, facadeEm, glass, glassEm, roadW, roadN, sidewalk, ground, white, black;
 
-    Textures() {
-        facade = upload(facadeBmp());
+    private boolean tabarbourProfile;
+    Textures() { rebuild(false); }
+    void setTabarbourProfile(boolean enabled) {
+        if (tabarbourProfile == enabled) return;
+        deleteTextures();
+        rebuild(enabled);
+    }
+    private void rebuild(boolean tabarbour) {
+        tabarbourProfile = tabarbour;
+        facade = upload(facadeBmp(tabarbour));
         facadeEm = upload(facadeEmBmp());
-        glass = upload(glassBmp());
+        glass = upload(glassBmp(tabarbour));
         glassEm = upload(glassEmBmp());
-        roadW = upload(roadBmp(true));
-        roadN = upload(roadBmp(false));
-        sidewalk = upload(sidewalkBmp());
-        ground = upload(groundBmp());
+        roadW = upload(roadBmp(true, tabarbour));
+        roadN = upload(roadBmp(false, tabarbour));
+        sidewalk = upload(sidewalkBmp(tabarbour));
+        ground = upload(groundBmp(tabarbour));
         sign = upload(signBmp());
         white = upload(solid(0xffffffff));
         black = upload(solid(0xff000000));
+    }
+    private void deleteTextures() {
+        int[] ids = {facade, facadeEm, glass, glassEm, roadW, roadN, sidewalk, ground, sign, white, black};
+        for (int id : ids) if (id != 0) GLES20.glDeleteTextures(1, new int[]{id}, 0);
     }
 
     static int upload(Bitmap b) {
@@ -88,12 +100,26 @@ final class Textures {
         }
     }
 
-    private static Bitmap facadeBmp() {
+    private static Bitmap facadeBmp(boolean tabarbour) {
         Bitmap b = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(b);
         Paint p = new Paint();
         Random r = new Random(7);
-        c.drawColor(0xfff4f4f4);
+        c.drawColor(tabarbour ? 0xffeee3cd : 0xfff4f4f4);
+        if (tabarbour) {
+            noise(c, p, r, 256, 256, 2600, 0.035f);
+            p.setShader(null);
+            for (int y = 0; y <= 256; y += 32) {
+                p.setColor(0x397b705e);
+                c.drawRect(0, y, 256, y + 1.4f, p);
+                int offset = ((y / 32) % 2) * 27;
+                for (int x = offset; x <= 256; x += 54) {
+                    p.setColor(0x287b705e);
+                    c.drawRect(x, y, x + 1.2f, Math.min(256, y + 32), p);
+                }
+            }
+            return b;
+        }
         noise(c, p, r, 256, 256, 1600, 0.06f);
         for (int row = 0; row < 4; row++) {
             for (int col = 0; col < 4; col++) {
@@ -139,14 +165,14 @@ final class Textures {
         return b;
     }
 
-    private static Bitmap glassBmp() {
+    private static Bitmap glassBmp(boolean tabarbour) {
         Bitmap b = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(b);
         Paint p = new Paint();
         for (int row = 0; row < 4; row++) {
             for (int col = 0; col < 4; col++) {
                 int x = col * 64, y = row * 64;
-                p.setShader(new LinearGradient(x, y, x + 64, y + 64, new int[]{0xff9db8cf, 0xff4f7392, 0xff24394d},
+                p.setShader(new LinearGradient(x, y, x + 64, y + 64, tabarbour ? new int[]{0xffb9cbd0, 0xff829da5, 0xff607982} : new int[]{0xff9db8cf, 0xff4f7392, 0xff24394d},
                         new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
                 c.drawRect(x, y, x + 64, y + 64, p);
                 p.setShader(null);
@@ -155,7 +181,7 @@ final class Textures {
             }
         }
         p.setShader(null);
-        p.setColor(0xff2b3b49);
+        p.setColor(tabarbour ? 0xff68777a : 0xff2b3b49);
         for (int i = 0; i <= 4; i++) {
             c.drawRect(i * 64 - 1.5f, 0, i * 64 + 1.5f, 256, p);
             c.drawRect(0, i * 64 - 3, 256, i * 64 + 3, p);
@@ -180,13 +206,28 @@ final class Textures {
         return b;
     }
 
-    private static Bitmap roadBmp(boolean line) {
+    private static Bitmap roadBmp(boolean line, boolean tabarbour) {
         Bitmap b = Bitmap.createBitmap(128, 256, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(b);
         Paint p = new Paint();
         Random r = new Random(17);
-        c.drawColor(0xff3b3c40);
-        noise(c, p, r, 128, 256, 1400, 0.18f);
+        c.drawColor(tabarbour ? 0xff85898a : 0xff3b3c40);
+        noise(c, p, r, 128, 256, tabarbour ? 1900 : 1400, tabarbour ? 0.10f : 0.18f);
+        if (tabarbour) {
+            p.setShader(null);
+            for (int i = 0; i < 34; i++) {
+                float x = r.nextFloat() * 128f, y = r.nextFloat() * 256f;
+                float dx = (r.nextFloat() - 0.5f) * 18f, dy = 5f + r.nextFloat() * 24f;
+                p.setColor(i % 3 == 0 ? 0x55727677 : 0x3d55595a);
+                p.setStrokeWidth(0.35f + r.nextFloat() * 0.65f);
+                c.drawLine(x, y, x + dx, y + dy, p);
+                c.drawLine(x + dx, y + dy, x + dx * 0.65f - 2f, y + dy + 4f, p);
+            }
+            for (int i = 0; i < 85; i++) {
+                p.setColor(0x33706c62);
+                c.drawCircle(r.nextFloat() * 128f, r.nextFloat() * 256f, 0.5f + r.nextFloat() * 1.2f, p);
+            }
+        }
         if (line) {
             p.setShader(null);
             p.setColor(0xfff1f1f1);
@@ -198,12 +239,12 @@ final class Textures {
         return b;
     }
 
-    private static Bitmap sidewalkBmp() {
+    private static Bitmap sidewalkBmp(boolean tabarbour) {
         Bitmap b = Bitmap.createBitmap(128, 128, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(b);
         Paint p = new Paint();
         Random r = new Random(19);
-        c.drawColor(0xffb4b0a7);
+        c.drawColor(tabarbour ? 0xffc9c4b8 : 0xffb4b0a7);
         noise(c, p, r, 128, 128, 500, 0.1f);
         p.setShader(null);
         p.setColor(0xff8f8c84);
@@ -212,12 +253,22 @@ final class Textures {
         return b;
     }
 
-    private static Bitmap groundBmp() {
+    private static Bitmap groundBmp(boolean tabarbour) {
         Bitmap b = Bitmap.createBitmap(128, 128, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(b);
         Paint p = new Paint();
-        c.drawColor(0xff8a8a7c);
-        noise(c, p, new Random(23), 128, 128, 900, 0.16f);
+        c.drawColor(tabarbour ? 0xffc9ad70 : 0xff8a8a7c);
+        Random r = new Random(23);
+        noise(c, p, r, 128, 128, tabarbour ? 1700 : 900, tabarbour ? 0.13f : 0.16f);
+        if (tabarbour) {
+            for (int i = 0; i < 520; i++) {
+                float x = r.nextFloat() * 128f, y = r.nextFloat() * 128f;
+                float radius = 0.35f + r.nextFloat() * 1.45f;
+                int[] stones = {0x66eee0b5, 0x667e704e, 0x667f7661, 0x668f805f, 0x66e1d1a4};
+                p.setColor(stones[r.nextInt(stones.length)]);
+                c.drawCircle(x, y, radius, p);
+            }
+        }
         return b;
     }
 }

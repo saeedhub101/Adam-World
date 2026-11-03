@@ -315,7 +315,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             }
         }
         if (bd != Integer.MAX_VALUE) {
-            Mesh m = Mesh.from(TerrainMesh.build(bx, bz));
+            Mesh m = Mesh.from(TerrainMesh.build(bx, bz, "tabarbour".equals(loader.offlineCitySlug)));
             if (m != null) terrain.put(Geo.key(bx, bz), m);
         }
     }
@@ -469,6 +469,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     private void draw() {
+        if (tex != null) tex.setTabarbourProfile("tabarbour".equals(loader.offlineCitySlug));
         int ti = timeIdx % TIME.length;
         float[] T = TIME[ti];
         GLES20.glClearColor(T[9], T[10], T[11], 1f);

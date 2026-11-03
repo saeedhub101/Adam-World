@@ -66,7 +66,9 @@ final class TileBuilder {
         }
     }
 
-    static TileData build(JSONObject root, int ix, int iz) throws JSONException {
+    static TileData build(JSONObject root, int ix, int iz) throws JSONException { return build(root, ix, iz, false); }
+
+    static TileData build(JSONObject root, int ix, int iz, boolean tabarbour) throws JSONException {
         TileData td = new TileData(ix, iz);
         double west = ix * Geo.dLon, east = (ix + 1) * Geo.dLon, south = iz * Geo.D_LAT, north = (iz + 1) * Geo.D_LAT;
         float xMin = Geo.x(west), xMax = Geo.x(east), zMin = Geo.z(north), zMax = Geo.z(south);
@@ -148,7 +150,7 @@ final class TileBuilder {
                     parentFootprints.add(P);
                 }
                 bcount++;
-                addBuilding(td, tags, id, bld, px, pz);
+                addBuilding(td, tags, id, bld, px, pz, tabarbour);
                 int poi = poiCategory(tags);
                 String buildingLabel = poiName(tags);
                 String houseNumber = tg(tags, "addr:housenumber");
@@ -190,7 +192,7 @@ final class TileBuilder {
                 if (nm.isEmpty()) nm = tg(tags, "name");
                 if (nm.isEmpty()) nm = tg(tags, "name:en");
                 if (nm.isEmpty()) nm = tg(tags, "ref");
-                addRoad(td, tags, hw, nm, names, xs, zs, xMin, xMax, zMin, zMax);
+                addRoad(td, tags, hw, nm, names, xs, zs, xMin, xMax, zMin, zMax, tabarbour);
             } else if (tg(tags,"railway").matches("rail|light_rail|tram|subway|narrow_gauge|monorail")) {
                 addClippedRibbon(td,xs,zs,tg(tags,"railway").equals("rail")?4.2f:3.2f,0.24f,td.bufs[B_ROADN],0.25f,0.27f,0.29f);
             } else if (tg(tags,"route").matches("bus|trolleybus")) {
@@ -417,7 +419,7 @@ final class TileBuilder {
         return new float[]{(float) (cx / (3d * crossSum)), (float) (cz / (3d * crossSum))};
     }
 
-    private static float[] buildingColor(JSONObject t, long id) {
+    private static float[] buildingColor(JSONObject t, long id, boolean tabarbour) {
         String s = tg(t, "building:colour");
         if (s.isEmpty()) s = tg(t, "building:color");
         if (s.isEmpty()) s = tg(t, "colour");
@@ -434,7 +436,7 @@ final class TileBuilder {
         }
         // No per-building random colours: unknown facade colour stays neutral until
         // a verified matching facade image or an explicit mapped colour is available.
-        return new float[]{0.78f, 0.73f, 0.65f};
+        return tabarbour ? new float[]{0.91f, 0.87f, 0.78f} : new float[]{0.78f, 0.73f, 0.65f};
     }
 
     private static void facadeQuad(GeoBuf b,
@@ -449,7 +451,7 @@ final class TileBuilder {
         b.v(dx, dy, dz, 0, 1, r, g, bl); b.fixTri();
     }
 
-    private static void addBuilding(TileData td, JSONObject tags, long id, String bld, float[] px, float[] pz) {
+    private static void addBuilding(TileData td, JSONObject tags, long id, String bld, float[] px, float[] pz, boolean tabarbour) {
         int n = px.length;
         float hMin = 1e9f, hMax = -1e9f;
         float[] ground = new float[n], roofY = new float[n];
@@ -481,7 +483,7 @@ final class TileBuilder {
         GeoBuf buf = glass ? td.bufs[B_GLASS] : td.bufs[B_FACADE];
         float cr, cg, cb;
         if (glass) { cr = 0.70f; cg = 0.78f; cb = 0.84f; }
-        else { float[] c = buildingColor(tags, id); cr = c[0]; cg = c[1]; cb = c[2]; }
+        else { float[] c = buildingColor(tags, id, tabarbour); cr = c[0]; cg = c[1]; cb = c[2]; }
         float rf = 1.0f;
         float rr = 0.43f * rf, rg = 0.43f * rf, rb = 0.43f * rf;
         float[] rc = hex(tg(tags, "roof:colour"));
@@ -623,12 +625,23 @@ final class TileBuilder {
                     x1 + dx * frame / doorEdgeLength, yBase + doorHeight + frame, z1 + dz * frame / doorEdgeLength,
                     x0 - dx * frame / doorEdgeLength, yBase + doorHeight + frame, z0 - dz * frame / doorEdgeLength,
                     0.78f, 0.73f, 0.64f);
-            float dr = 0.30f, dg = 0.20f, db = 0.13f;
+            float dr = tabarbour ? 0.12f : 0.30f, dg = tabarbour ? 0.15f : 0.20f, db = tabarbour ? 0.16f : 0.13f;
             float[] doorColor = hex(tg(tags, "door:colour"));
             if (doorColor == null) doorColor = hex(tg(tags, "door:color"));
             if (doorColor != null) { dr = doorColor[0]; dg = doorColor[1]; db = doorColor[2]; }
             facadeQuad(buf, x0, yBase + 0.04f, z0, x1, yBase + 0.04f, z1,
                     x1, yBase + doorHeight, z1, x0, yBase + doorHeight, z0, dr, dg, db);
+            if (tabarbour && doorHeight > 1.85f) {
+                float glassBottom = yBase + doorHeight * 0.38f;
+                float inset = Math.min(0.12f, doorWidth * 0.12f);
+                facadeQuad(td.bufs[B_GLASS], x0 + dx * inset / doorEdgeLength, glassBottom, z0 + dz * inset / doorEdgeLength,
+                        x1 - dx * inset / doorEdgeLength, glassBottom, z1 - dz * inset / doorEdgeLength,
+                        x1 - dx * inset / doorEdgeLength, yBase + doorHeight - 0.12f, z1 - dz * inset / doorEdgeLength,
+                        x0 + dx * inset / doorEdgeLength, yBase + doorHeight - 0.12f, z0 + dz * inset / doorEdgeLength,
+                        0.76f, 0.84f, 0.86f);
+                buf.box((x0 + x1) * 0.5f, yBase + doorHeight * 0.68f, (z0 + z1) * 0.5f,
+                        0.045f, doorHeight * 0.60f, 0.045f, 0.12f, 0.14f, 0.15f);
+            }
             float handleX = ax + dx * (mid + half * 0.68f) + nx * 0.105f;
             float handleZ = az + dz * (mid + half * 0.68f) + nz * 0.105f;
             buf.box(handleX, yBase + doorHeight * 0.48f, handleZ, 0.055f, 0.11f, 0.055f, 0.78f, 0.69f, 0.45f);
@@ -890,7 +903,7 @@ final class TileBuilder {
     }
 
     private static void addRoad(TileData td, JSONObject tags, String hw, String name, HashSet<String> names, float[] xs, float[] zs,
-                                float xMin, float xMax, float zMin, float zMax) {
+                                float xMin, float xMax, float zMin, float zMax, boolean tabarbour) {
         // Resolve width independently for each mapped road segment. A road that
         // changes from one to two to four lanes therefore changes width at the
         // actual source segment boundary instead of receiving one city-wide width.

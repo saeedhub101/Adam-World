@@ -6,7 +6,9 @@ final class TerrainMesh {
 
     private TerrainMesh() {}
 
-    static GeoBuf build(int ix, int iz) {
+    static GeoBuf build(int ix, int iz) { return build(ix, iz, false); }
+
+    static GeoBuf build(int ix, int iz, boolean tabarbour) {
         double west = ix * Geo.dLon, east = (ix + 1) * Geo.dLon, south = iz * Geo.D_LAT, north = (iz + 1) * Geo.D_LAT;
         float xMin = Geo.x(west), xMax = Geo.x(east), zMin = Geo.z(north), zMax = Geo.z(south);
         int V = N + 1;
@@ -33,9 +35,9 @@ final class TerrainMesh {
                     float x = xMin + ii * dx, z = zMin + jj * dz, y = hx[k];
                     float slope = 1f - ny[k];
                     float tone = 0.94f + 0.06f * (float) Math.sin(x * 0.21f) * (float) Math.sin(z * 0.17f);
-                    float r = 0.60f, g = 0.56f, bl = 0.46f;
+                    float r = tabarbour ? 0.76f : 0.60f, g = tabarbour ? 0.65f : 0.56f, bl = tabarbour ? 0.43f : 0.46f;
                     float t = Math.min(1f, Math.max(0f, (slope - 0.10f) / 0.30f));
-                    r = r * (1 - t) + 0.50f * t; g = g * (1 - t) + 0.49f * t; bl = bl * (1 - t) + 0.46f * t;
+                    r = r * (1 - t) + (tabarbour ? 0.57f : 0.50f) * t; g = g * (1 - t) + (tabarbour ? 0.53f : 0.49f) * t; bl = bl * (1 - t) + 0.44f * t;
                     float near = Math.abs(y - sea);
                     if (near < 3f) {
                         float s = 1f - near / 3f;

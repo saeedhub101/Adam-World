@@ -235,7 +235,7 @@ final class TileLoader extends Thread {
                         north + 2 * Geo.D_LAT, east + 2 * Geo.dLon);
             }
         }
-        return TileBuilder.build(root, ix, iz);
+        return TileBuilder.build(root, ix, iz, "tabarbour".equals(offlineCitySlug));
     }
 
     /** Fetch Tabarbour spatial cells from the repository; no city data is bundled in the APK. */
