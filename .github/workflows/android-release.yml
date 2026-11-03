@@ -11,7 +11,6 @@ on:
       - "gradle.properties"
       - "data/facades/cities/manila/**"
       - "data/reference/adam-city/manila/**"
-      - "data/offline-city-stream/manila/**"
       - "data/offline-city-stream/amman/**"
       - "data/offline-world/manila/**"
       - "old_app/src/main/assets/data/**"
@@ -42,7 +41,6 @@ jobs:
             /data/offline-world/manila/
             /data/facades/cities/manila/
             /data/reference/adam-city/manila/
-            /data/offline-city-stream/manila/
             /old_app/src/main/assets/data/
             /build.gradle
             /settings.gradle
@@ -57,30 +55,26 @@ jobs:
           from pathlib import Path
 
           root = Path("data/offline-city-stream")
-          manila = json.loads((root / "manila/manifest.json").read_text(encoding="utf-8"))
+          manila_root = Path("data/offline-world/manila")
+          manila_metadata = json.loads((manila_root / "metadata.json").read_text(encoding="utf-8"))
+          manila_data = json.loads((manila_root / "elements.json").read_text(encoding="utf-8"))
+          manila_elements = manila_data.get("elements") or []
+          if manila_metadata.get("slug") != "manila":
+              raise SystemExit("offline-world Manila metadata has the wrong city slug")
+          if manila_metadata.get("stored_as") != "data/offline-world/manila/elements.json":
+              raise SystemExit("offline-world Manila metadata points to a different source path")
+          if not manila_elements or len(manila_elements) != manila_metadata.get("element_count"):
+              raise SystemExit("offline-world Manila elements are empty or do not match metadata")
+          building_count = sum(
+              1 for item in manila_elements
+              if (item.get("tags") or {}).get("building")
+              or (item.get("tags") or {}).get("building:part")
+          )
+          road_count = sum(1 for item in manila_elements if (item.get("tags") or {}).get("highway"))
+          if building_count == 0 or road_count == 0:
+              raise SystemExit(f"offline-world Manila source incomplete: buildings={building_count}, roads={road_count}")
+
           amman = json.loads((root / "amman/manifest.json").read_text(encoding="utf-8"))
-
-          # Every Manila city cell and checksum entry must exist in the repository.
-          cells = manila.get("cells") or {}
-          hashes = manila.get("shard_sha256") or {}
-          if not cells or {cell + ".jsonl" for cell in cells} != set(hashes):
-              raise SystemExit("Manila cell manifest/checksum index is incomplete")
-          for cell in cells:
-              p = root / "manila" / "shards" / (cell + ".jsonl.gz")
-              if not p.is_file() or p.stat().st_size == 0:
-                  raise SystemExit(f"Missing saved Manila cell: {p}")
-
-          # All spatially indexed window shards must be present.
-          window_tiles = manila.get("window_tiles") or []
-          window_hashes = manila.get("window_shard_sha256") or {}
-          if not window_tiles or len(window_tiles) != manila.get("window_tile_count"):
-              raise SystemExit("Manila window tile index is incomplete")
-          if {tile + ".jsonl" for tile in window_tiles} != set(window_hashes):
-              raise SystemExit("Manila window checksums do not match tile index")
-          for tile in window_tiles:
-              p = root / "manila" / "window-shards" / (tile + ".jsonl.gz")
-              if not p.is_file() or p.stat().st_size == 0:
-                  raise SystemExit(f"Missing saved Manila window shard: {p}")
 
           # Verify every Amman shard described by its committed manifest.
           amman_shards = amman.get("shards") or {}
@@ -92,9 +86,8 @@ jobs:
                   raise SystemExit(f"Missing saved Amman shard: {p}")
 
           print(
-              f"REPOSITORY DATA VERIFIED: Manila {len(cells)} cells + "
-              f"{len(window_tiles)} window shards ({manila.get('window_surfaces', 0):,} surfaces); "
-              f"Amman {len(amman_shards)} shards."
+              f"REPOSITORY DATA VERIFIED: Manila offline-world {len(manila_elements)} OSM elements "
+              f"({building_count} buildings, {road_count} roads); Amman {len(amman_shards)} shards."
           )
           PY
 
