@@ -77,6 +77,12 @@ def main():
       manifest={"status":"partial","source":"Overture Maps","source_type":typ,"parts":[]}
      tmp=layer_dir/"download.raw.geojson"
      subprocess.run(["overturemaps","download",f"--bbox={w},{s},{e},{n}","-f","geojson","--type="+typ,"-o",str(tmp)],cwd=ROOT,check=True,timeout=3600)
+     # Overture CLI may report “No data found” and exit successfully without creating an output file.
+     # Treat that as a verified empty layer, not a city-wide import failure.
+     if not tmp.exists():
+      manifest["status"]="empty";manifest["empty_reason"]="source_returned_zero_features";manifest["feature_count"]=0;manifest["raw_feature_count"]=0;manifest["matched_feature_count"]=0;manifest["completed_at"]=datetime.now(timezone.utc).isoformat()
+      save(manifest_path,json.dumps(manifest,indent=2).encode());saved.append(manifest_path);checkpoint([manifest_path],slug)
+      print("SAVED",slug,typ,0,"features (source returned no output)",flush=True);continue
      known=len(manifest.get("parts",[]));part_index=0;part_features=[];part_size=0;total_features=sum(p.get("features",0) for p in manifest.get("parts",[]));raw_feature_count=0;matched_feature_count=0
      def flush_part():
       nonlocal part_index,part_features,part_size,total_features,manifest
