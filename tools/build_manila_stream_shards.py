@@ -375,15 +375,17 @@ def read_geojson_buildings(writer):
     then polygonal building features from building-details.geojson.
     Properties from supplements fill missing canonical values only.
     """
-    primary=_load_feature_collection(BUILDINGS, required=True)
+    primary=_load_feature_collection(BUILDINGS, required=False)
     footprints=_load_feature_collection(FOOTPRINTS, required=False)
     details=_load_feature_collection(DETAILS, required=False)
+    if not primary and not footprints and not details:
+        raise SystemExit("All Manila building sources are missing or empty")
 
     # Keep a single polygon per source feature ID. Primary geometry and
     # populated primary properties always win; supplements only fill gaps.
     merged={}
     order=[]
-    source_counts={"buildings_geojson":0,"building_footprints":0,"building_details":0}
+    source_counts={"buildings_geojson":len(primary),"building_footprints":len(footprints),"building_details":len(details)}
     matched={"footprints_to_primary":0,"details_to_existing":0}
     unmatched_nodes=0
 
@@ -439,14 +441,10 @@ def read_geojson_buildings(writer):
         clone["_adam_sources"]=["buildings_geojson"]
         merged[key]=clone
         order.append(key)
-        source_counts["buildings_geojson"]+=1
 
     for source_name,features in (("building_footprints",footprints),("building_details",details)):
         for feature in features:
-            before=len(merged)
             merge_feature(feature,source_name)
-            if len(merged)>before:
-                source_counts[source_name]+=1
 
     added=0; named=0; with_height=0; with_levels=0; parts=0
     source_usage={name:0 for name in source_counts}
@@ -587,19 +585,19 @@ def main():
         with shard.open("rb") as f:
             while block:=f.read(1024*1024): h.update(block)
         shard_hashes[shard.stem]=h.hexdigest()
-    manifest={"schema_version":3,"city":"Manila","source":"canonical buildings.geojson only for building geometry and properties; OpenMapTiles PBF POIs; OpenFreeMap transportation street geometry/names",
-      "building_source":"data/facades/cities/manila/buildings.geojson",
-      "building_sources":["data/facades/cities/manila/buildings.geojson"],
+    manifest={"schema_version":4,"city":"Manila","source":"merged buildings.geojson + OpenFreeMap/OpenMapTiles building-footprints.geojson + OSM building-details.geojson; OpenMapTiles PBF POIs; OpenFreeMap transportation street geometry/names",
+      "building_source":"merged: data/facades/cities/manila/buildings.geojson + building-footprints.geojson + building-details.geojson",
+      "building_sources":["data/facades/cities/manila/buildings.geojson","data/facades/cities/manila/building-footprints.geojson","data/facades/cities/manila/building-details.geojson"],
       "building_source_files":building_stats["source_files"],
       "building_source_feature_counts":building_stats["source_feature_counts"],
-      "building_part_features":building_stats["building_parts"],
+      "building_source_usage_counts":building_stats["source_usage_counts"],\n      "building_source_matched_features":building_stats["matched_features"],\n      "building_part_features":building_stats["building_parts"],
       "building_detail_nodes":building_stats["detail_nodes"],
       "building_features":building_stats["features"],"building_named_features":building_stats["named"],
       "building_features_with_height":building_stats["with_height"],"building_features_with_levels":building_stats["with_levels"],
       "transportation_name_source":"data/facades/cities/manila/transportation.geojson",
       "transportation_label_features":transport_stats["features"],"transportation_named_features":transport_stats["named"],
-      "building_deduplication":"none; canonical buildings.geojson features preserved independently",
-      "excluded_building_sources":["data/facades/cities/manila/building-footprints.geojson","data/facades/cities/manila/building-details.geojson"],
+      "building_deduplication":"matched by normalized OSM source feature ID; primary geometry and populated primary tags preserved; supplements fill missing tags and unmatched polygons are added",
+      "excluded_building_sources":[],
       "origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,"cell_halo_m":HALO,
       "dataset_version":hashlib.sha256(json.dumps({"shards":shard_hashes,"windows":window_stats["sha256"]},sort_keys=True).encode()).hexdigest()[:16],
       "shard_sha256":shard_hashes,
