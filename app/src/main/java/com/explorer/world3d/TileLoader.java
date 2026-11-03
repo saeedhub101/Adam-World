@@ -56,7 +56,7 @@ final class TileLoader extends Thread {
     private static final double AMMAN_KY = 111132.0;
     private static final String OFFLINE_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-city-stream/amman";
     private static final String MANILA_OFFLINE_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-city-stream/manila";
-    private static final String TABARBOUR_DATA_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/app/src/main/assets/cities/tabarbour";
+    private static final String TABARBOUR_DATA_BASE = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-world/tabarbour";
     private static final double MANILA_LAT0 = 14.57394;
     private static final double MANILA_LON0 = 120.98283;
     private static final double MANILA_KX = 111320.0 * Math.cos(Math.toRadians(MANILA_LAT0));
