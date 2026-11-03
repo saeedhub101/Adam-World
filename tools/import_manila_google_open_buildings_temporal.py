@@ -50,11 +50,8 @@ def checkpoint(paths):
     if not rel: return
     subprocess.run(["git","add","--",*rel],cwd=ROOT,check=True)
     if subprocess.run(["git","diff","--cached","--quiet"],cwd=ROOT).returncode==0: return
-    if not subprocess.run(["git","config","user.name"],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode:
-        pass
-    else:
-        subprocess.run(["git","config","user.name","github-actions[bot]"],cwd=ROOT,check=True)
-        subprocess.run(["git","config","user.email","41898282+github-actions[bot]@users.noreply.github.com"],cwd=ROOT,check=True)
+    subprocess.run(["git","config","user.name","github-actions[bot]"],cwd=ROOT,check=True)
+    subprocess.run(["git","config","user.email","41898282+github-actions[bot]@users.noreply.github.com"],cwd=ROOT,check=True)
     subprocess.run(["git","commit","-m","Checkpoint Manila Google Open Buildings temporal tile"],cwd=ROOT,check=True)
     subprocess.run(["git","push","origin","HEAD:main"],cwd=ROOT,check=True)
 
