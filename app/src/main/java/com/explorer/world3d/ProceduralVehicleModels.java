@@ -98,7 +98,13 @@ final class ProceduralVehicleModels {
 
     private static GeoBuf buildGlass(int type) {
         GeoBuf b = new GeoBuf();
-        if (type == BICYCLE || type == MOTORBIKE || type == TANK || type == AIRPLANE) return b;
+        if (type == BICYCLE || type == MOTORBIKE || type == TANK) return b;
+        if (type == AIRPLANE) {
+            b.quad(-.46f,.93f,2.82f,.46f,.93f,2.82f,.34f,1.36f,2.25f,-.34f,1.36f,2.25f,.10f,.23f,.31f);
+            b.quad(-.46f,.93f,2.82f,-.34f,1.36f,2.25f,-.34f,1.36f,1.72f,-.46f,.93f,1.72f,.10f,.23f,.31f);
+            b.quad(.46f,.93f,2.82f,.46f,.93f,1.72f,.34f,1.36f,1.72f,.34f,1.36f,2.25f,.10f,.23f,.31f);
+            return b;
+        }
         if (type == HELICOPTER) {
             b.quad(-.72f,.83f,1.42f,.72f,.83f,1.42f,.58f,1.32f,1.05f,-.58f,1.32f,1.05f,.16f,.32f,.40f);
             b.quad(.72f,.83f,1.42f,-.72f,.83f,1.42f,-.58f,1.32f,1.05f,.58f,1.32f,1.05f,.16f,.32f,.40f);
