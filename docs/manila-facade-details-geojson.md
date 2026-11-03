@@ -19,14 +19,6 @@ Generated layers are split into numbered, independently valid GeoJSON FeatureCol
 
 Each source chunk is capped at 35,000,000 bytes. Window coordinates are 3D WGS84 [longitude, latitude, height_m]; the third ordinate is height above the building ground, not absolute terrain elevation.
 
-## Runtime integration
+## Runtime status
 
-The Manila offline shard builder reads the saved facade-windows-*.geojson chunks and writes one compressed window-shards/{tileX}_{tileZ}.jsonl.gz file per game tile. It records the tile index and checksums in data/offline-city-stream/manila/manifest.json. This keeps the 7,037,436 saved window surfaces spatially partitioned; the Android loader fetches only the window shard for each requested Manila game tile and caches it locally.
-
-TileBuilder recognizes these records as a separate facade-window layer and renders their saved polygon geometry in the glass mesh. It adds local terrain elevation to each building-ground-relative height. The building geometry remains sourced only from canonical buildings.geojson; windows are not merged into building footprints or building geometry.
-
-The runtime build validates that the indexed surface count exactly matches facade-details-report.json before publishing. Doors and balconies remain disabled until separately integrated and verified.
-
-## Method and limitations
-
-Windows and doors are procedural placeholders, not photogrammetric, surveyed, or photo-verified details. The window layer uses the saved geometry as generated; it does not claim that every generated window matches a real-world opening. Balconies remain omitted until confirmed from suitable facade photographs.
+The generated `facade-windows-*.geojson` files are retained as archived source outputs only. The Android runtime no longer downloads their `window-shards`, `TileBuilder` does not render their polygons, and the APK workflow does not check out or validate those window files. Building geometry, mapped building colours, and street geometry continue to come from the normal Manila building/transport datasets. No window GeoJSON is included in the APK.
