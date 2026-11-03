@@ -1,20 +1,6 @@
 name: Tabarbour Offline Data Import
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/tabarbour-offline-import.yml"
-      - "data/facades/cities/catalog.json"
-      - "data/offline-world/tabarbour/**"
-      - "data/offline-world/tabarbour/city.json"
-      - "tools/facades/import_city_building_sources.py"
-      - "tools/facades/import_tabarbour_overture.py"
-      - "tools/facades/import_tabarbour_footprint_supplements.py"
-      - "tools/facades/fetch_catalogue_metadata.py"
-      - "tools/facades/build_review_queue.py"
-      - "tools/build_offline_city_tiles.py"
-      - "tools/extract_tabarbour_osm_context.py"
   workflow_dispatch:
 
 permissions:
