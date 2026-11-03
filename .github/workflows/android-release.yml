@@ -62,14 +62,32 @@ jobs:
           python tools/build_manila_stream_shards.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A data/offline-city-stream/manila
-          if ! git diff --cached --quiet; then
+          # Generated .jsonl.gz shards are binary and cannot be rebased when
+          # another main writer publishes the same city at the same time.
+          # On a rejected push, restart from the newest main and regenerate
+          # from that checkout instead of attempting a binary merge.
+          for attempt in 1 2 3 4; do
+            if [ "$attempt" -gt 1 ]; then
+              echo "main advanced during publication; rebuilding from latest main (attempt $attempt/4)"
+              git fetch --no-tags origin main
+              git reset --hard origin/main
+              python tools/build_manila_stream_shards.py
+            fi
+            git add -A data/offline-city-stream/manila
+            if git diff --cached --quiet; then
+              echo "Manila offline game data is already current."
+              break
+            fi
             git commit -m "Rebuild Manila offline game data from building-layer GeoJSON"
-            git pull --rebase origin main
-            git push origin HEAD:main
-          else
-            echo "Manila offline game data is already current."
-          fi
+            if git push origin HEAD:main; then
+              echo "Published Manila game shards to main."
+              break
+            fi
+            if [ "$attempt" -eq 4 ]; then
+              echo "Could not publish Manila shards after four fresh-main attempts." >&2
+              exit 1
+            fi
+          done
 
       - name: Verify Manila height values survive into game shards
         run: |
