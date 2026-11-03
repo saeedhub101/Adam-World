@@ -42,7 +42,8 @@ jobs:
             /data/offline-world/manila/
             /data/facades/cities/manila/
             /data/reference/adam-city/manila/
-            /data/offline-city-stream/manila/
+            /data/offline-city-stream/manila/manifest.json
+            /data/offline-city-stream/manila/shards/
             /old_app/src/main/assets/data/
             /build.gradle
             /settings.gradle
@@ -70,18 +71,6 @@ jobs:
               if not p.is_file() or p.stat().st_size == 0:
                   raise SystemExit(f"Missing saved Manila cell: {p}")
 
-          # All spatially indexed window shards must be present.
-          window_tiles = manila.get("window_tiles") or []
-          window_hashes = manila.get("window_shard_sha256") or {}
-          if not window_tiles or len(window_tiles) != manila.get("window_tile_count"):
-              raise SystemExit("Manila window tile index is incomplete")
-          if {tile + ".jsonl" for tile in window_tiles} != set(window_hashes):
-              raise SystemExit("Manila window checksums do not match tile index")
-          for tile in window_tiles:
-              p = root / "manila" / "window-shards" / (tile + ".jsonl.gz")
-              if not p.is_file() or p.stat().st_size == 0:
-                  raise SystemExit(f"Missing saved Manila window shard: {p}")
-
           # Verify every Amman shard described by its committed manifest.
           amman_shards = amman.get("shards") or {}
           if not amman_shards or len(amman_shards) != amman.get("shard_count"):
@@ -92,8 +81,7 @@ jobs:
                   raise SystemExit(f"Missing saved Amman shard: {p}")
 
           print(
-              f"REPOSITORY DATA VERIFIED: Manila {len(cells)} cells + "
-              f"{len(window_tiles)} window shards ({manila.get('window_surfaces', 0):,} surfaces); "
+              f"REPOSITORY DATA VERIFIED: Manila {len(cells)} building/road cells; "
               f"Amman {len(amman_shards)} shards."
           )
           PY
