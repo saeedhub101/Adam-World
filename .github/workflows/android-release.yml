@@ -42,7 +42,8 @@ jobs:
             /data/offline-city-stream/amman/
             /data/offline-world/amman/
             /data/offline-world/manila/
-            /data/facades/cities/manila/
+            /data/facades/cities/manila/buildings.geojson
+            /data/facades/cities/manila/transportation.geojson
             /data/reference/adam-city/manila/
             /data/offline-city-stream/manila/manifest.json
             /data/offline-city-stream/manila/shards/
