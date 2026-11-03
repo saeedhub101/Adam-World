@@ -10,8 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PBF_ROOT = Path(os.environ.get("ADAM_CITY_MANILA_PBF", ROOT / "Adam-City-source/Manila/vector-tiles"))
 TRANSPORT = ROOT / "data/facades/cities/manila/transportation.geojson"
-DETAILS = ROOT / "data/reference/adam-city/manila/ermita/ermita-building-details.geojson"
-FOOTPRINTS = ROOT / "data/reference/adam-city/manila/ermita/osm-building-footprints-polygons.geojson"
+DETAILS = ROOT / "data/facades/cities/manila/building-details.geojson"
+FOOTPRINTS = ROOT / "data/facades/cities/manila/building-footprints.geojson"
 OVERTURE_BUILDINGS = ROOT / "data/full-city-imports/manila/02_buildings_overture/building"
 OVERTURE_PARTS = ROOT / "data/full-city-imports/manila/02_buildings_overture/building_part"
 OSM_CONTEXT = ROOT / "data/offline-world/manila/elements.json"
@@ -547,6 +547,9 @@ def read_context(writer):
     return n
 
 def main():
+    for required in (DETAILS, FOOTPRINTS):
+        if not required.is_file() or required.stat().st_size == 0:
+            raise SystemExit(f"Missing or empty canonical Manila source: {required}")
     writer=Shards()
     osm_data,osm_index=read_osm_detail_index()
     building_index=read_building_csv_index()

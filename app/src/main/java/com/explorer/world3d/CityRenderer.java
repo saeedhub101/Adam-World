@@ -337,39 +337,77 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     /* ---------- حلقة الرسم ---------- */
-    private void doSpawn(Tile c) {
-        float bd = 1e9f;
-        RoadPath bp = null;
-        int bi = 0;
-        if (c != null) {
-            for (RoadPath rp : c.paths) {
-                if (!rp.veh || rp.w < 6f) continue;
-                for (int i = 0; i < rp.xs.length; i++) {
+    private boolean doSpawn(Tile c) {
+        float bestScore = Float.MAX_VALUE;
+        float bestX = 0f, bestZ = 0f, bestYaw = 0f, bestCarX = 0f, bestCarZ = 0f;
+        boolean bestHasRoad = false;
+        float[] point = new float[4], car = new float[4];
+
+        // Search every tile already loaded around the start, not only the single
+        // tile containing (0,0). The old code also placed the player beside a road
+        // without checking whether that position was inside a building footprint.
+        for (Tile tile : tiles.values()) {
+            for (RoadPath rp : tile.paths) {
+                if (rp == null || rp.xs == null || rp.cum == null || rp.xs.length == 0) continue;
+                boolean vehicleRoad = rp.veh && rp.w >= 5f;
+                for (int i = 0; i < rp.xs.length && i < rp.cum.length; i++) {
                     float d = (float) Math.hypot(rp.xs[i], rp.zs[i]);
-                    if (d < bd) { bd = d; bp = rp; bi = i; }
+                    if (d > 220f) continue;
+                    float s = Math.min(rp.cum[i], Math.max(0f, rp.total - 0.2f));
+                    rp.posAt(s, 0f, point);
+                    float yaw = (float) Math.atan2(point[2], point[3]);
+                    float sideX = -point[3], sideZ = point[2];
+                    float offset = vehicleRoad ? rp.w * 0.5f + 1.8f : 0f;
+                    for (int side : new int[]{-1, 1}) {
+                        float x = point[0] + sideX * offset * side;
+                        float z = point[1] + sideZ * offset * side;
+                        if (blocked(x, z, 0.7f)) continue;
+                        float score = d + (vehicleRoad ? 0f : 18f);
+                        if (score >= bestScore) continue;
+                        bestScore = score;
+                        bestX = x; bestZ = z; bestYaw = yaw;
+                        bestHasRoad = vehicleRoad;
+                        if (vehicleRoad) {
+                            rp.posAt(s, rp.w * 0.25f, car);
+                            bestCarX = car[0]; bestCarZ = car[1];
+                        } else {
+                            bestCarX = x; bestCarZ = z;
+                        }
+                    }
                 }
             }
         }
-        game.reset();
-        if (bp != null) {
-            float[] a = new float[4], car = new float[4];
-            float s = Math.min(bp.cum[bi], bp.total - 1f);
-            bp.posAt(s, 0, a);
-            bp.posAt(s, bp.w / 4f, car);
-            float yaw = (float) Math.atan2(a[2], a[3]);
-            float rx = -a[3], rz = a[2];
-            game.cx = car[0]; game.cz = car[1]; game.cyaw = yaw;
-            game.px = a[0] + rx * (bp.w / 2f + 1.6f);
-            game.pz = a[1] + rz * (bp.w / 2f + 1.6f);
-            game.pyaw = yaw;
-            game.camYaw = yaw;
+
+        // If no mapped road/path candidate is collision-free, search for a genuinely
+        // clear nearby point. Do not fall back to the fixed origin inside a building.
+        if (bestScore == Float.MAX_VALUE && !tiles.isEmpty()) {
+            for (int radius = 4; radius <= 100 && bestScore == Float.MAX_VALUE; radius += 4) {
+                for (int step = 0; step < 24; step++) {
+                    float angle = (float) (step * Math.PI / 12.0);
+                    float x = (float) Math.cos(angle) * radius;
+                    float z = (float) Math.sin(angle) * radius;
+                    if (!blocked(x, z, 0.7f)) {
+                        bestX = bestCarX = x; bestZ = bestCarZ = z;
+                        bestYaw = 0f; bestScore = radius; bestHasRoad = false;
+                        break;
+                    }
+                }
+            }
         }
+
+        // Wait for the origin/nearby collision tiles instead of spawning inside
+        // an uninspected building when the first tile has not arrived yet.
+        if (bestScore == Float.MAX_VALUE) return false;
+
+        game.reset();
+        game.px = bestX; game.pz = bestZ; game.pyaw = bestYaw; game.camYaw = bestYaw;
+        game.cx = bestCarX; game.cz = bestCarZ; game.cyaw = bestYaw;
         game.py = heightAt(game.px, game.pz);
         game.snapCamera();
         needSpawn = false;
         spawned = true;
         L.onLoading(false, "");
-        if (bp == null) L.onToast("لم تتوفر بيانات طرق هنا بعد");
+        return true;
     }
 
     private void uploadTile(TileData td) {
@@ -451,8 +489,11 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         if (needSpawn) {
             Tile c = tiles.get(Geo.key(Geo.tileX(0f), Geo.tileZ(0f)));
             if (c != null || nowMs > spawnDeadline) {
-                doSpawn(c);
-                if (c == null) L.onToast(loader.offlineAmman || loader.offlineManila || loader.offlineCitySlug != null ? "لم تتوفر بيانات محلية عند نقطة البداية" : "تعذر تحميل بيانات المدينة. تحقق من الإنترنت");
+                if (!doSpawn(c)) {
+                    // Keep waiting for nearby road and building-collision tiles;
+                    // never release the player at an unchecked city origin.
+                    spawnDeadline = nowMs + 5000;
+                }
             }
         }
 

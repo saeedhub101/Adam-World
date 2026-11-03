@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "city": "manila",
+  "building_detail_sources": [
+    {
+      "source": "OpenStreetMap",
+      "path": "data/facades/cities/manila/building-details.geojson",
+      "features": 1533,
+      "polygon_footprints": 1528,
+      "license": "ODbL 1.0"
+    },
+    {
+      "source": "OpenStreetMap",
+      "path": "data/facades/cities/manila/building-footprints.geojson",
+      "features": 1528,
+      "geometry": "Polygon/MultiPolygon",
+      "license": "ODbL 1.0"
+    }
+  ],
+  "facade_geometry_and_attributes": [
+    {
+      "source": "Overture Maps",
+      "path": "data/full-city-imports/manila/02_buildings_overture/building/",
+      "features": 107912,
+      "properties": [
+        "height",
+        "num_floors",
+        "facade_material",
+        "facade_color",
+        "roof_material",
+        "roof_color",
+        "roof_shape"
+      ]
+    },
+    {
+      "source": "Overture Maps",
+      "path": "data/full-city-imports/manila/02_buildings_overture/building_part/",
+      "features": 758,
+      "properties": [
+        "num_floors",
+        "facade_material",
+        "facade_color",
+        "roof_material",
+        "roof_color",
+        "roof_shape",
+        "min_floor",
+        "building_id"
+      ]
+    }
+  ],
+  "runtime": "tools/build_manila_stream_shards.py merges the OSM detail/footprint files and Overture building/part data into data/offline-city-stream/manila/",
+  "photo_facade_textures": {
+    "verified_assignments": 0,
+    "status": "No human-verified building/photo matches are currently available; no candidate photo may be assigned automatically."
+  },
+  "attribution": [
+    "© OpenStreetMap contributors",
+    "© Overture Maps"
+  ]
+}

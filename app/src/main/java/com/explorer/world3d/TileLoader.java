@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 final class TileLoader extends Thread {
     interface ErrorCallback { void onError(); }
 
-    static final int LOAD_R = 3;   // 7×7 مربعات: تحميل أوسع يطابق نطاق الاحتفاظ المرئي
+    static final int LOAD_R = 2;   // 5×5 مربعات: أولوية للمنطقة القريبة وتقليل أعمال التحميل الأولية
     static final String[] SERVERS = {
             "https://overpass-api.de/api/interpreter",
             "https://overpass.kumi.systems/api/interpreter",
@@ -381,6 +381,41 @@ final class TileLoader extends Thread {
     }
 
 
+    /** Return only features intersecting this render tile; never make TileBuilder scan the whole 1 km shard. */
+    private JSONObject filterManilaRoot(JSONObject source, double south, double west, double north, double east) throws Exception {
+        JSONArray input = source.optJSONArray("elements");
+        JSONArray selected = new JSONArray();
+        if (input != null) {
+            for (int i = 0; i < input.length(); i++) {
+                JSONObject element = input.optJSONObject(i);
+                if (element == null) continue;
+                if ("node".equals(element.optString("type"))) {
+                    double lat = element.optDouble("lat", Double.NaN);
+                    double lon = element.optDouble("lon", Double.NaN);
+                    if (!Double.isNaN(lat) && !Double.isNaN(lon)
+                            && lat >= south && lat <= north && lon >= west && lon <= east) selected.put(element);
+                    continue;
+                }
+                JSONArray geometry = element.optJSONArray("geometry");
+                if (geometry == null || geometry.length() < 2) continue;
+                double minLat = 90d, maxLat = -90d, minLon = 180d, maxLon = -180d;
+                for (int j = 0; j < geometry.length(); j++) {
+                    JSONObject point = geometry.optJSONObject(j);
+                    if (point == null) continue;
+                    double lat = point.optDouble("lat", Double.NaN);
+                    double lon = point.optDouble("lon", Double.NaN);
+                    if (Double.isNaN(lat) || Double.isNaN(lon)) continue;
+                    minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
+                    minLon = Math.min(minLon, lon); maxLon = Math.max(maxLon, lon);
+                }
+                if (maxLat >= south && minLat <= north && maxLon >= west && minLon <= east) selected.put(element);
+            }
+        }
+        JSONObject result = new JSONObject();
+        result.put("elements", selected);
+        return result;
+    }
+
     private JSONObject loadManilaRoot(double south, double west, double north, double east) throws Exception {
         ensureManilaManifest();
         double lat = (south + north) * 0.5, lon = (west + east) * 0.5;
@@ -392,7 +427,7 @@ final class TileLoader extends Thread {
         String key = version + ":" + cell;
         synchronized (offlineShardCache) {
             JSONObject cached = offlineShardCache.get(key);
-            if (cached != null) return cached;
+            if (cached != null) return filterManilaRoot(cached, south, west, north, east);
         }
         manilaOfflineDir.mkdirs();
         File versionDir = new File(manilaOfflineDir, version); versionDir.mkdirs();
@@ -412,7 +447,7 @@ final class TileLoader extends Thread {
         } catch (Exception ex) { shard.delete(); throw ex; }
         JSONObject result = new JSONObject(); result.put("elements", elements);
         synchronized (offlineShardCache) { offlineShardCache.put(key, result); }
-        return result;
+        return filterManilaRoot(result, south, west, north, east);
     }
 
     private void ensureManilaManifest() throws Exception {
