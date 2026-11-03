@@ -1,0 +1,234 @@
+{
+  "status": "success",
+  "city": "Manila",
+  "source_file": "data/facades/cities/manila/buildings.geojson",
+  "source_feature_count": 1759,
+  "building_polygon_parts": 208301,
+  "skipped_features_or_parts": 5507,
+  "invalid_features": 0,
+  "chunk_limits": {
+    "max_file_bytes": 35000000,
+    "max_polygons_per_feature": 1000
+  },
+  "outputs": {
+    "facade-windows": {
+      "geojson_features": 8324,
+      "window_surfaces": 7037436,
+      "chunks": [
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0001.geojson",
+          "features": 212,
+          "bytes": 34848188
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0002.geojson",
+          "features": 210,
+          "bytes": 34939289
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0003.geojson",
+          "features": 216,
+          "bytes": 34864072
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0004.geojson",
+          "features": 217,
+          "bytes": 34940798
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0005.geojson",
+          "features": 210,
+          "bytes": 34935909
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0006.geojson",
+          "features": 210,
+          "bytes": 34940194
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0007.geojson",
+          "features": 284,
+          "bytes": 34904602
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0008.geojson",
+          "features": 334,
+          "bytes": 34910251
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0009.geojson",
+          "features": 361,
+          "bytes": 34927308
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0010.geojson",
+          "features": 210,
+          "bytes": 34936568
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0011.geojson",
+          "features": 230,
+          "bytes": 34886595
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0012.geojson",
+          "features": 264,
+          "bytes": 34997485
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0013.geojson",
+          "features": 217,
+          "bytes": 34850919
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0014.geojson",
+          "features": 271,
+          "bytes": 34910377
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0015.geojson",
+          "features": 210,
+          "bytes": 34936729
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0016.geojson",
+          "features": 340,
+          "bytes": 34844633
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0017.geojson",
+          "features": 232,
+          "bytes": 34854613
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0018.geojson",
+          "features": 231,
+          "bytes": 34940607
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0019.geojson",
+          "features": 217,
+          "bytes": 34943203
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0020.geojson",
+          "features": 217,
+          "bytes": 34951377
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0021.geojson",
+          "features": 210,
+          "bytes": 34936738
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0022.geojson",
+          "features": 210,
+          "bytes": 34938058
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0023.geojson",
+          "features": 273,
+          "bytes": 34974792
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0024.geojson",
+          "features": 270,
+          "bytes": 34888913
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0025.geojson",
+          "features": 393,
+          "bytes": 34945764
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0026.geojson",
+          "features": 210,
+          "bytes": 34937316
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0027.geojson",
+          "features": 215,
+          "bytes": 34997152
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0028.geojson",
+          "features": 268,
+          "bytes": 34922397
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0029.geojson",
+          "features": 215,
+          "bytes": 34957869
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0030.geojson",
+          "features": 263,
+          "bytes": 34843046
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0031.geojson",
+          "features": 210,
+          "bytes": 34937373
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0032.geojson",
+          "features": 329,
+          "bytes": 34960784
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0033.geojson",
+          "features": 230,
+          "bytes": 34855421
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-windows-0034.geojson",
+          "features": 135,
+          "bytes": 19110356
+        }
+      ],
+      "total_bytes": 1171469696
+    },
+    "facade-doors": {
+      "geojson_features": 2183,
+      "door_surfaces": 640964,
+      "chunks": [
+        {
+          "file": "data/facades/cities/manila/layers/facade-doors-0001.geojson",
+          "features": 750,
+          "bytes": 34909025
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-doors-0002.geojson",
+          "features": 699,
+          "bytes": 34981983
+        },
+        {
+          "file": "data/facades/cities/manila/layers/facade-doors-0003.geojson",
+          "features": 734,
+          "bytes": 28508244
+        }
+      ],
+      "total_bytes": 98399252
+    },
+    "facade-balconies": {
+      "geojson_features": 0,
+      "balcony_surfaces": 0,
+      "chunks": [
+        {
+          "file": "data/facades/cities/manila/layers/facade-balconies-0001.geojson",
+          "features": 0,
+          "bytes": 76
+        }
+      ],
+      "total_bytes": 76
+    }
+  },
+  "method": "Adapted from Adam-City Ermita: 3m window spacing, estimated floors, 0.95m x 1.9m doors, deterministic occasional balconies.",
+  "geometry": "3D GeoJSON MultiPolygon; WGS84 longitude/latitude and third ordinate = height above building ground in metres.",
+  "limitations": [
+    "Details are procedural placeholders, not measured or photo-verified.",
+    "Floor counts are estimated where building:levels/levels are absent.",
+    "Only buildings.geojson supplies building geometry and attributes; no other building file, PBF, remote API or GLB is read or generated.",
+    "Renderer must interpret 3D polygon coordinates and add local ground elevation to relative Z."
+  ]
+}
