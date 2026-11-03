@@ -17,7 +17,6 @@ on:
       - "data/offline-city-stream/manila/shards/**"
       - "data/offline-city-stream/amman/**"
       - "data/offline-world/manila/**"
-      - "old_app/src/main/assets/data/**"
       - ".github/workflows/android-release.yml"
   workflow_dispatch:
 
@@ -51,7 +50,6 @@ jobs:
             /data/reference/adam-city/manila/
             /data/offline-city-stream/manila/manifest.json
             /data/offline-city-stream/manila/shards/
-            /old_app/src/main/assets/data/
             /build.gradle
             /settings.gradle
             /gradle.properties
@@ -165,6 +163,54 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK"
           cp "$APK" Adam-World.apk
           sha256sum Adam-World.apk
+
+      - name: Install and smoke-test the signed APK on an Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          script: |
+            set -euo pipefail
+            adb install -r Adam-World.apk
+            adb shell monkey -p com.explorer.world3d 1
+            sleep 12
+            adb logcat -c
+            adb shell uiautomator dump /sdcard/adam-ui.xml >/dev/null
+            adb pull /sdcard/adam-ui.xml adam-ui.xml >/dev/null
+            BOUNDS="$(python - <<'PY'
+            import xml.etree.ElementTree as ET
+            root=ET.parse("adam-ui.xml").getroot()
+            for node in root.iter("node"):
+                if node.attrib.get("text") == "مانيلا محلي":
+                    print(node.attrib.get("bounds",""))
+                    break
+            PY
+            )"
+            test -n "$BOUNDS" || { echo "Manila Local button not found in Android UI"; exit 1; }
+            python - "$BOUNDS" <<'PY'
+            import re,sys,subprocess
+            m=re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",sys.argv[1])
+            if not m: raise SystemExit("Invalid Manila button bounds: "+sys.argv[1])
+            x1,y1,x2,y2=map(int,m.groups())
+            subprocess.run(["adb","shell","input","tap",str((x1+x2)//2),str((y1+y2)//2)],check=True)
+            PY
+            sleep 20
+            adb logcat -d -t 5000 > android-smoke.log
+            if grep -E "FATAL EXCEPTION|Process: com.explorer.world3d" android-smoke.log; then
+              echo "Android app crashed after switching to Manila Local" >&2
+              exit 1
+            fi
+            adb exec-out screencap -p > manila-local-emulator.png
+            test -s manila-local-emulator.png
+
+      - name: Upload Android smoke-test screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-manila-local-smoke-test
+          path: manila-local-emulator.png
+          if-no-files-found: error
 
       - name: Publish release and APK
         uses: softprops/action-gh-release@v2
