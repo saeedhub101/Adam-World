@@ -1,11 +1,6 @@
 name: Generate Manila facade windows and doors GeoJSON
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "tools/facades/generate_manila_facade_details.py"
-      - ".github/workflows/manila-facade-details-geojson.yml"
   workflow_dispatch:
 
 permissions:
