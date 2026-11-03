@@ -1,0 +1,13 @@
+{
+  "status": "partial",
+  "source": "Overture Maps",
+  "source_type": "water",
+  "parts": [
+    {
+      "file": "part-00001.geojson",
+      "bytes": 2224750,
+      "features": 2765
+    }
+  ],
+  "feature_count": 2765
+}
