@@ -46,7 +46,18 @@ jobs:
               raise SystemExit(f"Saved Manila windows incomplete: expected={expected}, chunks={len(chunks)}")
           print(f"Validated {len(chunks)} source chunks; {expected:,} saved window surfaces")
           PY
+      - name: Fetch saved Manila PBF roads and POI supplements
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/saeedhub101/Adam-City.git Adam-City-source
+          git -C Adam-City-source sparse-checkout set Manila/vector-tiles ermita/maps/generated
+          test "$(find Adam-City-source/Manila/vector-tiles -type f -name '*.pbf' | wc -l)" -gt 0
+          test -s Adam-City-source/ermita/maps/generated/ermita-public_services.csv
+          test -s Adam-City-source/ermita/maps/generated/ermita-accessibility.csv
       - name: Build local-game Manila shards, including spatial window shards
+        env:
+          ADAM_CITY_MANILA_PBF: ${{ github.workspace }}/Adam-City-source/Manila/vector-tiles
+          ADAM_CITY_POI_CSV: ${{ github.workspace }}/Adam-City-source/ermita/maps/generated/ermita-public_services.csv
+          ADAM_CITY_ACCESS_CSV: ${{ github.workspace }}/Adam-City-source/ermita/maps/generated/ermita-accessibility.csv
         run: python -u tools/build_manila_stream_shards.py
       - name: Verify every window shard before publishing
         run: |
@@ -77,13 +88,32 @@ jobs:
           PY
       - name: Commit runtime shards and manifest to main
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/offline-city-stream/manila
-          if ! git diff --cached --quiet; then
+          SNAPSHOT="$RUNNER_TEMP/manila-window-runtime"
+          mkdir -p "$SNAPSHOT"
+          cp -a data/offline-city-stream/manila/. "$SNAPSHOT/"
+          PUSHED=false
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf data/offline-city-stream/manila
+            mkdir -p data/offline-city-stream/manila
+            cp -a "$SNAPSHOT/." data/offline-city-stream/manila/
+            git add data/offline-city-stream/manila
+            if git diff --cached --quiet; then
+              PUSHED=true
+              break
+            fi
             git commit -m "Build spatial Manila facade window runtime shards"
-            git pull --rebase origin main
-            git push origin HEAD:main
-          else
-            echo "Manila runtime shards already current."
+            if git push origin HEAD:main; then
+              PUSHED=true
+              break
+            fi
+            echo "Main advanced during Manila window publish; retrying (attempt $attempt)"
+          done
+          if [ "$PUSHED" != true ]; then
+            echo "Could not publish Manila window shards after five safe retries" >&2
+            exit 1
           fi
