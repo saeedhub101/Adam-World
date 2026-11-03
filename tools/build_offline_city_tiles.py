@@ -967,6 +967,7 @@ def main():
 
     for city in selected_cities:
         slug = city["slug"]
+        city_source = city_source_dir(slug)
         center = city["center"]
         lat0, lon0 = float(center["lat"]), float(center["lon"])
         kx = 111320.0 * math.cos(math.radians(lat0))
