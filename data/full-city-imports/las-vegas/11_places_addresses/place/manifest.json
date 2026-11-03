@@ -1,9 +1,15 @@
 {
-  "status": "complete",
+  "status": "partial",
   "source": "Overture Maps",
   "source_type": "place",
-  "parts": [],
-  "feature_count": 0,
+  "parts": [
+    {
+      "file": "part-00001.geojson",
+      "bytes": 36699823,
+      "features": 25186
+    }
+  ],
+  "feature_count": 25186,
   "completed_at": "2026-11-03T04:11:51.645335+00:00",
   "raw_feature_count": 119981,
   "matched_feature_count": 37421
