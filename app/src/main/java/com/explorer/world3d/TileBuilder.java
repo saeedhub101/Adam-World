@@ -178,8 +178,8 @@ final class TileBuilder {
                             ? "≈" + Math.max(1, Math.round(bHeight(tags, id, bld) / 3.2f)) + " طوابق"
                             : "الطوابق غير موثقة");
                 float shownHeight = bHeight(tags, id, bld);
-                float mappedHeight = measure(tg(tags, "height"));
-                if (!(mappedHeight > 0f)) mappedHeight = measure(tg(tags, "building:height"));
+                float mappedHeight = metricMeasure(tg(tags, "height"));
+                if (!(mappedHeight > 0f)) mappedHeight = metricMeasure(tg(tags, "building:height"));
                 boolean estimatedHeight = !(mappedHeight > 0f)
                         || tg(tags, "adam:height_source").contains("OpenBuildingMap/GHSL");
                 String heightLabel = shownHeight > 0f
@@ -366,13 +366,22 @@ final class TileBuilder {
         } catch (Exception ignore) { return Float.NaN; }
     }
 
+    /** Accept only actual numeric measurements; reject source codes such as H:4 or HBET:1-5. */
+    private static float metricMeasure(String raw) {
+        if (raw == null) return Float.NaN;
+        String value = raw.trim().toLowerCase(java.util.Locale.US);
+        if (!value.matches("^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)\\s*(?:m|meter|meters|metre|metres|ft|feet|foot|')?$"))
+            return Float.NaN;
+        return measure(value);
+    }
+
     private static float bHeight(JSONObject t, long id, String b) {
         // Use explicit metric heights from source data first. OpenFreeMap's
         // render_height is a cartographic fallback (often a generic 5 m), not
         // a surveyed building height, so it must never override missing data.
-        float h = measure(tg(t, "height"));
-        if (!(h > 0f)) h = measure(tg(t, "building:height"));
-        if (!(h > 0f)) h = measure(tg(t, "height:meters"));
+        float h = metricMeasure(tg(t, "height"));
+        if (!(h > 0f)) h = metricMeasure(tg(t, "building:height"));
+        if (!(h > 0f)) h = metricMeasure(tg(t, "height:meters"));
         if (h > 0f) return Math.max(2.5f, h);
         float levels = measure(tg(t, "building:levels"));
         if (!(levels > 0f)) levels = measure(tg(t, "num_floors"));
@@ -604,6 +613,39 @@ final class TileBuilder {
             float len = (float) Math.hypot(px[next] - px[edge], pz[next] - pz[edge]);
             if (len > doorEdgeLength) { doorEdgeLength = len; doorEdge = edge; }
         }
+        float entranceMid = 0.5f;
+        boolean mappedEntrance = false;
+        JSONArray mappedEntrances = tags.optJSONArray("adam:entrances");
+        if (tabarbour && mappedEntrances != null) {
+            float bestDistance = 4.0f;
+            for (int ei = 0; ei < mappedEntrances.length(); ei++) {
+                JSONObject entrance = mappedEntrances.optJSONObject(ei);
+                JSONObject geometry = entrance == null ? null : entrance.optJSONObject("geometry");
+                JSONArray coordinates = geometry == null ? null : geometry.optJSONArray("coordinates");
+                if (coordinates == null || coordinates.length() < 2) continue;
+                double lon = coordinates.optDouble(0, Double.NaN);
+                double lat = coordinates.optDouble(1, Double.NaN);
+                if (Double.isNaN(lon) || Double.isNaN(lat)) continue;
+                float ex = Geo.x(lon), ez = Geo.z(lat);
+                for (int edge = 0; edge < n; edge++) {
+                    int next = (edge + 1) % n;
+                    float dx = px[next] - px[edge], dz = pz[next] - pz[edge];
+                    float len2 = dx * dx + dz * dz;
+                    if (len2 < 0.01f) continue;
+                    float t = Math.max(0f, Math.min(1f,
+                            ((ex - px[edge]) * dx + (ez - pz[edge]) * dz) / len2));
+                    float qx = px[edge] + dx * t, qz = pz[edge] + dz * t;
+                    float distance = (float) Math.hypot(ex - qx, ez - qz);
+                    if (distance < bestDistance) {
+                        bestDistance = distance;
+                        doorEdge = edge;
+                        doorEdgeLength = (float) Math.sqrt(len2);
+                        entranceMid = t;
+                        mappedEntrance = true;
+                    }
+                }
+            }
+        }
         if (doorEdgeLength >= 2.2f && h >= 2.4f) {
             int next = (doorEdge + 1) % n;
             float ax = px[doorEdge], az = pz[doorEdge], bx = px[next], bz = pz[next];
@@ -614,7 +656,8 @@ final class TileBuilder {
             if (!(doorWidth >= 0.65f && doorWidth <= 2.2f)) doorWidth = 0.95f;
             float doorHeight = measure(tg(tags, "door:height"));
             if (!(doorHeight >= 1.7f && doorHeight <= 3.2f)) doorHeight = Math.min(2.15f, h - 0.25f);
-            float mid = 0.5f, half = doorWidth / (2f * doorEdgeLength);
+            float mid = mappedEntrance ? entranceMid : 0.5f;
+            float half = doorWidth / (2f * doorEdgeLength);
             float t0 = Math.max(0.02f, mid - half), t1 = Math.min(0.98f, mid + half);
             float yBase = (ground[doorEdge] + ground[next]) * 0.5f + minHeight;
             float x0 = ax + dx * t0 + nx * 0.085f, z0 = az + dz * t0 + nz * 0.085f;

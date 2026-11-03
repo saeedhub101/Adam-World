@@ -813,6 +813,40 @@ def _merged_tabarbour_building_elements(city_source):
             tags["adam:entity_id"] = str(props.get("adam:entity_id") or feature.get("id") or "")
             if props.get("adam:osm_id"):
                 tags["adam:source_osm_id"] = str(props["adam:osm_id"]).split("/")[-1]
+
+            # Overture stores some building names under names.primary rather than
+            # the flat OSM name key. Promote that verified source value for the renderer.
+            names = props.get("names") if isinstance(props.get("names"), dict) else {}
+            primary_name = names.get("primary")
+            if primary_name and not tags.get("name"):
+                tags["name"] = str(primary_name)
+
+            # Address nodes are already spatially attached by the merge process.
+            # Flatten their verified address tags so the Android label renderer can use them.
+            address_numbers, address_streets, address_names = [], [], []
+            for address in props.get("adam:addresses") or []:
+                if not isinstance(address, dict):
+                    continue
+                address_props = address.get("properties") or {}
+                address_tags = address_props.get("tags") or address_props
+                if not isinstance(address_tags, dict):
+                    continue
+                number = str(address_tags.get("addr:housenumber") or "").strip()
+                street = str(address_tags.get("addr:street") or "").strip()
+                addr_name = str(address_tags.get("name") or "").strip()
+                if number and number not in address_numbers:
+                    address_numbers.append(number)
+                if street and street not in address_streets:
+                    address_streets.append(street)
+                if addr_name and addr_name not in address_names:
+                    address_names.append(addr_name)
+            if address_numbers and not tags.get("addr:housenumber"):
+                tags["addr:housenumber"] = "، ".join(address_numbers)
+            if address_streets and not tags.get("addr:street"):
+                tags["addr:street"] = address_streets[0]
+            if address_names and not tags.get("name"):
+                tags["name"] = address_names[0]
+
             for field in ("adam:sources", "adam:observation_count", "height",
                           "building:levels", "name", "name:ar", "name:en",
                           "addr:housenumber", "addr:street", "building:colour",
