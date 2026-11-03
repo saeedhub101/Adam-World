@@ -159,12 +159,21 @@ final class TileBuilder {
                     buildingLabel = buildingLabel.isEmpty() ? streetName : buildingLabel + " · " + streetName;
                 if (buildingLabel.isEmpty()) buildingLabel = "مبنى";
                 float mappedFloors = measure(tg(tags, "building:levels"));
+                boolean estimatedFloors = tg(tags, "adam:floors_quality").equals("estimated_range");
                 String floorLabel = mappedFloors > 0f
-                        ? Math.round(mappedFloors) + " طوابق"
+                        ? (estimatedFloors ? "≈" : "") + Math.round(mappedFloors) + " طوابق"
                         : (bHeight(tags, id, bld) > 0f
                             ? "≈" + Math.max(1, Math.round(bHeight(tags, id, bld) / 3.2f)) + " طوابق"
                             : "الطوابق غير موثقة");
-                buildingLabel += " · " + floorLabel;
+                float shownHeight = bHeight(tags, id, bld);
+                float mappedHeight = measure(tg(tags, "height"));
+                if (!(mappedHeight > 0f)) mappedHeight = measure(tg(tags, "building:height"));
+                boolean estimatedHeight = !(mappedHeight > 0f)
+                        || tg(tags, "adam:height_source").contains("OpenBuildingMap/GHSL");
+                String heightLabel = shownHeight > 0f
+                        ? (estimatedHeight ? "≈" : "") + (Math.round(shownHeight * 10f) / 10f) + " م"
+                        : "الارتفاع غير موثق";
+                buildingLabel += " · " + floorLabel + " · " + heightLabel;
                 addFacadeLabel(td, px, pz, buildingLabel, bMinHeight(tags, bHeight(tags, id, bld)), poi);
             } else if (!hw.isEmpty() && RW.containsKey(hw)) {
                 String nm = tg(tags, "name:ar");
