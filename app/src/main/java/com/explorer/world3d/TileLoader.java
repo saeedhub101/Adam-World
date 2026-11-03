@@ -89,15 +89,13 @@ final class TileLoader extends Thread {
 
     /** Mark cached Tabarbour cells stale when Home is pressed so the merged dataset is reloaded. */
     void refreshTabarbourDataset() {
-        synchronized (this) {
-            tabarbourOfflineDir.mkdirs();
-            // Refresh only the small manifest. Cell files are immutable and keyed
-            // by the manifest dataset_version, so Home never redownloads the city.
-            File manifest = new File(tabarbourOfflineDir, "manifest.json");
-            if (manifest.isFile()) manifest.setLastModified(0L);
-            synchronized (bundledCityTileCache) {
-                bundledCityTileCache.clear();
-            }
+        // Never wait for the loader monitor here: the loader may be doing network I/O.
+        // Switching cities must stay immediate even while the old manifest is downloading.
+        tabarbourOfflineDir.mkdirs();
+        File manifest = new File(tabarbourOfflineDir, "manifest.json");
+        if (manifest.isFile()) manifest.setLastModified(0L);
+        synchronized (bundledCityTileCache) {
+            bundledCityTileCache.clear();
         }
     }
 
@@ -140,7 +138,9 @@ final class TileLoader extends Thread {
     }
 
     void resetOfflineShardState() {
-        synchronized (this) { offlineCells = null; offlineDatasetVersion = null; }
+        // These references are volatile; avoid blocking the GL thread on a network-held monitor.
+        offlineCells = null;
+        offlineDatasetVersion = null;
         synchronized (offlineShardCache) { offlineShardCache.clear(); }
     }
 
