@@ -1,5 +1,5 @@
 {
-  "status": "partial",
+  "status": "complete",
   "source": "Overture Maps",
   "source_type": "segment",
   "parts": [
@@ -40,7 +40,8 @@
     }
   ],
   "feature_count": 219731,
-  "completed_at": "2026-11-03T04:12:48.146923+00:00",
+  "completed_at": "2026-11-03T04:31:17.399652+00:00",
   "raw_feature_count": 219739,
-  "matched_feature_count": 219731
+  "matched_feature_count": 219731,
+  "rejected_feature_count": 0
 }
