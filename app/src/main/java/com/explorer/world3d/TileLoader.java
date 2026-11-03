@@ -74,8 +74,10 @@ final class TileLoader extends Thread {
             };
     private volatile Set<String> offlineCells;
     private volatile String offlineDatasetVersion;
-    // Canonical Manila data is bundled from data/offline-world/manila/.
-    private volatile JSONObject manilaSourceRoot;
+    // Manila buildings are spatial shards generated exclusively from the committed buildings.geojson.
+    private volatile JSONObject manilaManifest;
+    private volatile Set<String> manilaCells;
+    private volatile String manilaDatasetVersion;
 
     /** Mark cached Tabarbour cells stale when Home is pressed so the merged dataset is reloaded. */
     void refreshTabarbourDataset() {
@@ -130,7 +132,9 @@ final class TileLoader extends Thread {
     void trimMemory() {
         ready.clear();
         synchronized (bundledCityTileCache) { bundledCityTileCache.clear(); }
-        manilaSourceRoot = null;
+        manilaManifest = null;
+        manilaCells = null;
+        manilaDatasetVersion = null;
         bundledCityRoot = null;
         bundledCityManifest = null;
     }
@@ -139,7 +143,9 @@ final class TileLoader extends Thread {
         // These references are volatile; avoid blocking the GL thread on a network-held monitor.
         offlineCells = null;
         offlineDatasetVersion = null;
-        manilaSourceRoot = null;
+        manilaManifest = null;
+        manilaCells = null;
+        manilaDatasetVersion = null;
     }
 
     @Override public void run() {
@@ -400,80 +406,67 @@ final class TileLoader extends Thread {
     }
 
 
-    /** Return only features intersecting this render tile; never make TileBuilder scan the whole 1 km shard. */
-    private JSONObject filterManilaRoot(JSONObject source, double south, double west, double north, double east) throws Exception {
-        JSONArray input = source.optJSONArray("elements");
+    /** Load only the nearby spatial shard built from canonical buildings.geojson. */
+    private JSONObject loadManilaRoot(double south, double west, double north, double east) throws Exception {
+        ensureManilaManifest();
+        double lat = (south + north) * 0.5;
+        double lon = (west + east) * 0.5;
+        final double lat0 = 14.57394, lon0 = 120.98283;
+        final double kx = 111320.0 * Math.cos(Math.toRadians(lat0));
+        final double ky = 111132.0;
+        int sx = (int) Math.floor((lon - lon0) * kx / 1000.0);
+        int sz = (int) Math.floor(-(lat - lat0) * ky / 1000.0);
+        String cell = sx + "_" + sz;
+        Set<String> cells = manilaCells;
+        if (cells == null || !cells.contains(cell)) return emptyElements();
+
         JSONArray selected = new JSONArray();
-        if (input != null) {
-            for (int i = 0; i < input.length(); i++) {
-                JSONObject element = input.optJSONObject(i);
-                if (element == null) continue;
-                if ("node".equals(element.optString("type"))) {
-                    double lat = element.optDouble("lat", Double.NaN);
-                    double lon = element.optDouble("lon", Double.NaN);
-                    if (!Double.isNaN(lat) && !Double.isNaN(lon)
-                            && lat >= south && lat <= north && lon >= west && lon <= east) selected.put(element);
-                    continue;
-                }
-                JSONArray geometry = element.optJSONArray("geometry");
-                if (geometry == null || geometry.length() < 2) continue;
-                double minLat = 90d, maxLat = -90d, minLon = 180d, maxLon = -180d;
-                for (int j = 0; j < geometry.length(); j++) {
-                    JSONObject point = geometry.optJSONObject(j);
-                    if (point == null) continue;
-                    double lat = point.optDouble("lat", Double.NaN);
-                    double lon = point.optDouble("lon", Double.NaN);
-                    if (Double.isNaN(lat) || Double.isNaN(lon)) continue;
-                    minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
-                    minLon = Math.min(minLon, lon); maxLon = Math.max(maxLon, lon);
-                }
-                if (maxLat >= south && minLat <= north && maxLon >= west && minLon <= east) selected.put(element);
+        String assetPath = "runtime/shards/" + cell + ".jsonl.gz";
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                new GZIPInputStream(context.getAssets().open(assetPath)), "UTF-8"), 32768)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                JSONObject element = new JSONObject(line);
+                if (intersectsTile(element, south, west, north, east)) selected.put(element);
             }
+        } catch (IOException missingShard) {
+            // A cell absent from the committed manifest is an intentionally empty area.
+            if (!cells.contains(cell)) return emptyElements();
+            throw missingShard;
         }
         JSONObject result = new JSONObject();
         result.put("elements", selected);
         return result;
     }
 
-    /** Read the canonical Manila dataset from data/offline-world/manila/elements.json. */
-    private JSONObject loadManilaRoot(double south, double west, double north, double east) throws Exception {
-        JSONObject source = manilaSourceRoot;
-        if (source == null) {
-            synchronized (this) {
-                source = manilaSourceRoot;
-                if (source == null) {
-                    JSONObject metadata;
-                    try (InputStream in = context.getAssets().open("metadata.json");
-                         ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                        byte[] buffer = new byte[16384];
-                        int count;
-                        while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
-                        metadata = new JSONObject(out.toString("UTF-8"));
-                    }
-                    if (!"manila".equals(metadata.optString("slug"))
-                            || !"data/offline-world/manila/elements.json".equals(metadata.optString("stored_as"))) {
-                        throw new IOException("Invalid bundled offline-world Manila metadata");
-                    }
-
-                    try (InputStream in = context.getAssets().open("elements.json");
-                         ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                        byte[] buffer = new byte[32768];
-                        int count;
-                        while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
-                        source = new JSONObject(out.toString("UTF-8"));
-                    }
-                    JSONArray elements = source.optJSONArray("elements");
-                    int expectedCount = metadata.optInt("element_count", -1);
-                    if (elements == null || elements.length() == 0
-                            || (expectedCount > 0 && elements.length() != expectedCount)) {
-                        throw new IOException("Bundled offline-world Manila elements are incomplete");
-                    }
-                    manilaSourceRoot = source;
-                }
+    /** Read the committed spatial index; no whole-city GeoJSON is parsed at runtime. */
+    private void ensureManilaManifest() throws Exception {
+        if (manilaCells != null && manilaDatasetVersion != null) return;
+        synchronized (this) {
+            if (manilaCells != null && manilaDatasetVersion != null) return;
+            JSONObject manifest;
+            try (InputStream in = context.getAssets().open("runtime/manifest.json");
+                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[8192];
+                int count;
+                while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+                manifest = new JSONObject(out.toString("UTF-8"));
             }
+            if (!"Manila".equalsIgnoreCase(manifest.optString("city"))
+                    || !"data/facades/cities/manila/buildings.geojson".equals(manifest.optString("building_source"))) {
+                throw new IOException("Manila runtime manifest is not built from canonical buildings.geojson");
+            }
+            JSONArray list = manifest.optJSONArray("cells");
+            if (list == null || list.length() == 0 || manifest.optInt("building_features", 0) <= 0) {
+                throw new IOException("Manila buildings.geojson runtime index is empty");
+            }
+            HashSet<String> cells = new HashSet<>();
+            for (int i = 0; i < list.length(); i++) cells.add(list.optString(i));
+            manilaManifest = manifest;
+            manilaDatasetVersion = manifest.optString("dataset_version", "current");
+            manilaCells = cells;
         }
-        // Only intersecting features from the current game tile reach TileBuilder.
-        return filterManilaRoot(source, south, west, north, east);
     }
 
     private JSONObject loadOfflineRoot(double south, double west, double north, double east) throws Exception {
