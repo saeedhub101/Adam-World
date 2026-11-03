@@ -944,8 +944,8 @@ def source_elements(slug, lat0, lon0):
 
         full = FULL_SOURCE / slug / "elements.json"
         preserved = []
-        source_path = f"{city_source.relative_to(ROOT)}/building-footprints.geojson"
-        source_kind = "openfreemap-building-footprints+openfreemap-transportation+osm-supplement"
+        source_path = (f"{city_source.relative_to(ROOT)}/merged/manifest.json" if slug == "tabarbour" and (city_source / "merged" / "manifest.json").is_file() else f"{city_source.relative_to(ROOT)}/building-footprints.geojson")
+        source_kind = ("tabarbour-canonical-merged-multisource-buildings+openfreemap-transportation+osm-supplement" if slug == "tabarbour" and (city_source / "merged" / "manifest.json").is_file() else "openfreemap-building-footprints+openfreemap-transportation+osm-supplement")
         transportation_path = city_source / "transportation.geojson"
         primary_roads = _geojson_transportation_elements(transportation_path)
         if full.is_file():
