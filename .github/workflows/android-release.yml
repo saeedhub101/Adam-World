@@ -126,6 +126,8 @@ jobs:
           assert manifest["building_source_files"]["building_details"]
           assert manifest["building_source_feature_counts"]["building_footprints"] > 0
           assert manifest["building_source_feature_counts"]["building_details_polygons"] > 0
+          assert manifest["building_part_features"] > 0
+          assert manifest["building_detail_nodes"] > 0
           assert manifest["transportation_named_features"] > 0
           assert manifest["transportation_label_features"] > 0
           PY
