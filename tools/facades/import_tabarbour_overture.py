@@ -10,7 +10,7 @@ from urllib.request import Request, urlopen
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-CITY = ROOT / "data/facades/cities/tabarbour"
+CITY = ROOT / "data/offline-world/tabarbour"
 OUTS = {
     "building": CITY / "overture-building-details.geojson",
     "building_part": CITY / "overture-building-parts.geojson",
