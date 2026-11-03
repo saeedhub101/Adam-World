@@ -1,0 +1,118 @@
+name: Rebuild Tabarbour merged buildings into active stream
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tools/build_offline_city_tiles.py"
+      - "data/offline-world/tabarbour/merged/**"
+      - "data/offline-world/tabarbour/elements.json"
+      - "data/offline-world/tabarbour/transit-routes.json"
+      - "data/offline-world/tabarbour/transportation.geojson"
+      - "data/offline-world/tabarbour/address-points.geojson"
+      - "data/offline-world/tabarbour/overture-address-points.geojson"
+      - ".github/workflows/tabarbour-stream-rebuild.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adam-world-main-writers
+  cancel-in-progress: false
+
+jobs:
+  build-stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout source datasets and current stream
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+          filter: blob:none
+          sparse-checkout: |
+            /tools/
+            /data/facades/cities/catalog.json
+            /data/offline-world/tabarbour/
+            /app/src/main/assets/cities/
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install geometry dependency
+        run: python -m pip install --disable-pip-version-check shapely
+
+      - name: Build all active Tabarbour cells from merged buildings and roads
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/build_offline_city_tiles.py
+          python tools/build_offline_city_tiles.py --city tabarbour --checkpoint-every 20
+
+      - name: Verify merged buildings and the playable start neighborhood
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("data/offline-world/tabarbour")
+          merged=json.loads((root/"merged/manifest.json").read_text())
+          manifest=json.loads((root/"stream/manifest.json").read_text())
+          expected=int(merged["merged_building_count"])
+          assert expected >= 20000, f"Unexpected merged source count: {expected}"
+          assert manifest.get("complete") is True and manifest.get("status")=="complete"
+          assert manifest.get("building_count",0) >= 20000, f"Only {manifest.get('building_count')} buildings published"
+          assert manifest.get("element_count",0) >= manifest["building_count"]
+          entries={(int(t["ix"]),int(t["iz"])):t for t in manifest["tiles"]}
+          assert len(entries)==len(manifest["tiles"]) and entries, "Duplicate or empty stream manifest"
+          for tile in manifest["tiles"]:
+              path=root/"stream"/tile["file"]
+              assert path.is_file(), f"Missing listed cell {path}"
+              data=json.loads(path.read_text())
+              assert len(data.get("elements",[]))==int(tile["count"]), f"Cell count mismatch {path}"
+          # The player's start is the dataset origin. Check the 3x3 cells around it,
+          # which is the actual first rendered neighborhood, for both roads and buildings.
+          buildings=roads=0
+          for ix in (-1,0,1):
+            for iz in (-1,0,1):
+              tile=entries.get((ix,iz))
+              if not tile: continue
+              data=json.loads((root/"stream"/tile["file"]).read_text())
+              for item in data.get("elements",[]):
+                tags=item.get("tags") or {}
+                if tags.get("building") or tags.get("building:part"): buildings+=1
+                if tags.get("highway"): roads+=1
+          assert buildings>0, f"No buildings in 750m start neighborhood: {buildings}"
+          assert roads>0, f"No roads in 750m start neighborhood: {roads}"
+          manifest["runtime_validation"]={
+            "merged_buildings_expected":expected,
+            "buildings_published":manifest["building_count"],
+            "listed_cells":len(entries),
+            "start_neighborhood_buildings":buildings,
+            "start_neighborhood_roads":roads,
+            "start_coordinate":{"lat":31.997579,"lon":35.940358},
+            "start_neighborhood_cell_radius":1,
+            "status":"passed"
+          }
+          (root/"stream/manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n")
+          print(json.dumps(manifest["runtime_validation"],indent=2))
+          PY
+
+      - name: Commit stream cells and manifest with safe retry
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/offline-world/tabarbour/stream app/src/main/assets/cities/catalog.json
+          if git diff --cached --quiet; then echo "Tabarbour stream is already current"; exit 0; fi
+          git commit -m "Publish all merged Tabarbour buildings into active city stream"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then exit 0; fi
+            if [ "$attempt" -eq 3 ]; then exit 1; fi
+            sleep "$((attempt * 3))"
+          done
