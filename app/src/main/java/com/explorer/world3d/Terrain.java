@@ -83,8 +83,11 @@ final class Terrain {
         synchronized (Terrain.class) {
             if (dem.containsKey(k)) return;
             File f = cacheDir == null ? null : new File(cacheDir, "d_" + Z + "_" + tx + "_" + ty + ".png");
+            boolean tabarbourSource = isTabarbour(Geo.lat0, Geo.lon0);
             byte[] data = null;
-            if (f != null && f.exists() && f.length() > 100) {
+            // For Tabarbour, prefer the repository's checked-in terrain tile over
+            // any older generic DEM cache so the game displays this folder's data.
+            if (!tabarbourSource && f != null && f.exists() && f.length() > 100) {
                 try { data = readAll(new FileInputStream(f)); } catch (IOException ignore) { data = null; }
             }
             if (data == null && assets != null && !isTabarbour(Geo.lat0, Geo.lon0)) {
@@ -94,18 +97,41 @@ final class Terrain {
                     data = null;
                 }
             }
+            if (data == null && tabarbourSource && f != null && f.exists() && f.length() > 100) {
+                try { data = readAll(new FileInputStream(f)); } catch (IOException ignore) { data = null; }
+            }
             if (data == null) {
-                String url = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/" + Z + "/" + tx + "/" + ty + ".png";
-                HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
-                try {
-                    c.setConnectTimeout(15000);
-                    c.setReadTimeout(30000);
-                    c.setRequestProperty("User-Agent", "World3DExplorer/1.0 (android)");
-                    if (c.getResponseCode() != 200) throw new IOException("DEM HTTP " + c.getResponseCode());
-                    data = readAll(c.getInputStream());
-                } finally { c.disconnect(); }
+                // Tabarbour terrain is sourced from the verified tiles already stored
+                // beside its city data in offline-world; it is not bundled into the APK.
+                if (isTabarbour(Geo.lat0, Geo.lon0)) {
+                    String localUrl = "https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-world/tabarbour/terrain/"
+                            + Z + "/" + tx + "/" + ty + ".png";
+                    HttpURLConnection local = null;
+                    try {
+                        local = (HttpURLConnection) new URL(localUrl).openConnection();
+                        local.setConnectTimeout(15000);
+                        local.setReadTimeout(30000);
+                        local.setRequestProperty("User-Agent", "World3DExplorer/1.0 (android)");
+                        if (local.getResponseCode() == 200) data = readAll(local.getInputStream());
+                    } catch (IOException missingLocalTile) {
+                        data = null;
+                    } finally { if (local != null) local.disconnect(); }
+                }
+                // Keep the global Terrarium source as a fallback outside the
+                // checked-in Tabarbour terrain coverage, or if a repository tile is unavailable.
+                if (data == null) {
+                    String url = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/" + Z + "/" + tx + "/" + ty + ".png";
+                    HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+                    try {
+                        c.setConnectTimeout(15000);
+                        c.setReadTimeout(30000);
+                        c.setRequestProperty("User-Agent", "World3DExplorer/1.0 (android)");
+                        if (c.getResponseCode() != 200) throw new IOException("DEM HTTP " + c.getResponseCode());
+                        data = readAll(c.getInputStream());
+                    } finally { c.disconnect(); }
+                }
                 if (f != null) {
-                    try { FileOutputStream o = new FileOutputStream(f); o.write(data); o.close(); } catch (IOException ignore) {}
+                    try (FileOutputStream o = new FileOutputStream(f)) { o.write(data); } catch (IOException ignore) {}
                 }
             }
             float[] arr = decoder.decode(data);

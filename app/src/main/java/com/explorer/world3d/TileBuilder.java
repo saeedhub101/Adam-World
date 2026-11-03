@@ -153,11 +153,19 @@ final class TileBuilder {
                 String streetName = tg(tags, "addr:street:ar");
                 if (streetName.isEmpty()) streetName = tg(tags, "addr:street");
                 if (streetName.isEmpty()) streetName = tg(tags, "addr:street:en");
-                if (!houseNumber.isEmpty() && !buildingLabel.equals(houseNumber))
-                    buildingLabel = buildingLabel.isEmpty() ? houseNumber : buildingLabel + " · " + houseNumber;
+                if (!houseNumber.isEmpty()) {
+                    if (buildingLabel.equals(houseNumber)) buildingLabel = "رقم " + houseNumber;
+                    else buildingLabel = buildingLabel.isEmpty() ? "رقم " + houseNumber : buildingLabel + " · رقم " + houseNumber;
+                }
+                if (houseNumber.isEmpty()) {
+                    String buildingRef = tg(tags, "ref");
+                    if (buildingRef.isEmpty()) buildingRef = tg(tags, "addr:unit");
+                    if (buildingRef.isEmpty()) buildingRef = tg(tags, "adam:source_osm_id");
+                    if (buildingRef.isEmpty()) buildingRef = Long.toString(id);
+                    buildingLabel = (buildingLabel.isEmpty() ? "مبنى" : buildingLabel) + " · OSM " + buildingRef;
+                }
                 if (!streetName.isEmpty() && !buildingLabel.contains(streetName))
-                    buildingLabel = buildingLabel.isEmpty() ? streetName : buildingLabel + " · " + streetName;
-                if (buildingLabel.isEmpty()) buildingLabel = "مبنى";
+                    buildingLabel += " · " + streetName;
                 float mappedFloors = measure(tg(tags, "building:levels"));
                 boolean estimatedFloors = tg(tags, "adam:floors_quality").equals("estimated_range");
                 String floorLabel = mappedFloors > 0f
@@ -578,6 +586,46 @@ final class TileBuilder {
                 }
             }
         }
+        // A ground-floor entrance is modelled on the longest street-facing facade.
+        // Its position is a visual fallback because most source footprints do not map door coordinates.
+        int doorEdge = 0;
+        float doorEdgeLength = 0f;
+        for (int edge = 0; edge < n; edge++) {
+            int next = (edge + 1) % n;
+            float len = (float) Math.hypot(px[next] - px[edge], pz[next] - pz[edge]);
+            if (len > doorEdgeLength) { doorEdgeLength = len; doorEdge = edge; }
+        }
+        if (doorEdgeLength >= 2.2f && h >= 2.4f) {
+            int next = (doorEdge + 1) % n;
+            float ax = px[doorEdge], az = pz[doorEdge], bx = px[next], bz = pz[next];
+            float dx = bx - ax, dz = bz - az;
+            float nx = dz / doorEdgeLength, nz = -dx / doorEdgeLength;
+            if (Poly.contains(px, pz, (ax + bx) * 0.5f + nx, (az + bz) * 0.5f + nz)) { nx = -nx; nz = -nz; }
+            float doorWidth = measure(tg(tags, "door:width"));
+            if (!(doorWidth >= 0.65f && doorWidth <= 2.2f)) doorWidth = 0.95f;
+            float doorHeight = measure(tg(tags, "door:height"));
+            if (!(doorHeight >= 1.7f && doorHeight <= 3.2f)) doorHeight = Math.min(2.15f, h - 0.25f);
+            float mid = 0.5f, half = doorWidth / (2f * doorEdgeLength);
+            float t0 = Math.max(0.02f, mid - half), t1 = Math.min(0.98f, mid + half);
+            float yBase = (ground[doorEdge] + ground[next]) * 0.5f + minHeight;
+            float x0 = ax + dx * t0 + nx * 0.085f, z0 = az + dz * t0 + nz * 0.085f;
+            float x1 = ax + dx * t1 + nx * 0.085f, z1 = az + dz * t1 + nz * 0.085f;
+            float frame = 0.09f;
+            facadeQuad(buf, x0 - dx * frame / doorEdgeLength, yBase, z0 - dz * frame / doorEdgeLength,
+                    x1 + dx * frame / doorEdgeLength, yBase, z1 + dz * frame / doorEdgeLength,
+                    x1 + dx * frame / doorEdgeLength, yBase + doorHeight + frame, z1 + dz * frame / doorEdgeLength,
+                    x0 - dx * frame / doorEdgeLength, yBase + doorHeight + frame, z0 - dz * frame / doorEdgeLength,
+                    0.78f, 0.73f, 0.64f);
+            float dr = 0.30f, dg = 0.20f, db = 0.13f;
+            float[] doorColor = hex(tg(tags, "door:colour"));
+            if (doorColor == null) doorColor = hex(tg(tags, "door:color"));
+            if (doorColor != null) { dr = doorColor[0]; dg = doorColor[1]; db = doorColor[2]; }
+            facadeQuad(buf, x0, yBase + 0.04f, z0, x1, yBase + 0.04f, z1,
+                    x1, yBase + doorHeight, z1, x0, yBase + doorHeight, z0, dr, dg, db);
+            float handleX = ax + dx * (mid + half * 0.68f) + nx * 0.105f;
+            float handleZ = az + dz * (mid + half * 0.68f) + nz * 0.105f;
+            buf.box(handleX, yBase + doorHeight * 0.48f, handleZ, 0.055f, 0.11f, 0.055f, 0.78f, 0.69f, 0.45f);
+        }
         // Basement storey joints are modelled below ground and become visible in cutaway mode.
         float basementFloors = measure(tg(tags, "building:levels:underground"));
         if (basementFloors > 0f && undergroundDepth > 0f) {
@@ -823,22 +871,45 @@ final class TileBuilder {
         }
     }
 
+    private static float sumLaneWidths(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return 0f;
+        float total = 0f;
+        String[] parts = raw.trim().split("[|;]");
+        for (String part : parts) {
+            float width = measure(part);
+            if (width > 0.5f && width <= 12f) total += width;
+        }
+        return total;
+    }
+
     private static void addRoad(TileData td, JSONObject tags, String hw, String name, HashSet<String> names, float[] xs, float[] zs,
                                 float xMin, float xMax, float zMin, float zMax) {
+        // Resolve width independently for each mapped road segment. A road that
+        // changes from one to two to four lanes therefore changes width at the
+        // actual source segment boundary instead of receiving one city-wide width.
         float w = RW.getOrDefault(hw, 4.0f);
         float sourceWidth = measure(tg(tags, "width"));
         if (!(sourceWidth > 0.5f && sourceWidth <= 120f)) sourceWidth = measure(tg(tags, "width:carriageway"));
         if (!(sourceWidth > 0.5f && sourceWidth <= 120f)) sourceWidth = measure(tg(tags, "est_width"));
         if (!(sourceWidth > 0.5f && sourceWidth <= 120f)) {
-            float lanes = measure(tg(tags, "lanes"));
-            if (lanes > 0f && lanes <= 12f) sourceWidth = lanes * 3.2f;
+            sourceWidth = sumLaneWidths(tg(tags, "width:lanes"));
+            if (!(sourceWidth > 0.5f && sourceWidth <= 120f))
+                sourceWidth = sumLaneWidths(tg(tags, "width:lanes:forward")) + sumLaneWidths(tg(tags, "width:lanes:backward"));
         }
+        float laneWidth = hw.matches("motorway|motorway_link|trunk|trunk_link") ? 3.5f
+                : hw.matches("primary|primary_link|secondary|secondary_link|tertiary|tertiary_link") ? 3.25f
+                : hw.matches("footway|path|steps|cycleway|pedestrian") ? 1.8f : 3.0f;
         if (!(sourceWidth > 0.5f && sourceWidth <= 120f)) {
-            float forward = measure(tg(tags, "lanes:forward"));
-            float backward = measure(tg(tags, "lanes:backward"));
-            float splitLanes = (forward > 0f && forward <= 12f ? forward : 0f)
-                    + (backward > 0f && backward <= 12f ? backward : 0f);
-            if (splitLanes > 0f) sourceWidth = splitLanes * 3.2f;
+            float lanes = measure(tg(tags, "lanes"));
+            if (!(lanes > 0f && lanes <= 12f)) {
+                float forward = measure(tg(tags, "lanes:forward"));
+                float backward = measure(tg(tags, "lanes:backward"));
+                float bothWays = measure(tg(tags, "lanes:both_ways"));
+                lanes = (forward > 0f && forward <= 12f ? forward : 0f)
+                        + (backward > 0f && backward <= 12f ? backward : 0f)
+                        + (bothWays > 0f && bothWays <= 2f ? bothWays : 0f);
+            }
+            if (lanes > 0f && lanes <= 12f) sourceWidth = lanes * laneWidth;
         }
         if (sourceWidth > 0.5f && sourceWidth <= 120f) w = sourceWidth;
         String surface = tg(tags, "surface").toLowerCase(java.util.Locale.US);
@@ -864,11 +935,15 @@ final class TileBuilder {
             float deckOffset = Float.isFinite(mappedStructureHeight) && mappedStructureHeight > 0f
                     ? mappedStructureHeight : (Float.isFinite(mappedLayer) ? mappedLayer * 3.2f : 0f);
             float yOffset = 0.22f + deckOffset;
-            float rr = bridge ? 0.88f : 1f, rg = bridge ? 0.89f : 1f, rb = bridge ? 0.91f : 1f;
-            if (tunnel) { rr = 0.58f; rg = 0.59f; rb = 0.61f; }
-            if (surface.matches("gravel|fine_gravel|ground|dirt|earth|unpaved|compacted")) { rr = 0.78f; rg = 0.70f; rb = 0.56f; }
-            else if (surface.matches("concrete|paving_stones|sett|cobblestone")) { rr = 0.82f; rg = 0.82f; rb = 0.78f; }
+            // Asphalt is the default urban carriageway; mapped surface tags override it.
+            float rr = bridge ? 0.82f : 0.70f, rg = bridge ? 0.83f : 0.71f, rb = bridge ? 0.85f : 0.73f;
+            if (tunnel) { rr = 0.48f; rg = 0.49f; rb = 0.51f; }
+            if (surface.matches("asphalt|chipseal|bituminous")) { rr = 0.70f; rg = 0.71f; rb = 0.73f; }
+            else if (surface.matches("gravel|fine_gravel|ground|dirt|earth|unpaved|compacted")) { rr = 0.78f; rg = 0.70f; rb = 0.56f; }
+            else if (surface.matches("concrete|paving_stones|sett|cobblestone|paved")) { rr = 0.82f; rg = 0.82f; rb = 0.78f; }
             else if (surface.matches("sand|mud")) { rr = 0.88f; rg = 0.77f; rb = 0.58f; }
+            else if (surface.matches("grass|grass_paver")) { rr = 0.52f; rg = 0.64f; rb = 0.43f; }
+            else if (surface.matches("wood|metal")) { rr = 0.62f; rg = 0.59f; rb = 0.54f; }
             if (w >= 6f || hw.equals("service")) {
                 if (!bridge && !tunnel) ribbon(px, pz, w + 4.2f, 0.20f, td.bufs[B_SIDEWALK], (w + 4.2f) / 2f, 2f, 1f, 1f, 1f);
                 GeoBuf roadBuf = (w >= 7f ? td.bufs[B_ROADW] : td.bufs[B_ROADN]);
