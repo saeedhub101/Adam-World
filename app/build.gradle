@@ -40,11 +40,9 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 }
-// Package the existing Manila OSM extract and the preserved old_app Rizal Park tree inventory
-// as app assets so the Manila local mode works without a first-run network download.
+// Package repository-hosted Manila data and the migrated Rizal Park inventory.
 android.sourceSets.main.assets.srcDirs += [
-    file("$rootDir/data/offline-world/manila"),
-    file("$rootDir/old_app/src/main/assets/data")
+    file("$rootDir/data/offline-world/manila")
 ]
 
 dependencies {
