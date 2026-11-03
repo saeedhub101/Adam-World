@@ -4,5 +4,7 @@
   "source_type": "segment",
   "parts": [],
   "feature_count": 0,
-  "completed_at": "2026-11-02T16:25:29.759682+00:00"
+  "completed_at": "2026-11-03T03:50:04.462448+00:00",
+  "raw_feature_count": 3664,
+  "matched_feature_count": 3664
 }
