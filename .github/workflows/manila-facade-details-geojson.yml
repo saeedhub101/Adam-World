@@ -84,18 +84,35 @@ jobs:
           if report.get("status") != "success":
               raise SystemExit("Facade report is not successful")
           PY
-      - name: Save generated GeoJSON into main
+      - name: Save generated GeoJSON into main (retry concurrent main updates)
+        shell: bash
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/facades/cities/manila/layers/facade-windows-*.geojson \
                   data/facades/cities/manila/layers/facade-doors-*.geojson \
                   data/facades/cities/manila/layers/facade-balconies-*.geojson \
                   data/facades/cities/manila/facade-details-report.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Generate Manila facade windows and doors GeoJSON"
-            git pull --rebase origin main
-            git push origin HEAD:main
-          else
+          if git diff --cached --quiet; then
             echo "Generated Manila facade GeoJSON is already current."
+            exit 0
           fi
+
+          git commit -m "Generate Manila facade windows and doors GeoJSON"
+
+          # Other workflows may update main while this large output is being generated.
+          # Rebase onto the newest main and retry a rejected push without regenerating.
+          for attempt in 1 2 3 4 5 6 7 8; do
+            echo "Save attempt $attempt/8"
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              echo "Generated Manila facade GeoJSON saved to main."
+              exit 0
+            fi
+            echo "main moved during push; retrying against its newest commit."
+            sleep $((attempt * 3))
+          done
+          echo "Could not save generated GeoJSON after 8 concurrent-update retries." >&2
+          exit 1
