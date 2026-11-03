@@ -1,11 +1,6 @@
 name: Manila — Google Open Buildings 2.5D Temporal
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "tools/import_manila_google_open_buildings_temporal.py"
-      - ".github/workflows/manila-google-open-buildings-temporal.yml"
   workflow_dispatch:
     inputs:
       refresh:
