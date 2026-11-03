@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       city:
-        description: "One city slug; leave empty for all 15"
+        description: "Optional city slug; leave empty to process all 15 cities"
         required: false
         type: string
       refresh:
@@ -35,10 +35,10 @@ jobs:
         run: python -m pip install --disable-pip-version-check overturemaps shapely ijson
       - name: Validate importer
         run: python -m py_compile tools/import_full_city_sources.py
-      - name: Import all selected cities and checkpoint each layer
+      - name: Import all 15 cities unless explicitly selected by manual dispatch
         env:
-          CITY: ${{ inputs.city || (github.event_name == 'push' && contains(github.event.head_commit.message, '[city:amman]') && 'amman') || '' }}
-          REFRESH: ${{ inputs.refresh }}
+          CITY: ${{ github.event_name == 'workflow_dispatch' && inputs.city || '' }}
+          REFRESH: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh || false }}
         run: |
           args=()
           if [ -n "$CITY" ]; then args+=(--city "$CITY"); fi
