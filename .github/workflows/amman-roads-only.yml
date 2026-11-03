@@ -1,10 +1,5 @@
 name: Amman Roads Only Import
 on:
-  push:
-    branches: [main]
-    paths:
-      - "tools/import_amman_road_segments.py"
-      - ".github/workflows/amman-roads-only.yml"
   workflow_dispatch:
 permissions:
   contents: write
