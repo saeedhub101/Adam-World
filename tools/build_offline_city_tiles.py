@@ -525,7 +525,7 @@ def _point_in_ring(lon, lat, points):
 
 def _merge_address_points(city_slug, buildings):
     """Attach only address nodes that fall inside a mapped building footprint."""
-    address_path = SOURCE / city_slug / "address-points.geojson"
+    address_path = city_source_dir(city_slug) / "address-points.geojson"
     if not address_path.is_file() or not buildings:
         return 0
     features = read_json(address_path).get("features") or []
@@ -548,7 +548,7 @@ def _merge_address_points(city_slug, buildings):
     assigned = 0
     # Overture's independent address theme is also queried. It supplies
     # structured house numbers/street names where the source has coverage.
-    overture_address_path = SOURCE / city_slug / "overture-address-points.geojson"
+    overture_address_path = city_source_dir(city_slug) / "overture-address-points.geojson"
     if overture_address_path.is_file():
         features.extend(read_json(overture_address_path).get("features") or [])
     address_keys = ("addr:housenumber", "addr:housename", "addr:street",
@@ -744,12 +744,18 @@ def _merge_osm_road_attributes(primary_roads, osm_elements, lat0, lon0):
     return matched_count
 
 
+def city_source_dir(slug):
+    # Tabarbour is fully self-contained under data/offline-world/tabarbour.
+    return (FULL_SOURCE / slug) if slug == "tabarbour" else (SOURCE / slug)
+
+
 def source_elements(slug, lat0, lon0):
+    city_source = city_source_dir(slug)
     # OpenFreeMap/OpenMapTiles provide primary building and road geometry.
     # OSM contributes only missing building geometry/attributes; non-road
     # environmental context and transit records are preserved separately.
-    footprints_path = SOURCE / slug / "building-footprints.geojson"
-    details_path = SOURCE / slug / "building-details.geojson"
+    footprints_path = city_source / "building-footprints.geojson"
+    details_path = city_source / "building-details.geojson"
     if footprints_path.is_file():
         details = _geojson_way_elements(details_path)
         detail_by_id = {}
@@ -765,10 +771,10 @@ def source_elements(slug, lat0, lon0):
                 detail_buildings.append(item)
 
         footprints = _geojson_way_elements(footprints_path)
-        overture_buildings = _geojson_overture_elements(SOURCE / slug / "overture-building-details.geojson")
-        overture_parts = _geojson_overture_elements(SOURCE / slug / "overture-building-parts.geojson", part=True)
+        overture_buildings = _geojson_overture_elements(city_source / "overture-building-details.geojson")
+        overture_parts = _geojson_overture_elements(city_source / "overture-building-parts.geojson", part=True)
         overture_additions = _merge_overture_building_attributes(footprints + detail_buildings, overture_buildings)
-        obm_buildings = _geojson_openbuildingmap_elements(SOURCE / slug / "openbuildingmap-buildings.geojson")
+        obm_buildings = _geojson_openbuildingmap_elements(city_source / "openbuildingmap-buildings.geojson")
         obm_additions = _merge_overture_building_attributes(footprints + detail_buildings + overture_additions, obm_buildings)
         # Re-read enriched OSM detail tags so exact OSM IDs transfer source
         # heights/floors/names to their OpenFreeMap primary footprints.
@@ -831,9 +837,9 @@ def source_elements(slug, lat0, lon0):
 
         full = FULL_SOURCE / slug / "elements.json"
         preserved = []
-        source_path = f"data/facades/cities/{slug}/building-footprints.geojson"
+        source_path = f"{city_source.relative_to(ROOT)}/building-footprints.geojson"
         source_kind = "openfreemap-building-footprints+openfreemap-transportation+osm-supplement"
-        transportation_path = SOURCE / slug / "transportation.geojson"
+        transportation_path = city_source / "transportation.geojson"
         primary_roads = _geojson_transportation_elements(transportation_path)
         if full.is_file():
             full_data = read_json(full)
@@ -860,8 +866,8 @@ def source_elements(slug, lat0, lon0):
         else:
             primary_roads = []
             source_kind += "+openfreemap-road-layer-missing-no-osm-road-substitution"
-        overture_path = SOURCE / slug / "overture-building-details.geojson"
-        obm_path = SOURCE / slug / "openbuildingmap-buildings.geojson"
+        overture_path = city_source / "overture-building-details.geojson"
+        obm_path = city_source / "openbuildingmap-buildings.geojson"
         if overture_path.is_file():
             source_path += f" + {overture_path.relative_to(ROOT)}"
             source_kind += "+overture-multisource-building-height-floor-name-address-enrichment"
@@ -966,7 +972,7 @@ def main():
             "element_count": sum(len(v) for v in buckets.values()),
             "tiles": tiles,
         }
-        elevation_source = SOURCE / slug / "elevation-grid.json"
+        elevation_source = city_source / "elevation-grid.json"
         if slug == "amman" and elevation_source.is_file():
             shutil.copy2(elevation_source, city_out / "elevation-grid.json")
             manifest["elevation_grid"] = "elevation-grid.json"
