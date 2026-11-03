@@ -69,7 +69,7 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          root = Path("data/facades/cities/tabarbour")
+          root = Path("data/offline-world/tabarbour")
           required = {
               "building-footprints.geojson": 1,
               "transportation.geojson": 1,
@@ -98,7 +98,7 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          root = Path("data/facades/cities/tabarbour")
+          root = Path("data/offline-world/tabarbour")
           for name in ("overture-building-details.geojson", "overture-building-parts.geojson", "overture-address-points.geojson", "openbuildingmap-buildings.geojson"):
               path = root / name
               if not path.is_file():
@@ -120,8 +120,8 @@ jobs:
           set -euo pipefail
           python -m py_compile tools/facades/build_review_queue.py
           python tools/facades/build_review_queue.py --cities-root data/offline-world --city tabarbour
-          test -s data/facades/cities/tabarbour/review_queue.json
-          python -m json.tool data/facades/cities/tabarbour/review_queue.json >/dev/null
+          test -s data/offline-world/tabarbour/review_queue.json
+          python -m json.tool data/offline-world/tabarbour/review_queue.json >/dev/null
 
       - name: Download Tabarbour-only OSM context and source elevation tiles
         run: |
