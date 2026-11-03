@@ -149,13 +149,26 @@ def fetch_source(city: Path, source: str, bbox: tuple[float, float, float, float
         atomic_write(output_path, fc)
         atomic_write(state_path, state)
         if args.git_checkpoint:
-            paths = [str(output_path.relative_to(Path.cwd())), str(state_path.relative_to(Path.cwd()))]
-            subprocess.run(["git", "add", *paths], check=True)
-            changed = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout.strip()
-            if changed:
-                subprocess.run(["git", "commit", "-m", f"Checkpoint {city.name} {source} metadata page {state['pages']}"], check=True)
-                subprocess.run(["git", "pull", "--rebase", "origin", "main"], check=True)
-                subprocess.run(["git", "push", "origin", "HEAD:main"], check=True)
+            # Resolve against the repository root, not Path.cwd(): city/output paths
+            # may be relative even when the workflow's working directory is absolute.
+            repo_root = ROOT.resolve()
+            paths = [
+                str(output_path.resolve().relative_to(repo_root)),
+                str(state_path.resolve().relative_to(repo_root)),
+            ]
+            subprocess.run(["git", "add", "--", *paths], cwd=repo_root, check=True)
+            staged = subprocess.run(
+                ["git", "diff", "--cached", "--quiet"], cwd=repo_root, check=False
+            )
+            if staged.returncode == 1:
+                subprocess.run(
+                    ["git", "commit", "-m", f"Checkpoint {city.name} {source} metadata page {state['pages']}"],
+                    cwd=repo_root, check=True,
+                )
+                subprocess.run(["git", "pull", "--rebase", "origin", "main"], cwd=repo_root, check=True)
+                subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=repo_root, check=True)
+            elif staged.returncode != 0:
+                raise RuntimeError("Unable to inspect staged catalogue checkpoint changes")
         print(f"SAVED {city.name}/{output_name}: page={state['pages']} added={added} total={len(fc['features'])}")
         if state["complete"]:
             break
