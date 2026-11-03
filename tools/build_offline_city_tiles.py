@@ -551,7 +551,11 @@ def _merge_address_points(city_slug, buildings):
         if geometry.get("type") != "Point" or len(coords) < 2:
             continue
         lon, lat = float(coords[0]), float(coords[1])
-        candidates = grid.get((math.floor(lon / grid_size), math.floor(lat / grid_size)), [])
+        gx, gy = math.floor(lon / grid_size), math.floor(lat / grid_size)
+        candidates = set()
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                candidates.update(grid.get((gx + dx, gy + dy), []))
         address_tags = _feature_tags(feature)
         # Overture Address theme uses number/street/unit rather than OSM addr:* keys.
         if address_tags.get("number") and not address_tags.get("addr:housenumber"):
@@ -565,6 +569,29 @@ def _merge_address_points(city_slug, buildings):
             if _point_in_ring(lon, lat, ring_lookup[index]):
                 matched = buildings[index]
                 break
+        if matched is None and candidates:
+            # Official address points often sit at the entrance just outside
+            # the roof footprint. Attach only a uniquely nearest building
+            # within 4 metres; never spread one number to adjacent buildings.
+            sx = 111320.0 * math.cos(math.radians(lat))
+            sy = 111132.0
+            px, py = lon * sx, lat * sy
+            ranked = []
+            for index in candidates:
+                points = ring_lookup[index]
+                best = float("inf")
+                for pos, point in enumerate(points):
+                    nxt = points[(pos + 1) % len(points)]
+                    ax, ay = float(point["lon"]) * sx, float(point["lat"]) * sy
+                    bx, by = float(nxt["lon"]) * sx, float(nxt["lat"]) * sy
+                    dx, dy = bx - ax, by - ay
+                    denom = dx * dx + dy * dy
+                    t = 0.0 if denom <= 1e-9 else max(0.0, min(1.0, ((px-ax)*dx + (py-ay)*dy) / denom))
+                    best = min(best, math.hypot(px - (ax + t*dx), py - (ay + t*dy)))
+                ranked.append((best, index))
+            ranked.sort()
+            if ranked and ranked[0][0] <= 4.0 and (len(ranked) == 1 or ranked[1][0] - ranked[0][0] >= 1.25):
+                matched = buildings[ranked[0][1]]
         if matched is None:
             continue
         target_tags = matched.setdefault("tags", {})
