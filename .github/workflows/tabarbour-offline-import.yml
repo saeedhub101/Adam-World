@@ -183,11 +183,13 @@ jobs:
           for attempt in 1 2 3 4 5; do
             git fetch origin main
             git reset --hard origin/main
+            # Remove assets that an older in-flight workflow may have republished.
+            rm -rf app/src/main/assets/cities/tabarbour
             for path in data/facades/cities/tabarbour data/offline-world/tabarbour; do
               mkdir -p "$path"
               cp -a "$SNAPSHOT/$path/." "$path/"
             done
-            git add data/facades/cities/tabarbour data/offline-world/tabarbour
+            git add -A data/facades/cities/tabarbour data/offline-world/tabarbour app/src/main/assets/cities/tabarbour
             if git diff --cached --quiet; then
               PUBLISHED=true
               break
