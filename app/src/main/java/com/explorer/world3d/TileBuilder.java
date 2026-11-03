@@ -21,9 +21,11 @@ final class TileBuilder {
     static {
         RW.put("motorway", 14f); RW.put("trunk", 12f); RW.put("primary", 11f); RW.put("secondary", 9f);
         RW.put("tertiary", 8f); RW.put("unclassified", 6f); RW.put("residential", 6f); RW.put("living_street", 5f);
-        RW.put("service", 4.5f); RW.put("motorway_link", 7f); RW.put("trunk_link", 7f); RW.put("primary_link", 7f);
+        RW.put("service", 4.5f); RW.put("road", 5.5f); RW.put("busway", 3.5f); RW.put("raceway", 9f);
+        RW.put("motorway_link", 7f); RW.put("trunk_link", 7f); RW.put("primary_link", 7f);
         RW.put("secondary_link", 6f); RW.put("tertiary_link", 6f); RW.put("pedestrian", 6f);
-        RW.put("footway", 2.5f); RW.put("path", 2f); RW.put("steps", 2f); RW.put("cycleway", 2.5f); RW.put("track", 3.5f);
+        RW.put("footway", 2.5f); RW.put("bridleway", 2.5f); RW.put("escape", 2.5f);
+        RW.put("path", 2f); RW.put("steps", 2f); RW.put("cycleway", 2.5f); RW.put("track", 3.5f);
     }
 
     private TileBuilder() {}
@@ -162,7 +164,7 @@ final class TileBuilder {
                     if (buildingRef.isEmpty()) buildingRef = tg(tags, "addr:unit");
                     if (buildingRef.isEmpty()) buildingRef = tg(tags, "adam:source_osm_id");
                     if (buildingRef.isEmpty()) buildingRef = Long.toString(id);
-                    buildingLabel = (buildingLabel.isEmpty() ? "مبنى" : buildingLabel) + " · OSM " + buildingRef;
+                    buildingLabel = (buildingLabel.isEmpty() ? "مبنى" : buildingLabel) + " · معرّف OSM " + buildingRef;
                 }
                 if (!streetName.isEmpty() && !buildingLabel.contains(streetName))
                     buildingLabel += " · " + streetName;
@@ -936,9 +938,9 @@ final class TileBuilder {
                     ? mappedStructureHeight : (Float.isFinite(mappedLayer) ? mappedLayer * 3.2f : 0f);
             float yOffset = 0.22f + deckOffset;
             // Asphalt is the default urban carriageway; mapped surface tags override it.
-            float rr = bridge ? 0.82f : 0.70f, rg = bridge ? 0.83f : 0.71f, rb = bridge ? 0.85f : 0.73f;
+            float rr = bridge ? 0.92f : 1f, rg = bridge ? 0.93f : 1f, rb = bridge ? 0.95f : 1f;
             if (tunnel) { rr = 0.48f; rg = 0.49f; rb = 0.51f; }
-            if (surface.matches("asphalt|chipseal|bituminous")) { rr = 0.70f; rg = 0.71f; rb = 0.73f; }
+            if (surface.matches("asphalt|chipseal|bituminous")) { rr = 1f; rg = 1f; rb = 1f; }
             else if (surface.matches("gravel|fine_gravel|ground|dirt|earth|unpaved|compacted")) { rr = 0.78f; rg = 0.70f; rb = 0.56f; }
             else if (surface.matches("concrete|paving_stones|sett|cobblestone|paved")) { rr = 0.82f; rg = 0.82f; rb = 0.78f; }
             else if (surface.matches("sand|mud")) { rr = 0.88f; rg = 0.77f; rb = 0.58f; }
