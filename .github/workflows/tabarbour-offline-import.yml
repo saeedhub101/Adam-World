@@ -81,7 +81,7 @@ jobs:
               print(f"VALID {path}: {len(features)} features, {path.stat().st_size} bytes")
           PY
 
-      - name: Import independent Overture building heights, floors, building parts and address points
+      - name: Import independent Overture and OpenBuildingMap heights, floors, building parts and address points
         continue-on-error: true
         run: |
           python -m py_compile tools/facades/import_tabarbour_overture.py
@@ -93,10 +93,10 @@ jobs:
           for name in ("overture-building-details.geojson", "overture-building-parts.geojson", "overture-address-points.geojson", "openbuildingmap-buildings.geojson"):
               path = root / name
               if not path.is_file():
-                  print(f"OVERTURE SOURCE UNAVAILABLE: {name}")
+                  print(f"OPTIONAL MULTI-SOURCE DATA UNAVAILABLE: {name}")
                   continue
               data = json.loads(path.read_text(encoding="utf-8"))
-              print(f"OVERTURE VALID {name}: {len(data.get('features', []))} features")
+              print(f"MULTI-SOURCE VALID {name}: {len(data.get('features', []))} features")
           PY
 
       - name: Harvest Tabarbour Panoramax and aerial imagery catalogues
