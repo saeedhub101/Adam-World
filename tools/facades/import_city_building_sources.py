@@ -186,14 +186,26 @@ def import_openfreemap_transportation(city,bbox,refresh,git_checkpoint):
     groups={"transportation":defaultdict(list),"transportation_name":defaultdict(list)}
     group_props={"transportation":{},"transportation_name":{}}
     fetched=0
+    missing_tiles=[]
+    expected_tiles=0
     for x in range(tile_x(west,z),tile_x(east,z)+1):
         for y in range(tile_y(north,z),tile_y(south,z)+1):
+            expected_tiles += 1
             url=template.replace("{z}",str(z)).replace("{x}",str(x)).replace("{y}",str(y))
-            try:
-                tile=mapbox_vector_tile.decode(get_bytes(url),default_options={"y_coord_down":True})
-                fetched+=1
-            except Exception as exc:
-                print(f"WARN {city.name}: transportation tile {z}/{x}/{y}: {exc}",flush=True); continue
+            tile=None
+            last_error=None
+            for attempt in range(3):
+                try:
+                    tile=mapbox_vector_tile.decode(get_bytes(url),default_options={"y_coord_down":True})
+                    last_error=None
+                    break
+                except Exception as exc:
+                    last_error=exc
+                    time.sleep(attempt+1)
+            if tile is None:
+                missing_tiles.append(f"{z}/{x}/{y}: {last_error}")
+                continue
+            fetched+=1
             for layer_name in ("transportation","transportation_name"):
                 layer=tile.get(layer_name) or {}
                 for feature in layer.get("features",[]):
@@ -211,6 +223,8 @@ def import_openfreemap_transportation(city,bbox,refresh,git_checkpoint):
                     key=str(raw_id) if raw_id is not None else f"xy:{round(line.centroid.x,6)}:{round(line.centroid.y,6)}"
                     groups[layer_name][key].append(line)
                     group_props[layer_name][key]=props
+    if missing_tiles or fetched != expected_tiles:
+        raise RuntimeError(f"Incomplete OpenFreeMap transportation tile coverage: {fetched}/{expected_tiles}; " + " | ".join(missing_tiles[:12]))
     features=[]
     for layer_name in ("transportation","transportation_name"):
         for key,parts in groups[layer_name].items():
