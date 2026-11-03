@@ -109,14 +109,37 @@ def _feature_tags(feature):
     props = dict(feature.get("properties") or {})
     nested = props.get("tags")
     tags = dict(nested) if isinstance(nested, dict) else {}
-    # OpenFreeMap properties are already flattened; OSM details preserve tags
-    # in the nested object. Keep useful source attributes without overwriting tags.
+    # OpenFreeMap/OpenMapTiles exposes a mixture of OSM tags and rendering
+    # attributes. Normalize semantic attributes for the Android renderer while
+    # keeping cartographic render heights separate from surveyed heights.
+    aliases = {
+        "name:latin": "name:en", "name_en": "name:en",
+        "name:nonlatin": "name", "housenumber": "addr:housenumber",
+        "street": "addr:street", "num_floors": "building:levels",
+        "facade_material": "building:material",
+        "facade_color": "building:colour", "facade_colour": "building:colour",
+        "roof_material": "roof:material", "roof_color": "roof:colour",
+        "roof_colour": "roof:colour", "roof_shape": "roof:shape",
+        "render_height": "adam:render_height_m",
+        "render_height_m": "adam:render_height_m",
+        "render_min_height": "adam:render_min_height_m",
+        "render_min_height_m": "adam:render_min_height_m",
+        "colour": "building:colour",
+    }
+    excluded = {
+        "tags", "osm_feature_id", "osm_id", "osm_way_id", "osm_type",
+        "source", "source_feature_id"
+    }
     for key, value in props.items():
-        if value is not None and key not in {
-            "tags", "osm_feature_id", "osm_id", "osm_way_id", "osm_type",
-            "source", "source_feature_id"
-        }:
-            tags.setdefault(str(key), value)
+        if value is None or key in excluded or value == "":
+            continue
+        key = str(key)
+        tags.setdefault(aliases.get(key, key), value)
+    # Preserve source provenance for auditing; never promote render_height to
+    # the authoritative "height" field. CityRenderer deliberately treats it
+    # as a cartographic fallback, not a surveyed measurement.
+    if props.get("source") and "OpenFreeMap" in str(props.get("source")):
+        tags.setdefault("adam:source", "OpenFreeMap/OpenMapTiles")
     return tags
 
 
