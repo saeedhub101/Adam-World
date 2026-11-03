@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "city": "manila",
-  "runtime": "tools/build_manila_stream_shards.py imports building polygons and available attributes only from buildings.geojson; it never reads Manila building-details.geojson, building-footprints.geojson, Overture building extracts, or the PBF building layer. OpenMapTiles PBF is used only for road geometry and non-building POIs; transportation.geojson supplies street names.",
+  "runtime": "tools/build_manila_stream_shards.py merges buildings.geojson, building-footprints.geojson and building-details.geojson. Populated buildings.geojson geometry has priority; footprints fill missing geometry; details enrich matching IDs and add unmatched building/building-part polygons and mapped building nodes. OpenMapTiles PBF is used for roads and non-building POIs; transportation.geojson supplies street geometry and names.",
   "photo_facade_textures": {
     "verified_assignments": 0,
     "status": "No human-verified building/photo matches are currently available; no candidate photo may be assigned automatically."
@@ -11,12 +11,13 @@
     "© OpenFreeMap / OpenMapTiles"
   ],
   "building_source": {
-    "source": "Manila canonical buildings GeoJSON",
-    "path": "data/facades/cities/manila/buildings.geojson",
-    "features": 2642,
-    "named_features": 427,
-    "features_with_height_or_levels": 677,
-    "runtime_role": "sole source of Manila local building footprints and mapped building attributes"
+    "source": "Merged Manila building datasets",
+    "paths": [
+      "data/facades/cities/manila/buildings.geojson",
+      "data/facades/cities/manila/building-footprints.geojson",
+      "data/facades/cities/manila/building-details.geojson"
+    ],
+    "runtime_role": "combined geometry and attribute source; geometry priority is buildings.geojson, then building-footprints.geojson, with building-details.geojson enriching by source ID and adding unmatched buildings/parts"
   },
   "street_source": {
     "source": "OpenFreeMap/OpenMapTiles transportation GeoJSON",
@@ -24,5 +25,12 @@
     "features": 1388,
     "named_features": 417,
     "runtime_role": "always imported for named street-label geometry; labels overlay PBF road surfaces without replacing them"
+  },
+  "building_source_feature_counts": {
+    "building_footprints": 1528,
+    "building_details": 1533,
+    "building_detail_polygons": 1528,
+    "building_detail_nodes": 5,
+    "building_parts": 222
   }
 }
