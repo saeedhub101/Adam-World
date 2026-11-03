@@ -18,6 +18,9 @@ final class Game {
 
     float py, px, pz, pyaw, cx, cz, cyaw, cv, phase, swingAmp;
     boolean driving;
+    int vehicleType = ProceduralVehicleModels.SEDAN;
+    float altitude;
+    volatile float liftInput;
     float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
     long lastLookMs;
     volatile float sx, sy;
@@ -35,7 +38,7 @@ final class Game {
     }
 
     void reset() {
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; camYaw = 0; agents.clear();
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; agents.clear();
     }
 
     float focusX() { return driving ? cx : px; }
@@ -84,19 +87,27 @@ final class Game {
             } else swingAmp = 0;
             py += (w.heightAt(px, pz) - py) * Math.min(1f, dt * 10f);
         } else {
-            if (jy > 0.1f) cv += jy * 14f * dt;
-            else if (jy < -0.1f) cv += jy * (cv > 0 ? 24f : 8f) * dt;
-            else cv -= Math.signum(cv) * Math.min(Math.abs(cv), 5f * dt);
-            cv = clamp(cv, -8f, 32f);
-            cyaw -= jx * 1.7f * dt * clamp(cv / 5f, -1f, 1f);
+            boolean aircraft = vehicleType == ProceduralVehicleModels.HELICOPTER || vehicleType == ProceduralVehicleModels.AIRPLANE;
+            if (jy > 0.1f) cv += jy * (aircraft ? 24f : 14f) * dt;
+            else if (jy < -0.1f) cv += jy * (cv > 0 ? (aircraft ? 30f : 24f) : 8f) * dt;
+            else cv -= Math.signum(cv) * Math.min(Math.abs(cv), (aircraft ? 3f : 5f) * dt);
+            cv = clamp(cv, aircraft ? -12f : -8f, aircraft ? (vehicleType == ProceduralVehicleModels.AIRPLANE ? 90f : 48f) : 32f);
+            cyaw -= jx * (aircraft ? 0.85f : 1.7f) * dt * clamp(cv / 8f, -1f, 1f);
             float fx = (float) Math.sin(cyaw), fz = (float) Math.cos(cyaw);
             float nx = cx + fx * cv * dt, nz = cz + fz * cv * dt;
-            if (w.blocked(nx + fx * 2.1f, nz + fz * 2.1f, 0.9f) || w.blocked(nx - fx * 2.1f, nz - fz * 2.1f, 0.9f)
+            if (aircraft) {
+                float liftRate = vehicleType == ProceduralVehicleModels.HELICOPTER ? 10f : 5f;
+                if (vehicleType == ProceduralVehicleModels.HELICOPTER || cv > 13f) altitude += liftInput * liftRate * dt;
+                if (vehicleType == ProceduralVehicleModels.AIRPLANE && cv < 9f && altitude > 0f) altitude -= 3.5f * dt;
+                altitude = clamp(altitude, 0f, vehicleType == ProceduralVehicleModels.HELICOPTER ? 260f : 700f);
+                cx = nx; cz = nz;
+            } else if (w.blocked(nx + fx * 2.1f, nz + fz * 2.1f, 0.9f) || w.blocked(nx - fx * 2.1f, nz - fz * 2.1f, 0.9f)
                     || w.blocked(nx, nz, 1.0f)) {
                 cv = -cv * 0.25f;
             } else { cx = nx; cz = nz; }
             px = cx; pz = cz;
-            py += (w.heightAt(cx, cz) - py) * Math.min(1f, dt * 10f);
+            float ground = w.heightAt(cx, cz);
+            py += (ground + altitude - py) * Math.min(1f, dt * (aircraft ? 4f : 10f));
             if (System.currentTimeMillis() - lastLookMs > 2500) {
                 camYaw += angDiff(camYaw, cyaw) * Math.min(1f, dt * 2.5f);
             }
