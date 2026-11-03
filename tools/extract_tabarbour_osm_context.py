@@ -14,7 +14,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
-CITY = ROOT / "data/facades/cities/tabarbour/city.json"
+CITY = ROOT / "data/offline-world/tabarbour/city.json"
 OUTPUT = ROOT / "data/offline-world/tabarbour"
 TERRAIN_OUTPUT = OUTPUT / "terrain"
 LAT0, LON0, RADIUS_M = 31.997579, 35.940358, 3500.0
