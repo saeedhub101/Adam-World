@@ -90,13 +90,13 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     // ES 2.0 guarantees only 16 fragment uniform vectors. The full PBR/glass
     // shader exceeds that minimum on some devices, so retain a compatible path.
     private static final String FS_COMPAT =
-            "#ifdef GL_FRAGMENT_PRECISION_HIGH\\nprecision highp float;\\n#else\\nprecision mediump float;\\n#endif\\n"
-            + "uniform sampler2D uTex; uniform sampler2D uEmis; uniform vec3 uTint;\\n"
-            + "uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uAmb; uniform vec3 uFog;\\n"
-            + "uniform float uFogN; uniform float uFogF; uniform float uEmisK; uniform float uWater; uniform float uTime;\\n"
-            + "varying vec2 vUV; varying vec3 vCol; varying vec3 vNor; varying float vDist; varying vec3 vWorld; varying vec3 vRel;\\n"
-            + "void main(){ float f=clamp((vDist-uFogN)/max(uFogF-uFogN,0.001),0.0,1.0);\\n"
-            + " if(uWater>0.5){ vec2 p=vWorld.xz; float wave=0.5+0.5*sin(p.x*0.22+p.y*0.17+uTime); vec3 c=mix(vec3(0.02,0.16,0.23),uFog,0.18+0.24*wave); gl_FragColor=vec4(mix(c,uFog,f),1.0); }\\n"
+            "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n"
+            + "uniform sampler2D uTex; uniform sampler2D uEmis; uniform vec3 uTint;\n"
+            + "uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uAmb; uniform vec3 uFog;\n"
+            + "uniform float uFogN; uniform float uFogF; uniform float uEmisK; uniform float uWater; uniform float uTime;\n"
+            + "varying vec2 vUV; varying vec3 vCol; varying vec3 vNor; varying float vDist; varying vec3 vWorld; varying vec3 vRel;\n"
+            + "void main(){ float f=clamp((vDist-uFogN)/max(uFogF-uFogN,0.001),0.0,1.0);\n"
+            + " if(uWater>0.5){ vec2 p=vWorld.xz; float wave=0.5+0.5*sin(p.x*0.22+p.y*0.17+uTime); vec3 c=mix(vec3(0.02,0.16,0.23),uFog,0.18+0.24*wave); gl_FragColor=vec4(mix(c,uFog,f),1.0); }\n"
             + " else { vec3 n=normalize(vNor); if(!gl_FrontFacing)n=-n; float d=max(dot(n,normalize(uSunDir)),0.0); vec4 tx=texture2D(uTex,vUV); vec3 base=tx.rgb*vCol*uTint; vec3 lit=base*(uAmb*(0.75+0.25*n.y)+uSunCol*d)+texture2D(uEmis,vUV).rgb*uEmisK; gl_FragColor=vec4(mix(lit,uFog,f),tx.a); } }";
     private boolean advancedShader = false;
 
