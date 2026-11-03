@@ -225,10 +225,10 @@ def _building_key(feature):
         # "<source>|<layer>|id:<numeric OSM ID>". Normalize that ID to the
         # same way/<id> key used by the saved OSM footprint/detail extracts,
         # so all three sources enrich one building instead of creating twins.
-        match=re.search(r"(?:^|\\|)id:(\\d+)$",feature_id)
+        match=re.search(r"(?:^|\|)id:(\d+)$",feature_id)
         if match:
             raw=f"way/{match.group(1)}"
-        elif re.fullmatch(r"\\d+",feature_id):
+        elif re.fullmatch(r"\d+",feature_id):
             raw=f"way/{feature_id}"
         else:
             raw=feature_id
