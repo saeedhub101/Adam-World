@@ -36,17 +36,24 @@ def process_city(city: Path, limit: int, hd_limit: int) -> dict:
     queue = json.loads(queue_path.read_text(encoding="utf-8"))
     chosen = []
     for building in queue.get("buildings", []):
-        eligible = [p for p in building.get("facade_photo_candidates", []) if p.get("eligible_for_visual_review")]
-        if eligible:
-            best = eligible[0]
+        # Keep near Panoramax images for manual visual review even when azimuth/FOV
+        # is missing. This does NOT authorize texture reuse or identity assignment.
+        candidates = [
+            photo for photo in building.get("facade_photo_candidates", [])
+            if photo.get("preview_url")
+            and float(photo.get("distance_m") or 999) <= 100
+            and photo.get("license")
+        ]
+        for candidate in candidates:
             chosen.append({
                 "osm_way_id": building.get("osm_way_id"),
                 "building_name": building.get("name"),
                 "footprint_geometry": building.get("footprint_geometry"),
-                "distance_m": best.get("distance_m"),
-                "azimuth_delta_deg": best.get("azimuth_delta_deg"),
-                "quality_score": best.get("quality_score"),
-                "photo": best,
+                "distance_m": candidate.get("distance_m"),
+                "azimuth_delta_deg": candidate.get("azimuth_delta_deg"),
+                "quality_score": candidate.get("quality_score"),
+                "strictly_eligible": bool(candidate.get("eligible_for_visual_review")),
+                "photo": candidate,
             })
     chosen.sort(key=lambda x: (-int(x["quality_score"] or 0), float(x["distance_m"] or 999)))
     # De-duplicate same photo appearing as candidate for several neighbouring buildings.
@@ -114,6 +121,7 @@ def process_city(city: Path, limit: int, hd_limit: int) -> dict:
                 "capture_datetime": photo.get("capture_datetime"), "camera": photo.get("camera"),
                 "metadata_url": photo.get("metadata_url"), "full_image_url": photo.get("image_url"),
                 "identity_status": "requires_visual_identity_review",
+                "strictly_eligible_for_reuse": item["strictly_eligible"],
             })
             print(f"IMAGE_OK {city.name} photo={pid} size={width}x{height}")
         except Exception as exc:
@@ -122,7 +130,8 @@ def process_city(city: Path, limit: int, hd_limit: int) -> dict:
         if i % 20 == 0: time.sleep(0.15)
     manifest = {
         "schema_version": 1, "city": city.name,
-        "policy": "Image decode, minimum dimensions, camera geometry and licence are machine-filtered. Exact depicted-building identity remains unverified until visual inspection.",
+        "policy": "Panoramax only. Preview candidates with a declared license are downloaded for human review even when camera metadata is incomplete. Download does not verify building identity or authorize texture reuse.",
+        "source_policy": "KartaView is excluded completely.",
         "eligible_building_candidates": len(chosen), "downloaded_valid_images": len(reviewed),
         "downloaded_hd_images": hd_downloaded, "failed_or_rejected_images": len(failed), "items": reviewed, "rejected": failed,
     }
