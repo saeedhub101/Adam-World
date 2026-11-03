@@ -233,20 +233,26 @@ def osm_source_key(raw):
         value=value[1:]
     return value if value.isdigit() else ""
 
-def read_overture_building_index():
-    """Index source-linked Overture building attributes by their OSM source feature IDs."""
-    index={}
+def read_overture_buildings(writer):
+    """Use Overture's citywide GeoJSON building polygons as the primary Manila footprints."""
+    index={}; added=0
     if not OVERTURE_BUILDINGS.is_dir():
-        return index
+        return index, added
     mapping={"height":"height","num_floors":"building:levels",
       "facade_material":"building:material","facade_color":"building:colour",
       "roof_material":"roof:material","roof_color":"roof:colour","roof_shape":"roof:shape",
       "min_floor":"building:min_level"}
     for path in sorted(OVERTURE_BUILDINGS.glob("part-*.geojson")):
         data=json.loads(path.read_text(encoding="utf-8"))
-        for feature in data.get("features",[]):
+        for i,feature in enumerate(data.get("features",[])):
             props=feature.get("properties") or {}
-            tags={}
+            if props.get("is_underground") is True:
+                continue
+            rings=polygons(feature.get("geometry") or {})
+            if not rings or not rings[0]:
+                continue
+            tags={"building":"yes","adam:source":"Overture Maps building",
+                  "adam:overture_building_id":text(props.get("id") or feature.get("id") or "")}
             for source,target in mapping.items():
                 value=props.get(source)
                 if value not in (None,"",[],{}):
@@ -254,19 +260,23 @@ def read_overture_building_index():
             name=text(props.get("names"))
             if name:
                 tags["name"]=name
-            if props.get("is_underground") is True:
-                tags["location"]="underground"
             for source in props.get("sources") or []:
                 if not isinstance(source,dict):
                     continue
                 key=osm_source_key(source.get("record_id"))
-                if not key or not tags:
+                if not key:
                     continue
                 current=index.setdefault(key,{})
                 for field,value in tags.items():
                     if value not in (None,"") and current.get(field) in (None,""):
                         current[field]=value
-    return index
+                if key.isdigit():
+                    tags.setdefault("adam:source_osm_id",key)
+            outer=rings[0]
+            emit_polygon(writer,"overture-building",feature.get("id",i),rings,tags,"overture_buildings")
+            add_primary_polygon(outer)
+            added+=1
+    return index, added
 
 MATCHED_OSM_IDS=set()
 MATCHED_OVERTURE_IDS=set()
@@ -355,8 +365,12 @@ def read_pbf(writer, osm_index, building_index, overture_index):
                     for source_tags in (supplement or {},audited or {},overture or {}):
                         for k,v in source_tags.items():
                             if v not in (None,"") and tags.get(k) in (None,""): tags[k]=text(v)
-            emit_polygon(writer,"omt",f.get("id",count),rings,tags,"openmaptiles_buildings")
             outer=rings[0] if rings else []
+            # Overture polygons are the primary footprints; keep OpenMapTiles
+            # geometry only where no Overture polygon already covers the same building.
+            if outer and overlaps_primary(outer):
+                continue
+            emit_polygon(writer,"omt",f.get("id",count),rings,tags,"openmaptiles_buildings")
             if outer:
                 PRIMARY_CENTROIDS.append((sum(p[0] for p in outer)/len(outer),sum(p[1] for p in outer)/len(outer)))
                 add_primary_polygon(outer)
@@ -535,7 +549,7 @@ def main():
     writer=Shards()
     osm_data,osm_index=read_osm_detail_index()
     building_index=read_building_csv_index()
-    overture_index=read_overture_building_index()
+    overture_index,overture_footprints=read_overture_buildings(writer)
     omt=read_pbf(writer,osm_index,building_index,overture_index)
     if PBF_ROAD_COUNT == 0: read_transport(writer)
     footprint_count=read_city_footprints(writer)
@@ -558,7 +572,8 @@ def main():
       "cells":sorted(writer.cells),"counts":dict(writer.counts),"openmaptiles_building_features":omt,"openmaptiles_transportation_features":PBF_ROAD_COUNT,
       "osm_building_fallback_features":unmatched,"openfreemap_footprint_features":footprint_count,"overture_building_part_features":overture_part_count,"osm_context_features":context,"thematic_supplement_features":thematic,
       "osm_detail_matched_count":matched,"overture_building_attribute_matches":len(MATCHED_OVERTURE_IDS),
-      "overture_building_attribute_records":len(overture_index),"terrain":"disabled_flat_ground",
+      "overture_building_attribute_records":len(overture_index),"overture_building_footprint_features":overture_footprints,
+      "terrain":"disabled_flat_ground",
       "attribution":["© OpenFreeMap / OpenMapTiles","© OpenStreetMap contributors"],
       "license":"OpenStreetMap data ODbL 1.0; OpenFreeMap/OpenMapTiles attribution required"}
     (OUT/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
