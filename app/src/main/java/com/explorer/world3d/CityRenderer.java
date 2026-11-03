@@ -494,12 +494,12 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                 if (!doSpawn(c)) {
                     // Keep retrying while allowing city controls to remain usable.
                     // A missing/failed tile must never trap the user behind a loading screen.
-                    spawnDeadline = nowMs + 5000;
-                    if (!spawnTimeoutNotified && nowMs > spawnDeadline - 4900) {
+                    if (!spawnTimeoutNotified) {
                         spawnTimeoutNotified = true;
                         L.onLoading(false, "");
                         L.onToast("تأخر تحميل المدينة. يمكنك اختيار مدينة أخرى أو الانتظار؛ سيستمر التحميل في الخلفية.");
                     }
+                    spawnDeadline = nowMs + 5000;
                 }
             }
         }
