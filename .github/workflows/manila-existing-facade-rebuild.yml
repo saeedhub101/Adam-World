@@ -1,0 +1,61 @@
+name: Reconcile existing Manila facade photos
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tools/facades/build_review_queue.py"
+      - "tools/facades/build_existing_manila_photo_gallery.py"
+      - ".github/workflows/manila-existing-facade-rebuild.yml"
+      - "data/facades/cities/manila/layers/building-layer.geojson"
+      - "data/facades/cities/manila/panoramax-items.geojson"
+      - "data/facades/cities/manila/facade-review/images/**"
+      - "data/facades/cities/manila/facade-review/full/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: manila-existing-facade-rebuild
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build candidates from existing building and Panoramax files
+        run: |
+          python -m py_compile tools/facades/build_review_queue.py tools/facades/build_existing_manila_photo_gallery.py
+          python tools/facades/build_review_queue.py --city manila
+
+      - name: Reconcile only photos already stored in the repository
+        run: |
+          python tools/facades/build_existing_manila_photo_gallery.py
+
+      - name: Commit each completed batch to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/facades/cities/manila/review_queue.json \
+                  data/facades/cities/manila/facade-review/existing-photo-audit.json \
+                  data/facades/cities/manila/facade-review/index.html
+          if git diff --cached --quiet; then
+            echo "No changes; existing review outputs are already current."
+          else
+            git commit -m "Reconcile existing Manila facade photos with buildings"
+            git push origin HEAD:main
+          fi
