@@ -121,7 +121,7 @@ final class TileBuilder {
                 td.hasCoast = true;
                 addCoastSand(td, xs, zs, xMin, xMax, zMin, zMax);
             } else if (!bld.isEmpty() && !bld.equals("no")) {
-                if (bcount > 900) continue;
+                if (bcount > 2500) continue;
                 float[][] P = clean(xs, zs);
                 if (P == null) continue;
                 float[] px = P[0], pz = P[1];
