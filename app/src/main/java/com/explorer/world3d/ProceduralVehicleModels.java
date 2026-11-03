@@ -26,7 +26,7 @@ final class ProceduralVehicleModels {
         float[] paint=type==POLICE?new float[]{.91f,.93f,.96f}:type==TANK?new float[]{.25f,.31f,.20f}:
                 type==BUS?new float[]{.86f,.73f,.18f}:type==HELICOPTER?new float[]{.24f,.34f,.27f}:
                 type==AIRPLANE?new float[]{.82f,.85f,.88f}:new float[]{.16f,.30f,.48f};
-        if(type==BICYCLE||type==MOTORBIKE){ frame(b,type); bikeWheels(b,type==BICYCLE?.34f:.43f,type==BICYCLE?1.65f:1.45f); }
+        if(type==BICYCLE||type==MOTORBIKE){ frame(b,type); }
         else if(type==TANK){ hull(b,paint,2.8f,5.1f,1.15f,.78f); turret(b); }
         else if(type==HELICOPTER){ hull(b,paint,1.1f,4.0f,.95f,.92f); tail(b); }
         else if(type==AIRPLANE){ hull(b,paint,.72f,7.0f,.82f,.82f); wings(b); tail(b); }
