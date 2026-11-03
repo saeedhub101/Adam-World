@@ -322,6 +322,24 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 return true;
             }
         });
+        Button liftUp = btn("⬆");
+        liftUp.setOnTouchListener(new View.OnTouchListener() {
+            @Override public boolean onTouch(View v, MotionEvent e) {
+                int a=e.getActionMasked();
+                if(a==MotionEvent.ACTION_DOWN) renderer.game.liftInput=1f;
+                else if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_CANCEL) renderer.game.liftInput=0f;
+                return true;
+            }
+        });
+        Button liftDown = btn("⬇");
+        liftDown.setOnTouchListener(new View.OnTouchListener() {
+            @Override public boolean onTouch(View v, MotionEvent e) {
+                int a=e.getActionMasked();
+                if(a==MotionEvent.ACTION_DOWN) renderer.game.liftInput=-1f;
+                else if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_CANCEL) renderer.game.liftInput=0f;
+                return true;
+            }
+        });
         Button vehicleType = btn("نوع المركبة");
         vehicleType.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
@@ -340,6 +358,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         acts.addView(sprint, ab);
         acts.addView(car, ab);
         acts.addView(vehicleType, new LinearLayout.LayoutParams(dp(96), dp(48)));
+        acts.addView(liftUp, new LinearLayout.LayoutParams(dp(72), dp(44)));
+        acts.addView(liftDown, new LinearLayout.LayoutParams(dp(72), dp(44)));
         FrameLayout.LayoutParams ap = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.END);
         ap.setMargins(0, 0, dp(20), dp(30));
         root.addView(acts, ap);
