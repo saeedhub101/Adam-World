@@ -544,7 +544,11 @@ def _geojson_transportation_elements(path):
             for key in ("name:ar", "name:en", "ref"):
                 if not rt.get(key) and lt.get(key):
                     rt[key] = lt[key]
-    return roads
+    # Keep the source label ways as explicit label-only elements. Their tags
+    # prevent road rendering while allowing the game to place street names.
+    # Names are also merged onto matching road geometry above for renderers
+    # that consume road names directly.
+    return roads + [label for _, label in labels]
 
 def _point_in_ring(lon, lat, points):
     inside = False
@@ -887,7 +891,13 @@ def _merged_tabarbour_building_elements(city_source):
     return output
 
 
-def source_elements(slug, lat0, lon0):
+def source_elements(slug, lat0=0.0, lon0=0.0):
+    """Assemble city sources; explicit city-center coordinates are used by production builds.
+
+    Zero defaults preserve compatibility for callers that only need source
+    assembly in tests or inspection; the production tile builder always passes
+    the configured latitude and longitude.
+    """
     city_source = city_source_dir(slug)
     # OpenFreeMap/OpenMapTiles provide primary building and road geometry.
     # OSM contributes only missing building geometry/attributes; non-road
