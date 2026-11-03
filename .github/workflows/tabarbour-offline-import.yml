@@ -107,7 +107,7 @@ jobs:
         continue-on-error: true
         run: |
           python -m py_compile tools/facades/import_city_building_sources.py
-          python tools/facades/import_city_building_sources.py --city tabarbour --cities-root data/offline-world --refresh
+          python tools/facades/import_city_building_sources.py --city tabarbour --cities-root data/offline-world
       - name: Publish base map and building data immediately
         if: always()
         run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "footprints roads names and OSM details"
@@ -116,7 +116,7 @@ jobs:
         continue-on-error: true
         run: |
           python -m py_compile tools/facades/import_tabarbour_overture.py
-          python tools/facades/import_tabarbour_overture.py --refresh
+          python tools/facades/import_tabarbour_overture.py
       - name: Publish multi-source building data immediately
         if: always()
         run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "building heights floors parts and addresses"
@@ -125,7 +125,7 @@ jobs:
         continue-on-error: true
         run: |
           python -m py_compile tools/facades/fetch_catalogue_metadata.py
-          python tools/facades/fetch_catalogue_metadata.py --cities-root data/offline-world --city tabarbour
+          python tools/facades/fetch_catalogue_metadata.py --cities-root data/offline-world --city tabarbour --git-checkpoint
       - name: Publish imagery catalogues immediately
         if: always()
         run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "Panoramax and aerial imagery catalogues"
