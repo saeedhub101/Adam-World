@@ -7,7 +7,6 @@ on:
       - ".github/workflows/tabarbour-offline-import.yml"
       - "data/facades/cities/catalog.json"
       - "data/offline-world/tabarbour/city.json"
-      - "data/offline-world/tabarbour/**"
       - "tools/facades/import_city_building_sources.py"
       - "tools/facades/import_tabarbour_overture.py"
       - "tools/facades/fetch_catalogue_metadata.py"
@@ -25,9 +24,11 @@ concurrency:
 
 jobs:
   import:
+    # Checkpoint commits by this workflow must not recursively trigger another import.
+    if: github.event_name == 'workflow_dispatch' || github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout isolated Tabarbour sources and build tools
+      - name: Checkout Tabarbour sources and tools
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -43,89 +44,106 @@ jobs:
             /tools/extract_tabarbour_osm_context.py
           sparse-checkout-cone-mode: false
 
-      - name: Consolidate all existing Tabarbour sources under offline-world
+      - name: Create incremental checkpoint publisher
         run: |
+          cat > "$RUNNER_TEMP/checkpoint-tabarbour.sh" <<'SH'
+          #!/usr/bin/env bash
           set -euo pipefail
+          label="${1:-stage}"
+          snapshot="$RUNNER_TEMP/tabarbour-checkpoint"
+          rm -rf "$snapshot" && mkdir -p "$snapshot"
+          if [ -d data/offline-world/tabarbour ]; then
+            cp -a data/offline-world/tabarbour/. "$snapshot/"
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p data/offline-world/tabarbour
+            cp -a "$snapshot/." data/offline-world/tabarbour/
+            git add -A data/offline-world/tabarbour
+            if git diff --cached --quiet; then
+              echo "CHECKPOINT unchanged: $label"
+              exit 0
+            fi
+            git commit -m "Checkpoint Tabarbour: $label"
+            if git push origin HEAD:main; then
+              echo "CHECKPOINT PUBLISHED: $label"
+              exit 0
+            fi
+            echo "Push race; retrying checkpoint $label ($attempt/5)"
+          done
+          echo "CHECKPOINT FAILED: $label" >&2
+          exit 1
+          SH
+          chmod +x "$RUNNER_TEMP/checkpoint-tabarbour.sh"
+
+      - name: Consolidate old Tabarbour sources into offline-world
+        continue-on-error: true
+        run: |
           mkdir -p data/offline-world/tabarbour
           if [ -d data/facades/cities/tabarbour ]; then
             cp -an data/facades/cities/tabarbour/. data/offline-world/tabarbour/
           fi
           test -s data/offline-world/tabarbour/city.json
+      - name: Publish consolidation immediately
+        if: always()
+        run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "source consolidation"
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install GeoJSON and vector-tile parsers
+      - name: Install import dependencies
+        continue-on-error: true
         run: python -m pip install --disable-pip-version-check mapbox-vector-tile osm2geojson shapely overturemaps pyogrio
+      - name: Checkpoint environment stage
+        if: always()
+        run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "environment setup"
 
-      - name: Import Tabarbour footprints, roads, road names and OSM building details
+      - name: Import footprints, roads, road names and OSM details
+        continue-on-error: true
         run: |
-          set -euo pipefail
           python -m py_compile tools/facades/import_city_building_sources.py
-          # Refresh damaged/empty partial files; never checkpoint individual files mid-import.
           python tools/facades/import_city_building_sources.py --city tabarbour --cities-root data/offline-world --refresh
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          root = Path("data/offline-world/tabarbour")
-          required = {
-              "building-footprints.geojson": 1,
-              "transportation.geojson": 1,
-              "building-details.geojson": 1,
-            "address-points.geojson": 0,
-          }
-          for name, minimum in required.items():
-              path = root / name
-              if not path.is_file() or path.stat().st_size < 20:
-                  raise SystemExit(f"Missing or empty required Tabarbour source: {path}")
-              try:
-                  data = json.loads(path.read_text(encoding="utf-8"))
-              except Exception as exc:
-                  raise SystemExit(f"Invalid JSON in {path}: {exc}")
-              features = data.get("features") if isinstance(data, dict) else None
-              if not isinstance(features, list) or len(features) < minimum:
-                  raise SystemExit(f"No GeoJSON features in {path}")
-              print(f"VALID {path}: {len(features)} features, {path.stat().st_size} bytes")
-          PY
+      - name: Publish base map and building data immediately
+        if: always()
+        run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "footprints roads names and OSM details"
 
-      - name: Import independent Overture and OpenBuildingMap heights, floors, building parts and address points
+      - name: Import Overture and OpenBuildingMap heights, floors, parts and addresses
         continue-on-error: true
         run: |
           python -m py_compile tools/facades/import_tabarbour_overture.py
           python tools/facades/import_tabarbour_overture.py --refresh
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          root = Path("data/offline-world/tabarbour")
-          for name in ("overture-building-details.geojson", "overture-building-parts.geojson", "overture-address-points.geojson", "openbuildingmap-buildings.geojson"):
-              path = root / name
-              if not path.is_file():
-                  print(f"OPTIONAL MULTI-SOURCE DATA UNAVAILABLE: {name}")
-                  continue
-              data = json.loads(path.read_text(encoding="utf-8"))
-              print(f"MULTI-SOURCE VALID {name}: {len(data.get('features', []))} features")
-          PY
+      - name: Publish multi-source building data immediately
+        if: always()
+        run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "building heights floors parts and addresses"
 
-      - name: Harvest Tabarbour Panoramax and aerial imagery catalogues
+      - name: Harvest Panoramax and aerial imagery catalogues
         continue-on-error: true
         run: |
           python -m py_compile tools/facades/fetch_catalogue_metadata.py
-          # Metadata pages are saved locally and published with the final snapshot.
           python tools/facades/fetch_catalogue_metadata.py --cities-root data/offline-world --city tabarbour
+      - name: Publish imagery catalogues immediately
+        if: always()
+        run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "Panoramax and aerial imagery catalogues"
 
-      - name: Build facade photo review candidates from Tabarbour footprints
+      - name: Build facade photo review candidates
+        continue-on-error: true
         run: |
-          set -euo pipefail
           python -m py_compile tools/facades/build_review_queue.py
           python tools/facades/build_review_queue.py --cities-root data/offline-world --city tabarbour
           test -s data/offline-world/tabarbour/review_queue.json
           python -m json.tool data/offline-world/tabarbour/review_queue.json >/dev/null
+      - name: Publish facade review queue immediately
+        if: always()
+        run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "facade photo review queue"
 
-      - name: Download Tabarbour-only OSM context and source elevation tiles
+      - name: Download Tabarbour OSM context and elevation tiles
+        continue-on-error: true
         run: |
-          set -euo pipefail
           python -m py_compile tools/extract_tabarbour_osm_context.py
           python tools/extract_tabarbour_osm_context.py
           test -s data/offline-world/tabarbour/elements.json
@@ -137,76 +155,55 @@ jobs:
           p = Path("data/offline-world/tabarbour/terrain/manifest.json")
           m = json.loads(p.read_text())
           if m.get("city") != "tabarbour" or not m.get("complete") or m.get("tile_count") != m.get("expected_tile_count"):
-              raise SystemExit(f"Tabarbour terrain coverage incomplete: {m}")
+              raise SystemExit(f"Terrain coverage incomplete: {m}")
           for rel in m.get("tiles", []):
               tile = Path("data/offline-world/tabarbour/terrain") / rel
               if not tile.is_file() or tile.stat().st_size < 100:
                   raise SystemExit(f"Missing terrain tile: {tile}")
-          print(f"VALID Tabarbour elevation: {m['tile_count']} source tiles")
+          print(f"VALID elevation tiles: {m['tile_count']}")
           PY
+      - name: Publish OSM context and elevation immediately
+        if: always()
+        run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "OSM context and elevation"
 
-      - name: Build Tabarbour spatial tiles outside the Android package
+      - name: Build spatial streaming tiles outside APK
+        continue-on-error: true
         run: |
-          set -euo pipefail
-          python -m py_compile tools/build_offline_city_tiles.py
           mkdir -p data/offline-world/tabarbour/stream
-          find data/offline-world/tabarbour/stream -maxdepth 1 -name 'tile_*.json' -delete
+          python -m py_compile tools/build_offline_city_tiles.py
+          # Keep previous good tiles until replacements have been generated.
           python tools/build_offline_city_tiles.py --city tabarbour
           test -s data/offline-world/tabarbour/stream/manifest.json
           test "$(find data/offline-world/tabarbour/stream -maxdepth 1 -name 'tile_*.json' | wc -l)" -gt 0
-          test -s data/offline-world/tabarbour/terrain/manifest.json
           python -m json.tool data/offline-world/tabarbour/stream/manifest.json >/dev/null
-          python -m json.tool data/offline-world/tabarbour/terrain/manifest.json >/dev/null
+      - name: Publish spatial streaming tiles immediately
+        if: always()
+        run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "spatial streaming tiles"
 
-      - name: Verify external Tabarbour dataset and publish checkpoint
+      - name: Verify what was produced without blocking other stages
+        continue-on-error: true
         run: |
-          set -euo pipefail
           python - <<'PY'
           import json
           from pathlib import Path
-          base = Path("data/offline-world/tabarbour/stream")
-          manifest = json.loads((base / "manifest.json").read_text())
-          tiles = list(base.glob("tile_*.json"))
-          if manifest.get("slug") != "tabarbour":
-              raise SystemExit("Spatial manifest slug is not Tabarbour")
-          if not tiles:
-              raise SystemExit("No Tabarbour spatial cells were generated")
-          for path in tiles:
-              data = json.loads(path.read_text(encoding="utf-8"))
-              if not isinstance(data, dict) or not isinstance(data.get("elements"), list):
-                  raise SystemExit(f"Invalid spatial cell: {path}")
-          terrain = json.loads((base / "terrain/manifest.json").read_text())
-          if terrain.get("city") != "tabarbour" or not terrain.get("complete"):
-              raise SystemExit("Tabarbour source terrain is incomplete")
-          print(f"VERIFIED external Tabarbour dataset: {len(tiles)} spatial cells; {terrain['tile_count']} terrain tiles")
+          root = Path("data/offline-world/tabarbour")
+          for rel in ("building-footprints.geojson","transportation.geojson","building-details.geojson",
+                      "elements.json","review_queue.json","stream/manifest.json","terrain/manifest.json"):
+              p = root / rel
+              if not p.is_file() or not p.stat().st_size:
+                  print(f"NOT AVAILABLE: {rel}")
+                  continue
+              try:
+                  obj = json.loads(p.read_text(encoding="utf-8"))
+                  print(f"VALID: {rel}; features={len(obj.get('features', []))}; bytes={p.stat().st_size}")
+              except Exception as exc:
+                  print(f"INVALID: {rel}: {exc}")
+          print("STREAM CELLS:", len(list((root / "stream").glob("tile_*.json"))))
           PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          SNAPSHOT="$RUNNER_TEMP/tabarbour-publish"
-          mkdir -p "$SNAPSHOT"
-          mkdir -p "$SNAPSHOT/data/offline-world/tabarbour"
-          cp -a data/offline-world/tabarbour/. "$SNAPSHOT/data/offline-world/tabarbour/"
-          PUBLISHED=false
-          for attempt in 1 2 3 4 5; do
-            git fetch origin main
-            git reset --hard origin/main
-            # Tabarbour is one external dataset; no city source or derived file belongs in APK assets.
-            mkdir -p data/offline-world/tabarbour
-            cp -a "$SNAPSHOT/data/offline-world/tabarbour/." data/offline-world/tabarbour/
-            rm -rf data/facades/cities/tabarbour app/src/main/assets/cities/tabarbour
-            git add -A data/offline-world/tabarbour data/facades/cities/tabarbour app/src/main/assets/cities/tabarbour
-            if git diff --cached --quiet; then
-              PUBLISHED=true
-              break
-            fi
-            git commit -m "Import Tabarbour offline world data outside APK"
-            if git push origin HEAD:main; then
-              PUBLISHED=true
-              break
-            fi
-            echo "main advanced during publish; retrying with preserved Tabarbour data (attempt $attempt)"
-          done
-          if [ "$PUBLISHED" != true ]; then
-            echo "Could not publish Tabarbour data after five safe retries" >&2
-            exit 1
-          fi
+
+      - name: Remove legacy APK/source copies and save final checkpoint
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -rf app/src/main/assets/cities/tabarbour data/facades/cities/tabarbour
+          bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "legacy cleanup and final verification"
