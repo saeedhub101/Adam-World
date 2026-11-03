@@ -1,5 +1,5 @@
 {
-  "status": "partial",
+  "status": "complete",
   "source": "Overture Maps",
   "source_type": "water",
   "parts": [
@@ -9,5 +9,8 @@
       "features": 640
     }
   ],
-  "feature_count": 640
+  "feature_count": 640,
+  "raw_feature_count": 641,
+  "matched_feature_count": 640,
+  "completed_at": "2026-11-03T03:59:44.682154+00:00"
 }
