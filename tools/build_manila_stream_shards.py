@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Build 1 km Manila offline shards from merged building GeoJSON datasets, PBF road/POI data,
-and the dedicated OpenFreeMap transportation street geometry and names.
+"""Build Manila offline building/transport shards plus spatial facade-window runtime shards.
 """
 from __future__ import annotations
 import csv, gzip, hashlib, json, math, os, re

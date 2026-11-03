@@ -32,7 +32,10 @@
       "path_pattern": "data/facades/cities/manila/layers/facade-windows-*.geojson",
       "source": "generated from buildings.geojson",
       "separate_from_building_geometry": true,
-      "procedural_placeholder": true
+      "procedural_placeholder": true,
+      "runtime_enabled": true,
+      "runtime_path": "data/offline-city-stream/manila/window-shards/{tileX}_{tileZ}.jsonl.gz",
+      "runtime_renderer": "Android TileBuilder B_GLASS; saved 3D coordinates with building-ground-relative height"
     },
     "doors": {
       "path_pattern": "data/facades/cities/manila/layers/facade-doors-*.geojson",
