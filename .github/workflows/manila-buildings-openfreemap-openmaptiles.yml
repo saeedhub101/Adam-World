@@ -74,9 +74,39 @@ jobs:
                   raise SystemExit(f"Invalid committed source layer: {path}")
           print(f"SOURCE DATA VERIFIED: {len(layer_files)} layers; {len(features)} buildings; {sum(p.stat().st_size for p in layer_files):,} layer bytes")
           PY
-      - name: Confirm committed source layers remain the only import output
+      - name: Build local Manila runtime shards from buildings.geojson
         run: |
-          git status --short
-          test -s data/offline-world/manila/elements.json
-          test -s data/offline-world/manila/metadata.json
-          echo "Manila source imports are saved; Android reads the committed offline-world dataset directly."
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check mapbox-vector-tile
+          python -m py_compile tools/build_manila_stream_shards.py
+          python -u tools/build_manila_stream_shards.py
+          python - <<'PY'
+          import gzip, json
+          from pathlib import Path
+          root = Path("data/offline-world/manila/runtime")
+          manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+          if manifest.get("building_source") != "data/facades/cities/manila/buildings.geojson":
+              raise SystemExit("Runtime building source is not canonical buildings.geojson")
+          if manifest.get("building_features", 0) <= 0 or not manifest.get("cells"):
+              raise SystemExit("Manila building runtime manifest is empty")
+          shards = root / "shards"
+          for cell in manifest["cells"]:
+              path = shards / f"{cell}.jsonl.gz"
+              if not path.is_file() or path.stat().st_size == 0:
+                  raise SystemExit(f"Missing generated Manila runtime shard: {path}")
+              with gzip.open(path, "rt", encoding="utf-8") as stream:
+                  if not any(line.strip() for line in stream):
+                      raise SystemExit(f"Empty generated Manila runtime shard: {path}")
+          print(f"RUNTIME VERIFIED: {manifest['building_features']:,} buildings from buildings.geojson; {len(manifest['cells'])} spatial cells.")
+          PY
+      - name: Commit generated runtime data to main
+        run: |
+          set -euo pipefail
+          git add -A data/offline-world/manila/runtime
+          if ! git diff --cached --quiet; then
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Build Manila runtime shards from canonical buildings GeoJSON"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
+            echo "Manila runtime shards are already current."
+          fi
