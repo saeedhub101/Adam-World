@@ -9,6 +9,7 @@ final class Game {
     static final class Agent {
         boolean car;
         int vehicleType = ProceduralVehicleModels.SEDAN;
+        int humanType = 0;
         RoadPath path;
         Tile tile;
         float off, s, sp, ph, x, z, yaw;
