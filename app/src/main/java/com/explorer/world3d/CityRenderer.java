@@ -686,7 +686,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         Matrix.rotateM(base,0,pitch,1f,0f,0f);
         GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
         // اللون يظل في رؤوس الشبكة؛ التلوين هنا يستخدم فقط كتعديل خفيف للطلاء.
-        GLES20.glUniform3f(uTint,cr/.75f,cg/.75f,cb/.75f);
+        GLES20.glUniform3f(uTint,.70f+cr*.30f,.70f+cg*.30f,.70f+cb*.30f);
         vehicleModels[type].draw();
         GLES20.glUniform3f(uTint,1f,1f,1f);
     }
