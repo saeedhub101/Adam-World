@@ -337,10 +337,6 @@ def _merge_overture_building_attributes(primary, overture):
             # Overture includes conflated Google/Microsoft footprints; keep them
             # only when no primary footprint is geometrically equivalent.
             additions.append(item)
-            if sig:
-                index = len(primary) + len(additions) - 1
-                signatures.append(sig)
-                grid[(math.floor(sig[0] / cell_size), math.floor(sig[1] / cell_size))].append(index)
     print(f"OVERTURE JOIN: {matched} existing footprints enriched; {len(additions)} additional source footprints", flush=True)
     return additions
 
