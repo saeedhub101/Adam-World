@@ -68,6 +68,11 @@ jobs:
           layer_files = sorted((city / "layers").glob("*.geojson"))
           if not layer_files:
               raise SystemExit("No imported vector-layer GeoJSON files were committed")
+          building_layer = city / "layers" / "building-layer.geojson"
+          if not building_layer.is_file() or building_layer.stat().st_size == 0:
+              raise SystemExit("Distinct source building layer missing: layers/building-layer.geojson")
+          if (city / "layers" / "building.geojson").exists():
+              raise SystemExit("Legacy duplicate layer filename still exists: layers/building.geojson")
           for path in layer_files:
               layer = json.loads(path.read_text(encoding="utf-8"))
               if layer.get("type") != "FeatureCollection" or not isinstance(layer.get("features"), list):

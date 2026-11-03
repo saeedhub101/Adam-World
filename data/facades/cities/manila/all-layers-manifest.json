@@ -175,5 +175,9 @@
   "total_layers": 14,
   "total_features": 49878,
   "native_zoom_policy": "Request z1-z16 exactly; empty responses are recorded, never fabricated or silently overzoomed.",
-  "outputs": "data/facades/cities/manila/layers/*.geojson"
+  "outputs": "data/facades/cities/manila/layers/*.geojson",
+  "canonical_buildings_file": "data/facades/cities/manila/buildings.geojson",
+  "layer_file_names": {
+    "building": "building-layer.geojson"
+  }
 }

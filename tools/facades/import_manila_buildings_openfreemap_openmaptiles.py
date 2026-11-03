@@ -129,7 +129,8 @@ def main():
  OUT.mkdir(parents=True,exist_ok=True); counts={}
  for lname,items in sorted(combined.items()):
   fs=list(items.values()); doc={"type":"FeatureCollection","name":f"Manila {lname}","source":"OpenFreeMap + OpenMapTiles","zooms":list(ZOOMS),"feature_count":len(fs),"features":fs}
-  p=OUT/(lname.replace("/","_")+".geojson"); t=p.with_suffix(".geojson.tmp"); t.write_text(json.dumps(doc,ensure_ascii=False,separators=(",",":"))+"\n",encoding="utf-8"); os.replace(t,p); counts[lname]=len(fs)
+  filename="building-layer.geojson" if lname.casefold() in ("building","buildings") else lname.replace("/","_")+".geojson"
+  p=OUT/filename; t=p.with_suffix(".geojson.tmp"); t.write_text(json.dumps(doc,ensure_ascii=False,separators=(",",":"))+"\n",encoding="utf-8"); os.replace(t,p); counts[lname]=len(fs)
   print(f"WRITE LAYER {lname}: {len(fs)} -> {p.relative_to(ROOT)}",flush=True)
  building_layers={name:items for name,items in combined.items() if name.casefold() in ("building","buildings")}
  if not building_layers:
@@ -157,7 +158,9 @@ def main():
  d={"type":"FeatureCollection","name":"Manila buildings — OpenFreeMap + OpenMapTiles","source":"OpenFreeMap + OpenMapTiles","zooms":list(ZOOMS),"feature_count":len(fs),"features":fs}
  t=CITY/"buildings.geojson.tmp"; t.write_text(json.dumps(d,ensure_ascii=False,separators=(",",":"))+"\n",encoding="utf-8"); os.replace(t,CITY/"buildings.geojson")
  print(f"WRITE CANONICAL BUILDINGS: {len(fs)} -> {(CITY/'buildings.geojson').relative_to(ROOT)}",flush=True)
- manifest={"city":"Manila","zooms":list(ZOOMS),"sources":list(SOURCES),"source_zoom_tile_summary":totals,"layer_feature_counts":counts,"total_layers":len(counts),"total_features":sum(counts.values()),"native_zoom_policy":"Request z1-z16 exactly; empty responses are recorded, never fabricated or silently overzoomed.","outputs":"data/facades/cities/manila/layers/*.geojson"}
+ manifest={"city":"Manila","zooms":list(ZOOMS),"sources":list(SOURCES),"source_zoom_tile_summary":totals,"layer_feature_counts":counts,"total_layers":len(counts),"total_features":sum(counts.values()),"native_zoom_policy":"Request z1-z16 exactly; empty responses are recorded, never fabricated or silently overzoomed.","outputs":"data/facades/cities/manila/layers/*.geojson","canonical_buildings_file":"data/facades/cities/manila/buildings.geojson","layer_file_names":{"building":"building-layer.geojson"}}
  (CITY/"all-layers-manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+ legacy_layer=OUT/"building.geojson"
+ if legacy_layer.exists(): legacy_layer.unlink(); print(f"REMOVE LEGACY LAYER NAME: {legacy_layer.relative_to(ROOT)}",flush=True)
  print(json.dumps({"layers":len(counts),"features":sum(counts.values()),"building_features":counts.get("building",0)},ensure_ascii=False),flush=True)
 if __name__=="__main__": main()
