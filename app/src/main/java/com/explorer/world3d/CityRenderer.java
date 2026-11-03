@@ -884,6 +884,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         drawHumanPart(rig[1],0,1.58f,0,0,0,0,0,1,1,1);
         drawHumanPart(rig[2],0,1.69f,-.018f,0,0,0,0,1,1,1);
         drawHumanPart(rig[10],0,1.39f,.10f,0,0,0,0,1,1,1);
+        drawHumanPart(rig[11],0,1.575f,.145f,0,0,0,0,1,1,1);
+        drawHumanPart(rig[13],.13f,1.18f,.14f,0,0,0,0,1,1,1);
+        drawHumanPart(rig[14],0,1.25f,.151f,0,0,0,0,1,1,1);
         for(int side=-1;side<=1;side+=2) {
             float legAngle=(side<0?swing:-swing)*57.29578f;
             float armAngle=(side<0?-swing:swing)*42f;
@@ -893,6 +896,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             drawHumanPart(rig[6],side*.115f,.44f,0,-legAngle*.30f,0,-.11f,0,1,1,1);
             drawHumanPart(rig[7],side*.115f,.15f,.045f,legAngle,0,-.02f,.06f,1,1,1);
             drawHumanPart(rig[8],side*.052f,1.625f,.127f,0,0,0,0,1,1,1);
+            drawHumanPart(rig[12],side*.052f,1.647f,.137f,0,0,0,0,1,1,1);
+            drawHumanPart(rig[15],side*.31f,.78f,.02f,armAngle*.42f,0,0,0,1,1,1);
         }
         drawHumanPart(rig[9],0,1.535f,.137f,0,0,0,0,1,1,1);
     }}
