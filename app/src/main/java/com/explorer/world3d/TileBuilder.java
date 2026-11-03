@@ -112,16 +112,11 @@ final class TileBuilder {
             JSONArray g = el.optJSONArray("geometry");
             if (g == null || g.length() < 2) continue;
             int n = g.length();
-            float[] xs = new float[n], zs = new float[n], windowHeights = new float[n];
+            float[] xs = new float[n], zs = new float[n];
             for (int i = 0; i < n; i++) {
                 JSONObject p = g.getJSONObject(i);
                 xs[i] = Geo.x(p.getDouble("lon"));
                 zs[i] = Geo.z(p.getDouble("lat"));
-                windowHeights[i] = (float) p.optDouble("height_m", Double.NaN);
-            }
-            if ("yes".equals(tg(tags, "adam:facade_window"))) {
-                addFacadeWindow(td, xs, zs, windowHeights, n);
-                continue;
             }
             long id = el.optLong("id", 0);
 
@@ -507,24 +502,6 @@ final class TileBuilder {
         b.v(dx, dy, dz, 0, 1, r, g, bl); b.fixTri();
     }
 
-
-    /** Render the saved 3D GeoJSON window polygon at its building-ground-relative height. */
-    private static void addFacadeWindow(TileData td, float[] xs, float[] zs, float[] heights, int n) {
-        if (n < 4) return;
-        int count = n > 4 && Math.hypot(xs[0] - xs[n - 1], zs[0] - zs[n - 1]) < 0.05f ? n - 1 : Math.min(4, n);
-        if (count < 4) return;
-        float[] y = new float[count];
-        for (int i = 0; i < count; i++) {
-            if (!Float.isFinite(heights[i]) || heights[i] < 0f || heights[i] > 600f) return;
-            y[i] = Terrain.h(xs[i], zs[i]) + heights[i] + 0.012f;
-        }
-        // The source polygons are already the exact window surfaces; keep their
-        // saved footprint and elevation rather than estimating windows from walls.
-        facadeQuad(td.bufs[B_GLASS],
-                xs[0], y[0], zs[0], xs[1], y[1], zs[1],
-                xs[2], y[2], zs[2], xs[3], y[3], zs[3],
-                0.20f, 0.34f, 0.43f);
-    }
 
     private static boolean isBalconyPart(JSONObject tags) {
         String part = tg(tags, "building:part").toLowerCase(java.util.Locale.US);
