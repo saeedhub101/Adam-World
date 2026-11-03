@@ -220,7 +220,18 @@ def _building_key(feature):
     if not raw and p.get("id") not in (None,""):
         raw=f'{p.get("type","way")}/{p["id"]}'
     if not raw and feature.get("id") not in (None,""):
-        raw=feature["id"]
+        feature_id=str(feature["id"]).strip()
+        # The canonical vector-tile importer stores source feature IDs as
+        # "<source>|<layer>|id:<numeric OSM ID>". Normalize that ID to the
+        # same way/<id> key used by the saved OSM footprint/detail extracts,
+        # so all three sources enrich one building instead of creating twins.
+        match=re.search(r"(?:^|\\|)id:(\\d+)$",feature_id)
+        if match:
+            raw=f"way/{match.group(1)}"
+        elif re.fullmatch(r"\\d+",feature_id):
+            raw=f"way/{feature_id}"
+        else:
+            raw=feature_id
     if raw in (None,""):
         raw=hashlib.sha256(json.dumps(feature.get("geometry"),sort_keys=True).encode()).hexdigest()
     return str(raw).strip()
