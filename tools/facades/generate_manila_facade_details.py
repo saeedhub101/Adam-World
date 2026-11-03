@@ -128,7 +128,7 @@ class FeatureWriter:
     def _close_chunk(self):
         if self.file is None:
             return
-        self.file.write("]}\\n")
+        self.file.write("]}\n")
         self.file.close()
         self.tmp.replace(self.current_path)
         size = self.current_path.stat().st_size
