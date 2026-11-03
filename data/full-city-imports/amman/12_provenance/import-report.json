@@ -1,0 +1,13 @@
+{
+  "city": "Amman",
+  "boundary": "configured_bbox_extent (approximate; no exact administrative boundary)",
+  "boundary_bbox": [
+    35.7,
+    31.75,
+    36.12,
+    32.1
+  ],
+  "overture_layers": 4,
+  "updated": "2026-11-03T04:10:56.602005+00:00",
+  "imagery_catalogues": "metadata discovery attempted; image downloads pending licence validation"
+}
