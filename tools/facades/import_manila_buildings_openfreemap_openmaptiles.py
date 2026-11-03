@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 import mapbox_vector_tile
-from shapely.geometry import box, shape, mapping
+from shapely.geometry import box, shape, mapping, MultiPolygon
 from shapely.ops import transform, unary_union
 ROOT=Path(__file__).resolve().parents[2]
 CITY=ROOT/"data/facades/cities/manila"; BOUNDARY=ROOT/"data/full-city-imports/manila/01_admin_boundary/city-boundary.geojson"
@@ -15,6 +15,21 @@ SOURCES={"OpenFreeMap":"https://tiles.openfreemap.org/planet/latest/{z}/{x}/{y}.
 UA="AdamWorld-Manila-AllVectorLayers/2.0"
 def boundary_geometry():
  d=json.loads(BOUNDARY.read_text(encoding="utf-8")); g=unary_union([shape(f["geometry"]) for f in d.get("features",[]) if f.get("geometry")]); return g if g.is_valid else g.buffer(0)
+def polygon_parts(g):
+ if g is None or g.is_empty: return []
+ if g.geom_type=="Polygon": return [g] if g.area>0 else []
+ if hasattr(g,"geoms"):
+  out=[]
+  for part in g.geoms: out.extend(polygon_parts(part))
+  return out
+ return []
+def canonical_polygon_geometry(g):
+ parts=polygon_parts(g)
+ if not parts: return None
+ merged=unary_union(parts)
+ parts=polygon_parts(merged)
+ if not parts: return None
+ return parts[0] if len(parts)==1 else MultiPolygon(parts)
 def tile_xy(lon,lat,z):
  n=2**z; x=int(math.floor((lon+180)/360*n)); lat=max(-85.05112878,min(85.05112878,lat)); y=int(math.floor((1-math.asinh(math.tan(math.radians(lat)))/math.pi)/2*n)); return x,y
 def tile_bounds(x,y,z):
@@ -82,12 +97,14 @@ def import_stage(src,url,z,boundary):
     for f in layer.get("features",[]):
      g=convert(f.get("geometry"),x,y,z,extent,boundary)
      if g is None: continue
-     found=True
      p=dict(f.get("properties") or {})
-     # Normalize provider building-layer records to the canonical building tag
-     # expected by the Manila GeoJSON-to-game shard builder.
+     # Keep building features polygonal after clipping to the city boundary.
+     # Boundary intersections can return GeometryCollections.
      if lname == "building":
+      g=canonical_polygon_geometry(g)
+      if g is None: continue
       p.setdefault("building", p.get("class") or "yes")
+     found=True
      p.update({"_source":src,"_source_layer":lname,"_source_zoom":z,"_tile_x":x,"_tile_y":y})
      k=key_for(src,lname,f,g); data.setdefault(lname,{})[k]={"type":"Feature","id":k,"properties":p,"geometry":mapping(g)}
    if found: hit+=1
@@ -115,7 +132,14 @@ def main():
   p=OUT/(lname.replace("/","_")+".geojson"); t=p.with_suffix(".geojson.tmp"); t.write_text(json.dumps(doc,ensure_ascii=False,separators=(",",":"))+"\n",encoding="utf-8"); os.replace(t,p); counts[lname]=len(fs)
   print(f"WRITE LAYER {lname}: {len(fs)} -> {p.relative_to(ROOT)}",flush=True)
  if "building" in combined:
-  fs=list(combined["building"].values()); d={"type":"FeatureCollection","name":"Manila buildings — OpenFreeMap + OpenMapTiles","source":"OpenFreeMap + OpenMapTiles","zooms":list(ZOOMS),"feature_count":len(fs),"features":fs}
+  fs=list(combined["building"].values())
+  geometry_types={}
+  for feature in fs:
+   gt=(feature.get("geometry") or {}).get("type","missing")
+   geometry_types[gt]=geometry_types.get(gt,0)+1
+  print(f"CANONICAL BUILDING GEOMETRY TYPES: {geometry_types}",flush=True)
+  if not fs: raise SystemExit("No polygonal building features survived geometry normalization")
+  d={"type":"FeatureCollection","name":"Manila buildings — OpenFreeMap + OpenMapTiles","source":"OpenFreeMap + OpenMapTiles","zooms":list(ZOOMS),"feature_count":len(fs),"features":fs}
   t=CITY/"buildings.geojson.tmp"; t.write_text(json.dumps(d,ensure_ascii=False,separators=(",",":"))+"\n",encoding="utf-8"); os.replace(t,CITY/"buildings.geojson")
  manifest={"city":"Manila","zooms":list(ZOOMS),"sources":list(SOURCES),"source_zoom_tile_summary":totals,"layer_feature_counts":counts,"total_layers":len(counts),"total_features":sum(counts.values()),"native_zoom_policy":"Request z1-z16 exactly; empty responses are recorded, never fabricated or silently overzoomed.","outputs":"data/facades/cities/manila/layers/*.geojson"}
  (CITY/"all-layers-manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
