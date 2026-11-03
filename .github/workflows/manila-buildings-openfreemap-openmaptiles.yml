@@ -1,0 +1,61 @@
+name: Manila Buildings GeoJSON — OpenFreeMap + OpenMapTiles
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/facades/import_manila_buildings_openfreemap_openmaptiles.py"
+      - ".github/workflows/manila-buildings-openfreemap-openmaptiles.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: manila-buildings-geojson-refresh
+  cancel-in-progress: false
+
+jobs:
+  import-and-rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install vector-tile and geometry dependencies
+        run: python -m pip install --disable-pip-version-check mapbox-vector-tile shapely
+
+      - name: Validate importer
+        run: python -m py_compile tools/facades/import_manila_buildings_openfreemap_openmaptiles.py
+
+      - name: Import both building sources and atomically replace buildings.geojson
+        run: python -u tools/facades/import_manila_buildings_openfreemap_openmaptiles.py
+
+      - name: Rebuild Manila offline shards from the replacement GeoJSON
+        run: python -u tools/build_manila_stream_shards.py
+
+      - name: Commit the GeoJSON and rebuilt game data to main
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/facades/cities/manila/buildings.geojson data/offline-city-stream/manila
+          if ! git diff --cached --quiet; then
+            git commit -m "Replace Manila building GeoJSON with OpenFreeMap and OpenMapTiles"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
+            echo "No generated changes to commit."
+          fi
