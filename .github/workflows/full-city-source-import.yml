@@ -37,7 +37,7 @@ jobs:
         run: python -m py_compile tools/import_full_city_sources.py
       - name: Import all selected cities and checkpoint each layer
         env:
-          CITY: ${{ inputs.city }}
+          CITY: ${{ inputs.city || (github.event_name == 'push' && contains(github.event.head_commit.message, '[city:amman]') && 'amman') || '' }}
           REFRESH: ${{ inputs.refresh }}
         run: |
           args=()
