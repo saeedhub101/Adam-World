@@ -31,8 +31,7 @@ jobs:
         with:
           fetch-depth: 0
           sparse-checkout: |
-            /app/src/main/assets/cities/
-            /data/facades/cities/catalog.json
+                        /data/facades/cities/catalog.json
             /data/facades/cities/tabarbour/
             /data/offline-world/tabarbour/
             /tools/facades/import_city_building_sources.py
@@ -42,6 +41,15 @@ jobs:
             /tools/build_offline_city_tiles.py
             /tools/extract_tabarbour_osm_context.py
           sparse-checkout-cone-mode: false
+
+      - name: Consolidate all existing Tabarbour sources under offline-world
+        run: |
+          set -euo pipefail
+          mkdir -p data/offline-world/tabarbour
+          if [ -d data/facades/cities/tabarbour ]; then
+            cp -an data/facades/cities/tabarbour/. data/offline-world/tabarbour/
+          fi
+          test -s data/offline-world/tabarbour/city.json
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -56,7 +64,7 @@ jobs:
           set -euo pipefail
           python -m py_compile tools/facades/import_city_building_sources.py
           # Refresh damaged/empty partial files; never checkpoint individual files mid-import.
-          python tools/facades/import_city_building_sources.py --city tabarbour --refresh
+          python tools/facades/import_city_building_sources.py --city tabarbour --cities-root data/offline-world --refresh
           python - <<'PY'
           import json
           from pathlib import Path
@@ -104,13 +112,13 @@ jobs:
         run: |
           python -m py_compile tools/facades/fetch_catalogue_metadata.py
           # Metadata pages are saved locally and published with the final snapshot.
-          python tools/facades/fetch_catalogue_metadata.py --city tabarbour
+          python tools/facades/fetch_catalogue_metadata.py --cities-root data/offline-world --city tabarbour
 
       - name: Build facade photo review candidates from Tabarbour footprints
         run: |
           set -euo pipefail
           python -m py_compile tools/facades/build_review_queue.py
-          python tools/facades/build_review_queue.py --city tabarbour
+          python tools/facades/build_review_queue.py --cities-root data/offline-world --city tabarbour
           test -s data/facades/cities/tabarbour/review_queue.json
           python -m json.tool data/facades/cities/tabarbour/review_queue.json >/dev/null
 
@@ -175,21 +183,17 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           SNAPSHOT="$RUNNER_TEMP/tabarbour-publish"
           mkdir -p "$SNAPSHOT"
-          for path in data/facades/cities/tabarbour data/offline-world/tabarbour; do
-            mkdir -p "$SNAPSHOT/$path"
-            cp -a "$path/." "$SNAPSHOT/$path/"
-          done
+          mkdir -p "$SNAPSHOT/data/offline-world/tabarbour"
+          cp -a data/offline-world/tabarbour/. "$SNAPSHOT/data/offline-world/tabarbour/"
           PUBLISHED=false
           for attempt in 1 2 3 4 5; do
             git fetch origin main
             git reset --hard origin/main
-            # Remove assets that an older in-flight workflow may have republished.
-            rm -rf app/src/main/assets/cities/tabarbour
-            for path in data/facades/cities/tabarbour data/offline-world/tabarbour; do
-              mkdir -p "$path"
-              cp -a "$SNAPSHOT/$path/." "$path/"
-            done
-            git add -A data/facades/cities/tabarbour data/offline-world/tabarbour app/src/main/assets/cities/tabarbour
+            # Tabarbour is one external dataset; no city source or derived file belongs in APK assets.
+            mkdir -p data/offline-world/tabarbour
+            cp -a "$SNAPSHOT/data/offline-world/tabarbour/." data/offline-world/tabarbour/
+            rm -rf data/facades/cities/tabarbour app/src/main/assets/cities/tabarbour
+            git add -A data/offline-world/tabarbour data/facades/cities/tabarbour app/src/main/assets/cities/tabarbour
             if git diff --cached --quiet; then
               PUBLISHED=true
               break
