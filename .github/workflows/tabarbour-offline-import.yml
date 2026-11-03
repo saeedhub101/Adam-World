@@ -8,6 +8,7 @@ on:
       - "data/facades/cities/catalog.json"
       - "data/facades/cities/tabarbour/city.json"
       - "tools/facades/import_city_building_sources.py"
+      - "tools/facades/import_tabarbour_overture.py"
       - "tools/facades/fetch_catalogue_metadata.py"
       - "tools/facades/build_review_queue.py"
       - "tools/build_offline_city_tiles.py"
@@ -35,6 +36,7 @@ jobs:
             /data/facades/cities/tabarbour/
             /data/offline-world/tabarbour/
             /tools/facades/import_city_building_sources.py
+            /tools/facades/import_tabarbour_overture.py
             /tools/facades/fetch_catalogue_metadata.py
             /tools/facades/build_review_queue.py
             /tools/build_offline_city_tiles.py
@@ -47,7 +49,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install GeoJSON and vector-tile parsers
-        run: python -m pip install --disable-pip-version-check mapbox-vector-tile osm2geojson shapely
+        run: python -m pip install --disable-pip-version-check mapbox-vector-tile osm2geojson shapely overturemaps
 
       - name: Import Tabarbour footprints, roads, road names and OSM building details
         run: |
@@ -77,6 +79,24 @@ jobs:
               if not isinstance(features, list) or len(features) < minimum:
                   raise SystemExit(f"No GeoJSON features in {path}")
               print(f"VALID {path}: {len(features)} features, {path.stat().st_size} bytes")
+          PY
+
+      - name: Import independent Overture building heights, floors, building parts and address points
+        continue-on-error: true
+        run: |
+          python -m py_compile tools/facades/import_tabarbour_overture.py
+          python tools/facades/import_tabarbour_overture.py --refresh
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("data/facades/cities/tabarbour")
+          for name in ("overture-building-details.geojson", "overture-building-parts.geojson", "overture-address-points.geojson"):
+              path = root / name
+              if not path.is_file():
+                  print(f"OVERTURE SOURCE UNAVAILABLE: {name}")
+                  continue
+              data = json.loads(path.read_text(encoding="utf-8"))
+              print(f"OVERTURE VALID {name}: {len(data.get('features', []))} features")
           PY
 
       - name: Harvest Tabarbour Panoramax and aerial imagery catalogues
