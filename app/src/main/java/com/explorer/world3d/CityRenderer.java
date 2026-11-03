@@ -225,6 +225,10 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         spawned = false;
         spawnTimeoutNotified = false;
         spawnDeadline = System.currentTimeMillis() + 30000;
+        // Seed the loader with the selected city's origin before waking its worker;
+        // otherwise the first request can incorrectly target tile (0,0) on Earth.
+        loader.ptx = Geo.tileX(0f);
+        loader.ptz = Geo.tileZ(0f);
         loader.havePlayer = true;
         L.onLoading(true, loader.offlineAmman ? "جاري تحميل عمّان المحلية…" : loader.offlineManila ? "جاري تحميل مانيلا المحلية…" : loader.offlineCitySlug != null ? "جاري تحميل المدينة المحلية…" : "جاري تحميل المدينة…");
     }
