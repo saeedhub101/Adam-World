@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "city": "manila",
-  "runtime": "The game building geometry and properties are read exclusively from data/facades/cities/manila/buildings.geojson. building-footprints.geojson and building-details.geojson are not merged or used as building geometry. Generated facade-windows-*.geojson files remain a separate facade layer. OpenMapTiles PBF supplies optional POIs only; transportation.geojson supplies road geometry and names.",
+  "runtime": "The game building geometry and properties are read exclusively from data/facades/cities/manila/buildings.geojson. building-footprints.geojson and building-details.geojson are not merged or used as building geometry. Generated facade-windows-*.geojson files are archived source outputs only; they are disabled in the Android runtime and excluded from APK verification. OpenMapTiles PBF supplies optional POIs; transportation.geojson supplies road geometry and names.",
   "photo_facade_textures": {
     "verified_assignments": 0,
     "status": "No human-verified building/photo matches are currently available; no candidate photo may be assigned automatically."
@@ -33,9 +33,10 @@
       "source": "generated from buildings.geojson",
       "separate_from_building_geometry": true,
       "procedural_placeholder": true,
-      "runtime_enabled": true,
-      "runtime_path": "data/offline-city-stream/manila/window-shards/{tileX}_{tileZ}.jsonl.gz",
-      "runtime_renderer": "Android TileBuilder B_GLASS; saved 3D coordinates with building-ground-relative height"
+      "runtime_enabled": false,
+      "runtime_path": null,
+      "runtime_renderer": null,
+      "note": "Archived generated GeoJSON; not loaded, rendered, or required for APK builds"
     },
     "doors": {
       "path_pattern": "data/facades/cities/manila/layers/facade-doors-*.geojson",
