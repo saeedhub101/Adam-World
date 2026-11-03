@@ -13,7 +13,6 @@ on:
       - "data/facades/cities/manila/building-footprints.geojson"
       - "data/facades/cities/manila/building-details.geojson"
       - "data/facades/cities/manila/transportation.geojson"
-      - "tools/build_manila_stream_shards.py"
       - "data/reference/adam-city/manila/**"
       - "data/offline-city-stream/manila/manifest.json"
       - "data/offline-city-stream/manila/shards/**"
@@ -50,7 +49,6 @@ jobs:
             /data/facades/cities/manila/building-details.geojson
             /data/facades/cities/manila/transportation.geojson
             /data/offline-world/manila/elements.json
-            /tools/build_manila_stream_shards.py
             /data/reference/adam-city/manila/
             /data/offline-city-stream/manila/manifest.json
             /data/offline-city-stream/manila/shards/
