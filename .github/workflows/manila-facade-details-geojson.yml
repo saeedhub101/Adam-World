@@ -32,8 +32,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install geometry dependencies
-        run: python -m pip install --disable-pip-version-check shapely pyproj
+      - name: Install geometry and image dependencies
+        run: python -m pip install --disable-pip-version-check shapely pyproj pillow
       - name: Validate generator
         run: python -m py_compile tools/facades/generate_manila_facade_details.py
       - name: Verify canonical buildings source is committed
@@ -49,8 +49,14 @@ jobs:
               raise SystemExit("Canonical buildings.geojson is not a non-empty FeatureCollection")
           print(f"CANONICAL SOURCE READY: {len(data['features'])} features; {source.stat().st_size:,} bytes")
           PY
-      - name: Generate windows, doors and balconies GeoJSON
+      - name: Generate window and door GeoJSON (no fabricated balconies)
         run: python -u tools/facades/generate_manila_facade_details.py
+      - name: Build Panoramax-only review queue
+        continue-on-error: true
+        run: python -u tools/facades/build_review_queue.py --city manila --max-distance-m 100
+      - name: Download Panoramax previews for manual review
+        continue-on-error: true
+        run: python -u tools/facades/prepare_facade_review.py --city manila --limit-per-city 250 --hd-limit-per-city 25
       - name: Validate generated GeoJSON chunks
         run: |
           python - <<'PY'
@@ -93,7 +99,9 @@ jobs:
           git add data/facades/cities/manila/layers/facade-windows-*.geojson \
                   data/facades/cities/manila/layers/facade-doors-*.geojson \
                   data/facades/cities/manila/layers/facade-balconies-*.geojson \
-                  data/facades/cities/manila/facade-details-report.json
+                  data/facades/cities/manila/facade-details-report.json \
+                  data/facades/cities/manila/review_queue.json \
+                  data/facades/cities/manila/facade-review/
           if git diff --cached --quiet; then
             echo "Generated Manila facade GeoJSON is already current."
             exit 0
