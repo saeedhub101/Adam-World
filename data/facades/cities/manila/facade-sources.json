@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "city": "manila",
-  "runtime": "Offline Manila building shards merge data/facades/cities/manila/buildings.geojson, building-footprints.geojson and building-details.geojson by normalized OSM feature ID. Primary consolidated geometry and populated primary tags take precedence; supplemental footprint/detail properties fill missing attributes and unmatched building polygons are added once. Generated facade-window GeoJSON remains disabled in the Android runtime.",
+  "runtime": "Android renders canonical Manila building geometry from the existing offline city dataset. At runtime it reads building-footprints.geojson and building-details.geojson directly, matches way IDs, and fills only missing building tags; it does not rebuild or generate Manila shards. Generated facade-window GeoJSON remains disabled in the Android runtime.",
   "photo_facade_textures": {
     "verified_assignments": 0,
     "status": "No human-verified building/photo matches are currently available; no candidate photo may be assigned automatically."
@@ -15,7 +15,7 @@
     "paths": [
       "data/facades/cities/manila/buildings.geojson"
     ],
-    "runtime_role": "sole source of building polygons and properties; no footprint/detail supplementation"
+    "runtime_role": "canonical building geometry and primary properties; supplemental GeoJSON files fill missing tags at runtime without changing geometry"
   },
   "street_source": {
     "source": "OpenFreeMap/OpenMapTiles transportation GeoJSON",
