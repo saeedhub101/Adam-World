@@ -384,9 +384,9 @@ def _merge_overture_building_attributes(primary, overture):
         tags = item.get("tags") or {}
         osm_id = _osm_id(tags.get("adam:source_osm_id"))
         candidates = primary_by_osm.get(osm_id, []) if osm_id is not None else []
-        target = candidates[0] if len(candidates) == 1 else None
+        targets = list(candidates)
         sig = _footprint_signature(item.get("geometry") or [])
-        if target is None and sig:
+        if not targets and sig:
             cx, cy = math.floor(sig[0] / cell_size), math.floor(sig[1] / cell_size)
             ranked = []
             for dx in (-1, 0, 1):
@@ -398,17 +398,26 @@ def _merge_overture_building_attributes(primary, overture):
                         distance = math.hypot(sig[0] - other[0], sig[1] - other[1])
                         ratio = min(sig[2], other[2]) / max(sig[2], other[2])
                         if distance <= 3.0 and ratio >= 0.65:
-                            ranked.append((distance, -ratio, primary[index]))
+                            ranked.append((distance, -ratio, index, primary[index]))
             if ranked:
                 ranked.sort(key=lambda x: (x[0], x[1]))
-                if len(ranked) == 1 or ranked[1][0] - ranked[0][0] > 1.0:
-                    target = ranked[0][2]
-        if target is not None:
-            dest = target.setdefault("tags", {})
-            for key, value in tags.items():
-                if value not in (None, "") and dest.get(key) in (None, ""):
-                    dest[key] = value
-            dest["adam:enriched_by_overture"] = "yes"
+                best = ranked[0]
+                if len(ranked) == 1 or ranked[1][0] - best[0] > 1.0:
+                    targets = [best[3]]
+                else:
+                    # Identical OSM/provider copies can have the same centroid.
+                    # Enrich all tied copies, not a random neighbour.
+                    tied = [entry for entry in ranked
+                            if abs(entry[0] - best[0]) <= 0.25 and abs(entry[1] - best[1]) <= 0.05]
+                    if len(tied) > 1:
+                        targets = [entry[3] for entry in tied]
+        if targets:
+            for target in targets:
+                dest = target.setdefault("tags", {})
+                for key, value in tags.items():
+                    if value not in (None, "") and dest.get(key) in (None, ""):
+                        dest[key] = value
+                dest["adam:enriched_by_overture"] = "yes"
             matched += 1
         else:
             # Overture includes conflated Google/Microsoft footprints; keep them
