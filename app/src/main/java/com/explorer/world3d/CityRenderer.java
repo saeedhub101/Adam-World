@@ -748,7 +748,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         drawVehicleGlass(type);
         if(type==ProceduralVehicleModels.TANK) drawTankTracks(speed);
         if(type==ProceduralVehicleModels.HELICOPTER) drawHelicopterRotor();
-        if(type!=ProceduralVehicleModels.TANK && type!=ProceduralVehicleModels.HELICOPTER && type!=ProceduralVehicleModels.AIRPLANE && type!=ProceduralVehicleModels.BICYCLE && type!=ProceduralVehicleModels.MOTORBIKE) drawVehicleWheels(type,speed,steering);
+        if(type!=ProceduralVehicleModels.TANK && type!=ProceduralVehicleModels.HELICOPTER && type!=ProceduralVehicleModels.AIRPLANE) drawVehicleWheels(type,speed,steering);
     }
 
     private void drawVehicleGlass(int type) {
@@ -768,6 +768,22 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
     private void drawVehicleWheels(int type,float speed,float steering) {
         if(wheelMesh==null) return;
+        if(type==ProceduralVehicleModels.BICYCLE || type==ProceduralVehicleModels.MOTORBIKE) {
+            float radius=type==ProceduralVehicleModels.BICYCLE?.34f:.43f;
+            float half=type==ProceduralVehicleModels.BICYCLE?1.65f:1.45f;
+            float angle=(float)(System.nanoTime()*1.0e-9*speed/radius);
+            for(int axle=-1;axle<=1;axle+=2) {
+                System.arraycopy(base,0,wheelMatrix,0,16);
+                Matrix.translateM(wheelMatrix,0,0,radius,axle*half);
+                if(axle>0) Matrix.rotateM(wheelMatrix,0,steering*24f,0f,1f,0f);
+                Matrix.rotateM(wheelMatrix,0,(float)Math.toDegrees(angle),1f,0f,0f);
+                Matrix.scaleM(wheelMatrix,0,.50f,radius/.32f,radius/.32f);
+                GLES20.glUniformMatrix4fv(uModel,1,false,wheelMatrix,0);
+                wheelMesh.draw();
+            }
+            GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
+            return;
+        }
         float halfZ=type==ProceduralVehicleModels.BUS?2.85f:type==ProceduralVehicleModels.PICKUP?1.65f:type==ProceduralVehicleModels.SUV?1.52f:1.38f;
         float wheelAngle=(float)(System.nanoTime()*1.0e-9*speed/.32f);
         for(int side=-1;side<=1;side+=2) for(int axle=-1;axle<=1;axle+=2) {
