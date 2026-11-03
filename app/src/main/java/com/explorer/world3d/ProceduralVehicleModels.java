@@ -69,6 +69,27 @@ final class ProceduralVehicleModels {
         b.box(0,.42f*h,len*.49f,width*1.72f,.18f,.16f,.12f,.13f,.15f);
         b.box(0,.42f*h,-len*.49f,width*1.72f,.18f,.16f,.12f,.13f,.15f);
     }
+    private static void hull(GeoBuf b,float[] color,float width,float len,float height,float centerY){
+        int rings=30,around=18;
+        float[][] p=new float[rings][around*3];
+        for(int j=0;j<rings;j++){
+            float t=j/(float)(rings-1),z=(t-.5f)*len;
+            float taper=bez(.58f,.92f,1.0f,.52f,t);
+            float w=width*(.62f+.38f*taper);
+            float h=height*(.48f+.52f*(float)Math.sin(Math.min(1f,Math.min(t*5f,(1f-t)*5f))*PI*.5f));
+            for(int k=0;k<around;k++){
+                float a=2*PI*k/around;
+                p[j][k*3]=(float)Math.cos(a)*w;
+                p[j][k*3+1]=centerY+(float)Math.sin(a)*h*.5f;
+                p[j][k*3+2]=z;
+            }
+        }
+        for(int j=0;j<rings-1;j++)for(int k=0;k<around;k++){
+            int n=(k+1)%around;float[] a=p[j],d=p[j+1];
+            b.quad(a[k*3],a[k*3+1],a[k*3+2],a[n*3],a[n*3+1],a[n*3+2],
+                    d[n*3],d[n*3+1],d[n*3+2],d[k*3],d[k*3+1],d[k*3+2],color[0],color[1],color[2]);
+        }
+    }
     private static void cabin(GeoBuf b,int type,float w,float len,float h){
         float z0=type==BUS?-len*.34f:-len*.22f, z1=len*.20f;
         float top=type==BUS?h*1.02f:h*1.30f;
