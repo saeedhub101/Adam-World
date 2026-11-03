@@ -12,3 +12,12 @@ For building footprints and building geometry, use **OpenFreeMap** and **OpenMap
 - Keep the source and import provenance with the generated data.
 
 This is a standing project rule and must be followed by future building-data import, conversion, and offline-city workflows unless the project owner explicitly changes it.
+
+
+## Manila complete vector-tile import
+
+- Import every published vector-tile layer and every exposed feature attribute from OpenFreeMap and OpenMapTiles at zoom levels **1 through 16 inclusive**.
+- Preserve each layer, feature properties, feature ID where supplied, source, source zoom, and tile coordinates.
+- Save each layer as GeoJSON under `data/facades/cities/manila/layers/`; retain `buildings.geojson` as the compatibility input for the existing offline building-shard builder.
+- Commit a checkpoint for every provider/zoom before advancing. Resume completed stages on rerun. Record empty responses; never fabricate data or misrepresent overzoom as native higher-zoom data.
+- Rebuild local Manila building shards from the canonical GeoJSON after import.
