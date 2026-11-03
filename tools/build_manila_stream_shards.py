@@ -10,9 +10,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PBF_ROOT = Path(os.environ.get("ADAM_CITY_MANILA_PBF", ROOT / "Adam-City-source/Manila/vector-tiles"))
 TRANSPORT = ROOT / "data/facades/cities/manila/transportation.geojson"
-DETAILS = ROOT / "data/facades/cities/manila/building-details.geojson"
-FOOTPRINTS = ROOT / "data/facades/cities/manila/building-footprints.geojson"
-OVERTURE_PARTS = ROOT / "data/full-city-imports/manila/02_buildings_overture/building_part/part-00001.geojson"
+DETAILS = ROOT / "data/reference/adam-city/manila/ermita/ermita-building-details.geojson"
+FOOTPRINTS = ROOT / "data/reference/adam-city/manila/ermita/osm-building-footprints-polygons.geojson"
+OVERTURE_BUILDINGS = ROOT / "data/full-city-imports/manila/02_buildings_overture/building"
+OVERTURE_PARTS = ROOT / "data/full-city-imports/manila/02_buildings_overture/building_part"
 OSM_CONTEXT = ROOT / "data/offline-world/manila/elements.json"
 BUILDING_CSV = Path(os.environ.get("ADAM_CITY_BUILDING_CSV", ROOT / "Adam-City-source/building-data/buildings.csv"))
 POI_CSV = Path(os.environ.get("ADAM_CITY_POI_CSV", ROOT / "Adam-City-source/ermita/maps/generated/ermita-public_services.csv"))
@@ -118,7 +119,7 @@ class Shards:
 
 def tags_from_omt(p):
     t={"building":text(p.get("class") or p.get("subtype") or "yes"),"adam:source":"OpenMapTiles/OpenFreeMap"}
-    mapping={"name":"name","height":"height","render_height":"height","render_min_height":"min_height",
+    mapping={"name":"name","height":"height","render_height":"adam:render_height_m","render_min_height":"adam:render_min_height_m",
       "num_floors":"building:levels","building:levels":"building:levels","facade_material":"building:material",
       "facade_color":"building:colour","roof_material":"roof:material","roof_color":"roof:colour",
       "roof_shape":"roof:shape","housenumber":"addr:housenumber","street":"addr:street",
@@ -215,6 +216,8 @@ def read_building_csv_index():
     return index
 
 def read_osm_detail_index():
+    if not DETAILS.is_file() or DETAILS.stat().st_size == 0:
+        return {"type":"FeatureCollection","features":[]}, {}
     data=json.loads(DETAILS.read_text(encoding="utf-8"))
     index={}
     for f in data.get("features",[]):
@@ -224,10 +227,52 @@ def read_osm_detail_index():
             if raw is not None: index[str(raw).split("/")[-1]]=tags
     return data,index
 
+def osm_source_key(raw):
+    value=str(raw or "").split("/")[-1].split("@")[0].strip()
+    if value[:1].lower() in ("w","n","r"):
+        value=value[1:]
+    return value if value.isdigit() else ""
+
+def read_overture_building_index():
+    """Index source-linked Overture building attributes by their OSM source feature IDs."""
+    index={}
+    if not OVERTURE_BUILDINGS.is_dir():
+        return index
+    mapping={"height":"height","num_floors":"building:levels",
+      "facade_material":"building:material","facade_color":"building:colour",
+      "roof_material":"roof:material","roof_color":"roof:colour","roof_shape":"roof:shape",
+      "min_floor":"building:min_level"}
+    for path in sorted(OVERTURE_BUILDINGS.glob("part-*.geojson")):
+        data=json.loads(path.read_text(encoding="utf-8"))
+        for feature in data.get("features",[]):
+            props=feature.get("properties") or {}
+            tags={}
+            for source,target in mapping.items():
+                value=props.get(source)
+                if value not in (None,"",[],{}):
+                    tags[target]=text(value)
+            name=text(props.get("names"))
+            if name:
+                tags["name"]=name
+            if props.get("is_underground") is True:
+                tags["location"]="underground"
+            for source in props.get("sources") or []:
+                if not isinstance(source,dict):
+                    continue
+                key=osm_source_key(source.get("record_id"))
+                if not key or not tags:
+                    continue
+                current=index.setdefault(key,{})
+                for field,value in tags.items():
+                    if value not in (None,"") and current.get(field) in (None,""):
+                        current[field]=value
+    return index
+
 MATCHED_OSM_IDS=set()
+MATCHED_OVERTURE_IDS=set()
 PBF_ROAD_COUNT=0
 
-def read_pbf(writer, osm_index, building_index):
+def read_pbf(writer, osm_index, building_index, overture_index):
     try: import mapbox_vector_tile
     except ImportError as e: raise SystemExit("Install mapbox-vector-tile before importing Manila PBF") from e
     files=sorted(PBF_ROOT.rglob("*.pbf"))
@@ -239,7 +284,9 @@ def read_pbf(writer, osm_index, building_index):
             z=int(parts[-3]); x=int(parts[-2]); y=int(Path(parts[-1]).stem)
         except Exception: continue
         if z!=14: continue
-        tile=mapbox_vector_tile.decode(path.read_bytes())
+        # MVT geometry is top-left-origin with Y increasing downward.
+        # Keep that orientation for the XYZ tile-to-latitude conversion below.
+        tile=mapbox_vector_tile.decode(path.read_bytes(), default_options={"y_coord_down": True})
         # PBF transportation is the primary road source across the imported tile coverage.
         global PBF_ROAD_COUNT
         road_layer=tile.get("transportation")
@@ -300,9 +347,12 @@ def read_pbf(writer, osm_index, building_index):
                 key=str(raw).split("/")[-1]
                 supplement=osm_index.get(key)
                 audited=building_index.get(key)
-                if supplement or audited:
+                overture=overture_index.get(osm_source_key(key))
+                if supplement or audited or overture:
                     MATCHED_OSM_IDS.add(key)
-                    for source_tags in (supplement or {},audited or {}):
+                    if overture:
+                        MATCHED_OVERTURE_IDS.add(key)
+                    for source_tags in (supplement or {},audited or {},overture or {}):
                         for k,v in source_tags.items():
                             if v not in (None,"") and tags.get(k) in (None,""): tags[k]=text(v)
             emit_polygon(writer,"omt",f.get("id",count),rings,tags,"openmaptiles_buildings")
@@ -357,7 +407,7 @@ def read_transport(writer):
             if len(pts)>=2: writer.add({"type":"way","id":sid("ofm-road",f.get("id",i),j),"tags":tags,"geometry":pts},"openfreemap_transportation")
 
 def read_city_footprints(writer):
-    if not FOOTPRINTS.is_file(): return 0
+    if not FOOTPRINTS.is_file() or FOOTPRINTS.stat().st_size == 0: return 0
     data=json.loads(FOOTPRINTS.read_text(encoding="utf-8"))
     added=0
     for i,f in enumerate(data.get("features",[])):
@@ -367,33 +417,41 @@ def read_city_footprints(writer):
         outer=rings[0]
         if overlaps_primary(outer): continue
         center=(sum(q[0] for q in outer)/len(outer),sum(q[1] for q in outer)/len(outer))
-        tags={"building":"yes","adam:source":"OpenFreeMap/OpenMapTiles building-footprints"}
-        for src,dst in (("render_height","height"),("render_min_height","min_height"),("colour","building:colour")):
+        source_tags=p.get("tags") if isinstance(p.get("tags"),dict) else {}
+        tags={"building":source_tags.get("building") or "yes",
+              "adam:source":"Manila canonical OSM building-footprints GeoJSON"}
+        for k,v in source_tags.items():
+            if v not in (None,"",[],{}): tags[k]=text(v)
+        for src,dst in (("render_height","adam:render_height_m"),("render_min_height","adam:render_min_height_m"),("colour","building:colour")):
             if p.get(src) not in (None,""): tags[dst]=text(p[src])
         if p.get("source_feature_id") not in (None,""): tags["adam:source_feature_id"]=text(p["source_feature_id"])
-        emit_polygon(writer,"ofm-footprint",f.get("id",i),rings,tags,"openfreemap_building_footprints")
+        emit_polygon(writer,"manila-osm-footprint",f.get("id",i),rings,tags,"manila_osm_building_footprints")
         PRIMARY_CENTROIDS.append(center); add_primary_polygon(outer); added+=1
     return added
 
 def read_overture_parts(writer):
-    if not OVERTURE_PARTS.is_file(): return 0
-    data=json.loads(OVERTURE_PARTS.read_text(encoding="utf-8"))
+    if not OVERTURE_PARTS.is_dir(): return 0
     added=0
-    for i,f in enumerate(data.get("features",[])):
-        p=f.get("properties") or {}; rings=polygons(f.get("geometry") or {})
-        if not rings: continue
-        # Overture parts are not independent buildings when a parent footprint is already present.
-        if overlaps_primary(rings[0]): continue
-        tags={"building":"yes","building:part":"yes","adam:source":"Overture Maps building_part"}
-        if p.get("num_floors") not in (None,""): tags["building:levels"]=text(p["num_floors"])
-        if p.get("min_floor") not in (None,""):
-            tags["building:min_level"]=text(p["min_floor"])
-            try: tags["min_height"]=str(max(0.0,float(p["min_floor"])*3.2))
-            except (TypeError,ValueError): pass
-        if p.get("is_underground"): tags["location"]="underground"
-        if p.get("building_id"): tags["adam:overture_building_id"]=text(p["building_id"])
-        emit_polygon(writer,"overture-building-part",f.get("id",i),rings,tags,"overture_building_parts")
-        added+=1
+    for path in sorted(OVERTURE_PARTS.glob("part-*.geojson")):
+        data=json.loads(path.read_text(encoding="utf-8"))
+        for i,f in enumerate(data.get("features",[])):
+            p=f.get("properties") or {}; rings=polygons(f.get("geometry") or {})
+            if not rings or overlaps_primary(rings[0]): continue
+            tags={"building":"yes","building:part":"yes","adam:source":"Overture Maps building_part"}
+            for source,target in (("num_floors","building:levels"),("facade_material","building:material"),
+                                  ("facade_color","building:colour"),("roof_material","roof:material"),
+                                  ("roof_color","roof:colour"),("roof_shape","roof:shape")):
+                if p.get(source) not in (None,"",[],{}): tags[target]=text(p[source])
+            name=text(p.get("names"))
+            if name: tags["name"]=name
+            if p.get("min_floor") not in (None,""):
+                tags["building:min_level"]=text(p["min_floor"])
+                try: tags["min_height"]=str(max(0.0,float(p["min_floor"])*3.2))
+                except (TypeError,ValueError): pass
+            if p.get("is_underground"): tags["location"]="underground"
+            if p.get("building_id"): tags["adam:overture_building_id"]=text(p["building_id"])
+            emit_polygon(writer,"overture-building-part",f.get("id",i),rings,tags,"overture_building_parts")
+            added+=1
     return added
 
 def read_osm_details(writer, data, primary_ids):
@@ -477,7 +535,8 @@ def main():
     writer=Shards()
     osm_data,osm_index=read_osm_detail_index()
     building_index=read_building_csv_index()
-    omt=read_pbf(writer,osm_index,building_index)
+    overture_index=read_overture_building_index()
+    omt=read_pbf(writer,osm_index,building_index,overture_index)
     if PBF_ROAD_COUNT == 0: read_transport(writer)
     footprint_count=read_city_footprints(writer)
     overture_part_count=read_overture_parts(writer)
@@ -498,7 +557,8 @@ def main():
       "shard_sha256":shard_hashes,
       "cells":sorted(writer.cells),"counts":dict(writer.counts),"openmaptiles_building_features":omt,"openmaptiles_transportation_features":PBF_ROAD_COUNT,
       "osm_building_fallback_features":unmatched,"openfreemap_footprint_features":footprint_count,"overture_building_part_features":overture_part_count,"osm_context_features":context,"thematic_supplement_features":thematic,
-      "osm_detail_matched_count":matched,"terrain":"disabled_flat_ground",
+      "osm_detail_matched_count":matched,"overture_building_attribute_matches":len(MATCHED_OVERTURE_IDS),
+      "overture_building_attribute_records":len(overture_index),"terrain":"disabled_flat_ground",
       "attribution":["© OpenFreeMap / OpenMapTiles","© OpenStreetMap contributors"],
       "license":"OpenStreetMap data ODbL 1.0; OpenFreeMap/OpenMapTiles attribution required"}
     (OUT/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")

@@ -55,6 +55,7 @@ final class TileData {
     final ArrayList<RoadPath> paths = new ArrayList<>();
     final ArrayList<Decal> decals = new ArrayList<>();
     boolean hasCoast;
+    boolean manila;
 
     TileData(int ix, int iz) {
         this.ix = ix; this.iz = iz;

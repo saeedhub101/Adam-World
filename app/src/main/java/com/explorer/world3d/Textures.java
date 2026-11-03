@@ -17,18 +17,20 @@ final class Textures {
     int sign, facade, facadeEm, glass, glassEm, roadW, roadN, sidewalk, ground, white, black;
 
     private boolean tabarbourProfile;
-    Textures() { rebuild(false); }
-    void setTabarbourProfile(boolean enabled) {
-        if (tabarbourProfile == enabled) return;
+    private boolean manilaProfile;
+    Textures() { rebuild(false, false); }
+    void setCityProfile(boolean tabarbour, boolean manila) {
+        if (tabarbourProfile == tabarbour && manilaProfile == manila) return;
         deleteTextures();
-        rebuild(enabled);
+        rebuild(tabarbour, manila);
     }
-    private void rebuild(boolean tabarbour) {
+    private void rebuild(boolean tabarbour, boolean manila) {
         tabarbourProfile = tabarbour;
-        facade = upload(facadeBmp(tabarbour));
-        facadeEm = upload(facadeEmBmp());
-        glass = upload(glassBmp(tabarbour));
-        glassEm = upload(glassEmBmp());
+        manilaProfile = manila;
+        facade = upload(manila ? solid(0xffffffff) : facadeBmp(tabarbour));
+        facadeEm = upload(manila ? solid(0xff000000) : facadeEmBmp());
+        glass = upload(manila ? solid(0xffffffff) : glassBmp(tabarbour));
+        glassEm = upload(manila ? solid(0xff000000) : glassEmBmp());
         roadW = upload(roadBmp(true, tabarbour));
         roadN = upload(roadBmp(false, tabarbour));
         sidewalk = upload(sidewalkBmp(tabarbour));

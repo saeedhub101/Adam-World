@@ -469,7 +469,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     private void draw() {
-        if (tex != null) tex.setTabarbourProfile("tabarbour".equals(loader.offlineCitySlug));
+        if (tex != null) tex.setCityProfile("tabarbour".equals(loader.offlineCitySlug), loader.offlineManila);
         int ti = timeIdx % TIME.length;
         float[] T = TIME[ti];
         GLES20.glClearColor(T[9], T[10], T[11], 1f);

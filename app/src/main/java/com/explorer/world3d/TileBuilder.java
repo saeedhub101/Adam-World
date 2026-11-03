@@ -66,10 +66,15 @@ final class TileBuilder {
         }
     }
 
-    static TileData build(JSONObject root, int ix, int iz) throws JSONException { return build(root, ix, iz, false); }
+    static TileData build(JSONObject root, int ix, int iz) throws JSONException { return build(root, ix, iz, false, false); }
 
     static TileData build(JSONObject root, int ix, int iz, boolean tabarbour) throws JSONException {
+        return build(root, ix, iz, tabarbour, false);
+    }
+
+    static TileData build(JSONObject root, int ix, int iz, boolean tabarbour, boolean manila) throws JSONException {
         TileData td = new TileData(ix, iz);
+        td.manila = manila;
         double west = ix * Geo.dLon, east = (ix + 1) * Geo.dLon, south = iz * Geo.D_LAT, north = (iz + 1) * Geo.D_LAT;
         float xMin = Geo.x(west), xMax = Geo.x(east), zMin = Geo.z(north), zMax = Geo.z(south);
         JSONArray els = root.optJSONArray("elements");
@@ -150,7 +155,7 @@ final class TileBuilder {
                     parentFootprints.add(P);
                 }
                 bcount++;
-                addBuilding(td, tags, id, bld, px, pz, tabarbour);
+                addBuilding(td, tags, id, bld, px, pz, tabarbour, manila);
                 int poi = poiCategory(tags);
                 String buildingLabel = poiName(tags);
                 String houseNumber = tg(tags, "addr:housenumber");
@@ -428,7 +433,7 @@ final class TileBuilder {
         return new float[]{(float) (cx / (3d * crossSum)), (float) (cz / (3d * crossSum))};
     }
 
-    private static float[] buildingColor(JSONObject t, long id, boolean tabarbour) {
+    private static float[] buildingColor(JSONObject t, long id, boolean tabarbour, boolean manila) {
         String s = tg(t, "building:colour");
         if (s.isEmpty()) s = tg(t, "building:color");
         if (s.isEmpty()) s = tg(t, "colour");
@@ -445,6 +450,7 @@ final class TileBuilder {
         }
         // No per-building random colours: unknown facade colour stays neutral until
         // a verified matching facade image or an explicit mapped colour is available.
+        if (manila) return new float[]{0.82f, 0.82f, 0.80f};
         return tabarbour ? new float[]{0.91f, 0.87f, 0.78f} : new float[]{0.78f, 0.73f, 0.65f};
     }
 
@@ -460,7 +466,7 @@ final class TileBuilder {
         b.v(dx, dy, dz, 0, 1, r, g, bl); b.fixTri();
     }
 
-    private static void addBuilding(TileData td, JSONObject tags, long id, String bld, float[] px, float[] pz, boolean tabarbour) {
+    private static void addBuilding(TileData td, JSONObject tags, long id, String bld, float[] px, float[] pz, boolean tabarbour, boolean manila) {
         int n = px.length;
         float hMin = 1e9f, hMax = -1e9f;
         float[] ground = new float[n], roofY = new float[n];
@@ -488,13 +494,15 @@ final class TileBuilder {
         // OSM height is the total height; roof:height is the roof portion, not an extra height.
         for (int i = 0; i < n; i++) roofY[i] = ground[i] + wallHeight;
         float yTop = hMax + wallHeight;
-        boolean glass = h >= 40f || (bld.matches("office|commercial|hotel") && h >= 24f);
+        String facadeMaterial = tg(tags, "building:material").toLowerCase(java.util.Locale.US);
+        boolean mappedGlass = facadeMaterial.matches("glass|curtain_wall|glass_wall");
+        boolean glass = manila ? mappedGlass : (h >= 40f || (bld.matches("office|commercial|hotel") && h >= 24f));
         GeoBuf buf = glass ? td.bufs[B_GLASS] : td.bufs[B_FACADE];
-        float cr, cg, cb;
-        if (glass) { cr = 0.70f; cg = 0.78f; cb = 0.84f; }
-        else { float[] c = buildingColor(tags, id, tabarbour); cr = c[0]; cg = c[1]; cb = c[2]; }
+        float[] fc = buildingColor(tags, id, tabarbour, manila);
+        float cr = fc[0], cg = fc[1], cb = fc[2];
+        if (glass && !manila) { cr = 0.70f; cg = 0.78f; cb = 0.84f; }
         float rf = 1.0f;
-        float rr = 0.43f * rf, rg = 0.43f * rf, rb = 0.43f * rf;
+        float rr = manila ? cr : 0.43f * rf, rg = manila ? cg : 0.43f * rf, rb = manila ? cb : 0.43f * rf;
         float[] rc = hex(tg(tags, "roof:colour"));
         if (rc == null) rc = hex(tg(tags, "roof:color"));
         String rmat = tg(tags, "roof:material");
@@ -532,7 +540,9 @@ final class TileBuilder {
         if (!(floors > 0f)) floors = Math.max(1f, Math.round(h / 3.2f));
         floors = Math.max(1f, Math.min(100f, floors));
         float floorStep = Math.max(2.2f, (wallHeight - minHeight) / floors);
-        for (int edge = 0; edge < n; edge++) {
+        if (!manila) {
+        if (!manila) {
+        // Individually modelled recessed-looking window panels and frames.        // Individually modelled recessed-looking window panels and frames.        for (int edge = 0; edge < n; edge++) {
             int next = (edge + 1) % n;
             float ax = px[edge], az = pz[edge], bx = px[next], bz = pz[next];
             float dx = bx - ax, dz = bz - az, len = (float) Math.hypot(dx, dz);
@@ -564,7 +574,8 @@ final class TileBuilder {
                 buf.v(ax+nx*off,ya,az+nz*off,0,1,cr*shade,cg*shade,cb*shade); buf.fixTri();
             }
         }
-        // Individually modelled recessed-looking window panels and frames.
+        }
+        // A ground-floor entrance is modelled on the longest street-facing facade.        // A ground-floor entrance is modelled on the longest street-facing facade.        // Individually modelled recessed-looking window panels and frames.
         // Density follows the real footprint perimeter and mapped floor count; no facade image is fabricated.
         int windowBudget = 240;
         for (int edge = 0; edge < n && windowBudget > 0; edge++) {
@@ -646,7 +657,8 @@ final class TileBuilder {
                 }
             }
         }
-        if (doorEdgeLength >= 2.2f && h >= 2.4f) {
+        if ((!manila || !tg(tags, "entrance").isEmpty() || !tg(tags, "door").isEmpty())
+                && doorEdgeLength >= 2.2f && h >= 2.4f) {
             int next = (doorEdge + 1) % n;
             float ax = px[doorEdge], az = pz[doorEdge], bx = px[next], bz = pz[next];
             float dx = bx - ax, dz = bz - az;
@@ -733,7 +745,7 @@ final class TileBuilder {
         }
         float parea = Math.abs(Poly.area(px, pz));
         boolean pyramid = (rshape.equals("pyramidal") || rshape.equals("hipped")
-                || (rshape.isEmpty() && bld.matches("house|detached|semidetached_house|bungalow") && rnd(id, 10) < 0.6f))
+                || (!manila && rshape.isEmpty() && bld.matches("house|detached|semidetached_house|bungalow") && rnd(id, 10) < 0.6f))
                 && n <= 8 && parea < 700f && h < 14f;
         if (pyramid) {
             float ax0 = 0, az0 = 0;
@@ -1011,9 +1023,10 @@ final class TileBuilder {
                 if (!bridge && !tunnel) ribbon(px, pz, w + 4.2f, 0.20f, td.bufs[B_SIDEWALK], (w + 4.2f) / 2f, 2f, 1f, 1f, 1f);
                 GeoBuf roadBuf = (w >= 7f ? td.bufs[B_ROADW] : td.bufs[B_ROADN]);
                 ribbonOffset(px, pz, w, yOffset, roadBuf, 1f, 12f, rr, rg, rb);
-                if (tabarbour && hw.matches("residential|living_street|unclassified|service"))
+                if (tabarbour && hw.matches("residential|living_street|unclassified|service")) {
                     long roadSeed = (((long) Math.round(px[0] * 10f)) << 32) ^ (long) Math.round(pz[0] * 10f);
                     addTabarbourSpeedBumps(roadBuf, px, pz, w, roadSeed);
+                }
             } else {
                 ribbonOffset(px, pz, w, yOffset, td.bufs[B_SIDEWALK], w / 2f, 2f, rr, rg, rb);
             }

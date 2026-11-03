@@ -43,6 +43,7 @@ jobs:
             /data/offline-world/amman/
             /data/offline-world/manila/
             /data/facades/cities/manila/
+            /data/full-city-imports/manila/02_buildings_overture/building/
             /data/full-city-imports/manila/02_buildings_overture/building_part/
             /data/reference/adam-city/manila/
             /data/offline-city-stream/manila/
@@ -106,6 +107,10 @@ jobs:
           test -s Adam-City-source/building-data/buildings.csv
           test -s Adam-City-source/ermita/maps/generated/ermita-public_services.csv
           test -s Adam-City-source/ermita/maps/generated/ermita-accessibility.csv
+          test -s data/reference/adam-city/manila/ermita/ermita-building-details.geojson
+          test -s data/reference/adam-city/manila/ermita/osm-building-footprints-polygons.geojson
+          test -s data/full-city-imports/manila/02_buildings_overture/building/manifest.json
+          test -s data/full-city-imports/manila/02_buildings_overture/building_part/manifest.json
 
       - name: Build spatially streamed Manila offline data
         run: |

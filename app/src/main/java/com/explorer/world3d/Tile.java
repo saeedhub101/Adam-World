@@ -17,6 +17,7 @@ final class Tile {
     final HashMap<Long, ArrayList<Footprint>> grid;
     final ArrayList<RoadPath> paths;
     final boolean hasCoast;
+    final boolean manila;
     final ArrayList<Mesh> decalMeshes = new ArrayList<>();
     final ArrayList<Integer> decalTextures = new ArrayList<>();
     float cx, cz;
@@ -28,6 +29,7 @@ final class Tile {
         this.grid = d.grid;
         this.paths = d.paths;
         this.hasCoast = d.hasCoast;
+        this.manila = d.manila;
         double west = ix * Geo.dLon, east = (ix + 1) * Geo.dLon, south = iz * Geo.D_LAT, north = (iz + 1) * Geo.D_LAT;
         cx = (Geo.x(west) + Geo.x(east)) / 2f;
         cz = (Geo.z(north) + Geo.z(south)) / 2f;
@@ -61,9 +63,10 @@ final class Tile {
             Canvas canvas = new Canvas(bmp);
             float[] wpx = new float[names.size()];
             for (int i = 0; i < names.size(); i++) {
-                p.setTextSize(24f);
+                float fontSize = manila ? 30f : 24f;
+                p.setTextSize(fontSize);
                 float w = p.measureText(names.get(i));
-                if (w > 1000f) { p.setTextSize(24f * 1000f / w); w = 1000f; }
+                if (w > 1000f) { p.setTextSize(fontSize * 1000f / w); w = 1000f; }
                 canvas.drawText(names.get(i), 8f, i * 32f + 25f, p);
                 wpx[i] = w + 8f;
             }
@@ -75,7 +78,7 @@ final class Tile {
                 if (ownerPage == null || ownerPage != page) continue;
                 int idx = names.indexOf(dc.text);
                 if (idx < 0) continue;
-                float len = wpx[idx] * 0.0375f;
+                float len = wpx[idx] * (manila ? 0.045f : 0.0375f);
                 float dx = dc.dx, dz = dc.dz;
                 float lx = dz, lz = -dx, rx = -dz, rz = dx;
                 float sx = dc.x - dx * len / 2f, sz = dc.z - dz * len / 2f;
@@ -90,7 +93,7 @@ final class Tile {
                 if (dc.vertical && Float.isFinite(baseY)) {
                     float vlx = dc.x - dx * len / 2f, vlz = dc.z - dz * len / 2f;
                     float vrx = dc.x + dx * len / 2f, vrz = dc.z + dz * len / 2f;
-                    float top = baseY + 1.15f;
+                    float top = baseY + (manila ? 1.35f : 1.15f);
                     g.v(vlx, baseY, vlz, 0, v1, 1, 1, 1); g.v(vrx, baseY, vrz, u1, v1, 1, 1, 1); g.v(vrx, top, vrz, u1, v0, 1, 1, 1); g.fixTri();
                     g.v(vlx, baseY, vlz, 0, v1, 1, 1, 1); g.v(vrx, top, vrz, u1, v0, 1, 1, 1); g.v(vlx, top, vlz, 0, v0, 1, 1, 1); g.fixTri();
                 } else {
