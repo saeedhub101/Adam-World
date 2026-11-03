@@ -43,6 +43,21 @@ def load_boundary():
     # Existing project extent, explicitly marked approximate if no administrative polygon exists.
     return box(120.90, 14.50, 121.08, 14.68), "configured Manila bbox (approximate; administrative boundary unavailable)"
 
+def checkpoint(paths):
+    """Commit each completed tile immediately so an interrupted run resumes safely."""
+    import subprocess
+    rel=[str(path.relative_to(ROOT)) for path in paths if path.exists()]
+    if not rel: return
+    subprocess.run(["git","add","--",*rel],cwd=ROOT,check=True)
+    if subprocess.run(["git","diff","--cached","--quiet"],cwd=ROOT).returncode==0: return
+    if not subprocess.run(["git","config","user.name"],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode:
+        pass
+    else:
+        subprocess.run(["git","config","user.name","github-actions[bot]"],cwd=ROOT,check=True)
+        subprocess.run(["git","config","user.email","41898282+github-actions[bot]@users.noreply.github.com"],cwd=ROOT,check=True)
+    subprocess.run(["git","commit","-m","Checkpoint Manila Google Open Buildings temporal tile"],cwd=ROOT,check=True)
+    subprocess.run(["git","push","origin","HEAD:main"],cwd=ROOT,check=True)
+
 def ee_init():
     raw = os.environ.get("GEE_SERVICE_ACCOUNT_JSON", "").strip()
     project = os.environ.get("GEE_PROJECT_ID", "").strip()
@@ -50,7 +65,10 @@ def ee_init():
         raise RuntimeError("Missing GitHub Actions secrets GEE_SERVICE_ACCOUNT_JSON and/or GEE_PROJECT_ID. Add an Earth Engine service-account JSON with access to the project, then rerun this workflow.")
     key_path = pathlib.Path(tempfile.gettempdir()) / "gee-service-account.json"
     key_path.write_text(raw, encoding="utf-8")
-    credentials = ee.ServiceAccountCredentials(None, str(key_path))
+    service_account = json.loads(raw).get("client_email")
+    if not service_account:
+        raise RuntimeError("GEE_SERVICE_ACCOUNT_JSON is not a valid service-account key: client_email is missing")
+    credentials = ee.ServiceAccountCredentials(service_account, str(key_path))
     ee.Initialize(credentials, project=project)
 
 def tile_grid(poly):
@@ -174,7 +192,8 @@ def main():
             with rasterio.open(target) as ds:
                 if ds.count!=3: raise RuntimeError(f"Invalid band count in {target}: {ds.count}")
             completed.append(target)
-            print(f"SAVED {target.relative_to(ROOT)} {target.stat().st_size}",flush=True)
+            checkpoint([target])
+            print(f"SAVED AND CHECKPOINTED {target.relative_to(ROOT)} {target.stat().st_size}",flush=True)
         stats=raster_summary(completed)
         annual_record={
           "status":"complete" if len(completed)==len(tiles) else "partial",
@@ -186,6 +205,7 @@ def main():
         inventory["updated_at"]=datetime.now(timezone.utc).isoformat()
         inventory["status"]="partial"
         atomic_write(invpath,json.dumps(inventory,indent=2).encode())
+        checkpoint([invpath])
         print(f"YEAR COMPLETE {year}: {len(completed)}/{len(tiles)} tiles",flush=True)
     inventory["status"]="complete" if all(inventory["annual"].get(str(y),{}).get("status")=="complete" for y in YEARS) else "partial"
     inventory["updated_at"]=datetime.now(timezone.utc).isoformat()
