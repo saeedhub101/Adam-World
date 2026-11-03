@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+"""Build a provenance-preserving, conservative multi-source Tabarbour building database."""
+from __future__ import annotations
+import argparse, json, math, os, re, tempfile
+from pathlib import Path
+from collections import Counter, defaultdict
+from shapely.geometry import shape, mapping
+from shapely.strtree import STRtree
+
+ROOT=Path(__file__).resolve().parents[2]
+CITY=ROOT/"data/offline-world/tabarbour"
+SOURCES={
+ "osm_buildings":("building-details.geojson",100),
+ "openfreemap":("building-footprints.geojson",90),
+ "overture":("overture-building-details.geojson",80),
+ "openbuildingmap":("openbuildingmap-buildings.geojson",60),
+}
+PARTS=("overture-building-parts.geojson",)
+POINTS=("address-points.geojson","overture-address-points.geojson","osm-access-points.geojson")
+PHOTOS=("panoramax-items.geojson",)
+
+def read_fc(name):
+ p=CITY/name
+ if not p.is_file(): return []
+ try:
+  obj=json.loads(p.read_text(encoding="utf-8"))
+  return obj.get("features",[]) if obj.get("type")=="FeatureCollection" else []
+ except Exception as e:
+  raise RuntimeError(f"Invalid {p}: {e}")
+
+def props(f):
+ p=f.get("properties") or {}
+ return p if isinstance(p,dict) else {}
+
+def osm_identity(f):
+ p=props(f); candidates=[p.get("osm_feature_id"),p.get("osm_id"),p.get("osm_way_id"),p.get("osm_relation_id")]
+ tags=p.get("tags") if isinstance(p.get("tags"),dict) else {}
+ candidates += [tags.get("osm_id")]
+ for c in candidates:
+  if c is None: continue
+  v=str(c).strip()
+  m=re.fullmatch(r"([nwr])/?(\d+)",v)
+  if m: return f"{m.group(1)}/{m.group(2)}"
+  if v.isdigit(): return "way/"+v
+  if re.fullmatch(r"[nwr]\d+",v): return v[0]+"/"+v[1:]
+ # Overture exposes upstream record_id such as w123@2
+ for src in p.get("sources",[]) if isinstance(p.get("sources"),list) else []:
+  rid=str(src.get("record_id") or "")
+  m=re.match(r"([nwr])(\d+)(?:@\d+)?$",rid)
+  if m: return f"{m.group(1)}/{m.group(2)}"
+ return None
+
+def clean(v):
+ if v is None or v=="" or v==[] or v=={}: return False
+ if isinstance(v,float) and not math.isfinite(v): return False
+ return True
+
+def atomic(path,obj):
+ path.parent.mkdir(parents=True,exist_ok=True)
+ fd,tmp=tempfile.mkstemp(prefix=path.name+".",dir=path.parent)
+ try:
+  with os.fdopen(fd,"w",encoding="utf-8") as f:
+   json.dump(obj,f,ensure_ascii=False,separators=(",",":")); f.write("\n")
+  os.replace(tmp,path)
+ finally:
+  if os.path.exists(tmp): os.unlink(tmp)
+
+def main():
+ ap=argparse.ArgumentParser()
+ ap.add_argument("--chunk-size",type=int,default=2500)
+ a=ap.parse_args()
+ if not 100<=a.chunk_size<=10000: ap.error("--chunk-size must be 100..10000")
+ records={}; counts={}; missing=[]
+ for source,(filename,rank) in SOURCES.items():
+  feats=read_fc(filename); counts[source]=len(feats)
+  if not feats: missing.append(source)
+  for i,f in enumerate(feats):
+   g=f.get("geometry")
+   if not g: continue
+   try: geom=shape(g)
+   except Exception: continue
+   if geom.is_empty or geom.geom_type not in ("Polygon","MultiPolygon"): continue
+   oid=osm_identity(f)
+   fid=str(f.get("id") or props(f).get("id") or i)
+   key="osm:"+oid if oid else f"src:{source}:{fid}"
+   rec=records.setdefault(key,{"id":key,"osm_id":oid,"observations":[],"_rank":-1,"_geometry":None,"_attrs":{},"_conflicts":defaultdict(list)})
+   observation={"source":source,"source_feature_id":fid,"properties":props(f),"geometry":g}
+   rec["observations"].append(observation)
+   for k,v in props(f).items():
+    if k in ("sources","tags") and isinstance(v,dict): items=v.items()
+    else: items=[(k,v)]
+    for name,value in items:
+     if clean(value):
+      if value not in rec["_conflicts"][name]: rec["_conflicts"][name].append(value)
+      if rank>rec["_rank"] and clean(value): rec["_attrs"][name]=value
+   if rank>rec["_rank"]:
+    rec["_rank"]=rank; rec["_geometry"]=g
+ # Conservative spatial reconciliation for provider records lacking explicit shared OSM IDs.
+ # Only merge when polygon overlap is very high AND centroids are close; otherwise keep separate.
+ base=[r for r in records.values() if r["_geometry"] is not None]
+ geoms=[shape(r["_geometry"]) for r in base]
+ if geoms:
+  tree=STRtree(geoms)
+  for rec in list(base):
+   if rec["osm_id"] or len(rec["observations"])>1: continue
+   geom=shape(rec["_geometry"])
+   try: hits=tree.query(geom)
+   except Exception: continue
+   best=None; bestscore=0
+   for hit in hits:
+    idx=int(hit) if isinstance(hit,(int,)) else next((i for i,g in enumerate(geoms) if g is hit),-1)
+    if idx<0: continue
+    other=base[idx]
+    if other is rec or other["_rank"]==rec["_rank"]: continue
+    og=geoms[idx]
+    if geom.centroid.distance(og.centroid)>0.000035: continue
+    inter=geom.intersection(og).area
+    union=geom.union(og).area
+    score=inter/union if union else 0
+    if score>bestscore: bestscore=score; best=other
+   if best is not None and bestscore>=0.78:
+    # Keep the source feature in the stronger record and preserve the geometry variant.
+    best["observations"].extend(rec["observations"])
+    best["_conflicts"]["spatial_match_iou"].append(round(bestscore,4))
+    best["_attrs"].update({k:v for k,v in rec["_attrs"].items() if k not in best["_attrs"]})
+    records.pop(rec["id"],None)
+ # Attach building parts separately; never let them replace or merge building footprints.
+ part_count=0
+ for filename in PARTS:
+  for i,f in enumerate(read_fc(filename)):
+   g=f.get("geometry")
+   if not g: continue
+   try: geom=shape(g)
+   except Exception: continue
+   candidates=[]
+   for rec in records.values():
+    try:
+     bg=shape(rec["_geometry"])
+     if bg.buffer(0.000015).intersects(geom):
+      candidates.append((bg.intersection(geom).area/max(geom.area,1e-15),rec))
+    except Exception: pass
+   if candidates:
+    score,rec=max(candidates,key=lambda x:x[0])
+    if score>=0.45:
+     rec.setdefault("building_parts",[]).append({"source":"Overture Maps","source_feature_id":str(f.get("id") or i),"properties":props(f),"geometry":g})
+     part_count+=1
+ # Attach entrances and address nodes by point-in-footprint or <= 2m boundary proximity.
+ point_counts=Counter()
+ for filename in POINTS:
+  for i,f in enumerate(read_fc(filename)):
+   g=f.get("geometry")
+   if not g or g.get("type")!="Point": continue
+   try: point=shape(g)
+   except Exception: continue
+   best=None; bestdist=float("inf")
+   for rec in records.values():
+    try:
+     bg=shape(rec["_geometry"]); dist=bg.distance(point)
+     if bg.buffer(0.00002).covers(point) and dist<bestdist:
+      best=rec; bestdist=dist
+    except Exception: pass
+   if best is not None:
+    item={"source":props(f).get("source") or ("Overture Maps" if "overture" in filename else "OpenStreetMap"),"source_feature_id":str(f.get("id") or i),"properties":props(f),"geometry":g}
+    if "entrance" in props(f) or "door" in props(f): best.setdefault("entrances",[]).append(item); point_counts["entrances"]+=1
+    else: best.setdefault("addresses",[]).append(item); point_counts["addresses"]+=1
+ # Photos remain unassigned evidence until visual identity and camera direction are verified.
+ photo_features=[]
+ for filename in PHOTOS: photo_features.extend(read_fc(filename))
+ # Final records, conflicts and provenance.
+ final=[]
+ for key,rec in sorted(records.items()):
+  attrs=rec["_attrs"]
+  conflict={k:v for k,v in rec["_conflicts"].items() if len(v)>1}
+  final.append({"type":"Feature","id":key,"geometry":rec["_geometry"],"properties":{
+   **attrs,"adam:entity_id":key,"adam:osm_id":rec["osm_id"],
+   "adam:sources":sorted({o["source"] for o in rec["observations"]}),
+   "adam:observation_count":len(rec["observations"]),
+   "adam:has_attribute_conflicts":bool(conflict),
+   "adam:attribute_conflicts":conflict,
+   "adam:source_observations":rec["observations"],
+   "adam:building_parts":rec.get("building_parts",[]),
+   "adam:entrances":rec.get("entrances",[]),
+   "adam:addresses":rec.get("addresses",[])
+  }})
+ # Chunk output so the game and repository do not create millions of tiny files.
+ outdir=CITY/"merged"; outdir.mkdir(parents=True,exist_ok=True)
+ for old in outdir.glob("buildings_*.geojson"): old.unlink()
+ chunks=[]
+ for start in range(0,len(final),a.chunk_size):
+  name=f"buildings_{start//a.chunk_size:03d}.geojson"
+  subset=final[start:start+a.chunk_size]
+  atomic(outdir/name,{"type":"FeatureCollection","name":"Tabarbour merged buildings","features":subset})
+  chunks.append({"file":name,"feature_count":len(subset)})
+ report={"schema_version":1,"city":"tabarbour","source_feature_counts":counts,
+  "merged_building_count":len(final),"chunk_count":len(chunks),"chunk_size":a.chunk_size,
+  "attached_building_parts":part_count,"attached_entrances":point_counts["entrances"],
+  "attached_addresses":point_counts["addresses"],"panoramax_photo_count":len(photo_features),
+  "sources_missing_or_empty":missing,
+  "merge_policy":"Explicit OSM identity first. Spatial merge only when polygon IoU >= 0.78 and centroids are within about 4m. Parts remain parts; entrances and addresses attach only within 2m of a footprint. Photos are not assigned as verified facades.",
+  "chunks":chunks}
+ atomic(outdir/"manifest.json",report)
+ atomic(outdir/"source-report.json",{"source_feature_counts":counts,"missing_or_empty":missing,"panoramax_photo_count":len(photo_features),"attached_building_parts":part_count,"attached_entrances":point_counts["entrances"],"attached_addresses":point_counts["addresses"]})
+ print(json.dumps(report,ensure_ascii=False))
+if __name__=="__main__": main()
