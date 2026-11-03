@@ -827,6 +827,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         float angle=(float)((System.nanoTime()*1.0e-9*900.0)%360.0);
         drawVehiclePart(0,1.55f,0,angle,0f,1f,0f,7.4f,.045f,.18f,.13f,.15f,.13f);
         drawVehiclePart(0,1.55f,0,angle+90f,0f,1f,0f,7.4f,.045f,.18f,.13f,.15f,.13f);
+        float tailAngle=(float)((System.nanoTime()*1.0e-9*1450.0)%360.0);
+        drawVehiclePart(.18f,1.10f,-3.55f,tailAngle,0f,0f,1f,.62f,.055f,.09f,.13f,.15f,.13f);
+        drawVehiclePart(.18f,1.10f,-3.55f,tailAngle+90f,0f,0f,1f,.62f,.055f,.09f,.13f,.15f,.13f);
         GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
     }
 
