@@ -383,13 +383,18 @@ def read_geojson_buildings(writer):
                 tags["adam:render_height_m"] = text(tags["render_height"])
         if not tags.get("min_height") and tags.get("render_min_height") not in (None, ""):
             tags["min_height"] = text(tags["render_min_height"])
+        # This file is already the dedicated building layer. Some exports
+        # retain render attributes (render_height/class/min_height) but omit
+        # the OSM "building" tag entirely. Requiring that tag silently drops
+        # every valid footprint. Trust polygon features from this layer, while
+        # still honoring an explicit building=no exclusion.
         building = text(tags.get("building") or tags.get("building:part"))
-        if not building or building.lower() == "no":
+        if building.lower() == "no":
             continue
         rings = polygons(geometry)
         if not rings:
             continue
-        if not tags.get("building") and tags.get("building:part"):
+        if not tags.get("building"):
             tags["building"] = "yes"
         source_id = _building_key(feature)
         tags["adam:source"] = "Manila building-layer.geojson"
