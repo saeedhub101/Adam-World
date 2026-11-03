@@ -1,0 +1,13 @@
+{
+  "city": "Pisa",
+  "boundary": "Overture Maps division_area (exact name match)",
+  "boundary_bbox": [
+    10.2574977,
+    43.1084854,
+    11.0140065,
+    43.834394
+  ],
+  "overture_layers": 4,
+  "updated": "2026-11-03T03:54:48.448376+00:00",
+  "imagery_catalogues": "metadata discovery attempted; image downloads pending licence validation"
+}
