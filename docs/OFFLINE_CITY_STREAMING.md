@@ -149,3 +149,12 @@ The native offline Amman stream is generated exclusively from the already import
 - Do not write Tabarbour data to `data/facades/cities/tabarbour/` or `app/src/main/assets/cities/tabarbour/`. The importer workflow migrates existing files into the single offline-world folder and removes the obsolete locations after a successful publish.
 - The global city catalog may remain at `data/facades/cities/catalog.json`; it is registry metadata, not a Tabarbour dataset.
 - `TileLoader` reads the remote manifest and cells from `https://raw.githubusercontent.com/saeedhub101/Adam-World/main/data/offline-world/tabarbour/stream`. The APK contains only the loader/runtime code, not Tabarbour city content.
+
+
+## Tabarbour additional footprint sources (2026-11-03)
+
+- The footprint supplement importer is `tools/facades/import_tabarbour_footprint_supplements.py`. It runs only for Tabarbour and stores source files, source status and reports under `data/offline-world/tabarbour/sources/{microsoft,jordan}/`.
+- Microsoft Global ML Building Footprints is checked against the official `dataset-links.csv` manifest and only Jordan quadkey tiles intersecting the configured Tabarbour bounding box are downloaded. No worldwide archive is downloaded. The source is licensed CDLA Permissive 2.0; source tile URL, quadkey and upload date are retained.
+- HDX is queried for the exact public dataset title **Buildings of Jordan**. A supported resource is clipped to Tabarbour before saving. If the exact package/resource is absent or cannot be read, a status report is written and the workflow continues; no substitute dataset is silently selected. The actual dataset licence is retained from HDX metadata and must be reviewed before redistribution.
+- Both sources are added to the existing provenance-preserving merge. Explicit OSM identity is preferred; spatial reconciliation requires high overlap and close centroids. Unmatched valid polygons can be added, while uncertain overlaps remain separate with source provenance for QA. Building parts remain separate from parent footprints.
+- Footprints alone do not provide verified names, house numbers, heights, storeys, materials or facade appearance. Those fields are retained only when a source explicitly supplies them; no values are fabricated. Existing footprints and source files are never deleted by the importer.

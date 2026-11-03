@@ -99,6 +99,7 @@ def main():
  # Only merge when polygon overlap is very high AND centroids are close; otherwise keep separate.
  base=[r for r in records.values() if r["_geometry"] is not None]
  geoms=[shape(r["_geometry"]) for r in base]
+ ambiguous_candidates=[]
  if geoms:
   tree=STRtree(geoms)
   for rec in list(base):
@@ -124,6 +125,9 @@ def main():
     best["_conflicts"]["spatial_match_iou"].append(round(bestscore,4))
     best["_attrs"].update({k:v for k,v in rec["_attrs"].items() if k not in best["_attrs"]})
     records.pop(rec["id"],None)
+ # Keep uncertain partial overlaps as explicit QA candidates; do not auto-merge them.
+ review_dir=CITY/"sources"; review_dir.mkdir(parents=True,exist_ok=True)
+ atomic(review_dir/"footprint-review-candidates.geojson",{"type":"FeatureCollection","name":"Tabarbour footprint overlap review","features":ambiguous_candidates,"feature_count":len(ambiguous_candidates),"policy":"IoU 0.20-0.78 candidates are not merged automatically."})
  # Attach building parts separately; never let them replace or merge building footprints.
  part_count=0
  for filename in PARTS:
@@ -213,7 +217,7 @@ def main():
   "attached_addresses":point_counts["addresses"],"panoramax_photo_count":len(photo_features),
   "sources_missing_or_empty":missing,
   "merge_policy":"Explicit OSM identity first. Spatial merge only when polygon IoU >= 0.78 and centroids are within about 4m. Parts remain parts; entrances and addresses attach only within 2m of a footprint. Photos are not assigned as verified facades.",
-  "chunks":chunks}
+  "chunks":chunks,"ambiguous_footprint_review_candidates":len(ambiguous_candidates)}
  atomic(outdir/"manifest.json",report)
  atomic(outdir/"source-report.json",{"source_feature_counts":counts,"missing_or_empty":missing,"panoramax_photo_count":len(photo_features),"panoramax_building_photo_candidate_count":photo_candidate_count,"attached_building_parts":part_count,"attached_entrances":point_counts["entrances"],"attached_addresses":point_counts["addresses"]})
  print(json.dumps(report,ensure_ascii=False))

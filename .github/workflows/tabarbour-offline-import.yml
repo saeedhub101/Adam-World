@@ -10,6 +10,7 @@ on:
       - "data/offline-world/tabarbour/city.json"
       - "tools/facades/import_city_building_sources.py"
       - "tools/facades/import_tabarbour_overture.py"
+      - "tools/facades/import_tabarbour_footprint_supplements.py"
       - "tools/facades/fetch_catalogue_metadata.py"
       - "tools/facades/build_review_queue.py"
       - "tools/build_offline_city_tiles.py"
@@ -39,6 +40,7 @@ jobs:
             /data/offline-world/tabarbour/
             /tools/facades/import_city_building_sources.py
             /tools/facades/import_tabarbour_overture.py
+            /tools/facades/import_tabarbour_footprint_supplements.py
             /tools/facades/fetch_catalogue_metadata.py
             /tools/facades/build_review_queue.py
             /tools/facades/import_tabarbour_access_points.py
@@ -127,6 +129,17 @@ jobs:
         if: always()
         run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "building heights floors parts and addresses"
 
+      - name: Import Microsoft Global ML and Jordan national building footprints
+        continue-on-error: true
+        run: |
+          python -m py_compile tools/facades/import_tabarbour_footprint_supplements.py
+          python tools/facades/import_tabarbour_footprint_supplements.py
+          test -s data/offline-world/tabarbour/sources/import-report.json
+          python -m json.tool data/offline-world/tabarbour/sources/import-report.json >/dev/null
+      - name: Publish external footprint sources immediately
+        if: always()
+        run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "Microsoft and Jordan footprint sources"
+
       - name: Harvest Panoramax and aerial imagery catalogues
         continue-on-error: true
         run: |
@@ -158,7 +171,7 @@ jobs:
         if: always()
         run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "facade photo review queue"
 
-      - name: Merge OSM, Overture, OpenBuildingMap and Panoramax evidence
+      - name: Merge OSM, Overture, OpenBuildingMap, Microsoft, Jordan and Panoramax evidence
         continue-on-error: true
         run: |
           python -m py_compile tools/facades/merge_tabarbour_sources.py
