@@ -223,10 +223,11 @@
       "total_bytes": 76
     }
   },
-  "method": "Adapted from Adam-City Ermita: 3m window spacing, estimated floors, 0.95m x 1.9m doors, deterministic occasional balconies.",
+  "method": "Procedural placeholders for windows and doors only. Balcony geometry is omitted until confirmed from Panoramax facade photographs; footprints alone are insufficient.",
   "geometry": "3D GeoJSON MultiPolygon; WGS84 longitude/latitude and third ordinate = height above building ground in metres.",
   "limitations": [
-    "Details are procedural placeholders, not measured or photo-verified.",
+    "Windows and doors are procedural placeholders, not measured or photo-verified.",
+    "Balconies are intentionally omitted until confirmed from Panoramax facade photographs. The six aerial catalogue items provide roof/coverage context, not reliable balcony geometry.",
     "Floor counts are estimated where building:levels/levels are absent.",
     "Only buildings.geojson supplies building geometry and attributes; no other building file, PBF, remote API or GLB is read or generated.",
     "Renderer must interpret 3D polygon coordinates and add local ground elevation to relative Z."
