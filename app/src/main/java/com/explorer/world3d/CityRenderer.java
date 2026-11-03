@@ -82,7 +82,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             + "   }\\n"
             + "   lit+=texture2D(uEmis,vUV).rgb*uEmisK;\\n"
             + "  }\\n"
-            + "  if(uDecal>0.5){ gl_FragColor=vec4(mix(lit,uFog*tx.a,f),tx.a); }\n"
+            + "  if(uGlass>0.5){} else if(uDecal>0.5){ gl_FragColor=vec4(mix(lit,uFog*tx.a,f),tx.a); }\n"
             + "  else { gl_FragColor=vec4(mix(lit,uFog,f),1.0); }\n"
             + " }\n"
             + "}";
