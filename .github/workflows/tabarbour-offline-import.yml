@@ -40,6 +40,8 @@ jobs:
             /tools/facades/import_tabarbour_overture.py
             /tools/facades/fetch_catalogue_metadata.py
             /tools/facades/build_review_queue.py
+            /tools/facades/import_tabarbour_access_points.py
+            /tools/facades/merge_tabarbour_sources.py
             /tools/build_offline_city_tiles.py
             /tools/extract_tabarbour_osm_context.py
           sparse-checkout-cone-mode: false
@@ -128,10 +130,21 @@ jobs:
         continue-on-error: true
         run: |
           python -m py_compile tools/facades/fetch_catalogue_metadata.py
-          python tools/facades/fetch_catalogue_metadata.py --cities-root data/offline-world --city tabarbour --git-checkpoint
+          python tools/facades/fetch_catalogue_metadata.py --cities-root data/offline-world --city tabarbour --refresh --git-checkpoint
       - name: Publish imagery catalogues immediately
         if: always()
         run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "Panoramax and aerial imagery catalogues"
+
+      - name: Import OSM entrances, doors and address nodes
+        continue-on-error: true
+        run: |
+          python -m py_compile tools/facades/import_tabarbour_access_points.py
+          python tools/facades/import_tabarbour_access_points.py --git-checkpoint
+          test -s data/offline-world/tabarbour/osm-access-points.geojson
+          python -m json.tool data/offline-world/tabarbour/osm-access-points.geojson >/dev/null
+      - name: Publish OSM entrance and door data immediately
+        if: always()
+        run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "OSM entrances doors and addresses"
 
       - name: Build facade photo review candidates
         continue-on-error: true
@@ -143,6 +156,17 @@ jobs:
       - name: Publish facade review queue immediately
         if: always()
         run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "facade photo review queue"
+
+      - name: Merge OSM, Overture, OpenBuildingMap and Panoramax evidence
+        continue-on-error: true
+        run: |
+          python -m py_compile tools/facades/merge_tabarbour_sources.py
+          python tools/facades/merge_tabarbour_sources.py --chunk-size 2500
+          test -s data/offline-world/tabarbour/merged/manifest.json
+          python -m json.tool data/offline-world/tabarbour/merged/manifest.json >/dev/null
+      - name: Publish merged multi-source building database immediately
+        if: always()
+        run: bash "$RUNNER_TEMP/checkpoint-tabarbour.sh" "merged multi-source building database"
 
       - name: Download Tabarbour OSM context and elevation tiles
         continue-on-error: true
