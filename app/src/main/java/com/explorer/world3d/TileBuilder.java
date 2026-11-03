@@ -968,6 +968,8 @@ final class TileBuilder {
                 if (!bridge && !tunnel) ribbon(px, pz, w + 4.2f, 0.20f, td.bufs[B_SIDEWALK], (w + 4.2f) / 2f, 2f, 1f, 1f, 1f);
                 GeoBuf roadBuf = (w >= 7f ? td.bufs[B_ROADW] : td.bufs[B_ROADN]);
                 ribbonOffset(px, pz, w, yOffset, roadBuf, 1f, 12f, rr, rg, rb);
+                if (tabarbour && hw.matches("residential|living_street|unclassified|service"))
+                    addTabarbourSpeedBumps(roadBuf, px, pz, w, id);
             } else {
                 ribbonOffset(px, pz, w, yOffset, td.bufs[B_SIDEWALK], w / 2f, 2f, rr, rg, rb);
             }
@@ -981,6 +983,38 @@ final class TileBuilder {
                 float[] o = new float[4];
                 addDecal(td, rp, rp.total * 0.5f, name, o);
                 for (float s = 125f; s < rp.total - 8f; s += 150f) addDecal(td, rp, s, name, o);
+            }
+        }
+    }
+
+    /** Raised, low-profile speed humps on Tabarbour residential/service streets only. */
+    private static void addTabarbourSpeedBumps(GeoBuf b, float[] xs, float[] zs, float width, long id) {
+        RoadPath path = new RoadPath(xs, zs, width, false);
+        if (path.total < 48f || width < 3.2f) return;
+        float spacing = 58f + rnd(id, 89) * 28f;
+        float[] left = new float[4], right = new float[4];
+        float[] offsets = {-0.55f, -0.22f, 0.22f, 0.55f};
+        float[] rises = {0f, 0.075f, 0.075f, 0f};
+        for (float distance = spacing * (0.35f + rnd(id, 90) * 0.25f);
+             distance < path.total - 10f; distance += spacing) {
+            for (int i = 0; i < offsets.length; i++) {
+                path.posAt(distance + offsets[i], -width * 0.5f, left);
+                path.posAt(distance + offsets[i], width * 0.5f, right);
+                float yl = Terrain.h(left[0], left[1]) + 0.22f + rises[i];
+                float yr = Terrain.h(right[0], right[1]) + 0.22f + rises[i];
+                left[2] = yl; right[2] = yr;
+            }
+            for (int i = 0; i < offsets.length - 1; i++) {
+                float v0 = distance / 12f + offsets[i] / 12f;
+                float v1 = distance / 12f + offsets[i + 1] / 12f;
+                b.v(left[0], left[2], left[1], 0f, v0, 0.96f, 0.96f, 0.94f);
+                b.v(right[0], right[2], right[1], 1f, v0, 0.96f, 0.96f, 0.94f);
+                b.v(left[0], left[2], left[1], 0f, v1, 0.96f, 0.96f, 0.94f);
+                b.fixTri();
+                b.v(right[0], right[2], right[1], 1f, v0, 0.96f, 0.96f, 0.94f);
+                b.v(right[0], right[2], right[1], 1f, v1, 0.96f, 0.96f, 0.94f);
+                b.v(left[0], left[2], left[1], 0f, v1, 0.96f, 0.96f, 0.94f);
+                b.fixTri();
             }
         }
     }
