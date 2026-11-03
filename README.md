@@ -13,6 +13,8 @@ For building footprints and building geometry, use **OpenFreeMap** and **OpenMap
 
 This is a standing project rule and must be followed by future building-data import, conversion, and offline-city workflows unless the project owner explicitly changes it.
 
+**Explicit Manila Local exception (2026-11-03):** the project owner has now directed the offline Manila renderer to use the already-committed `building-footprints.geojson` and `building-details.geojson` datasets as well as `buildings.geojson`. For this Manila-specific path only, the saved detail extract may enrich matching footprints and add unmatched building/building-part features. Preserve source IDs and attribution, merge rather than duplicate matching features, and keep the OpenFreeMap/OpenMapTiles consolidated building data as the preferred primary geometry whenever it is populated. This exception does not change the source policy for other cities.
+
 
 ## Manila complete vector-tile import
 
