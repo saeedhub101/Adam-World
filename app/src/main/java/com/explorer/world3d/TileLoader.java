@@ -75,7 +75,7 @@ final class TileLoader extends Thread {
     private final LinkedHashMap<String, JSONObject> bundledCityTileCache =
             new LinkedHashMap<String, JSONObject>(80, 0.75f, true) {
                 @Override protected boolean removeEldestEntry(Map.Entry<String, JSONObject> eldest) {
-                    return size() > 64;
+                    return size() > 2;
                 }
             };
     private volatile Set<String> offlineCells;
@@ -84,13 +84,13 @@ final class TileLoader extends Thread {
     private final LinkedHashMap<String, JSONObject> offlineWindowShardCache =
             new LinkedHashMap<String, JSONObject>(12, 0.75f, true) {
                 @Override protected boolean removeEldestEntry(Map.Entry<String, JSONObject> eldest) {
-                    return size() > 6;
+                    return size() > 1;
                 }
             };
     private final LinkedHashMap<String, JSONObject> offlineShardCache =
             new LinkedHashMap<String, JSONObject>(12, 0.75f, true) {
                 @Override protected boolean removeEldestEntry(Map.Entry<String, JSONObject> eldest) {
-                    return size() > 4;
+                    return size() > 1;
                 }
             };
 
@@ -476,15 +476,20 @@ final class TileLoader extends Thread {
             if (!tmp.renameTo(shard)) { tmp.delete(); throw new IOException("Cannot cache Manila shard " + cell); }
             pruneOfflineCache(shard);
         }
+        // Stream JSONL records and retain only features intersecting this render tile.
+        // Never materialize/cache the complete 1 km shard: that duplicated the whole
+        // city cell in Java heap and caused OutOfMemoryError on mobile devices.
         JSONArray elements = new JSONArray();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 new GZIPInputStream(new FileInputStream(shard)), "UTF-8"), 32768)) {
             String line;
-            while ((line = reader.readLine()) != null) if (!line.trim().isEmpty()) elements.put(new JSONObject(line));
-        } catch (Exception ex) { shard.delete(); throw ex; }
-        JSONObject result = new JSONObject(); result.put("elements", elements);
-        synchronized (offlineShardCache) { offlineShardCache.put(key, result); }
-        JSONObject filtered = filterManilaRoot(result, south, west, north, east);
+            while ((line = reader.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                JSONObject element = new JSONObject(line);
+                if (intersectsTile(element, south, west, north, east)) elements.put(element);
+            }
+        } catch (Exception ex) { throw ex; }
+        JSONObject filtered = new JSONObject(); filtered.put("elements", elements);
         appendManilaWindowTile(filtered, tileX, tileZ, version);
         return filtered;
     }
@@ -508,12 +513,19 @@ final class TileLoader extends Thread {
                 if (!tmp.renameTo(shard)) { tmp.delete(); throw new IOException("Cannot cache Manila window shard " + cell); }
                 pruneOfflineCache(shard);
             }
+            // Window records are also streamed; keep only this game tile's surfaces.
             JSONArray elements = new JSONArray();
+            double south = tileZ * Geo.D_LAT, north = (tileZ + 1) * Geo.D_LAT;
+            double west = tileX * Geo.dLon, east = (tileX + 1) * Geo.dLon;
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                     new GZIPInputStream(new FileInputStream(shard)), "UTF-8"), 32768)) {
                 String line;
-                while ((line = reader.readLine()) != null) if (!line.trim().isEmpty()) elements.put(new JSONObject(line));
-            } catch (Exception ex) { shard.delete(); throw ex; }
+                while ((line = reader.readLine()) != null) {
+                    if (line.trim().isEmpty()) continue;
+                    JSONObject element = new JSONObject(line);
+                    if (intersectsTile(element, south, west, north, east)) elements.put(element);
+                }
+            }
             cached = new JSONObject(); cached.put("elements", elements);
             synchronized (offlineWindowShardCache) { offlineWindowShardCache.put(key, cached); }
         }
@@ -568,10 +580,6 @@ final class TileLoader extends Thread {
 
         String version = offlineDatasetVersion == null ? "current" : offlineDatasetVersion;
         String key = version + ":" + cell;
-        synchronized (offlineShardCache) {
-            JSONObject cached = offlineShardCache.get(key);
-            if (cached != null) return cached;
-        }
         File versionDir = new File(offlineDir, version);
         versionDir.mkdirs();
         File shard = new File(versionDir, cell + ".jsonl.gz");
@@ -585,20 +593,20 @@ final class TileLoader extends Thread {
             }
             pruneOfflineCache(shard);
         }
+        // Keep only features needed by this render tile instead of retaining the
+        // complete 1 km shard in a long-lived JSONObject cache.
         JSONArray elements = new JSONArray();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 new GZIPInputStream(new FileInputStream(shard)), "UTF-8"), 32768)) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (!line.trim().isEmpty()) elements.put(new JSONObject(line));
+                if (line.trim().isEmpty()) continue;
+                JSONObject element = new JSONObject(line);
+                if (intersectsTile(element, south, west, north, east)) elements.put(element);
             }
-        } catch (Exception ex) {
-            shard.delete();
-            throw ex;
         }
         JSONObject result = new JSONObject();
         result.put("elements", elements);
-        synchronized (offlineShardCache) { offlineShardCache.put(key, result); }
         return result;
     }
 
