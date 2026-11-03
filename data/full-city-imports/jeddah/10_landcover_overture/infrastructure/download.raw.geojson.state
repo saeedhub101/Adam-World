@@ -1,0 +1,14 @@
+{
+  "last_release": "2026-10-21.0",
+  "last_run": "2026-11-03T03:59:47.713906+00:00",
+  "theme": "base",
+  "type": "infrastructure",
+  "bbox": {
+    "xmin": 38.75,
+    "ymin": 21.2,
+    "xmax": 39.5,
+    "ymax": 21.95
+  },
+  "backend": "geojson",
+  "output": "/home/runner/work/Adam-World/Adam-World/data/full-city-imports/jeddah/10_landcover_overture/infrastructure/download.raw.geojson"
+}
