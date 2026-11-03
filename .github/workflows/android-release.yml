@@ -75,6 +75,8 @@ jobs:
               raise SystemExit("Manila merged shards contain no explicit building heights")
           if not m.get("building_features_with_levels", 0):
               raise SystemExit("Manila merged shards contain no mapped floor counts")
+          if not m.get("building_features_with_color", 0):
+              raise SystemExit("Manila merged shards contain no source-mapped building colors/materials")
           print(
               "MANILA HEIGHT RESTORED: "
               f"{m['building_features']} buildings; "
