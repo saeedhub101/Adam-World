@@ -28,7 +28,7 @@ def atomic_json(path: Path, value):
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             json.dump(value, handle, ensure_ascii=False, separators=(",", ":"))
-            handle.write("\\n")
+            handle.write("\n")
         os.replace(tmp, path)
     finally:
         if os.path.exists(tmp):
