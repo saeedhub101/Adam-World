@@ -114,6 +114,16 @@ jobs:
           python -m pip install --disable-pip-version-check mapbox-vector-tile
           ADAM_CITY_MANILA_PBF="$GITHUB_WORKSPACE/Adam-City-source/Manila/vector-tiles" python tools/build_manila_stream_shards.py
           test -s data/offline-city-stream/manila/manifest.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path("data/offline-city-stream/manila/manifest.json").read_text())
+          assert manifest["building_source"] == "data/facades/cities/manila/buildings.geojson"
+          assert manifest["building_features"] > 0
+          assert manifest["counts"].get("manila_buildings_geojson", 0) > 0
+          assert manifest["transportation_named_features"] > 0
+          assert manifest["transportation_label_features"] > 0
+          PY
           test "$(find data/offline-city-stream/manila -type f -name '*.jsonl.gz' | wc -l)" -gt 0
 
       - name: Save Manila streaming data to main
