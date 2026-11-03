@@ -86,6 +86,26 @@ final class TileLoader extends Thread {
                 }
             };
 
+    /** Mark cached Tabarbour cells stale when Home is pressed so the merged dataset is reloaded. */
+    void refreshTabarbourDataset() {
+        synchronized (this) {
+            tabarbourOfflineDir.mkdirs();
+            File[] cached = tabarbourOfflineDir.listFiles();
+            if (cached != null) {
+                for (File file : cached) {
+                    String name = file.getName();
+                    if (file.isFile() && (name.equals("manifest.json")
+                            || name.matches("tile_-?\\d+_-?\\d+\\.json"))) {
+                        file.setLastModified(0L);
+                    }
+                }
+            }
+            synchronized (bundledCityTileCache) {
+                bundledCityTileCache.clear();
+            }
+        }
+    }
+
     TileLoader(Context context, File cacheDir, ErrorCallback cb) {
         super("tile-loader");
         this.context = context.getApplicationContext();
@@ -266,14 +286,19 @@ final class TileLoader extends Thread {
             synchronized (bundledCityTileCache) { tile = bundledCityTileCache.get(tileKey); }
             if (tile == null) {
                 File tileFile = new File(tabarbourOfflineDir, "tile_" + x + "_" + z + ".json");
-                if (!tileFile.isFile() || tileFile.length() == 0) {
+                if (!tileFile.isFile() || tileFile.length() == 0
+                        || System.currentTimeMillis() - tileFile.lastModified() > 5L * 60 * 1000) {
                     String url = TABARBOUR_DATA_BASE + "/tile_" + x + "_" + z + ".json";
-                    byte[] bytes;
-                    bytes = downloadBytes(url);
-                    File tmp = new File(tileFile.getPath() + ".tmp");
-                    try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
-                    if (!tmp.renameTo(tileFile)) { tmp.delete(); throw new IOException("Cannot cache Tabarbour tile " + tileKey); }
-                    pruneTabarbourCache(tileFile);
+                    try {
+                        byte[] bytes = downloadBytes(url);
+                        File tmp = new File(tileFile.getPath() + ".tmp");
+                        try (FileOutputStream out = new FileOutputStream(tmp)) { out.write(bytes); }
+                        if (!tmp.renameTo(tileFile)) { tmp.delete(); throw new IOException("Cannot cache Tabarbour tile " + tileKey); }
+                        pruneTabarbourCache(tileFile);
+                    } catch (IOException refreshError) {
+                        // Keep a previously verified cell usable when the network is unavailable.
+                        if (!tileFile.isFile() || tileFile.length() == 0) throw refreshError;
+                    }
                 }
                 try {
                     tile = new JSONObject(readFile(tileFile));
