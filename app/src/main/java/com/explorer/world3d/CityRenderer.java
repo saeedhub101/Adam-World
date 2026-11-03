@@ -109,7 +109,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private int uVP, uModel, uCam, uTint, uTex, uEmis, uSunDir, uSunCol, uAmb, uFog, uFogN, uFogF, uEmisK, uTop, uHor, uWater, uDecal, uTime, uPbr, uGlass, uNormalMap, uRoughMap, uMetalMap, uEnvMap;
     private Textures tex;
     private ProceduralMaterialMaps vehicleMaps;
-    private Mesh cube, groundMesh, skyQuad, kidHead, seaMesh;
+    private Mesh cube, groundMesh, skyQuad, seaMesh;
     private Mesh[] vehicleModels;
     private Mesh[] vehicleGlassModels;
     private Mesh wheelMesh;
@@ -228,7 +228,6 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         vehicleGlassModels = ProceduralVehicleModels.buildGlassAll();
         wheelMesh = Mesh.from(ProceduralVehicleModels.buildWheel());
         humanRigModels = ProceduralHumanRig.buildAll();
-        kidHead = KidHead.load(ctx);
         GeoBuf g = new GeoBuf();
         float E = 4000f, T = E * 2f / 13.3333f;
         g.v(-E, 0, -E, 0, 0, 1, 1, 1); g.v(E, 0, -E, T, 0, 1, 1, 1); g.v(E, 0, E, T, T, 1, 1, 1); g.fixTri();
@@ -709,19 +708,6 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         m.draw();
     }
 
-    private void part(float[] b, float px, float py, float pz, float rotDeg,
-                      float cx, float cy, float cz, float sx, float sy, float sz,
-                      float r, float g, float bl) {
-        System.arraycopy(b, 0, tmp, 0, 16);
-        Matrix.translateM(tmp, 0, px, py, pz);
-        if (rotDeg != 0f) Matrix.rotateM(tmp, 0, rotDeg, 1f, 0f, 0f);
-        Matrix.translateM(tmp, 0, cx, cy, cz);
-        Matrix.scaleM(tmp, 0, sx, sy, sz);
-        GLES20.glUniformMatrix4fv(uModel, 1, false, tmp, 0);
-        GLES20.glUniform3f(uTint, r, g, bl);
-        cube.draw();
-    }
-
     private void bindVehicleMaps() {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE2); GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, vehicleMaps.normal);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE3); GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, vehicleMaps.roughness);
@@ -845,41 +831,36 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         L.onToast("المركبة: "+ProceduralVehicleModels.name(playerVehicleType)+" — اضغط 🚗 لاستدعائها أو ركوبها");
     }
 
-    /** الطفل (اللاعب): هودي أزرق وجينز وحذاء رياضي، ورأس منحوت من الصورة المرجعية. */
-    private void drawKid(float x, float y, float z, float yaw, float ph, float amp) {
-        Matrix.setIdentityM(base, 0);
-        Matrix.translateM(base, 0, x, y, z);
-        Matrix.rotateM(base, 0, (float) Math.toDegrees(yaw), 0f, 1f, 0f);
-        float[] bb = base.clone();
-        float sw = (float) Math.sin(ph) * amp * 57.3f;
-        // الهودي
-        part(bb, 0, 0, 0, 0, 0, 0.80f, 0, 0.34f, 0.44f, 0.20f, 0.10f, 0.27f, 0.65f);
-        part(bb, 0, 0, 0, 0, 0, 1.03f, -0.03f, 0.20f, 0.07f, 0.17f, 0.78f, 0.80f, 0.84f);
-        part(bb, 0, 0, 0, 0, 0, 0.88f, 0.103f, 0.07f, 0.07f, 0.01f, 0.95f, 0.95f, 0.98f);
-        part(bb, 0, 0, 0, 0, 0, 0.67f, 0.103f, 0.20f, 0.07f, 0.01f, 0.08f, 0.22f, 0.55f);
-        // الساقان (جينز) والحذاء
-        for (int s = -1; s <= 1; s += 2) {
-            float rot = s < 0 ? sw : -sw;
-            part(bb, s * 0.075f, 0.60f, 0, rot, 0, -0.29f, 0, 0.12f, 0.58f, 0.13f, 0.17f, 0.28f, 0.47f);
-            part(bb, s * 0.075f, 0.60f, 0, rot, 0, -0.615f, 0.03f, 0.12f, 0.07f, 0.23f, 0.92f, 0.92f, 0.95f);
-            part(bb, s * 0.075f, 0.60f, 0, rot, 0, -0.655f, 0.03f, 0.125f, 0.025f, 0.24f, 0.10f, 0.20f, 0.60f);
-            // الذراعان
-            float arot = s < 0 ? -sw * 0.8f : sw * 0.8f;
-            part(bb, s * 0.215f, 1.0f, 0, arot, 0, -0.21f, 0, 0.085f, 0.42f, 0.10f, 0.10f, 0.27f, 0.65f);
-            part(bb, s * 0.215f, 1.0f, 0, arot, 0, -0.455f, 0, 0.07f, 0.08f, 0.07f, 0.93f, 0.74f, 0.62f);
+    /** اللاعب: نسخة طفولية من الشخصية الإجرائية نفسها مع مفاصل ووجه وملابس مولّدة. */
+    private void drawKid(float x,float y,float z,float yaw,float ph,float amp) {
+        if(humanRigModels==null||humanRigModels.length==0)return;
+        Mesh[] rig=humanRigModels[0];
+        float swing=(float)Math.sin(ph)*amp*.58f;
+        float bob=(float)Math.sin(ph*2f)*.018f;
+        Matrix.setIdentityM(base,0);
+        Matrix.translateM(base,0,x,y+bob,z);
+        Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
+        Matrix.scaleM(base,0,.86f,.86f,.86f);
+        drawHumanPart(rig[0],0,1.08f,0,0,0,0,0,1,1,1);
+        drawHumanPart(rig[1],0,1.60f,0,0,0,0,0,1.10f,1.10f,1.10f);
+        drawHumanPart(rig[2],0,1.72f,-.018f,0,0,0,0,1.08f,1.05f,1.08f);
+        drawHumanPart(rig[10],0,1.39f,.10f,0,0,0,0,1,1,1);
+        drawHumanPart(rig[11],0,1.59f,.145f,0,0,0,0,1.10f,1.10f,1.10f);
+        drawHumanPart(rig[13],.13f,1.18f,.14f,0,0,0,0,1,1,1);
+        drawHumanPart(rig[14],0,1.25f,.151f,0,0,0,0,1,1,1);
+        for(int side=-1;side<=1;side+=2) {
+            float leg=(side<0?swing:-swing)*57.29578f;
+            float arm=(side<0?-swing:swing)*42f;
+            drawHumanPart(rig[3],side*.21f,1.32f,0,arm,side*.075f,-.15f,0,1,1,1);
+            drawHumanPart(rig[4],side*.29f,1.00f,0,arm*.42f,side*.012f,-.12f,.01f,1,1,1);
+            drawHumanPart(rig[5],side*.115f,.78f,0,leg,0,-.16f,0,1,1,1);
+            drawHumanPart(rig[6],side*.115f,.44f,0,-leg*.30f,0,-.11f,0,1,1,1);
+            drawHumanPart(rig[7],side*.115f,.15f,.045f,leg,0,-.02f,.06f,1,1,1);
+            drawHumanPart(rig[8],side*.052f,1.645f,.127f,0,0,0,0,1,1,1);
+            drawHumanPart(rig[12],side*.052f,1.667f,.137f,0,0,0,0,1,1,1);
+            drawHumanPart(rig[15],side*.31f,.78f,.02f,arm*.42f,0,0,0,1,1,1);
         }
-        // الرأس المنحوت
-        if (kidHead != null) {
-            System.arraycopy(bb, 0, tmp, 0, 16);
-            Matrix.translateM(tmp, 0, 0f, 1.16f, 0f);
-            Matrix.scaleM(tmp, 0, 0.0125f, 0.0125f, 0.0125f);
-            GLES20.glUniformMatrix4fv(uModel, 1, false, tmp, 0);
-            GLES20.glUniform3f(uTint, 1f, 1f, 1f);
-            kidHead.draw();
-        } else {
-            part(bb, 0, 0, 0, 0, 0, 1.17f, 0, 0.2f, 0.24f, 0.2f, 0.93f, 0.74f, 0.62f);
-        }
-        GLES20.glUniform3f(uTint, 1f, 1f, 1f);
+        drawHumanPart(rig[9],0,1.555f,.137f,0,0,0,0,1,1,1);
     }
 
     private void drawHumanPart(Mesh mesh,float px,float py,float pz,float rz,
