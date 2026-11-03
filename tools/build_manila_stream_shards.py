@@ -446,7 +446,7 @@ def read_geojson_buildings(writer):
         for feature in features:
             merge_feature(feature,source_name)
 
-    added=0; named=0; with_height=0; with_levels=0; parts=0
+    added=0; named=0; with_height=0; with_levels=0; with_color=0; parts=0
     source_usage={name:0 for name in source_counts}
     for key in order:
         feature=merged[key]
@@ -477,11 +477,13 @@ def read_geojson_buildings(writer):
             with_height+=1
         if tags.get("building:levels") or tags.get("num_floors") or tags.get("levels"):
             with_levels+=1
+        if any(tags.get(k) for k in ("building:colour","building:color","facade:colour","facade:color","colour","building:material")):
+            with_color+=1
 
     if added == 0:
         raise SystemExit("No usable Manila building polygons found in buildings/footprints/details GeoJSON")
     return {
-        "features":added,"named":named,"with_height":with_height,"with_levels":with_levels,
+        "features":added,"named":named,"with_height":with_height,"with_levels":with_levels,"with_color":with_color,
         "building_parts":parts,"source_feature_counts":source_counts,
         "source_usage_counts":source_usage,"matched_features":matched,
         "detail_nodes":unmatched_nodes,
@@ -597,10 +599,11 @@ def main():
       "building_source_files":building_stats["source_files"],
       "building_source_feature_counts":building_stats["source_feature_counts"],
       "building_source_usage_counts":building_stats["source_usage_counts"],
-      "building_source_matched_features":building_stats["matched_features"],\n      "building_part_features":building_stats["building_parts"],
+      "building_source_matched_features":building_stats["matched_features"],
+      "building_part_features":building_stats["building_parts"],
       "building_detail_nodes":building_stats["detail_nodes"],
       "building_features":building_stats["features"],"building_named_features":building_stats["named"],
-      "building_features_with_height":building_stats["with_height"],"building_features_with_levels":building_stats["with_levels"],
+      "building_features_with_height":building_stats["with_height"],"building_features_with_levels":building_stats["with_levels"],"building_features_with_color":building_stats["with_color"],
       "transportation_name_source":"data/facades/cities/manila/transportation.geojson",
       "transportation_label_features":transport_stats["features"],"transportation_named_features":transport_stats["named"],
       "building_deduplication":"matched by normalized OSM source feature ID; primary geometry and populated primary tags preserved; supplements fill missing tags and unmatched polygons are added",
@@ -622,5 +625,5 @@ def main():
       "attribution":["© OpenFreeMap / OpenMapTiles","© OpenStreetMap contributors"],
       "license":"OpenStreetMap data ODbL 1.0; OpenFreeMap/OpenMapTiles attribution required"}
     (OUT/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    print(json.dumps({k:manifest[k] for k in ("dataset_version","building_features","building_named_features","building_features_with_height","building_features_with_levels","transportation_label_features","transportation_named_features","counts","openmaptiles_transportation_features","window_surfaces","window_tile_count","cells")},ensure_ascii=False))
+    print(json.dumps({k:manifest[k] for k in ("dataset_version","building_features","building_named_features","building_features_with_height","building_features_with_levels","building_features_with_color","transportation_label_features","transportation_named_features","counts","openmaptiles_transportation_features","window_surfaces","window_tile_count","cells")},ensure_ascii=False))
 if __name__=="__main__": main()
