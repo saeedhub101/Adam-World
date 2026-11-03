@@ -10,6 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PBF_ROOT = Path(os.environ.get("ADAM_CITY_MANILA_PBF", ROOT / "Adam-City-source/Manila/vector-tiles"))
 BUILDINGS = ROOT / "data/facades/cities/manila/buildings.geojson"
+FOOTPRINTS = ROOT / "data/facades/cities/manila/building-footprints.geojson"
+DETAILS = ROOT / "data/facades/cities/manila/building-details.geojson"
 TRANSPORT = ROOT / "data/facades/cities/manila/transportation.geojson"
 OSM_CONTEXT = ROOT / "data/offline-world/manila/elements.json"
 POI_CSV = Path(os.environ.get("ADAM_CITY_POI_CSV", ROOT / "Adam-City-source/ermita/maps/generated/ermita-public_services.csv"))
@@ -199,40 +201,124 @@ def read_pbf(writer):
                     writer.add({"type":"node","id":sid("omt-"+lname,f.get("id",0)),"lat":lat,"lon":lon,"tags":t},"openmaptiles_"+lname)
     return count
 
-def read_geojson_buildings(writer):
-    """Import every Manila building exclusively from the canonical buildings.geojson."""
-    if not BUILDINGS.is_file() or BUILDINGS.stat().st_size == 0:
-        raise SystemExit(f"Missing or empty canonical Manila buildings file: {BUILDINGS}")
-    data=json.loads(BUILDINGS.read_text(encoding="utf-8"))
+def _load_feature_collection(path, required=False):
+    if not path.is_file() or path.stat().st_size == 0:
+        if required:
+            raise SystemExit(f"Missing or empty required Manila building source: {path}")
+        return []
+    try:
+        data=json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"Cannot read Manila building source {path}: {exc}")
     if data.get("type") != "FeatureCollection" or not isinstance(data.get("features"),list):
-        raise SystemExit(f"Invalid Manila buildings GeoJSON FeatureCollection: {BUILDINGS}")
-    added=0; named=0; with_height=0; with_levels=0
-    for i,feature in enumerate(data["features"]):
-        props=feature.get("properties") or {}
-        building=text(props.get("building"))
-        if not building or building.lower()=="no":
+        raise SystemExit(f"Invalid Manila building GeoJSON FeatureCollection: {path}")
+    return data["features"]
+
+def _building_key(feature):
+    p=feature.get("properties") or {}
+    raw=p.get("osm_feature_id") or p.get("osm_way_id") or p.get("osm_id")
+    if not raw and p.get("id") not in (None,""):
+        raw=f'{p.get("type","way")}/{p["id"]}'
+    if not raw and feature.get("id") not in (None,""):
+        raw=feature["id"]
+    if raw in (None,""):
+        raw=hashlib.sha256(json.dumps(feature.get("geometry"),sort_keys=True).encode()).hexdigest()
+    return str(raw).strip()
+
+def _building_tags(feature):
+    p=feature.get("properties") or {}
+    tags=dict(p.get("tags") or {}) if isinstance(p.get("tags"),dict) else {}
+    for key,value in p.items():
+        if key in ("tags","type","id","osm_feature_id","osm_way_id","osm_id") or value in (None,"",[],{}):
             continue
-        rings=polygons(feature.get("geometry") or {})
+        tags.setdefault(key,text(value))
+    return {str(k):text(v) for k,v in tags.items() if v not in (None,"")}
+
+def read_geojson_buildings(writer):
+    """Merge Manila's canonical OFM/OMT buildings with saved footprints and detail tags.
+
+    Primary buildings.geojson geometry wins when present. The footprint file fills
+    missing geometry; building-details.geojson enriches matching IDs and contributes
+    unmatched building polygons, building parts, and mapped building nodes.
+    """
+    primary=_load_feature_collection(BUILDINGS)
+    footprints=_load_feature_collection(FOOTPRINTS)
+    details=_load_feature_collection(DETAILS)
+    if not primary and not footprints and not details:
+        raise SystemExit("No usable Manila building source: buildings.geojson, building-footprints.geojson and building-details.geojson are all missing or empty")
+
+    records={}
+    source_counts={"buildings_geojson":0,"building_footprints":0,"building_details_polygons":0}
+    detail_nodes=[]
+    def add_geometry(feature, source, prefer=False):
+        key=_building_key(feature)
+        tags=_building_tags(feature)
+        geometry=feature.get("geometry") or {}
+        rings=polygons(geometry)
         if not rings:
-            continue
-        tags={}
-        for key,value in props.items():
-            if value not in (None,"",[],{}):
-                tags[key]=text(value)
-        tags["building"]=building
-        tags["adam:source"]="Manila buildings.geojson"
-        osm_id=props.get("osm_way_id") or props.get("osm_id")
-        if osm_id not in (None,""):
-            tags["adam:source_osm_id"]=text(osm_id)
-        feature_id=feature.get("id") or osm_id or i
-        emit_polygon(writer,"manila-buildings-geojson",feature_id,rings,tags,"manila_buildings_geojson")
+            return
+        building=text(tags.get("building") or tags.get("building:part"))
+        if not building or building.lower()=="no":
+            return
+        rec=records.get(key)
+        if rec is None:
+            records[key]={"feature":feature,"tags":tags,"source":source}
+        else:
+            # Preserve the preferred footprint, filling only absent attributes from supplements.
+            if prefer:
+                rec["feature"]=feature
+                rec["source"]=source
+            for k,v in tags.items():
+                if rec["tags"].get(k) in (None,"") and v not in (None,""):
+                    rec["tags"][k]=v
+        source_counts[source]+=1
+
+    for feature in primary:
+        add_geometry(feature,"buildings_geojson",prefer=True)
+    for feature in footprints:
+        add_geometry(feature,"building_footprints")
+    for feature in details:
+        geom=feature.get("geometry") or {}
+        if geom.get("type") in ("Polygon","MultiPolygon"):
+            add_geometry(feature,"building_details_polygons")
+        elif geom.get("type")=="Point":
+            tags=_building_tags(feature)
+            if tags.get("building") or tags.get("building:part") or tags.get("name") or tags.get("addr:housenumber"):
+                detail_nodes.append((feature,tags))
+
+    added=0; named=0; with_height=0; with_levels=0; parts=0
+    for key,rec in records.items():
+        feature=rec["feature"]
+        tags=dict(rec["tags"])
+        # A building-part polygon must remain renderable even if it has no parent building tag.
+        if not tags.get("building") and tags.get("building:part"):
+            tags["building"]="yes"
+        tags["adam:source"]="Manila merged building datasets"
+        tags["adam:building_sources"]="buildings.geojson;building-footprints.geojson;building-details.geojson"
+        tags["adam:source_feature_id"]=key
+        rings=polygons(feature.get("geometry") or {})
+        emit_polygon(writer,"manila-building-merged",key,rings,tags,"manila_buildings_merged")
         added+=1
+        if tags.get("building:part"): parts+=1
         if tags.get("name") or tags.get("name:ar") or tags.get("official_name"): named+=1
         if tags.get("height"): with_height+=1
         if tags.get("building:levels"): with_levels+=1
+
+    for feature,tags in detail_nodes:
+        coords=(feature.get("geometry") or {}).get("coordinates") or []
+        if len(coords)<2: continue
+        p=feature.get("properties") or {}
+        node_tags=dict(tags)
+        node_tags["adam:source"]="Manila building-details.geojson"
+        node_tags["adam:source_feature_id"]=_building_key(feature)
+        writer.add({"type":"node","id":sid("manila-building-detail-node",_building_key(feature)),
+                    "lon":float(coords[0]),"lat":float(coords[1]),"tags":node_tags},"manila_building_detail_nodes")
+
     if added == 0:
-        raise SystemExit(f"No usable building polygons in canonical Manila file: {BUILDINGS}")
-    return {"features":added,"named":named,"with_height":with_height,"with_levels":with_levels}
+        raise SystemExit("No usable Manila building polygons found in the available building datasets")
+    return {"features":added,"named":named,"with_height":with_height,"with_levels":with_levels,
+            "building_parts":parts,"source_feature_counts":source_counts,"detail_nodes":len(detail_nodes),
+            "source_files":{"buildings_geojson":bool(primary),"building_footprints":bool(footprints),"building_details":bool(details)}}
 
 def read_transport(writer, label_only=False):
     """Use transportation.geojson for street labels, never nearest-road name guessing."""
@@ -311,8 +397,6 @@ def read_context(writer):
     return n
 
 def main():
-    if not BUILDINGS.is_file() or BUILDINGS.stat().st_size == 0:
-        raise SystemExit(f"Missing or empty canonical Manila buildings file: {BUILDINGS}")
     writer=Shards()
     building_stats=read_geojson_buildings(writer)
     read_pbf(writer)
@@ -328,13 +412,18 @@ def main():
         with shard.open("rb") as f:
             while block:=f.read(1024*1024): h.update(block)
         shard_hashes[shard.stem]=h.hexdigest()
-    manifest={"schema_version":2,"city":"Manila","source":"buildings.geojson (sole building source) + OpenMapTiles PBF road geometry/POIs + OpenFreeMap transportation.geojson street names",
-      "building_source":"data/facades/cities/manila/buildings.geojson",
+    manifest={"schema_version":2,"city":"Manila","source":"merged Manila buildings.geojson + building-footprints.geojson + building-details.geojson; OpenMapTiles PBF road geometry/POIs; OpenFreeMap transportation street geometry/names",
+      "building_source":"merged Manila building datasets",
+      "building_sources":["data/facades/cities/manila/buildings.geojson","data/facades/cities/manila/building-footprints.geojson","data/facades/cities/manila/building-details.geojson"],
+      "building_source_files":building_stats["source_files"],
+      "building_source_feature_counts":building_stats["source_feature_counts"],
+      "building_part_features":building_stats["building_parts"],
+      "building_detail_nodes":building_stats["detail_nodes"],
       "building_features":building_stats["features"],"building_named_features":building_stats["named"],
       "building_features_with_height":building_stats["with_height"],"building_features_with_levels":building_stats["with_levels"],
       "transportation_name_source":"data/facades/cities/manila/transportation.geojson",
       "transportation_label_features":transport_stats["features"],"transportation_named_features":transport_stats["named"],
-      "building_deduplication":"canonical-buildings-geojson-only-v1",
+      "building_deduplication":"osm-feature-id-merge-primary-geometry-first-v2",
       "origin":{"lat":LAT0,"lon":LON0},"cell_size_m":CELL,"cell_halo_m":HALO,
       "dataset_version":hashlib.sha256(json.dumps(shard_hashes,sort_keys=True).encode()).hexdigest()[:16],
       "shard_sha256":shard_hashes,
