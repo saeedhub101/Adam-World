@@ -42,13 +42,21 @@ def tile_lonlat(x,y,z,extent):
     return lon,lat
 
 def polygons(g):
-    if g.get("type")=="Polygon":
-        c=g.get("coordinates",[])
-        return c[:1]
-    if g.get("type")=="MultiPolygon":
-        return [poly[0] for poly in g.get("coordinates",[]) if poly]
+    """Extract outer rings, including polygon members of clipped collections."""
+    if not isinstance(g, dict):
+        return []
+    kind = g.get("type")
+    coordinates = g.get("coordinates") or []
+    if kind == "Polygon":
+        return coordinates[:1] if coordinates else []
+    if kind == "MultiPolygon":
+        return [poly[0] for poly in coordinates if poly]
+    if kind == "GeometryCollection":
+        result = []
+        for child in g.get("geometries") or []:
+            result.extend(polygons(child))
+        return result
     return []
-
 def lines(g):
     if g.get("type")=="LineString": return [g.get("coordinates",[])]
     if g.get("type")=="MultiLineString": return g.get("coordinates",[])
