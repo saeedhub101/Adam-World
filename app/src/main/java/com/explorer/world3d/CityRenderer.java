@@ -235,7 +235,12 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
     public void teleportOfflineManila() { teleportInternal(14.57394, 120.98283, false, "manila"); }
 
-    public void teleportOfflineTabarbour() { teleportInternal(31.997579, 35.940358, false, "tabarbour"); }
+    public void teleportOfflineTabarbour() {
+        // Home always refreshes cached cells so the latest merged footprints,
+        // heights, addresses and road attributes are shown instead of an old snapshot.
+        loader.refreshTabarbourDataset();
+        teleportInternal(31.997579, 35.940358, false, "tabarbour");
+    }
 
     private void teleportInternal(double lat, double lon, boolean offline, String offlineCity) {
         loader.gen++;
