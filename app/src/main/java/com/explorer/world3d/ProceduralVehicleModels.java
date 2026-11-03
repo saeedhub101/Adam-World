@@ -47,6 +47,7 @@ final class ProceduralVehicleModels {
     }
     private static void curvedBody(GeoBuf b,float[] c,float width,float len,float h,int type){
         int rings=28, around=20;
+        float[][] p=new float[rings][around*3];
         for(int j=0;j<rings;j++){
             float t=j/(float)(rings-1), z=(t-.5f)*len;
             float end=(float)Math.min(1,Math.min(t*7,(1-t)*7));
@@ -54,18 +55,17 @@ final class ProceduralVehicleModels {
             float roof=bez(.78f,.96f,1.02f,.72f,t)*h;
             for(int k=0;k<around;k++){
                 float a=2*PI*k/around;
-                float x=(float)Math.cos(a)*w;
-                float y=h*.48f+(float)Math.sin(a)*roof*.48f;
-                b.v(x,y,z, t,k/(float)around,c[0],c[1],c[2]);
-                if(j>0&&k>=0){
-                    int p=b.n-11, prev=p-around*11, next=prev+11;
-                    int curNext=p+11;
-                    if(k<around-1) b.quad(b.a[prev],b.a[prev+1],b.a[prev+2],b.a[next],b.a[next+1],b.a[next+2],
-                        b.a[curNext],b.a[curNext+1],b.a[curNext+2],b.a[p],b.a[p+1],b.a[p+2],c[0],c[1],c[2]);
-                }
+                p[j][k*3]=(float)Math.cos(a)*w;
+                p[j][k*3+1]=h*.48f+(float)Math.sin(a)*roof*.48f;
+                p[j][k*3+2]=z;
             }
         }
-        // nose and rear bumpers; wheel arches are dark inset arcs above the wheel positions.
+        for(int j=0;j<rings-1;j++) for(int k=0;k<around;k++){
+            int n=(k+1)%around;
+            float[] a=p[j], d=p[j+1];
+            b.quad(a[k*3],a[k*3+1],a[k*3+2],a[n*3],a[n*3+1],a[n*3+2],
+                    d[n*3],d[n*3+1],d[n*3+2],d[k*3],d[k*3+1],d[k*3+2],c[0],c[1],c[2]);
+        }
         b.box(0,.42f*h,len*.49f,width*1.72f,.18f,.16f,.12f,.13f,.15f);
         b.box(0,.42f*h,-len*.49f,width*1.72f,.18f,.16f,.12f,.13f,.15f);
     }
