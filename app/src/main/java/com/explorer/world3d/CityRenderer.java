@@ -32,7 +32,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             + " vNor=(uModel*vec4(aNor,0.0)).xyz; vDist=length(wp.xyz-uCam); vWorld=wp.xyz; vRel=wp.xyz-uCam; }";
     private static final String FS =
             "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n"
-            + "uniform sampler2D uTex; uniform sampler2D uEmis; uniform sampler2D uNormalMap; uniform sampler2D uRoughMap; uniform sampler2D uMetalMap; uniform samplerCube uEnvMap; uniform vec3 uTint;\n"
+            + "uniform sampler2D uTex; uniform sampler2D uEmis; uniform sampler2D uNormalMap; uniform sampler2D uRoughMap; uniform sampler2D uMetalMap; uniform samplerCube uEnvMap; uniform vec3 uTint; uniform vec3 uCam;\n"
             + "uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uAmb; uniform vec3 uFog;\n"
             + "uniform float uFogN; uniform float uFogF; uniform float uEmisK; uniform float uWater; uniform float uDecal; uniform float uTime; uniform float uPbr; uniform float uGlass;\n"
             + "varying vec2 vUV; varying vec3 vCol; varying vec3 vNor; varying float vDist; varying vec3 vWorld; varying vec3 vRel;\n"
