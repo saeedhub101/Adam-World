@@ -181,6 +181,169 @@ def _geojson_way_elements(path, only_building_parts=False):
 
 
 
+
+def _overture_record_osm_id(properties):
+    for source in properties.get("sources") or []:
+        if not isinstance(source, dict):
+            continue
+        record = str(source.get("record_id") or "").split("@", 1)[0]
+        if record.startswith("w") and record[1:].isdigit():
+            return int(record[1:])
+        if record.startswith("r") and record[1:].isdigit():
+            return int(record[1:])
+        if record.startswith("n") and record[1:].isdigit():
+            return int(record[1:])
+        parsed = _osm_id(record)
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _geojson_overture_elements(path, part=False):
+    """Normalize Overture buildings while preserving source provenance and address/height fields."""
+    if not path.is_file():
+        return []
+    output = []
+    for feature in read_json(path).get("features", []):
+        props = dict(feature.get("properties") or {})
+        geom = feature.get("geometry") or {}
+        kind, coords = geom.get("type"), geom.get("coordinates") or []
+        polygons = [coords] if kind == "Polygon" else (coords if kind == "MultiPolygon" else [])
+        if not polygons:
+            continue
+        tags = {"building": "yes", "adam:source": "Overture Maps"}
+        if part:
+            tags["building:part"] = "yes"
+        mapping = {
+            "height": "height", "min_height": "min_height",
+            "num_floors": "building:levels",
+            "num_floors_underground": "building:levels:underground",
+            "min_floor": "building:min_level",
+            "roof_height": "roof:height", "roof_shape": "roof:shape",
+            "roof_material": "roof:material", "roof_color": "roof:colour",
+            "facade_material": "building:material", "facade_color": "building:colour",
+            "class": "adam:source:building_class", "subtype": "adam:source:building_subtype",
+        }
+        for src, dst in mapping.items():
+            value = props.get(src)
+            if value not in (None, ""):
+                tags[dst] = str(value)
+        names = props.get("names") or props.get("name")
+        if isinstance(names, dict):
+            primary = names.get("primary") or names.get("common")
+            if primary:
+                tags["name"] = str(primary)
+            for lang, value in (names.get("common") or {}).items() if isinstance(names.get("common"), dict) else []:
+                if value and lang in ("ar", "en"):
+                    tags["name:" + lang] = str(value)
+        elif names:
+            tags["name"] = str(names)
+        address = props.get("address") or props.get("addresses")
+        if isinstance(address, list):
+            address = address[0] if address else {}
+        if isinstance(address, dict):
+            number = address.get("number") or address.get("house_number") or address.get("houseNumber")
+            street = address.get("street")
+            unit = address.get("unit")
+            if number: tags["addr:housenumber"] = str(number)
+            if street: tags["addr:street"] = str(street)
+            if unit: tags["addr:unit"] = str(unit)
+        for pair in props.get("source_tags") or []:
+            if isinstance(pair, (list, tuple)) and len(pair) >= 2 and pair[1] not in (None, ""):
+                key = str(pair[0])
+                if key in ("name", "name:ar", "name:en", "addr:housenumber", "addr:street",
+                           "height", "building:levels", "ref"):
+                    tags.setdefault(key, str(pair[1]))
+        datasets = sorted({str(src.get("dataset")) for src in props.get("sources") or []
+                           if isinstance(src, dict) and src.get("dataset")})
+        if datasets:
+            tags["adam:source_datasets"] = ";".join(datasets)
+        height_sources = sorted({str(src.get("dataset")) for src in props.get("sources") or []
+                                 if isinstance(src, dict) and src.get("property") == "height" and src.get("dataset")})
+        if height_sources:
+            tags["adam:height_source"] = ";".join(height_sources)
+        osm_id = _overture_record_osm_id(props)
+        if osm_id is not None:
+            tags["adam:source_osm_id"] = str(osm_id)
+        tags["adam:source_overture_id"] = str(feature.get("id") or props.get("id") or "")
+        tags["adam:source_geometry"] = "Overture Maps conflated building geometry"
+        seed = str(feature.get("id") or props.get("id") or len(output))
+        synthetic_id = 7000000000 + (sum((i + 1) * ord(ch) for i, ch in enumerate(seed)) % 900000000)
+        for polygon_index, polygon in enumerate(polygons):
+            if not polygon:
+                continue
+            ring = polygon[0]
+            points = []
+            for point in ring:
+                if isinstance(point, (list, tuple)) and len(point) >= 2:
+                    lon, lat = float(point[0]), float(point[1])
+                    if math.isfinite(lat) and math.isfinite(lon):
+                        points.append({"lat": lat, "lon": lon})
+            if len(points) < 4:
+                continue
+            output.append({"type": "way", "id": synthetic_id + polygon_index,
+                           "tags": dict(tags), "geometry": points})
+    return output
+
+
+def _merge_overture_building_attributes(primary, overture):
+    """Join Overture's multi-source attributes to primary footprints; append only unmatched real footprints."""
+    primary_by_osm = {}
+    grid = defaultdict(list)
+    signatures = []
+    cell_size = 5.0
+    for index, item in enumerate(primary):
+        tags = item.get("tags") or {}
+        osm_id = _osm_id(tags.get("adam:source_osm_id") or item.get("id"))
+        if osm_id is not None:
+            primary_by_osm.setdefault(osm_id, []).append(item)
+        signature = _footprint_signature(item.get("geometry") or [])
+        signatures.append(signature)
+        if signature:
+            grid[(math.floor(signature[0] / cell_size), math.floor(signature[1] / cell_size))].append(index)
+    additions = []
+    matched = 0
+    for item in overture:
+        tags = item.get("tags") or {}
+        osm_id = _osm_id(tags.get("adam:source_osm_id"))
+        candidates = primary_by_osm.get(osm_id, []) if osm_id is not None else []
+        target = candidates[0] if len(candidates) == 1 else None
+        sig = _footprint_signature(item.get("geometry") or [])
+        if target is None and sig:
+            cx, cy = math.floor(sig[0] / cell_size), math.floor(sig[1] / cell_size)
+            ranked = []
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    for index in grid.get((cx + dx, cy + dy), []):
+                        other = signatures[index]
+                        if not other:
+                            continue
+                        distance = math.hypot(sig[0] - other[0], sig[1] - other[1])
+                        ratio = min(sig[2], other[2]) / max(sig[2], other[2])
+                        if distance <= 3.0 and ratio >= 0.65:
+                            ranked.append((distance, -ratio, primary[index]))
+            if ranked:
+                ranked.sort(key=lambda x: (x[0], x[1]))
+                if len(ranked) == 1 or ranked[1][0] - ranked[0][0] > 1.0:
+                    target = ranked[0][2]
+        if target is not None:
+            dest = target.setdefault("tags", {})
+            for key, value in tags.items():
+                if value not in (None, "") and dest.get(key) in (None, ""):
+                    dest[key] = value
+            dest["adam:enriched_by_overture"] = "yes"
+            matched += 1
+        else:
+            # Overture includes conflated Google/Microsoft footprints; keep them
+            # only when no primary footprint is geometrically equivalent.
+            additions.append(item)
+            if sig:
+                index = len(primary) + len(additions) - 1
+                signatures.append(sig)
+                grid[(math.floor(sig[0] / cell_size), math.floor(sig[1] / cell_size))].append(index)
+    print(f"OVERTURE JOIN: {matched} existing footprints enriched; {len(additions)} additional source footprints", flush=True)
+    return additions
+
 def _geojson_transportation_elements(path):
     """Build road centerlines once and merge label-layer names without drawing duplicate roads."""
     if not path.is_file():
@@ -301,6 +464,11 @@ def _merge_address_points(city_slug, buildings):
                 grid[(gx, gy)].append(index)
     ring_lookup = dict(rings_by_index)
     assigned = 0
+    # Overture's independent address theme is also queried. It supplies
+    # structured house numbers/street names where the source has coverage.
+    overture_address_path = SOURCE / city_slug / "overture-address-points.geojson"
+    if overture_address_path.is_file():
+        features.extend(read_json(overture_address_path).get("features") or [])
     address_keys = ("addr:housenumber", "addr:housename", "addr:street",
                     "addr:street:ar", "addr:street:en", "addr:unit",
                     "addr:postcode", "name", "name:ar")
@@ -312,6 +480,13 @@ def _merge_address_points(city_slug, buildings):
         lon, lat = float(coords[0]), float(coords[1])
         candidates = grid.get((math.floor(lon / grid_size), math.floor(lat / grid_size)), [])
         address_tags = _feature_tags(feature)
+        # Overture Address theme uses number/street/unit rather than OSM addr:* keys.
+        if address_tags.get("number") and not address_tags.get("addr:housenumber"):
+            address_tags["addr:housenumber"] = address_tags["number"]
+        if address_tags.get("street") and not address_tags.get("addr:street"):
+            address_tags["addr:street"] = address_tags["street"]
+        if address_tags.get("unit") and not address_tags.get("addr:unit"):
+            address_tags["addr:unit"] = address_tags["unit"]
         matched = None
         for index in candidates:
             if _point_in_ring(lon, lat, ring_lookup[index]):
@@ -481,7 +656,10 @@ def source_elements(slug, lat0, lon0):
                 detail_buildings.append(item)
 
         footprints = _geojson_way_elements(footprints_path)
-        address_assignments = _merge_address_points(slug, footprints + detail_buildings)
+        overture_buildings = _geojson_overture_elements(SOURCE / slug / "overture-building-details.geojson")
+        overture_parts = _geojson_overture_elements(SOURCE / slug / "overture-building-parts.geojson", part=True)
+        overture_additions = _merge_overture_building_attributes(footprints, overture_buildings)
+        address_assignments = _merge_address_points(slug, footprints + detail_buildings + overture_additions)
         if address_assignments:
             print(f"MERGED {address_assignments} Tabarbour address points into building footprints", flush=True)
         footprint_ids = set()
@@ -564,7 +742,14 @@ def source_elements(slug, lat0, lon0):
         else:
             primary_roads = []
             source_kind += "+openfreemap-road-layer-missing-no-osm-road-substitution"
-        combined = preserved + primary_roads + footprints + unmatched_buildings + unmatched_parts
+        # Overture building parts are retained as true sub-volumes; avoid
+        # exact duplicate OSM parts by their original OSM identity.
+        known_part_ids = {_osm_id((x.get("tags") or {}).get("adam:source_osm_id") or x.get("id"))
+                          for x in unmatched_parts + footprints}
+        unmatched_overture_parts = [x for x in overture_parts
+            if _osm_id((x.get("tags") or {}).get("adam:source_osm_id") or x.get("id")) not in known_part_ids]
+        combined = (preserved + primary_roads + footprints + unmatched_buildings +
+                    unmatched_parts + overture_additions + unmatched_overture_parts)
         if combined:
             return combined, source_path, source_kind
 
