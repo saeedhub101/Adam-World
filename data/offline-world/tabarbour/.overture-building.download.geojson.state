@@ -1,0 +1,14 @@
+{
+  "last_release": "2026-10-21.0",
+  "last_run": "2026-11-03T05:52:37.411422+00:00",
+  "theme": "buildings",
+  "type": "building",
+  "bbox": {
+    "xmin": 35.903284559038546,
+    "ymin": 31.966084920886875,
+    "xmax": 35.97743144096146,
+    "ymax": 32.029073079113125
+  },
+  "backend": "geojson",
+  "output": "/home/runner/work/Adam-World/Adam-World/data/offline-world/tabarbour/.overture-building.download.geojson"
+}
