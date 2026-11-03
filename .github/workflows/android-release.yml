@@ -67,6 +67,7 @@ jobs:
           git add -A data/offline-city-stream/manila
           if ! git diff --cached --quiet; then
             git commit -m "Rebuild Manila offline game data from building-layer GeoJSON"
+            git pull --rebase origin main
             git push origin HEAD:main
           else
             echo "Manila offline game data is already current."
