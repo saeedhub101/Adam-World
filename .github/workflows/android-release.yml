@@ -63,7 +63,7 @@ jobs:
           # Every Manila city cell and checksum entry must exist in the repository.
           cells = manila.get("cells") or {}
           hashes = manila.get("shard_sha256") or {}
-          if not cells or set(cells) != set(hashes):
+          if not cells or {cell + ".jsonl" for cell in cells} != set(hashes):
               raise SystemExit("Manila cell manifest/checksum index is incomplete")
           for cell in cells:
               p = root / "manila" / "shards" / (cell + ".jsonl.gz")
@@ -75,7 +75,7 @@ jobs:
           window_hashes = manila.get("window_shard_sha256") or {}
           if not window_tiles or len(window_tiles) != manila.get("window_tile_count"):
               raise SystemExit("Manila window tile index is incomplete")
-          if set(window_tiles) != set(window_hashes):
+          if {tile + ".jsonl" for tile in window_tiles} != set(window_hashes):
               raise SystemExit("Manila window checksums do not match tile index")
           for tile in window_tiles:
               p = root / "manila" / "window-shards" / (tile + ".jsonl.gz")
