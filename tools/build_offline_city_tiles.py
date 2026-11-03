@@ -10,6 +10,7 @@ import argparse
 import json
 import math
 import shutil
+import tempfile
 from collections import defaultdict
 from pathlib import Path
 
@@ -19,6 +20,19 @@ FULL_SOURCE = ROOT / "data" / "offline-world"
 OUTPUT = ROOT / "app" / "src" / "main" / "assets" / "cities"
 TILE_METERS = 250.0
 KY = 111132.0
+
+
+def atomic_json(path: Path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=path.name + ".", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(value, handle, ensure_ascii=False, separators=(",", ":"))
+            handle.write("\\n")
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
 
 
 def read_json(path: Path):
@@ -932,6 +946,8 @@ def source_elements(slug, lat0, lon0):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--city", help="Build only this city slug")
+    parser.add_argument("--checkpoint-every", type=int, default=10,
+                        help="Write a resumable partial manifest after this many tiles")
     args = parser.parse_args()
     catalog = read_json(SOURCE / "catalog.json")
     selected_cities = list(catalog.get("cities", []))
@@ -973,18 +989,30 @@ def main():
         city_out = (FULL_SOURCE / slug / "stream") if slug == "tabarbour" else (OUTPUT / slug)
         city_out.mkdir(parents=True, exist_ok=True)
         tiles = []
-        for (ix, iz), elements in sorted(buckets.items()):
+        ordered_buckets = sorted(buckets.items())
+        partial_manifest = {
+            "schema_version": 1, "slug": slug, "name": city["name"],
+            "center": center, "tile_size_m": TILE_METERS,
+            "source": source_path, "source_kind": source_kind,
+            "status": "building", "complete": False,
+            "expected_tile_count": len(ordered_buckets), "tiles": [],
+        }
+        atomic_json(city_out / "manifest.json", partial_manifest)
+        for tile_index, ((ix, iz), elements) in enumerate(ordered_buckets, 1):
             filename = f"tile_{ix}_{iz}.json"
-            (city_out / filename).write_text(
-                json.dumps({"elements": elements}, ensure_ascii=False, separators=(",", ":")),
-                encoding="utf-8",
-            )
+            atomic_json(city_out / filename, {"elements": elements})
             tiles.append({
                 "file": filename, "ix": ix, "iz": iz,
                 "min_x": ix * TILE_METERS, "max_x": (ix + 1) * TILE_METERS,
                 "min_z": iz * TILE_METERS, "max_z": (iz + 1) * TILE_METERS,
                 "count": len(elements),
             })
+            if tile_index % max(1, args.checkpoint_every) == 0:
+                partial_manifest["tiles"] = list(tiles)
+                partial_manifest["completed_tile_count"] = tile_index
+                partial_manifest["element_count"] = sum(item["count"] for item in tiles)
+                atomic_json(city_out / "manifest.json", partial_manifest)
+                print(f"TILE CHECKPOINT {slug}: {tile_index}/{len(ordered_buckets)} tiles", flush=True)
 
         manifest = {
             "schema_version": 1, "slug": slug, "name": city["name"],
@@ -992,6 +1020,7 @@ def main():
             "coverage_radius_m": float(city.get("discovery_radius_m", 650)),
             "tile_size_m": TILE_METERS,
             "source": source_path, "source_kind": source_kind,
+            "status": "complete", "complete": True,
             "element_count": sum(len(v) for v in buckets.values()),
             "tiles": tiles,
         }
@@ -1000,10 +1029,7 @@ def main():
             shutil.copy2(elevation_source, city_out / "elevation-grid.json")
             manifest["elevation_grid"] = "elevation-grid.json"
             manifest["elevation_source"] = "Copernicus DEM GLO-30"
-        (city_out / "manifest.json").write_text(
-            json.dumps(manifest, ensure_ascii=False, separators=(",", ":")),
-            encoding="utf-8",
-        )
+        atomic_json(city_out / "manifest.json", manifest)
         count = manifest["element_count"]
         total_elements += count
         total_tiles += len(tiles)
