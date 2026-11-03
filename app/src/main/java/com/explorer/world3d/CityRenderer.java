@@ -83,7 +83,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private int prog, skyProg;
     private int uVP, uModel, uCam, uTint, uTex, uEmis, uSunDir, uSunCol, uAmb, uFog, uFogN, uFogF, uEmisK, uTop, uHor, uWater, uDecal, uTime;
     private Textures tex;
-    private Mesh cube, groundMesh, skyQuad, kidHead, seaMesh;
+    private Mesh cube, groundMesh, skyQuad, kidHead, seaMesh;\n    private Mesh[] vehicleModels;\n    private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN;
     private final HashMap<Long, Mesh> terrain = new HashMap<>();
     private final float[] proj = new float[16], view = new float[16], vp = new float[16];
     private final float[] ident = new float[16], tmp = new float[16], base = new float[16];
@@ -631,11 +631,11 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform1f(uEmisK, 0f);
         for (Game.Agent a : g.agents) {
             if (Math.hypot(a.x - g.camX, a.z - g.camZ) > 350) continue;
-            if (a.car) drawCar(a.x, a.z, a.yaw, a.cr, a.cg, a.cb);
+            if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, a.cr, a.cg, a.cb);
             else drawPerson(a.x, Terrain.h(a.x, a.z), a.z, a.yaw, a.ph, 0.6f, a.cr, a.cg, a.cb);
         }
         if (spawned) {
-            drawCar(g.cx, g.cz, g.cyaw, 0.75f, 0.22f, 0.17f);
+            drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, 0.75f, 0.22f, 0.17f);
             if (!g.driving) drawKid(g.px, g.py, g.pz, g.pyaw, g.phase, g.swingAmp);
         }
     }
@@ -668,25 +668,28 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         cube.draw();
     }
 
-    private void drawCar(float x, float z, float yaw, float r, float g, float b) {
-        float sy = (float) Math.sin(yaw), cy = (float) Math.cos(yaw);
-        float hf = Terrain.h(x + sy * 2.1f, z + cy * 2.1f), hb = Terrain.h(x - sy * 2.1f, z - cy * 2.1f);
-        float pitch = -(float) Math.toDegrees(Math.atan2(hf - hb, 4.2f));
-        Matrix.setIdentityM(base, 0);
-        Matrix.translateM(base, 0, x, (hf + hb) / 2f, z);
-        Matrix.rotateM(base, 0, (float) Math.toDegrees(yaw), 0f, 1f, 0f);
-        Matrix.rotateM(base, 0, pitch, 1f, 0f, 0f);
-        float[] bb = base.clone();
-        part(bb, 0, 0, 0, 0, 0, 0.65f, 0, 1.9f, 0.7f, 4.3f, r, g, b);
-        part(bb, 0, 0, 0, 0, 0, 1.25f, -0.2f, 1.7f, 0.6f, 2.2f, 0.14f, 0.18f, 0.22f);
-        for (float sx : new float[]{-0.95f, 0.95f}) {
-            for (float sz : new float[]{-1.4f, 1.4f}) part(bb, 0, 0, 0, 0, sx, 0.36f, sz, 0.3f, 0.72f, 0.72f, 0.07f, 0.07f, 0.07f);
-        }
-        for (float sx : new float[]{-0.65f, 0.65f}) {
-            part(bb, 0, 0, 0, 0, sx, 0.7f, 2.16f, 0.4f, 0.15f, 0.08f, 1f, 0.95f, 0.75f);
-            part(bb, 0, 0, 0, 0, sx, 0.7f, -2.16f, 0.4f, 0.15f, 0.08f, 0.8f, 0.07f, 0.07f);
-        }
-        GLES20.glUniform3f(uTint, 1f, 1f, 1f);
+    private void drawVehicle(float x,float z,float yaw,int type,float cr,float cg,float cb) {
+        if(vehicleModels==null || type<0 || type>=vehicleModels.length || vehicleModels[type]==null) return;
+        float length=(type==ProceduralVehicleModels.AIRPLANE?7.0f:type==ProceduralVehicleModels.BUS?8.3f:5.0f);
+        float sy=(float)Math.sin(yaw), cy=(float)Math.cos(yaw);
+        float hf=Terrain.h(x+sy*length*.42f,z+cy*length*.42f);
+        float hb=Terrain.h(x-sy*length*.42f,z-cy*length*.42f);
+        float pitch=-(float)Math.toDegrees(Math.atan2(hf-hb,length*.84f));
+        Matrix.setIdentityM(base,0);
+        Matrix.translateM(base,0,x,(hf+hb)*.5f,z);
+        Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
+        Matrix.rotateM(base,0,pitch,1f,0f,0f);
+        GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
+        // اللون يظل في رؤوس الشبكة؛ التلوين هنا يستخدم فقط كتعديل خفيف للطلاء.
+        GLES20.glUniform3f(uTint,cr/.75f,cg/.75f,cb/.75f);
+        vehicleModels[type].draw();
+        GLES20.glUniform3f(uTint,1f,1f,1f);
+    }
+
+    /** تبديل نوع المركبة الإجرائية التي يستدعيها اللاعب. */
+    public void cycleVehicleType() {
+        playerVehicleType=(playerVehicleType+1)%ProceduralVehicleModels.COUNT;
+        L.onToast("المركبة: "+ProceduralVehicleModels.name(playerVehicleType)+" — اضغط 🚗 لاستدعائها أو ركوبها");
     }
 
     /** الطفل (اللاعب): هودي أزرق وجينز وحذاء رياضي، ورأس منحوت من الصورة المرجعية. */
