@@ -23,7 +23,7 @@ The vehicle shader uses a microfacet BRDF, Fresnel response, independent materia
 
 `ProceduralHumanRig.java` generates six pedestrian appearance variants as separate body-part meshes. `CityRenderer.java` animates shoulder, elbow, hip, knee and foot transforms with a phase-driven walk cycle. The meshes include skin, hair, eyes, nose, brows, mouth, collar, pocket/seam details, hands, shoes and varied clothing colours.
 
-The player avatar still uses its existing dedicated character rendering path; the articulated rig currently drives pedestrian agents.
+The playable avatar also uses the same procedural rig, scaled to child proportions; the old prebuilt head asset is no longer loaded by the renderer.
 
 ## Verification and remaining limits
 
