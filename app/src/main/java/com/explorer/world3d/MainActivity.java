@@ -322,6 +322,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 return true;
             }
         });
+        Button vehicleType = btn("نوع المركبة");
+        vehicleType.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                glView.queueEvent(new Runnable() { @Override public void run() { renderer.cycleVehicleType(); } });
+            }
+        });
         Button car = btn("🚗");
         car.setTextSize(26);
         car.setOnClickListener(new View.OnClickListener() {
@@ -333,6 +339,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         ab.setMargins(0, dp(10), 0, 0);
         acts.addView(sprint, ab);
         acts.addView(car, ab);
+        acts.addView(vehicleType, new LinearLayout.LayoutParams(dp(96), dp(48)));
         FrameLayout.LayoutParams ap = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.END);
         ap.setMargins(0, 0, dp(20), dp(30));
         root.addView(acts, ap);
