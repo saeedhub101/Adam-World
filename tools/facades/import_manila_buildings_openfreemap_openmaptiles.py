@@ -82,7 +82,7 @@ def import_stage(src,url,z,boundary):
     for f in layer.get("features",[]):
      g=convert(f.get("geometry"),x,y,z,extent,boundary)
      if g is None: continue
-     found=True; p=dict(f.get("properties") or {}); p.update({"_source":src,"_source_layer":lname,"_source_zoom":z,"_tile_x":x,"_tile_y":y})
+     found=True; p=dict(f.get("properties") or {});\n     # Normalize provider building-layer records to the canonical building tag\n     # expected by the Manila GeoJSON-to-game shard builder.\n     if lname == "building": p.setdefault("building", p.get("class") or "yes")\n     p.update({"_source":src,"_source_layer":lname,"_source_zoom":z,"_tile_x":x,"_tile_y":y})
      k=key_for(src,lname,f,g); data.setdefault(lname,{})[k]={"type":"Feature","id":k,"properties":p,"geometry":mapping(g)}
    if found: hit+=1
    else: empty+=1
