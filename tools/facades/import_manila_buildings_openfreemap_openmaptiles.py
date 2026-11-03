@@ -270,7 +270,7 @@ def save_checkpoint(source_name, zoom, data, tile_count):
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
-            f.write("\\n")
+            f.write("\n")
         os.replace(tmp, path)
     finally:
         if os.path.exists(tmp):
