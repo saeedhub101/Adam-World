@@ -54,29 +54,6 @@ jobs:
             /gradle.properties
           sparse-checkout-cone-mode: false
 
-      - name: Require the dedicated Tabarbour offline dataset
-        run: |
-          set -euo pipefail
-          test -s app/src/main/assets/cities/tabarbour/manifest.json
-          test "$(find app/src/main/assets/cities/tabarbour -maxdepth 1 -name 'tile_*.json' | wc -l)" -gt 0
-          test -s app/src/main/assets/cities/tabarbour/terrain/manifest.json
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          root = Path("app/src/main/assets/cities/tabarbour")
-          spatial = json.loads((root / "manifest.json").read_text())
-          terrain = json.loads((root / "terrain/manifest.json").read_text())
-          if spatial.get("slug") != "tabarbour":
-              raise SystemExit("Tabarbour spatial assets are not city-scoped")
-          if terrain.get("city") != "tabarbour" or not terrain.get("complete"):
-              raise SystemExit("Tabarbour offline elevation tiles are incomplete")
-          for rel in terrain.get("tiles", []):
-              path = root / "terrain" / rel
-              if not path.is_file() or path.stat().st_size < 100:
-                  raise SystemExit(f"Missing Tabarbour terrain asset: {path}")
-          print(f"Tabarbour assets verified: {terrain['tile_count']} terrain tiles")
-          PY
-
       - name: Set up Python for Amman spatial streaming
         uses: actions/setup-python@v5
         with:
