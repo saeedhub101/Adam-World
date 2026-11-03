@@ -417,7 +417,7 @@ def _merge_overture_building_attributes(primary, overture):
                 for key, value in tags.items():
                     if value not in (None, "") and dest.get(key) in (None, ""):
                         dest[key] = value
-                dest["adam:enriched_by_overture"] = "yes"
+                dest["adam:enriched_by_multisource"] = "yes"
             matched += 1
         else:
             # Overture includes conflated Google/Microsoft footprints; keep them
