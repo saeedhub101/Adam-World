@@ -33,7 +33,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n"
             + "uniform sampler2D uTex; uniform sampler2D uEmis; uniform vec3 uTint;\n"
             + "uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uAmb; uniform vec3 uFog;\n"
-            + "uniform float uFogN; uniform float uFogF; uniform float uEmisK; uniform float uWater; uniform float uDecal; uniform float uTime;\n"
+            + "uniform float uFogN; uniform float uFogF; uniform float uEmisK; uniform float uWater; uniform float uDecal; uniform float uTime; uniform float uPbr;\n"
             + "varying vec2 vUV; varying vec3 vCol; varying vec3 vNor; varying float vDist; varying vec3 vWorld; varying vec3 vRel;\n"
             + "void main(){\n"
             + " float f=clamp((vDist-uFogN)/(uFogF-uFogN),0.0,1.0);\n"
@@ -56,6 +56,19 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             + "  vec4 tx=texture2D(uTex,vUV);\n"
             + "  vec3 base=tx.rgb*vCol*uTint;\n"
             + "  vec3 lit=base*(uAmb*(0.75+0.25*n.y)+uSunCol*d);\n"
+            + "  if(uPbr>0.5){\n"
+            + "   float bump=sin(vWorld.x*68.0)*sin(vWorld.z*68.0); n=normalize(n+vec3(bump*0.012,0.0,bump*0.012));\n"
+            + "   vec3 V=normalize(uCam-vWorld), L=normalize(uSunDir), H=normalize(V+L);\n"
+            + "   float rough=0.27, metal=0.58, a=rough*rough, a2=a*a;\n"
+            + "   float nh=max(dot(n,H),0.0), nv=max(dot(n,V),0.001), vh=max(dot(V,H),0.0);\n"
+            + "   float den=nh*nh*(a2-1.0)+1.0; float D=a2/max(3.14159*den*den,0.001);\n"
+            + "   float k=(rough+1.0)*(rough+1.0)/8.0;\n"
+            + "   float G=(nv/(nv*(1.0-k)+k))*(d/(d*(1.0-k)+k));\n"
+            + "   vec3 F0=mix(vec3(0.04),base,metal); vec3 F=F0+(1.0-F0)*pow(1.0-vh,5.0);\n"
+            + "   vec3 spec=D*G*F/max(4.0*nv*max(d,0.001),0.001);\n"
+            + "   vec3 diffuse=(1.0-F)*(1.0-metal)*base/3.14159;\n"
+            + "   lit=base*uAmb*0.62+(diffuse+spec)*uSunCol*d*2.4;\n"
+            + "  }\n"
             + "  lit+=texture2D(uEmis,vUV).rgb*uEmisK;\n"
             + "  if(uDecal>0.5){ gl_FragColor=vec4(mix(lit,uFog*tx.a,f),tx.a); }\n"
             + "  else { gl_FragColor=vec4(mix(lit,uFog,f),1.0); }\n"
@@ -81,7 +94,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private final TileLoader loader;
     private final HashMap<Long, Tile> tiles = new HashMap<>();
     private int prog, skyProg;
-    private int uVP, uModel, uCam, uTint, uTex, uEmis, uSunDir, uSunCol, uAmb, uFog, uFogN, uFogF, uEmisK, uTop, uHor, uWater, uDecal, uTime;
+    private int uVP, uModel, uCam, uTint, uTex, uEmis, uSunDir, uSunCol, uAmb, uFog, uFogN, uFogF, uEmisK, uTop, uHor, uWater, uDecal, uTime, uPbr;
     private Textures tex;
     private Mesh cube, groundMesh, skyQuad, kidHead, seaMesh;
     private Mesh[] vehicleModels;
@@ -181,6 +194,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         uWater = GLES20.glGetUniformLocation(prog, "uWater");
         uDecal = GLES20.glGetUniformLocation(prog, "uDecal");
         uTime = GLES20.glGetUniformLocation(prog, "uTime");
+        uPbr = GLES20.glGetUniformLocation(prog, "uPbr");
         skyProg = link(SKY_VS, SKY_FS, new String[]{"aP"});
         uTop = GLES20.glGetUniformLocation(skyProg, "uTop");
         uHor = GLES20.glGetUniformLocation(skyProg, "uHor");
