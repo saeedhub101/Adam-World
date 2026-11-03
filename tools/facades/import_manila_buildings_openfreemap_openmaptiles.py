@@ -279,7 +279,7 @@ def save_checkpoint(source_name, zoom, data, tile_count):
     subprocess.run(["git", "add", str(path.relative_to(ROOT))], cwd=ROOT, check=True)
     changed = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0
     if changed:
-        subprocess.run(["git", "commit", "-m", f"Checkpoint Manila {source_name} z{zoom} import"], cwd=ROOT, check=True)
+        subprocess.run(["git", "-c", "user.name=github-actions[bot]", "-c", "user.email=41898282+github-actions[bot]@users.noreply.github.com", "commit", "-m", f"Checkpoint Manila {source_name} z{zoom} import"], cwd=ROOT, check=True)
         subprocess.run(["git", "pull", "--rebase", "origin", "main"], cwd=ROOT, check=True)
         subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT, check=True)
     print(f"SAVED CHECKPOINT {source_name} z{zoom}: {len(data)} features -> {path.relative_to(ROOT)}", flush=True)
