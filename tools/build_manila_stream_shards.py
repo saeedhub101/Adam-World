@@ -3,7 +3,7 @@
 OpenFreeMap transportation GeoJSON, and OSM building-detail supplements.
 """
 from __future__ import annotations
-import csv, gzip, hashlib, json, math, os
+import csv, gzip, hashlib, json, math, os, re
 from collections import OrderedDict, defaultdict
 from pathlib import Path
 
