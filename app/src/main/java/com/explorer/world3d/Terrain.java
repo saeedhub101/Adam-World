@@ -97,9 +97,6 @@ final class Terrain {
                     data = null;
                 }
             }
-            if (data == null && tabarbourSource && f != null && f.exists() && f.length() > 100) {
-                try { data = readAll(new FileInputStream(f)); } catch (IOException ignore) { data = null; }
-            }
             if (data == null) {
                 // Tabarbour terrain is sourced from the verified tiles already stored
                 // beside its city data in offline-world; it is not bundled into the APK.
@@ -116,6 +113,10 @@ final class Terrain {
                     } catch (IOException missingLocalTile) {
                         data = null;
                     } finally { if (local != null) local.disconnect(); }
+                }
+                // A cached tile is the offline fallback if the repository is unreachable.
+                if (data == null && tabarbourSource && f != null && f.exists() && f.length() > 100) {
+                    try { data = readAll(new FileInputStream(f)); } catch (IOException ignore) { data = null; }
                 }
                 // Keep the global Terrarium source as a fallback outside the
                 // checked-in Tabarbour terrain coverage, or if a repository tile is unavailable.
