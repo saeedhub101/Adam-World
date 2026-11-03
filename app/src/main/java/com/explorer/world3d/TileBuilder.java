@@ -472,6 +472,8 @@ final class TileBuilder {
     private static float[] buildingColor(JSONObject t, long id, boolean tabarbour, boolean manila) {
         String s = tg(t, "building:colour");
         if (s.isEmpty()) s = tg(t, "building:color");
+        if (s.isEmpty()) s = tg(t, "facade:colour");
+        if (s.isEmpty()) s = tg(t, "facade:color");
         if (s.isEmpty()) s = tg(t, "colour");
         float[] hc = hex(s);
         if (hc != null) return hc;
