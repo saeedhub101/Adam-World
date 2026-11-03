@@ -37,6 +37,10 @@
     "JRC Global Surface Water": {
       "status": "pending",
       "notes": "Coverage and licence not yet checked"
+    },
+    "Google Open Buildings 2.5D Temporal": {
+      "status": "configured_pending_import",
+      "notes": "Dedicated workflow imports all three raster bands for annual snapshots 2016-2023. Requires GitHub Actions secrets GEE_SERVICE_ACCOUNT_JSON and GEE_PROJECT_ID. Existing Manila datasets are preserved."
     }
   },
   "layers": {
@@ -136,6 +140,21 @@
         "import-report.json",
         "checksums.sha256"
       ]
+    },
+    "03_buildings_google_temporal": {
+      "status": "configured_pending_import",
+      "expected_files": [
+        "2016/",
+        "2017/",
+        "2018/",
+        "2019/",
+        "2020/",
+        "2021/",
+        "2022/",
+        "2023/",
+        "source-inventory.json"
+      ],
+      "description": "All original Google Open Buildings 2.5D Temporal raster bands: building_presence, building_height, building_fractional_count"
     }
   },
   "derived_directory": "derived",
