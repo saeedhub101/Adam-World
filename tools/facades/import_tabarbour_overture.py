@@ -138,6 +138,52 @@ def import_openbuildingmap(bbox, refresh):
         raise RuntimeError(f"OpenBuildingMap tile {key} has no download URL")
     work = CITY / ".openbuildingmap-work"
     work.mkdir(parents=True, exist_ok=True)
+    # Primary public mirror: Source Cooperative GeoParquet, same level-6 quadkey.
+    # Fall back to the original GFZ/umap GeoPackage manifest if this mirror lacks the tile.
+    parquet_url = f"https://data.source.coop/tge-labs/openbuildingmap/building.{key}.parquet"
+    parquet_path = work / f"building.{key}.parquet"
+    try:
+        parquet_path.unlink(missing_ok=True)
+        download_to(parquet_url, parquet_path)
+        if parquet_path.stat().st_size < 100:
+            raise RuntimeError("OpenBuildingMap GeoParquet tile is unexpectedly small")
+        gdf = pyogrio.read_dataframe(parquet_path, bbox=bbox)
+        features = []
+        for _, row in gdf.iterrows():
+            geom = row.geometry
+            if geom is None or geom.is_empty:
+                continue
+            values = {}
+            for name in ("id", "height", "occupancy", "floorspace", "source_id", "quadkey", "relation_id", "last_update"):
+                value = row.get(name)
+                if value is None:
+                    continue
+                try:
+                    if hasattr(value, "item"): value = value.item()
+                except Exception: pass
+                if isinstance(value, float) and not math.isfinite(value): continue
+                values[name] = value.isoformat() if hasattr(value, "isoformat") else value
+            source_code = values.get("source_id")
+            values["source_dataset"] = {0: "OpenStreetMap", 1: "Google Open Buildings", 2: "Microsoft ML Building Footprints"}.get(source_code, "OpenBuildingMap")
+            features.append({"type": "Feature", "id": str(values.get("id", "")),
+                             "properties": values, "geometry": __import__("shapely.geometry", fromlist=["mapping"]).mapping(geom)})
+        if features:
+            result = {
+                "type": "FeatureCollection", "name": "Tabarbour OpenBuildingMap building enrichment",
+                "source": "OpenBuildingMap", "source_bounds_wsen": list(bbox),
+                "source_tile_quadkey": key, "source_tile_url": parquet_url,
+                "source_format": "GeoParquet", "feature_count": len(features), "features": features,
+                "attribution": "OpenBuildingMap; underlying OSM, Google Open Buildings and Microsoft Global ML Building Footprints",
+                "license": "ODbL 1.0"
+            }
+            atomic_json(out, result)
+            print(f"SAVED OpenBuildingMap: {len(features)} buildings from GeoParquet quadkey {key}", flush=True)
+            return
+        raise RuntimeError("OpenBuildingMap GeoParquet tile has no buildings in Tabarbour bounds")
+    except Exception as exc:
+        print(f"OpenBuildingMap GeoParquet mirror unavailable; trying official GeoPackage manifest: {exc}", flush=True)
+    finally:
+        parquet_path.unlink(missing_ok=True)
     compressed = work / f"building.{key}.gpkg.bz2"
     gpkg = work / f"building.{key}.gpkg"
     errors = []
