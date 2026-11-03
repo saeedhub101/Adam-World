@@ -71,6 +71,35 @@ jobs:
             echo "Manila offline game data is already current."
           fi
 
+      - name: Verify Manila height values survive into game shards
+        run: |
+          python - <<'PY'
+          import gzip, json
+          from pathlib import Path
+          root=Path("data/offline-city-stream/manila")
+          manifest=json.loads((root/"manifest.json").read_text())
+          assert manifest["building_features"] == 1759, manifest["building_features"]
+          assert manifest["building_features_with_height"] >= 1700, manifest["building_features_with_height"]
+          heights=[]
+          for cell in manifest["cells"]:
+              path=root/"shards"/(cell+".jsonl.gz")
+              with gzip.open(path,"rt",encoding="utf-8") as stream:
+                  for line in stream:
+                      if not line.strip(): continue
+                      item=json.loads(line)
+                      tags=item.get("tags") or {}
+                      if not tags.get("building"): continue
+                      for key in ("height","building:height","height:meters","adam:render_height_m"):
+                          try: value=float(str(tags.get(key,"")).replace("m","").strip())
+                          except (TypeError,ValueError): continue
+                          if value>0:
+                              heights.append(value)
+                              break
+          assert len(heights)>=1700, f"Only {len(heights)} positive building heights reached game shards"
+          assert max(heights)>min(heights), "Building heights collapsed to one common value"
+          print(f"MANILA_GAME_HEIGHTS_OK buildings={manifest['building_features']} with_height={manifest['building_features_with_height']} shard_height_values={len(heights)} min={min(heights):.1f}m max={max(heights):.1f}m distinct={len(set(round(x,1) for x in heights))}")
+          PY
+
       - name: Verify saved offline city data (no imports or downloads)
         run: |
           set -euo pipefail
