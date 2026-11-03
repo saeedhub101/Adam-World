@@ -1,8 +1,5 @@
 name: Adam World Full City Source Import
 on:
-  push:
-    branches: [main]
-    paths: ["tools/import_full_city_sources.py",".github/workflows/full-city-source-import.yml"]
   workflow_dispatch:
     inputs:
       city:
