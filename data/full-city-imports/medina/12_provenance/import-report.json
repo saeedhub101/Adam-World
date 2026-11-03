@@ -1,0 +1,13 @@
+{
+  "city": "Medina",
+  "boundary": "configured_bbox_extent (approximate; no exact administrative boundary)",
+  "boundary_bbox": [
+    39.25,
+    24.15,
+    40.0,
+    24.9
+  ],
+  "overture_layers": 4,
+  "updated": "2026-11-03T04:17:17.880883+00:00",
+  "imagery_catalogues": "metadata discovery attempted; image downloads pending licence validation"
+}
