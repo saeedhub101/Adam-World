@@ -85,6 +85,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private Textures tex;
     private Mesh cube, groundMesh, skyQuad, kidHead, seaMesh;
     private Mesh[] vehicleModels;
+    private Mesh[] humanModels;
     private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN;
     private final HashMap<Long, Mesh> terrain = new HashMap<>();
     private final float[] proj = new float[16], view = new float[16], vp = new float[16];
@@ -187,6 +188,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         tex = new Textures();
         cube = makeCube();
         vehicleModels = ProceduralVehicleModels.buildAll();
+        humanModels = ProceduralHumanModels.buildAll();
         kidHead = KidHead.load(ctx);
         GeoBuf g = new GeoBuf();
         float E = 4000f, T = E * 2f / 13.3333f;
@@ -637,7 +639,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         for (Game.Agent a : g.agents) {
             if (Math.hypot(a.x - g.camX, a.z - g.camZ) > 350) continue;
             if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, a.cr, a.cg, a.cb);
-            else drawPerson(a.x, Terrain.h(a.x, a.z), a.z, a.yaw, a.ph, 0.6f, a.cr, a.cg, a.cb);
+            else drawPerson(a.x, Terrain.h(a.x, a.z), a.z, a.yaw, a.ph, a.humanType);
         }
         if (spawned) {
             drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.altitude, 0.75f, 0.22f, 0.17f);
@@ -735,18 +737,14 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform3f(uTint, 1f, 1f, 1f);
     }
 
-    private void drawPerson(float x, float y, float z, float yaw, float ph, float amp, float r, float g, float b) {
-        Matrix.setIdentityM(base, 0);
-        Matrix.translateM(base, 0, x, y, z);
-        Matrix.rotateM(base, 0, (float) Math.toDegrees(yaw), 0f, 1f, 0f);
-        float[] bb = base.clone();
-        float sw = (float) Math.sin(ph) * amp * 57.3f;
-        part(bb, 0, 0, 0, 0, 0, 1.2f, 0, 0.5f, 0.7f, 0.3f, r, g, b);
-        part(bb, 0, 0, 0, 0, 0, 1.72f, 0, 0.28f, 0.28f, 0.28f, 0.85f, 0.65f, 0.5f);
-        part(bb, -0.13f, 0.82f, 0, sw, 0, -0.39f, 0, 0.2f, 0.78f, 0.22f, 0.17f, 0.24f, 0.31f);
-        part(bb, 0.13f, 0.82f, 0, -sw, 0, -0.39f, 0, 0.2f, 0.78f, 0.22f, 0.17f, 0.24f, 0.31f);
-        part(bb, -0.3f, 1.5f, 0, -sw * 0.8f, 0, -0.3f, 0, 0.12f, 0.62f, 0.14f, r, g, b);
-        part(bb, 0.3f, 1.5f, 0, sw * 0.8f, 0, -0.3f, 0, 0.12f, 0.62f, 0.14f, r, g, b);
-        GLES20.glUniform3f(uTint, 1f, 1f, 1f);
-    }
-}
+    private void drawPerson(float x,float y,float z,float yaw,float phase,int variant) {
+        if(humanModels==null||humanModels.length==0)return;
+        int id=Math.floorMod(variant,humanModels.length);
+        Matrix.setIdentityM(base,0);
+        float bob=(float)Math.sin(phase*2f)*.025f;
+        Matrix.translateM(base,0,x,y+bob,z);
+        Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
+        GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
+        GLES20.glUniform3f(uTint,1f,1f,1f);
+        humanModels[id].draw();
+    }}
