@@ -578,7 +578,13 @@ def main():
     thematic=read_thematic_csv(writer)
     context=read_context(writer)
     writer.close()
-    window_stats=read_facade_windows()
+    # Facade-window GeoJSON is archived and disabled in the Android runtime.
+    # Keep the builder usable in the APK workflow's sparse checkout without
+    # requiring those archived files.
+    if WINDOWS_REPORT.is_file():
+        window_stats=read_facade_windows()
+    else:
+        window_stats={"source_features":0,"surfaces":0,"tiles":[],"sha256":{},"tile_count":0,"source_files":0}
     shard_hashes={}
     for shard in sorted((OUT/"shards").glob("*.jsonl.gz")):
         h=hashlib.sha256()
