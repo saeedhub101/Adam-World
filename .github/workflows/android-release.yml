@@ -48,7 +48,6 @@ jobs:
             /tools/build_manila_stream_shards.py
             /data/facades/cities/manila/transportation.geojson
             /data/offline-world/manila/elements.json
-            /data/facades/cities/manila/transportation.geojson
             /data/reference/adam-city/manila/
             /data/offline-city-stream/manila/manifest.json
             /data/offline-city-stream/manila/shards/
