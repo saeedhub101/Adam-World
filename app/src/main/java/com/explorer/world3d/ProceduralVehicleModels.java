@@ -27,8 +27,8 @@ final class ProceduralVehicleModels {
                 type==BUS?new float[]{.86f,.73f,.18f}:type==HELICOPTER?new float[]{.24f,.34f,.27f}:
                 type==AIRPLANE?new float[]{.82f,.85f,.88f}:new float[]{.16f,.30f,.48f};
         if(type==BICYCLE||type==MOTORBIKE){ frame(b,type); bikeWheels(b,type==BICYCLE?.34f:.43f,type==BICYCLE?1.65f:1.45f); }
-        else if(type==TANK){ hull(b,paint,2.8f,5.1f,1.15f,.78f); tracks(b); turret(b); }
-        else if(type==HELICOPTER){ hull(b,paint,1.1f,4.0f,.95f,.92f); rotor(b); tail(b); }
+        else if(type==TANK){ hull(b,paint,2.8f,5.1f,1.15f,.78f); turret(b); }
+        else if(type==HELICOPTER){ hull(b,paint,1.1f,4.0f,.95f,.92f); tail(b); }
         else if(type==AIRPLANE){ hull(b,paint,.72f,7.0f,.82f,.82f); wings(b); tail(b); }
         else {
             float w=type==BUS?1.25f:type==PICKUP?1.0f:type==SUV?1.05f:.92f;
@@ -36,7 +36,6 @@ final class ProceduralVehicleModels {
             float h=type==BUS?2.25f:type==SUV?1.48f:1.28f;
             curvedBody(b,paint,w,len,h,type);
             cabin(b,type,w,len,h);
-            wheels(b,.43f,len-1.15f);
             details(b,type,w,len,h);
         }
         return b;
@@ -90,23 +89,57 @@ final class ProceduralVehicleModels {
                     d[n*3],d[n*3+1],d[n*3+2],d[k*3],d[k*3+1],d[k*3+2],color[0],color[1],color[2]);
         }
     }
+    /** Separate alpha glass geometry; the opaque body no longer paints over these panes. */
+    static Mesh[] buildGlassAll() {
+        Mesh[] out = new Mesh[COUNT];
+        for (int type = 0; type < COUNT; type++) out[type] = Mesh.from(buildGlass(type));
+        return out;
+    }
+
+    private static GeoBuf buildGlass(int type) {
+        GeoBuf b = new GeoBuf();
+        if (type == BICYCLE || type == MOTORBIKE || type == TANK || type == AIRPLANE) return b;
+        if (type == HELICOPTER) {
+            b.quad(-.72f,.83f,1.42f,.72f,.83f,1.42f,.58f,1.32f,1.05f,-.58f,1.32f,1.05f,.16f,.32f,.40f);
+            b.quad(.72f,.83f,1.42f,-.72f,.83f,1.42f,-.58f,1.32f,1.05f,.58f,1.32f,1.05f,.16f,.32f,.40f);
+            return b;
+        }
+        float w=type==BUS?1.25f:type==PICKUP?1.0f:type==SUV?1.05f:.92f;
+        float len=type==BUS?8.3f:type==PICKUP?5.2f:type==SUV?4.9f:4.35f;
+        float h=type==BUS?2.25f:type==SUV?1.48f:1.28f;
+        float z0=type==BUS?-len*.34f:-len*.22f, z1=len*.20f;
+        float top=type==BUS?h*1.02f:h*1.30f, cw=type==BUS?w*.91f:w*.78f;
+        for(int side=-1;side<=1;side+=2){
+            float x=side*cw;
+            b.quad(x*1.006f,h*.67f,z0+.08f,x*.99f,top-.08f,z0+.38f,
+                    x*.99f,top-.08f,z1-.28f,x*1.006f,h*.67f,z1-.08f,.10f,.23f,.31f);
+        }
+        b.quad(-cw,h*.66f,z1+.015f,cw,h*.66f,z1+.015f,cw*.92f,top,z1-.22f,-cw*.92f,top,z1-.22f,.10f,.23f,.31f);
+        b.quad(cw,h*.66f,z0-.015f,-cw,h*.66f,z0-.015f,-cw*.92f,top,z0+.3f,cw*.92f,top,z0+.3f,.10f,.23f,.31f);
+        return b;
+    }
+
+    /** Opaque roof and narrow structural pillars; window panes are drawn separately. */
     private static void cabin(GeoBuf b,int type,float w,float len,float h){
         float z0=type==BUS?-len*.34f:-len*.22f, z1=len*.20f;
         float top=type==BUS?h*1.02f:h*1.30f;
         float cw=type==BUS?w*.91f:w*.78f;
-        float glass=.045f;
-        // side glass ribbons with bevelled upper edge
-        for(int side=-1;side<=1;side+=2){
-            float x=side*cw;
-            b.quad(x,h*.65f,z0, x*.98f,top,z0+.32f, x*.98f,top,z1-.20f, x,h*.65f,z1,
-                    .055f,.105f,.15f);
-            b.quad(x*1.002f,h*.67f,z0+.08f,x*.99f,top-.08f,z0+.38f,
-                    x*.99f,top-.08f,z1-.28f,x*1.002f,h*.67f,z1-.08f,.12f,.20f,.25f);
-        }
-        b.quad(-cw,h*.66f,z1, cw,h*.66f,z1, cw*.92f,top,z1-.22f,-cw*.92f,top,z1-.22f,.07f,.13f,.18f);
-        b.quad(cw,h*.66f,z0,-cw,h*.66f,z0,-cw*.92f,top,z0+.3f,cw*.92f,top,z0+.3f,.07f,.13f,.18f);
-        // roof crown
         b.box(0,top+.025f,(z0+z1)*.5f,cw*1.9f,.10f,z1-z0,.74f,.77f,.80f);
+        for(int side=-1;side<=1;side+=2){
+            b.box(side*cw*.99f,(h*.67f+top)*.5f,(z0+z1)*.5f,.045f,top-h*.67f,z1-z0,.28f,.30f,.32f);
+        }
+    }
+
+    /** A wheel mesh centred at the origin; the renderer supplies spin and steering transforms. */
+    static GeoBuf buildWheel() {
+        GeoBuf b = new GeoBuf();
+        float[] rubber={.025f,.03f,.035f}, rim={.48f,.52f,.56f};
+        cylinderX(b,0,0,0,.32f,.24f,rubber);
+        cylinderX(b,.125f,0,0,.22f,.012f,rim);
+        cylinderX(b,-.125f,0,0,.22f,.012f,rim);
+        cylinderX(b,.137f,0,0,.065f,.018f,new float[]{.16f,.18f,.20f});
+        cylinderX(b,-.137f,0,0,.065f,.018f,new float[]{.16f,.18f,.20f});
+        return b;
     }
     private static void details(GeoBuf b,int type,float w,float len,float h){
         float lamp=type==POLICE?1f:.96f;
