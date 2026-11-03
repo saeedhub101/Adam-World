@@ -18,13 +18,15 @@
 - `data/offline-world/<city>/elements.json` remains a source of supplementary non-road context and building gaps; its OSM road ways are excluded whenever primary OpenFreeMap transportation is present.
 - `tools/build_offline_city_tiles.py` packages these prioritized sources into 250 m tiles and writes a manifest per city.
 
-### Manila Local source override (2026-11-03)
+### Manila Local building source integration (2026-11-03)
 
-- `data/facades/cities/manila/buildings.geojson` is the **only** building source for Manila Local. The current committed file contains 2,642 polygon features. Its geometry and available properties (names, addresses, heights, levels, materials and other tags) are passed directly into the spatial shards.
-- Manila Local does not read `building-details.geojson`, `building-footprints.geojson`, Overture building/building-part extracts, or the building layer inside the PBF tiles. These sources must not be merged into or substituted for `buildings.geojson`.
-- OpenMapTiles PBF is retained only for road geometry and non-building POIs/address points. PBF-derived road names are discarded because nearest-line matching can attach a neighbouring street's name to the wrong road.
-- `data/facades/cities/manila/transportation.geojson` is always read. Its named street geometries are rendered as label-only overlays when PBF road surfaces exist, so the street label follows its own source line without duplicating or moving the road. If PBF road geometry is unavailable, the transportation file supplies the road lines as well.
-- The Manila manifest records the exact building source, building/name/height/level counts, street-label source and number of imported label features. The Android release workflow validates both canonical GeoJSON files and no longer requires obsolete OSM/Overture building extracts.
+- The offline shard builder now consumes all three saved building datasets: `buildings.geojson`, `building-footprints.geojson` and `building-details.geojson`.
+- A populated consolidated `buildings.geojson` has geometry priority. The OpenMapTiles/OpenFreeMap footprint file fills missing geometry; the details file enriches matching features by source ID and adds unmatched building/building-part polygons and mapped building nodes.
+- Matching features are merged by source feature ID so the same footprint is not emitted twice. Supplemental properties fill missing values; existing populated primary values are preserved.
+- The current committed footprint/detail extracts contain 1,528 polygons and 1,533 detail features (including five nodes). They cover the saved Ermita extract and must not be described as complete citywide Manila coverage.
+- OpenMapTiles PBF remains the road geometry and non-building POI/address source. `transportation.geojson` supplies the named street geometry. The saved context import excludes building ways to avoid duplicate building meshes.
+- The Android release workflow validates the footprint and details files and checks the merged building counts in the generated Manila manifest. An empty `buildings.geojson` no longer blocks use of the saved footprint/detail data.
+
 
 
 ## Spatial streaming
