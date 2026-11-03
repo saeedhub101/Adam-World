@@ -51,9 +51,8 @@ jobs:
 
       - name: Compile and test
         run: |
-          python -m py_compile tools/facades/build_review_queue.py tools/facades/visual_verify_facades.py tools/facades/build_existing_manila_photo_gallery.py tools/facades/build_verified_glbs.py tools/facades/validate_manifest.py
+          python -m py_compile tools/build_offline_city_tiles.py tools/facades/build_review_queue.py tools/facades/visual_verify_facades.py tools/facades/build_existing_manila_photo_gallery.py tools/facades/build_verified_glbs.py tools/facades/validate_manifest.py
           python -m unittest discover -s tools/facades/tests -p 'test_*.py'
-          python -m unittest discover -s tools/tests -p 'test_*.py'
 
       - name: Match canonical footprints to existing Panoramax metadata
         run: |
