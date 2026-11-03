@@ -230,24 +230,26 @@ final class TileLoader extends Thread {
         }
         // DEM يُحمّل فقط للمربعات القريبة من عمّان؛ لا تُحمّل بيانات المدينة كاملة.
         if (Terrain.enabled) {
-            if (!Terrain.ready()) {
-                synchronized (Terrain.class) {
-                    if (Terrain.enabled && !Terrain.ready()) {
-                        try {
+            // DEM is an enhancement, not a prerequisite for city geometry.
+            // A slow or unavailable elevation server must never prevent roads/buildings
+            // from appearing or block a switch to another city.
+            try {
+                if (!Terrain.ready()) {
+                    synchronized (Terrain.class) {
+                        if (Terrain.enabled && !Terrain.ready()) {
                             Terrain.ensureRect(Geo.lat0 - 0.00001, Geo.lon0 - 0.00001,
                                     Geo.lat0 + 0.00001, Geo.lon0 + 0.00001);
                             Terrain.setBaseAt(Geo.lat0, Geo.lon0);
-                        } catch (IOException ex) {
-                            Terrain.demFails++;
-                            throw ex;
                         }
-                        if (!Terrain.baseSet) throw new IOException("DEM reference elevation unavailable");
                     }
                 }
-            }
-            if (Terrain.enabled) {
-                Terrain.ensureRect(south - 2 * Geo.D_LAT, west - 2 * Geo.dLon,
-                        north + 2 * Geo.D_LAT, east + 2 * Geo.dLon);
+                if (Terrain.enabled && Terrain.ready()) {
+                    Terrain.ensureRect(south - 2 * Geo.D_LAT, west - 2 * Geo.dLon,
+                            north + 2 * Geo.D_LAT, east + 2 * Geo.dLon);
+                }
+            } catch (IOException terrainError) {
+                Terrain.demFails++;
+                // Continue building the tile on the flat fallback surface.
             }
         }
         return TileBuilder.build(root, ix, iz, "tabarbour".equals(offlineCitySlug), offlineManila);
