@@ -63,6 +63,9 @@ jobs:
             git reset --hard origin/main
             mkdir -p data/offline-world/tabarbour
             cp -a "$snapshot/." data/offline-world/tabarbour/
+            if [[ "$label" == *"legacy cleanup"* ]]; then
+              rm -rf data/facades/cities/tabarbour app/src/main/assets/cities/tabarbour
+            fi
             git add -A data/offline-world/tabarbour data/facades/cities/tabarbour app/src/main/assets/cities/tabarbour
             if git diff --cached --quiet; then
               echo "CHECKPOINT unchanged: $label"
