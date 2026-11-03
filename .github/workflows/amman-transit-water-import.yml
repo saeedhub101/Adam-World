@@ -1,13 +1,6 @@
 name: Amman Transit and Water Infrastructure Import
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "tools/import_city_transport_infrastructure.py"
-      - "tools/import_public_transport_routes.py"
-      - "tools/build_amman_stream_shards.py"
-      - ".github/workflows/amman-transit-water-import.yml"
   workflow_dispatch:
 
 permissions:
