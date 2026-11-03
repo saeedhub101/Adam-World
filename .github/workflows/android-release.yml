@@ -104,8 +104,9 @@ jobs:
           test "$(find Adam-City-source/Manila/vector-tiles -type f -name '*.pbf' | wc -l)" -gt 0
           test -s Adam-City-source/ermita/maps/generated/ermita-public_services.csv
           test -s Adam-City-source/ermita/maps/generated/ermita-accessibility.csv
-          test -s data/facades/cities/manila/buildings.geojson
           test -s data/facades/cities/manila/transportation.geojson
+          test -s data/facades/cities/manila/building-footprints.geojson
+          test -s data/facades/cities/manila/building-details.geojson
 
       - name: Build spatially streamed Manila offline data
         run: |
@@ -118,9 +119,13 @@ jobs:
           import json
           from pathlib import Path
           manifest = json.loads(Path("data/offline-city-stream/manila/manifest.json").read_text())
-          assert manifest["building_source"] == "data/facades/cities/manila/buildings.geojson"
+          assert manifest["building_source"] == "merged Manila building datasets"
           assert manifest["building_features"] > 0
-          assert manifest["counts"].get("manila_buildings_geojson", 0) > 0
+          assert manifest["counts"].get("manila_buildings_merged", 0) > 0
+          assert manifest["building_source_files"]["building_footprints"]
+          assert manifest["building_source_files"]["building_details"]
+          assert manifest["building_source_feature_counts"]["building_footprints"] > 0
+          assert manifest["building_source_feature_counts"]["building_details_polygons"] > 0
           assert manifest["transportation_named_features"] > 0
           assert manifest["transportation_label_features"] > 0
           PY
