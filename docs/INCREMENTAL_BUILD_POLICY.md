@@ -27,7 +27,7 @@ Before doing any expensive rebuild, the script checks the current complete manif
 
 - `tools/ci/publish-checkpoint.sh` is the shared retry-safe commit/push helper.
 - The Manila facade workflow publishes the review queue, visual-verification report, local-photo gallery, and verified GLB outputs after each completed stage.
-- Manila review-queue matching stores `.review_queue_checkpoint.json` every 100 buildings and resumes from it when the source fingerprint matches.
+- Manila review-queue matching stores compressed `review_queue/part_*.json.gz` shards and a small `.review_queue_checkpoint.json` index every 500 buildings; retries load completed shards and continue from the next building. The final `review_queue.json` is a small manifest, not a 128 MB monolithic JSON file.
 - Manila visual screening writes and publishes `visual_verification.json` every 100 photo candidates. It resumes completed candidates when the review-queue fingerprint matches and fails the workflow if checkpoint publication fails.
 - The first-three Panoramax GeoJSON workflow publishes its validated GeoJSON and audit report immediately after validation.
 
