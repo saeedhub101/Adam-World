@@ -73,8 +73,12 @@ class OpenFreeMapPrimarySourceTests(unittest.TestCase):
             ]
         })
         elements, _, kind = builder.source_elements("sample")
-        osm_roads = [x for x in elements if (x.get("tags") or {}).get("name") == "OSM road"]
-        self.assertEqual(osm_roads, [])
+        # OSM road geometry must not be emitted as a game road; matching OSM
+        # attributes may enrich the canonical OpenFreeMap geometry only.
+        osm_road_geometries = [x for x in elements if str(x.get("id")) == "300"]
+        self.assertEqual(osm_road_geometries, [])
+        primary_road = next(x for x in elements if (x.get("tags") or {}).get("adam:source_geometry") == "OpenFreeMap/OpenMapTiles" and (x.get("tags") or {}).get("highway") == "primary")
+        self.assertEqual(primary_road["tags"].get("adam:matched_osm_id"), "300")
         self.assertTrue(any(x["tags"].get("adam:source_geometry") == "OpenFreeMap/OpenMapTiles" and x["tags"].get("highway") == "primary" for x in elements))
         self.assertTrue(any(str(x.get("id")) == "202" and x["tags"].get("height") == "8" for x in elements))
         primary_building = next(x for x in elements if x.get("id") == 101)
