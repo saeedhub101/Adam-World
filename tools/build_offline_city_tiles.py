@@ -904,6 +904,9 @@ def source_elements(slug, lat0=0.0, lon0=0.0):
     # environmental context and transit records are preserved separately.
     footprints_path = city_source / "building-footprints.geojson"
     details_path = city_source / "building-details.geojson"
+    # Non-Tabarbour cities do not have a merged manifest; initialize the
+    # primary footprint collection before the shared GeoJSON source path.
+    footprints = []
     if slug == "tabarbour" and (city_source / "merged" / "manifest.json").is_file():
         footprints = _merged_tabarbour_building_elements(city_source)
         details = []
