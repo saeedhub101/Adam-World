@@ -1,14 +1,19 @@
 {
-  "building_count": 500,
+  "building_count": 973,
   "city": "manila",
   "complete": false,
-  "processed_buildings": 500,
+  "processed_buildings": 973,
   "schema_version": 2,
   "shards": [
     {
       "count": 500,
       "file": "review_queue/part_00000.json.gz",
       "sha256": "d28e68f443452b29be72399451dc2d381d187c983a1f4b453263842b20b2c4ea"
+    },
+    {
+      "count": 473,
+      "file": "review_queue/part_00001.json.gz",
+      "sha256": "876277c871602a28376d19477174d14fbd825ad0270bff5f2e9de179afb61441"
     }
   ],
   "source_sha256": "e84c947fd0dad2ca9f4fb22ff6b5bd97f641145d36789ddcf49875a626d4c4ec",
