@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "tools/build_offline_city_tiles.py"
       - ".github/workflows/tabarbour-stream-rebuild.yml"
       - "data/offline-world/tabarbour/merged/**"
       - "data/offline-world/tabarbour/elements.json"
