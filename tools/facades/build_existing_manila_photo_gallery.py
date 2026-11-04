@@ -11,6 +11,10 @@ import argparse
 import html
 import json
 from pathlib import Path
+try:
+    from .review_queue_io import load_review_queue
+except ImportError:
+    from review_queue_io import load_review_queue
 
 ROOT = Path(__file__).resolve().parents[2]
 CITY = ROOT / "data/facades/cities/manila"
@@ -24,7 +28,7 @@ def main() -> None:
     queue_path = city / "review_queue.json"
     if not queue_path.is_file():
         raise SystemExit(f"Missing existing review queue: {queue_path}")
-    queue = json.loads(queue_path.read_text(encoding="utf-8"))
+    queue = load_review_queue(queue_path)
 
     candidates_by_photo: dict[str, list[dict]] = {}
     for building in queue.get("buildings", []):
