@@ -83,7 +83,10 @@ jobs:
             for iz in (-1,0,1):
               tile=entries.get((ix,iz))
               if not tile: continue
-              data=json.loads((root/"stream"/tile["file"]).read_text())
+              path=root/"stream"/tile["file"]
+              opener = gzip.open if path.suffix == ".gz" else open
+              with opener(path, "rt", encoding="utf-8") as handle:
+                data=json.load(handle)
               for item in data.get("elements",[]):
                 tags=item.get("tags") or {}
                 if tags.get("building") or tags.get("building:part"): buildings+=1
