@@ -1163,6 +1163,18 @@ def main():
                     if not cell.is_file() or cell.stat().st_size >= 100_000_000:
                         files_valid = False
                         break
+                    try:
+                        opener = gzip.open if cell.suffix == ".gz" else open
+                        with opener(cell, "rt", encoding="utf-8") as stream:
+                            cell_data = json.load(stream)
+                        if len(cell_data.get("elements", [])) != int(tile.get("count", -1)):
+                            files_valid = False
+                            print(f"INVALID_EXISTING_CELL_COUNT {cell.name}: manifest={tile.get('count')} actual={len(cell_data.get('elements', []))}", flush=True)
+                            break
+                    except Exception as exc:
+                        files_valid = False
+                        print(f"INVALID_EXISTING_CELL_JSON {cell.name}: {exc}", flush=True)
+                        break
             same_source = existing_manifest.get("source_fingerprint") == tree_fingerprint
             safe_bootstrap = not existing_manifest.get("source_fingerprint") and source_time > 0 and manifest_time >= source_time
             already_complete = (
