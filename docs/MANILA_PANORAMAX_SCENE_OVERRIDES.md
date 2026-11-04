@@ -28,6 +28,8 @@ All three exact repository JPEGs were opened and inspected at 500 × 375 pixels:
 - Camera anchors are georeferenced Point features with the recorded Panoramax coordinates and azimuth.
 - Three existing transportation source segments are retained as georeferenced LineString locators, with their source feature IDs and observed road-surface appearance. These are not road-surface polygons.
 - Scene annotations are individual GeoJSON Features with `geometry: null` and `image_region_px` polygons in the exact source image's pixel coordinate system (origin at top-left).
+- Two geographic target Features have now been added by reusing the exact source MultiPolygon footprints for the ray-intersected photographed-building targets in photos 1 and 3. They are explicitly `modify_existing_building_do_not_create_duplicate` target locators, not facade planes and not new building footprints.
+- Photo 2 remains without a building target geometry because the candidate footprints are not verified against the camera view; assigning one would be a false match.
 - Each annotation retains its Panoramax photo UUID, source image path, scene element type, visible appearance and any candidate source feature ID.
 - The three road source IDs and their source LineStrings are retained as locators only; the nearest source segment is not claimed to be the full road surface polygon.
 - Candidate building IDs are explicitly marked unverified. No candidate is authorised for final building modification yet.
@@ -55,3 +57,7 @@ The next implementation must:
 7. validate the result against all three source photographs and the existing base geometry.
 
 No broad data import, GLB generation, or new building geometry is part of this layer's purpose.
+
+## Geometry conversion update (2026-11-04)
+
+The two camera-ray-intersected building targets (photo 1 OSM 143300180 and photo 3 OSM 148859810) now have geographic MultiPolygon target geometry copied from the existing photo-target source file. These geometries are target references to the existing building footprints, not newly drawn buildings and not façade planes. The 21 traced photo regions remain image-space annotations pending calibrated projection. Photo 2 building candidates remain unassigned. This is a partial geographic conversion, not a completed facade/street/sidewalk reconstruction.
