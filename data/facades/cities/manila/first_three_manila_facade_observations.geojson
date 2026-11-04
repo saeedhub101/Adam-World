@@ -1,0 +1,575 @@
+{
+  "type": "FeatureCollection",
+  "name": "Manila first three Panoramax — facade evidence and isolated footprint candidates",
+  "description": "Photo-specific evidence GeoJSON. Includes camera points, recorded view rays, nearest saved road segments, visible facade/street observations and isolated source building polygon components as explicitly unverified candidates. It does not fabricate facade-element polygons.",
+  "metadata": {
+    "created": "2026-11-04",
+    "city": "Manila",
+    "coordinate_order": "longitude,latitude",
+    "photo_count": 3,
+    "building_candidate_polygon_components": 4,
+    "confirmed_building_footprints": 0,
+    "facade_element_polygons": 0,
+    "source_photo_review": "data/facades/cities/manila/layers/photo-building-street-review.geojson",
+    "source_candidate_geometry": "data/facades/cities/manila/first_three_manila_photo_targets.geojson",
+    "canonical_building_layer": "data/facades/cities/manila/layers/building-layer.geojson",
+    "canonical_building_layer_state": "empty file on main despite manifest reporting 1,759 building source features",
+    "no_script_run": true,
+    "no_glb_created": true,
+    "runtime_integration": "Not active in Manila Local game renderer. Runtime reads compressed offline-city-stream shards; this evidence GeoJSON is committed for the next renderer integration step.",
+    "strict_policy": "No invented facade polygons, window/door/balcony shapes, dimensions, colors, roof materials, or building identities. Every observation remains tied only to its own Panoramax photo."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "photo-1-observation",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9764015,
+          14.588054
+        ]
+      },
+      "properties": {
+        "feature_role": "panoramax_photo_observation",
+        "sequence": 1,
+        "photo_id": "0cb04844-65a3-418b-beb8-7d6a65915903",
+        "photo_file": "data/facades/cities/manila/facade-review/images/0cb04844-65a3-418b-beb8-7d6a65915903.jpg",
+        "camera_position": [
+          120.9764015,
+          14.588054
+        ],
+        "view_azimuth_deg": 314,
+        "field_of_view_deg": 92,
+        "horizontal_accuracy_m": 4,
+        "license": "CC-BY-SA-4.0",
+        "visual_description": "Narrow pedestrian street with reddish interlocking brick. Left: pale-pink plaster perimeter wall, dark metal gate, red medical-cross sign and small poster; palm foliage and overhead cables; white multi-storey building behind. Right: weathered light-grey masonry frontage with repeated openings and narrow raised concrete sidewalk.",
+        "facade_element_observations": [
+          {
+            "side": "left",
+            "element": "perimeter_wall",
+            "color": "pale pink",
+            "material_appearance": "plaster",
+            "confidence": "visible"
+          },
+          {
+            "side": "left",
+            "element": "gate",
+            "color": "dark",
+            "material_appearance": "metal",
+            "confidence": "visible"
+          },
+          {
+            "side": "left",
+            "element": "medical_cross_sign",
+            "color": "red",
+            "confidence": "visible"
+          },
+          {
+            "side": "right",
+            "element": "facade",
+            "color": "light grey",
+            "material_appearance": "weathered masonry",
+            "confidence": "visible"
+          },
+          {
+            "side": "right",
+            "element": "repeated_openings",
+            "detail": "exact classification as windows/doors is obscured",
+            "confidence": "limited"
+          }
+        ],
+        "street_observations": {
+          "surface": "reddish interlocking brick pavers",
+          "sidewalk": "narrow raised concrete"
+        },
+        "roof_color_status": "Not confidently visible; do not assign a roof color.",
+        "windows_doors_balconies_status": "No individual window, door, entrance, or balcony polygons digitized; only the listed visible observations are recorded. Do not infer hidden or obscured details.",
+        "identity_status": "photo_scene_observed_target_footprint_not_confirmed"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-1-view-direction",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.9764015,
+            14.588054
+          ],
+          [
+            120.97610102595537,
+            14.588334810006142
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "camera_view_direction",
+        "photo_id": "0cb04844-65a3-418b-beb8-7d6a65915903",
+        "azimuth_deg": 314,
+        "length_m": 45,
+        "not_a_road_or_building_geometry": true
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-1-street-segment",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.97574293613434,
+            14.588774977701725
+          ],
+          [
+            120.97650468349457,
+            14.587908001951185
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "source_road_segment_nearest_to_camera",
+        "photo_id": "0cb04844-65a3-418b-beb8-7d6a65915903",
+        "source_feature_id": "OpenFreeMap|transportation|id:1638442032",
+        "source_feature_numeric_id": "id:1638442032",
+        "source_layer": "transportation",
+        "road_class": "path",
+        "road_subclass": "pedestrian",
+        "road_surface": "paved",
+        "camera_to_segment_distance_m": 2.13,
+        "source_dataset": "data/facades/cities/manila/layers/transportation.geojson",
+        "identity_status": "source_segment_located_near_camera_not_yet_visually_confirmed_as_named_street",
+        "source_duplicate_policy": "OpenFreeMap/OpenMapTiles duplicate copies are represented once"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-2-observation",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9761578,
+          14.5907033
+        ]
+      },
+      "properties": {
+        "feature_role": "panoramax_photo_observation",
+        "sequence": 2,
+        "photo_id": "134abd91-1ba0-43d5-b1e5-71bb394f71a7",
+        "photo_file": "data/facades/cities/manila/facade-review/images/134abd91-1ba0-43d5-b1e5-71bb394f71a7.jpg",
+        "camera_position": [
+          120.9761578,
+          14.5907033
+        ],
+        "view_azimuth_deg": 53,
+        "field_of_view_deg": 92,
+        "horizontal_accuracy_m": 4,
+        "license": "CC-BY-SA-4.0",
+        "visual_description": "Straight urban street with grey asphalt/concrete carriageway and yellow-white curb. Left: pale masonry wall and ornate light facade with tall arched entrance, mouldings and turquoise/green trim. Right: long yellow-and-cream multi-storey facade with repeated arched ground-floor bays, columns and dark awnings/signboards.",
+        "facade_element_observations": [
+          {
+            "side": "left",
+            "element": "facade",
+            "color": "light cream/off-white",
+            "material_appearance": "pale masonry",
+            "confidence": "visible"
+          },
+          {
+            "side": "left",
+            "element": "arched_entrance",
+            "shape": "tall arch",
+            "trim_color": "turquoise/green",
+            "confidence": "visible"
+          },
+          {
+            "side": "left",
+            "element": "decorative_mouldings",
+            "confidence": "visible"
+          },
+          {
+            "side": "right",
+            "element": "arcade",
+            "color": "yellow and cream",
+            "detail": "repeated arched ground-floor bays and columns",
+            "confidence": "visible"
+          },
+          {
+            "side": "right",
+            "element": "shop_awning_signboard",
+            "color": "dark",
+            "lettering": "not legible",
+            "confidence": "visible"
+          }
+        ],
+        "street_observations": {
+          "surface": "grey asphalt/concrete carriageway",
+          "curb": "alternating yellow and white"
+        },
+        "roof_color_status": "Not confidently visible; do not assign a roof color.",
+        "windows_doors_balconies_status": "No individual window, door, entrance, or balcony polygons digitized; only the listed visible observations are recorded. Do not infer hidden or obscured details.",
+        "identity_status": "photo_scene_observed_target_footprint_not_confirmed"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-2-view-direction",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.9761578,
+            14.5907033
+          ],
+          [
+            120.97649140051794,
+            14.590946578836812
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "camera_view_direction",
+        "photo_id": "134abd91-1ba0-43d5-b1e5-71bb394f71a7",
+        "azimuth_deg": 53,
+        "length_m": 45,
+        "not_a_road_or_building_geometry": true
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-2-street-segment",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.97602188587189,
+            14.59085674385432
+          ],
+          [
+            120.97616672515869,
+            14.590680235767374
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "source_road_segment_nearest_to_camera",
+        "photo_id": "134abd91-1ba0-43d5-b1e5-71bb394f71a7",
+        "source_feature_id": "OpenFreeMap|transportation|id:43046680",
+        "source_feature_numeric_id": "id:43046680",
+        "source_layer": "transportation",
+        "road_class": "service",
+        "road_subclass": null,
+        "road_surface": null,
+        "camera_to_segment_distance_m": 0.87,
+        "source_dataset": "data/facades/cities/manila/layers/transportation.geojson",
+        "identity_status": "source_segment_located_near_camera_not_yet_visually_confirmed_as_named_street",
+        "source_duplicate_policy": "OpenFreeMap/OpenMapTiles duplicate copies are represented once"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-3-observation",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9755908,
+          14.5885277
+        ]
+      },
+      "properties": {
+        "feature_role": "panoramax_photo_observation",
+        "sequence": 3,
+        "photo_id": "150e2cd0-7c24-42f3-83c7-71e8f551e1fc",
+        "photo_file": "data/facades/cities/manila/facade-review/images/150e2cd0-7c24-42f3-83c7-71e8f551e1fc.jpg",
+        "camera_position": [
+          120.9755908,
+          14.5885277
+        ],
+        "view_azimuth_deg": 38,
+        "field_of_view_deg": 92,
+        "horizontal_accuracy_m": 4,
+        "license": "CC-BY-SA-4.0",
+        "visual_description": "Street beside a long dark rough stone wall and older pale stone building with high curved/parapet-like roofline. Center distance: low light-colored building with repeated arches and reddish tiled roof. Right foreground: tall modern light-grey facade with plain wall panels; red car parked on right.",
+        "facade_element_observations": [
+          {
+            "side": "left_foreground",
+            "element": "boundary_wall",
+            "color": "dark",
+            "material_appearance": "rough-cut stone masonry",
+            "confidence": "visible"
+          },
+          {
+            "side": "left_background",
+            "element": "historic_building",
+            "color": "pale stone",
+            "roofline": "high curved/parapet-like",
+            "confidence": "visible"
+          },
+          {
+            "side": "center",
+            "element": "low_building_facade",
+            "color": "light",
+            "detail": "repeated arched openings",
+            "confidence": "visible"
+          },
+          {
+            "side": "center",
+            "element": "roof",
+            "color": "reddish",
+            "material_appearance": "tile",
+            "confidence": "visible"
+          },
+          {
+            "side": "right",
+            "element": "modern_facade",
+            "color": "light grey",
+            "material_appearance": "large plain wall panels",
+            "confidence": "visible"
+          }
+        ],
+        "street_observations": {
+          "surface": "grey asphalt/concrete road",
+          "roadside": "red car parked on right"
+        },
+        "roof_color_status": "Reddish tiled roof is visible on the low central building; building footprint attribution remains unconfirmed.",
+        "windows_doors_balconies_status": "No individual window, door, entrance, or balcony polygons digitized; only the listed visible observations are recorded. Do not infer hidden or obscured details.",
+        "identity_status": "photo_scene_observed_target_footprint_not_confirmed"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-3-view-direction",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.9755908,
+            14.5885277
+          ],
+          [
+            120.97584796732423,
+            14.588846246949077
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "camera_view_direction",
+        "photo_id": "150e2cd0-7c24-42f3-83c7-71e8f551e1fc",
+        "azimuth_deg": 38,
+        "length_m": 45,
+        "not_a_road_or_building_geometry": true
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-3-street-segment",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.97574293613434,
+            14.588774977701725
+          ],
+          [
+            120.97476124763489,
+            14.587560172396977
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "source_road_segment_nearest_to_camera",
+        "photo_id": "150e2cd0-7c24-42f3-83c7-71e8f551e1fc",
+        "source_feature_id": "OpenFreeMap|transportation|id:10783602240",
+        "source_feature_numeric_id": "id:10783602240",
+        "source_layer": "transportation",
+        "road_class": "minor",
+        "road_subclass": null,
+        "road_surface": "paved",
+        "camera_to_segment_distance_m": 4.18,
+        "source_dataset": "data/facades/cities/manila/layers/transportation.geojson",
+        "identity_status": "source_segment_located_near_camera_not_yet_visually_confirmed_as_named_street",
+        "source_duplicate_policy": "OpenFreeMap/OpenMapTiles duplicate copies are represented once"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-1-building-component-22",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              120.97596287727356,
+              14.588473872738227
+            ],
+            [
+              120.97611844539642,
+              14.588286979795113
+            ],
+            [
+              120.9758985042572,
+              14.588100086693338
+            ],
+            [
+              120.97574293613434,
+              14.588286979795113
+            ],
+            [
+              120.97596287727356,
+              14.588473872738227
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "building_footprint_candidate_component",
+        "photo_id": "0cb04844-65a3-418b-beb8-7d6a65915903",
+        "source_feature_id": "OpenFreeMap|building|id:143300180",
+        "source_feature_name": null,
+        "source_geometry_component_index": 22,
+        "source_geometry_file": "data/facades/cities/manila/first_three_manila_photo_targets.geojson",
+        "camera_heading_deg": 314,
+        "view_ray_intersection_distance_m": 60.1,
+        "ray_lateral_offset_m": 0.8,
+        "identity_status": "camera_ray_component_candidate_unverified",
+        "visual_match_status": "not_yet_visually_confirmed_against_exact_building_frontage",
+        "warning": "This is one isolated polygon component from a source MultiPolygon. It is a spatial candidate only; do not apply photo facade attributes to it until its outline is checked against the image and the camera view."
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-2-building-component-26",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              120.97618281841278,
+              14.590820403965637
+            ],
+            [
+              120.97620964050293,
+              14.590794446898618
+            ],
+            [
+              120.97615599632263,
+              14.590747724170274
+            ],
+            [
+              120.97612917423248,
+              14.590773681242803
+            ],
+            [
+              120.97618281841278,
+              14.590820403965637
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "building_footprint_candidate_component",
+        "photo_id": "134abd91-1ba0-43d5-b1e5-71bb394f71a7",
+        "source_feature_id": "OpenFreeMap|building|id:113293080",
+        "source_feature_name": null,
+        "source_geometry_component_index": 26,
+        "source_geometry_file": "data/facades/cities/manila/first_three_manila_photo_targets.geojson",
+        "camera_heading_deg": 53,
+        "view_ray_intersection_distance_m": null,
+        "ray_lateral_offset_m": 4.07,
+        "identity_status": "nearest_candidate_not_intersected_by_view_ray_unverified",
+        "visual_match_status": "not_yet_visually_confirmed_against_exact_building_frontage",
+        "warning": "This is one isolated polygon component from a source MultiPolygon. It is a spatial candidate only; do not apply photo facade attributes to it until its outline is checked against the image and the camera view."
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-2-building-component-41",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              120.97626328468323,
+              14.590706192847865
+            ],
+            [
+              120.97632229328156,
+              14.590643895849551
+            ],
+            [
+              120.97619891166687,
+              14.590534876060078
+            ],
+            [
+              120.97613990306854,
+              14.590597173089249
+            ],
+            [
+              120.97626328468323,
+              14.590706192847865
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "building_footprint_candidate_component",
+        "photo_id": "134abd91-1ba0-43d5-b1e5-71bb394f71a7",
+        "source_feature_id": "OpenFreeMap|building|id:113293070",
+        "source_feature_name": null,
+        "source_geometry_component_index": 41,
+        "source_geometry_file": "data/facades/cities/manila/first_three_manila_photo_targets.geojson",
+        "camera_heading_deg": 53,
+        "view_ray_intersection_distance_m": null,
+        "ray_lateral_offset_m": 6.58,
+        "identity_status": "second_nearest_candidate_not_intersected_by_view_ray_unverified",
+        "visual_match_status": "not_yet_visually_confirmed_against_exact_building_frontage",
+        "warning": "This is one isolated polygon component from a source MultiPolygon. It is a spatial candidate only; do not apply photo facade attributes to it until its outline is checked against the image and the camera view."
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-3-building-component-140",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              120.97609162330627,
+              14.589112422430032
+            ],
+            [
+              120.97598969936371,
+              14.58902416770489
+            ],
+            [
+              120.9758448600769,
+              14.589237017275883
+            ],
+            [
+              120.97592532634735,
+              14.589309697570059
+            ],
+            [
+              120.97609162330627,
+              14.589112422430032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "building_footprint_candidate_component",
+        "photo_id": "150e2cd0-7c24-42f3-83c7-71e8f551e1fc",
+        "source_feature_id": "OpenFreeMap|building|id:148859810",
+        "source_feature_name": null,
+        "source_geometry_component_index": 140,
+        "source_geometry_file": "data/facades/cities/manila/first_three_manila_photo_targets.geojson",
+        "camera_heading_deg": 38,
+        "view_ray_intersection_distance_m": 70.91,
+        "ray_lateral_offset_m": 0.16,
+        "identity_status": "camera_ray_component_candidate_unverified",
+        "visual_match_status": "not_yet_visually_confirmed_against_exact_building_frontage",
+        "warning": "This is one isolated polygon component from a source MultiPolygon. It is a spatial candidate only; do not apply photo facade attributes to it until its outline is checked against the image and the camera view."
+      }
+    }
+  ]
+}
