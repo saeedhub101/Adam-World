@@ -1,7 +1,7 @@
 {
-  "building_count": 0,
-  "buildings": [],
+  "building_count": 973,
   "city": "manila",
+  "complete": true,
   "matching_policy": {
     "automatic_texture_assignment": false,
     "camera_cone_is_candidate_filter_only": false,
@@ -18,6 +18,19 @@
     },
     "unknown_camera_azimuth_kept_for_manual_review": true
   },
-  "schema_version": 1,
-  "source_sha256": "6d9cb336702228688897124d3490dd0e59412c6b4d00c52d07524fb378790eda"
+  "schema_version": 2,
+  "shards": [
+    {
+      "count": 500,
+      "file": "review_queue/part_00000.json.gz",
+      "sha256": "d28e68f443452b29be72399451dc2d381d187c983a1f4b453263842b20b2c4ea"
+    },
+    {
+      "count": 473,
+      "file": "review_queue/part_00001.json.gz",
+      "sha256": "876277c871602a28376d19477174d14fbd825ad0270bff5f2e9de179afb61441"
+    }
+  ],
+  "source_sha256": "e84c947fd0dad2ca9f4fb22ff6b5bd97f641145d36789ddcf49875a626d4c4ec",
+  "storage": "sharded-gzip"
 }
