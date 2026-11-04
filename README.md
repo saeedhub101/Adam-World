@@ -38,7 +38,7 @@ The active app does not run the legacy `old_app` HTML/Three.js client. The Gradl
 - [Manila render-height statistics](docs/manila-building-layer-height.md)
 - [Tabarbour building data and known stream gap](docs/TABARBOUR_BUILDING_ENRICHMENT.md)
 - [Surface rendering](docs/REAL_WORLD_SURFACE_PIPELINE.md)
-- [Facade evidence limitations](docs/FACADE_RECONSTRUCTION_PIPELINE.md)
+- [Facade evidence limitations](docs/FACADE_RECONSTRUCTION_PIPELINE.md)\n- [Robinsons Place Manila native reconstruction](docs/ROBINSONS_PLACE_MANILA_REBUILD.md)
 - [Current implementation status](docs/REALISM_REBUILD_STATUS.md)
 
 ## Build and release
