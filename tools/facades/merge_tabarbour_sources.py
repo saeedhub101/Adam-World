@@ -3,6 +3,10 @@
 from __future__ import annotations
 import argparse, json, math, os, re, tempfile
 from pathlib import Path
+try:
+    from .review_queue_io import load_review_queue
+except ImportError:
+    from review_queue_io import load_review_queue
 from collections import Counter, defaultdict
 from shapely.geometry import shape, mapping
 from shapely.strtree import STRtree
@@ -176,7 +180,7 @@ def main():
  photo_candidate_count=0
  review_path=CITY/"review_queue.json"
  if review_path.is_file():
-  review=json.loads(review_path.read_text(encoding="utf-8"))
+  review=load_review_queue(review_path)
   for item in review.get("buildings",[]):
    oid=str(item.get("osm_way_id") or "")
    rec=records.get("osm:way/"+oid)
