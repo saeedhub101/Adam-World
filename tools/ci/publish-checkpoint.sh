@@ -8,7 +8,17 @@ if [ "$#" -eq 0 ]; then
 fi
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-git add -A -- "$@"
+valid_paths=()
+for path in "$@"; do
+  if [ -e "$path" ] || git ls-files --error-unmatch "$path" >/dev/null 2>&1; then
+    valid_paths+=("$path")
+  fi
+done
+if [ "${#valid_paths[@]}" -eq 0 ]; then
+  echo "CHECKPOINT_NO_EXISTING_PATHS $message"
+  exit 0
+fi
+git add -A -- "${valid_paths[@]}"
 if git diff --cached --quiet; then
   echo "CHECKPOINT_UNCHANGED $message"
   exit 0
