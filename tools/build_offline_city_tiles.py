@@ -45,6 +45,41 @@ def read_json(path: Path):
         return json.load(handle)
 
 
+def publish_git_paths(paths, message):
+    """Commit and push a bounded durable checkpoint to main, tolerating ambiguous pushes."""
+    paths = [str(Path(path).relative_to(ROOT)) for path in paths]
+    if not paths:
+        return
+    subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=ROOT, check=True)
+    subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], cwd=ROOT, check=True)
+    subprocess.run(["git", "add", "--", *paths], cwd=ROOT, check=True)
+    if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
+        return
+    subprocess.run(["git", "commit", "-m", message], cwd=ROOT, check=True)
+    for attempt in range(1, 5):
+        subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True)
+        if subprocess.run(["git", "merge-base", "--is-ancestor", "origin/main", "HEAD"], cwd=ROOT).returncode != 0:
+            subprocess.run(["git", "rebase", "origin/main"], cwd=ROOT, check=True)
+        pushed = subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT)
+        if pushed.returncode == 0:
+            return
+        subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True)
+        if subprocess.run(["git", "merge-base", "--is-ancestor", "HEAD", "origin/main"], cwd=ROOT).returncode == 0:
+            return
+    raise RuntimeError("Could not publish durable build checkpoint to main")
+
+
+def source_tree_fingerprint(city_source):
+    digest = hashlib.sha256()
+    for path in sorted(p for p in city_source.rglob("*") if p.is_file()
+                       and "stream" not in p.relative_to(city_source).parts):
+        digest.update(str(path.relative_to(city_source)).encode("utf-8"))
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+    return digest.hexdigest()
+
+
 def rings(geometry):
     if not geometry:
         return []
@@ -1096,7 +1131,44 @@ def main():
         center = city["center"]
         lat0, lon0 = float(center["lat"]), float(center["lon"])
         kx = 111320.0 * math.cos(math.radians(lat0))
-        raw_elements, source_path, source_kind = source_elements(slug, lat0, lon0)
+        city_out = (FULL_SOURCE / slug / "stream") if slug == "tabarbour" else (OUTPUT / slug)
+        city_out.mkdir(parents=True, exist_ok=True)
+        cache_dir = city_out / ".build-cache"
+        cache_manifest_path = cache_dir / "manifest.json"
+        tree_fingerprint = source_tree_fingerprint(city_source)
+        cache_manifest = read_json(cache_manifest_path) if cache_manifest_path.is_file() else {}
+        if (slug == "tabarbour" and cache_manifest.get("source_fingerprint") == tree_fingerprint
+                and cache_manifest.get("complete") is True):
+            raw_elements = []
+            for chunk in cache_manifest.get("chunks", []):
+                chunk_path = cache_dir / chunk["file"]
+                with gzip.open(chunk_path, "rt", encoding="utf-8") as handle:
+                    raw_elements.extend(json.load(handle))
+            source_path = cache_manifest["source"]
+            source_kind = cache_manifest["source_kind"]
+            print(f"RESUMED cached source assembly: {len(raw_elements)} elements", flush=True)
+        else:
+            raw_elements, source_path, source_kind = source_elements(slug, lat0, lon0)
+            if slug == "tabarbour":
+                cache_dir.mkdir(parents=True, exist_ok=True)
+                chunks = []
+                for start in range(0, len(raw_elements), 3000):
+                    part = raw_elements[start:start + 3000]
+                    filename = f"raw_{start // 3000:05d}.json.gz"
+                    tmp = cache_dir / (filename + ".tmp")
+                    with gzip.open(tmp, "wt", encoding="utf-8", compresslevel=6) as handle:
+                        json.dump(part, handle, ensure_ascii=False, separators=(",", ":"))
+                    os.replace(tmp, cache_dir / filename)
+                    chunks.append({"file": filename, "count": len(part)})
+                cache_manifest = {
+                    "complete": True, "source_fingerprint": tree_fingerprint,
+                    "source": source_path, "source_kind": source_kind,
+                    "element_count": len(raw_elements), "chunks": chunks,
+                }
+                atomic_json(cache_manifest_path, cache_manifest)
+                publish_git_paths([cache_manifest_path, *[cache_dir / x["file"] for x in chunks]],
+                                  f"Checkpoint Tabarbour source assembly: {len(raw_elements)} elements")
+                print(f"PUBLISHED_SOURCE_CHECKPOINT elements={len(raw_elements)} chunks={len(chunks)}", flush=True)
         if slug == "tabarbour":
             if not source_kind.startswith("tabarbour-canonical-merged-multisource-buildings"):
                 raise SystemExit(f"Refusing to publish incomplete Tabarbour sources: {source_kind}")
@@ -1128,8 +1200,6 @@ def main():
                 buckets[(ix, iz)].append(element)
 
         # Tabarbour is a remotely streamed city dataset, never Android assets.
-        city_out = (FULL_SOURCE / slug / "stream") if slug == "tabarbour" else (OUTPUT / slug)
-        city_out.mkdir(parents=True, exist_ok=True)
         ordered_buckets = sorted(buckets.items())
         # Durable incremental checkpoints: cells are written into the repository
         # output directory as they are built. A separate state file is committed
@@ -1154,30 +1224,8 @@ def main():
             }
             atomic_json(state_path, state)
             if args.publish_checkpoints:
-                paths = [str((city_out / item["file"]).relative_to(ROOT)) for item in tiles]
-                subprocess.run(["git", "add", "--", *paths, str(state_path.relative_to(ROOT))],
-                               cwd=ROOT, check=True)
-                if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0:
-                    subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=ROOT, check=True)
-                    subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], cwd=ROOT, check=True)
-                    subprocess.run(["git", "commit", "-m", f"Checkpoint {slug} stream: {len(tiles)} tiles"], cwd=ROOT, check=True)
-                    pushed = False
-                    for attempt in range(1, 5):
-                        subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True)
-                        base = subprocess.run(["git", "merge-base", "--is-ancestor", "origin/main", "HEAD"], cwd=ROOT)
-                        if base.returncode != 0:
-                            subprocess.run(["git", "rebase", "origin/main"], cwd=ROOT, check=True)
-                        push = subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT)
-                        if push.returncode == 0:
-                            pushed = True
-                            break
-                        subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True)
-                        accepted = subprocess.run(["git", "merge-base", "--is-ancestor", "HEAD", "origin/main"], cwd=ROOT)
-                        if accepted.returncode == 0:
-                            pushed = True
-                            break
-                    if not pushed:
-                        raise RuntimeError("Could not publish incremental build checkpoint to main")
+                publish_git_paths([*[city_out / item["file"] for item in tiles], state_path],
+                                  f"Checkpoint {slug} stream: {len(tiles)} tiles")
             print(f"PUBLISHED_BUILD_CHECKPOINT {slug}: {len(tiles)}/{len(ordered_buckets)} tiles", flush=True)
 
         for tile_index, ((ix, iz), elements) in enumerate(ordered_buckets, 1):
