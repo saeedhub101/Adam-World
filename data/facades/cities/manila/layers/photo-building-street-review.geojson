@@ -1,0 +1,102 @@
+{
+  "type": "FeatureCollection",
+  "name": "manila_photo_building_street_review",
+  "metadata": {
+    "workflow_document": "docs/PHOTO_BUILDING_STREET_WORKFLOW.md",
+    "created": "2026-11-04",
+    "purpose": "Photo-reviewed building and street targets; no guessed footprints or road centerlines.",
+    "coordinate_order": "longitude,latitude",
+    "note": "Point geometries below are evidence anchors, not building footprints or street centerlines. Actual geometries must be populated from verified existing source features after image review."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "photo-target-001",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9818584,
+          14.5728234
+        ]
+      },
+      "properties": {
+        "target_type": "building_evidence_anchor",
+        "review_status": "partially_identified_prior_context_image_reinspection_required",
+        "building_name": "Alkhaleej International Services Inc.",
+        "building_type": "commercial",
+        "reported_floors": 2,
+        "street_name": "Roxas Boulevard",
+        "cross_street": "Quirino Street",
+        "locality": "Malate, Manila, Metro Manila, Philippines",
+        "prior_footprint_reference": "footprints-feature-000342",
+        "osm_id": null,
+        "image_ids": [],
+        "facade_observations": [],
+        "confidence": "medium_for_place_label_low_for_geometry",
+        "unresolved_fields": [
+          "verified OSM ID",
+          "actual footprint polygon",
+          "street centerline geometry",
+          "image asset and image-to-facade visual reinspection"
+        ],
+        "coordinate_role": "saved evidence anchor only; not a footprint"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-target-002",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9871317,
+          14.5750948
+        ]
+      },
+      "properties": {
+        "target_type": "building_evidence_anchor",
+        "review_status": "partially_identified_prior_context_image_reinspection_required",
+        "building_name": null,
+        "building_type": "commercial",
+        "reported_floors": 2,
+        "street_name": "HXGP Vasquez St",
+        "cross_street": null,
+        "locality": "Barangay 696, Malate, Manila, Metro Manila, Philippines",
+        "prior_footprint_reference": "footprints-feature-000343",
+        "osm_id": null,
+        "image_ids": [],
+        "facade_observations": [],
+        "confidence": "medium_for_place_label_low_for_geometry",
+        "unresolved_fields": [
+          "verified OSM ID",
+          "actual footprint polygon",
+          "street centerline geometry",
+          "exact building name",
+          "image asset and image-to-facade visual reinspection"
+        ],
+        "coordinate_role": "saved evidence anchor only; not a footprint"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-target-003",
+      "geometry": null,
+      "properties": {
+        "target_type": "building_or_street_target",
+        "review_status": "unresolved_missing_source_evidence",
+        "building_name": null,
+        "street_name": null,
+        "locality": "Manila, Philippines",
+        "osm_id": null,
+        "image_ids": [],
+        "confidence": "none",
+        "unresolved_fields": [
+          "actual third image",
+          "OSM ID or exact coordinates",
+          "building/street identity",
+          "verified geometry"
+        ],
+        "note": "Intentionally left unresolved; no third target could be verified from the recovered prior context."
+      }
+    }
+  ]
+}
