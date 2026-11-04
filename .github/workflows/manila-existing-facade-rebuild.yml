@@ -1,3 +1,4 @@
+# Re-run the source compatibility and facade regression tests on the current main tree.
 name: Reconcile existing Manila facade photos
 
 on:
