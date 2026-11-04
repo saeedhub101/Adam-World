@@ -47,6 +47,8 @@ The active release workflow is `.github/workflows/android-release.yml`. It rebui
 
 ## Project rules
 
+- [Mandatory incremental build, checkpoint and resume policy](docs/INCREMENTAL_BUILD_POLICY.md)
+
 - Preserve source provenance, IDs, licences and attribution.
 - Do not invent measured heights, addresses, facade details or building identities.
 - Keep Tabarbour-owned source and derived data under `data/offline-world/tabarbour/`.
