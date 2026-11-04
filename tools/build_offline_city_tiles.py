@@ -1177,7 +1177,7 @@ def main():
                 existing_manifest["source_tree_latest_commit"] = source_time
                 atomic_json(existing_manifest_path, existing_manifest)
                 publish_git_paths([existing_manifest_path], "Record verified Tabarbour stream source fingerprint")
-                print(f"SKIP_ALREADY_COMPLETE Tabarbour: buildings={existing_manifest['building_count']} elements={existing_manifest['element_count']} tiles={len(tiles)}; no rebuild required", flush=True)
+                print(f"SKIP_ALREADY_COMPLETE Tabarbour: buildings={existing_manifest['building_count']} elements={existing_manifest['element_count']} tiles={len(tiles)} source_commit={source_time}; no rebuild required", flush=True)
                 total_elements += int(existing_manifest["element_count"])
                 total_tiles += len(tiles)
                 continue
