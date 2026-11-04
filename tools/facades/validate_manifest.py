@@ -26,6 +26,16 @@ def fail(message: str) -> None:
     raise SystemExit("FACADE MANIFEST ERROR: " + message)
 
 def main() -> None:
+    # A missing approval manifest means no facade has been human-approved yet.
+    # Initialize an explicit empty manifest instead of failing the whole photo
+    # audit; build_verified_glbs.py safely emits zero GLBs for an empty list.
+    if not MANIFEST.exists():
+        MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+        MANIFEST.write_text(
+            json.dumps({"schema_version": 1, "buildings": []}, indent=2) + "\\n",
+            encoding="utf-8",
+        )
+        print("NO_APPROVED_FACADES: initialized empty manifest; no image assignments will be guessed.")
     try:
         data = json.loads(MANIFEST.read_text(encoding="utf-8"))
     except Exception as exc:
