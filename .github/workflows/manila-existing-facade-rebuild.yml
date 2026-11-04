@@ -6,7 +6,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "tools/facades/build_review_queue.py"
+      - "tools/facades/reconstruct_first_three_manila_photos.py"\n      - "tools/facades/build_review_queue.py"
       - "tools/facades/visual_verify_facades.py"
       - "tools/facades/build_existing_manila_photo_gallery.py"
       - "tools/facades/build_verified_glbs.py"
@@ -48,11 +48,11 @@ jobs:
           python-version: "3.11"
 
       - name: Install local CV and GLB dependencies
-        run: python -m pip install --disable-pip-version-check numpy opencv-python-headless trimesh Pillow shapely
+        run: python -m pip install --disable-pip-version-check numpy opencv-python-headless trimesh Pillow shapely pyproj
 
       - name: Compile and test
         run: |
-          python -m py_compile tools/build_offline_city_tiles.py tools/facades/build_review_queue.py tools/facades/visual_verify_facades.py tools/facades/build_existing_manila_photo_gallery.py tools/facades/build_verified_glbs.py tools/facades/validate_manifest.py
+          python -m py_compile tools/facades/reconstruct_first_three_manila_photos.py tools/build_offline_city_tiles.py tools/facades/build_review_queue.py tools/facades/visual_verify_facades.py tools/facades/build_existing_manila_photo_gallery.py tools/facades/build_verified_glbs.py tools/facades/validate_manifest.py
           python -m unittest discover -s tools/facades/tests -p 'test_*.py'
 
       - name: Match canonical footprints to existing Panoramax metadata
@@ -84,7 +84,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/facades/cities/manila/review_queue.json data/facades/cities/manila/visual_verification.json data/facades/cities/manila/facade-review/existing-photo-audit.json data/facades/cities/manila/facade-review/index.html app/src/main/assets/facades/
+          git add data/facades/cities/manila/first_three_manila_photo_targets.geojson data/facades/cities/manila/first_three_manila_photo_targets.json data/facades/cities/manila/review_queue.json data/facades/cities/manila/visual_verification.json data/facades/cities/manila/facade-review/existing-photo-audit.json data/facades/cities/manila/facade-review/index.html app/src/main/assets/facades/
           if git diff --cached --quiet; then echo "No output changes"; exit 0; fi
           git commit -m "Screen existing Manila facade photos and rebuild approved facades"
           for attempt in 1 2 3; do
