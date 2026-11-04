@@ -1272,8 +1272,15 @@ def main():
         prior_manifest_path = city_out / "manifest.json"
         prior_manifest = read_json(prior_manifest_path) if prior_manifest_path.is_file() else {}
         resumable = prior_state.get("source_fingerprint") == source_fingerprint
-        prior_tile_list = prior_state.get("tiles", []) if resumable else prior_manifest.get("tiles", [])
-        prior_tiles = {(int(t["ix"]), int(t["iz"])): t for t in prior_tile_list}
+        prior_tiles = {
+            (int(t["ix"]), int(t["iz"])): t
+            for t in prior_manifest.get("tiles", [])
+        }
+        if resumable:
+            prior_tiles.update({
+                (int(t["ix"]), int(t["iz"])): t
+                for t in prior_state.get("tiles", [])
+            })
         tiles = []
         digest = hashlib.sha256()
         checkpoint_every = max(1, args.checkpoint_every)
