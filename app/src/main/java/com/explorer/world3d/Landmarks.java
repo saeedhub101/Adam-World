@@ -347,7 +347,7 @@ final class Landmarks {
         GeoBuf wall = td.bufs[TileBuilder.B_FACADE];
         GeoBuf glass = td.bufs[TileBuilder.B_GLASS];
         GeoBuf plaza = td.bufs[TileBuilder.B_PLAIN];
-        GeoBuf signs = td.bufs[TileBuilder.B_SIGN];
+        GeoBuf signs = plaza;
         final int segments = 64;
         final float rx = ROBINSONS_RX, rz = ROBINSONS_RZ;
         final float base = Terrain.h(cx, cz);
