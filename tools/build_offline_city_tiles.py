@@ -1107,7 +1107,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--city", help="Build only this city slug")
     parser.add_argument("--checkpoint-every", type=int, default=10,
-                        help="Publish a durable resumable checkpoint after this many tiles")
+                        help="Publish a durable resumable checkpoint after this many validated tiles")
     parser.add_argument("--publish-checkpoints", action="store_true",
                         help="Commit and push every completed checkpoint to origin/main")
     args = parser.parse_args()
