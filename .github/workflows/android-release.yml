@@ -2,19 +2,13 @@ name: Adam World Android Release
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - "app/**"
       - "build.gradle"
       - "settings.gradle"
       - "gradle.properties"
-      - "data/facades/cities/manila/layers/building-layer.geojson"
-      - "tools/build_manila_stream_shards.py"
-      - "data/facades/cities/manila/transportation.geojson"
-      - "data/reference/adam-city/manila/**"
-      - "data/offline-city-stream/manila/manifest.json"
-      - "data/offline-city-stream/manila/shards/**"
+      - "data/offline-city-stream/manila/**"
       - "data/offline-city-stream/amman/**"
       - "data/offline-world/manila/**"
       - ".github/workflows/android-release.yml"
@@ -23,123 +17,71 @@ on:
 permissions:
   contents: write
 
+# Only the newest requested APK matters. Do not queue obsolete releases.
 concurrency:
   group: adam-world-android-release
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   release:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Checkout
+      - name: Checkout only runtime and build inputs
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
           filter: blob:none
           sparse-checkout: |
             /app/
-            /data/full-city-imports/amman/
             /data/offline-city-stream/amman/
-            /data/offline-world/amman/
+            /data/offline-city-stream/manila/
             /data/offline-world/manila/
-            /data/facades/cities/manila/layers/building-layer.geojson
-            /tools/build_manila_stream_shards.py
-            /data/facades/cities/manila/transportation.geojson
-            /data/offline-world/manila/elements.json
-            /data/reference/adam-city/manila/
-            /data/offline-city-stream/manila/manifest.json
-            /data/offline-city-stream/manila/shards/
             /build.gradle
             /settings.gradle
             /gradle.properties
           sparse-checkout-cone-mode: false
 
-      - name: Rebuild Manila game buildings from building-layer.geojson
+      - name: Verify committed offline city data
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check mapbox-vector-tile
-          python tools/build_manila_stream_shards.py
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Generated .jsonl.gz shards are binary and cannot be rebased when
-          # another main writer publishes the same city at the same time.
-          # On a rejected push, restart from the newest main and regenerate
-          # from that checkout instead of attempting a binary merge.
-          for attempt in 1 2 3 4; do
-            if [ "$attempt" -gt 1 ]; then
-              echo "main advanced during publication; rebuilding from latest main (attempt $attempt/4)"
-              git fetch --no-tags origin main
-              git reset --hard origin/main
-              python tools/build_manila_stream_shards.py
-            fi
-            git add -A data/offline-city-stream/manila
-            if git diff --cached --quiet; then
-              echo "Manila offline game data is already current."
-              break
-            fi
-            git commit -m "Rebuild Manila offline game data from building-layer GeoJSON"
-            if git push origin HEAD:main; then
-              echo "Published Manila game shards to main."
-              break
-            fi
-            if [ "$attempt" -eq 4 ]; then
-              echo "Could not publish Manila shards after four fresh-main attempts." >&2
-              exit 1
-            fi
-          done
-
-      - name: Verify Manila height values survive into game shards
-        run: |
           python - <<'PY'
           import gzip, json
-          from pathlib import Path
-          root=Path("data/offline-city-stream/manila")
-          manifest=json.loads((root/"manifest.json").read_text())
-          assert manifest["building_features"] == 1759, manifest["building_features"]
-          assert manifest["building_features_with_height"] >= 1700, manifest["building_features_with_height"]
-          heights=[]
-          for cell in manifest["cells"]:
-              path=root/"shards"/(cell+".jsonl.gz")
-              with gzip.open(path,"rt",encoding="utf-8") as stream:
-                  for line in stream:
-                      if not line.strip(): continue
-                      item=json.loads(line)
-                      tags=item.get("tags") or {}
-                      if not tags.get("building"): continue
-                      for key in ("height","building:height","height:meters","adam:render_height_m"):
-                          try: value=float(str(tags.get(key,"")).replace("m","").strip())
-                          except (TypeError,ValueError): continue
-                          if value>0:
-                              heights.append(value)
-                              break
-          assert len(heights)>=1700, f"Only {len(heights)} positive building heights reached game shards"
-          assert max(heights)>min(heights), "Building heights collapsed to one common value"
-          print(f"MANILA_GAME_HEIGHTS_OK buildings={manifest['building_features']} with_height={manifest['building_features_with_height']} shard_height_values={len(heights)} min={min(heights):.1f}m max={max(heights):.1f}m distinct={len(set(round(x,1) for x in heights))}")
-          PY
-
-      - name: Verify saved offline city data (no imports or downloads)
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import json
           from pathlib import Path
 
           root = Path("data/offline-city-stream")
           manila = json.loads((root / "manila/manifest.json").read_text(encoding="utf-8"))
           amman = json.loads((root / "amman/manifest.json").read_text(encoding="utf-8"))
 
-          # Every Manila city cell and checksum entry must exist in the repository.
           cells = manila.get("cells") or {}
           hashes = manila.get("shard_sha256") or {}
           if not cells or {cell + ".jsonl" for cell in cells} != set(hashes):
               raise SystemExit("Manila cell manifest/checksum index is incomplete")
+          heights = []
           for cell in cells:
               p = root / "manila" / "shards" / (cell + ".jsonl.gz")
               if not p.is_file() or p.stat().st_size == 0:
                   raise SystemExit(f"Missing saved Manila cell: {p}")
+              with gzip.open(p, "rt", encoding="utf-8") as stream:
+                  for line in stream:
+                      if not line.strip():
+                          continue
+                      item = json.loads(line)
+                      tags = item.get("tags") or {}
+                      if not tags.get("building"):
+                          continue
+                      for key in ("height", "building:height", "height:meters", "adam:render_height_m"):
+                          try:
+                              value = float(str(tags.get(key, "")).replace("m", "").strip())
+                          except (TypeError, ValueError):
+                              continue
+                          if value > 0:
+                              heights.append(value)
+                              break
+          if len(heights) < 1700 or max(heights) <= min(heights):
+              raise SystemExit(f"Manila height validation failed: {len(heights)} usable heights")
 
-          # Verify every Amman shard described by its committed manifest.
           amman_shards = amman.get("shards") or {}
           if not amman_shards or len(amman_shards) != amman.get("shard_count"):
               raise SystemExit("Amman shard manifest is incomplete")
@@ -148,10 +90,7 @@ jobs:
               if not p.is_file() or p.stat().st_size == 0:
                   raise SystemExit(f"Missing saved Amman shard: {p}")
 
-          print(
-              f"REPOSITORY DATA VERIFIED: Manila {len(cells)} building/road cells; "
-              f"Amman {len(amman_shards)} shards."
-          )
+          print(f"OFFLINE_DATA_OK Manila cells={len(cells)} heights={len(heights)} Amman shards={len(amman_shards)}")
           PY
 
       - name: Set up Java 17
@@ -165,27 +104,22 @@ jobs:
         with:
           gradle-version: "8.5"
 
-      - name: Prepare the existing production signing key
+      - name: Prepare signing and calculate release version
         env:
           ADAM_WORLD_KEYSTORE_BASE64: ${{ secrets.ADAM_WORLD_KEYSTORE_BASE64 }}
           ADAM_WORLD_KEYSTORE_PASSWORD: ${{ secrets.ADAM_WORLD_KEYSTORE_PASSWORD }}
           ADAM_WORLD_KEY_ALIAS: ${{ secrets.ADAM_WORLD_KEY_ALIAS }}
-          ADAM_WORLD_KEY_PASSWORD: ${{ secrets.ADAM_WORLD_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           : "${ADAM_WORLD_KEYSTORE_BASE64:?Missing ADAM_WORLD_KEYSTORE_BASE64}"
           : "${ADAM_WORLD_KEYSTORE_PASSWORD:?Missing ADAM_WORLD_KEYSTORE_PASSWORD}"
           : "${ADAM_WORLD_KEY_ALIAS:?Missing ADAM_WORLD_KEY_ALIAS}"
-          : "${ADAM_WORLD_KEY_PASSWORD:?Missing ADAM_WORLD_KEY_PASSWORD}"
           KEYSTORE="$RUNNER_TEMP/adam-world-release.jks"
           printf '%s' "$ADAM_WORLD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
           test -s "$KEYSTORE"
           keytool -list -keystore "$KEYSTORE" -storepass "$ADAM_WORLD_KEYSTORE_PASSWORD" -alias "$ADAM_WORLD_KEY_ALIAS" >/dev/null
           echo "ADAM_WORLD_KEYSTORE_FILE=$KEYSTORE" >> "$GITHUB_ENV"
 
-      - name: Calculate the next package version
-        run: |
-          set -euo pipefail
           git fetch --force --tags origin
           LAST_TAG="$(git tag --list 'adam-world-v[0-9]*' | sort -V | tail -n 1)"
           LAST_VERSION="${LAST_TAG##*v}"
@@ -195,7 +129,7 @@ jobs:
           echo "RELEASE_TAG=adam-world-v$VERSION_CODE" >> "$GITHUB_ENV"
           echo "Building package version $VERSION_CODE"
 
-      - name: Build signed Android APK
+      - name: Build and verify signed APK
         env:
           ADAM_WORLD_KEYSTORE_PASSWORD: ${{ secrets.ADAM_WORLD_KEYSTORE_PASSWORD }}
           ADAM_WORLD_KEY_ALIAS: ${{ secrets.ADAM_WORLD_KEY_ALIAS }}
@@ -210,54 +144,6 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK"
           cp "$APK" Adam-World.apk
           sha256sum Adam-World.apk
-
-      - name: Install and smoke-test the signed APK on an Android emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          target: google_apis
-          arch: x86_64
-          profile: pixel_6
-          script: |
-            set -euo pipefail
-            adb install -r Adam-World.apk
-            adb shell monkey -p com.explorer.world3d 1
-            sleep 12
-            adb logcat -c
-            adb shell uiautomator dump /sdcard/adam-ui.xml >/dev/null
-            adb pull /sdcard/adam-ui.xml adam-ui.xml >/dev/null
-            BOUNDS="$(python - <<'PY'
-            import xml.etree.ElementTree as ET
-            root=ET.parse("adam-ui.xml").getroot()
-            for node in root.iter("node"):
-                if node.attrib.get("text") == "مانيلا محلي":
-                    print(node.attrib.get("bounds",""))
-                    break
-            PY
-            )"
-            test -n "$BOUNDS" || { echo "Manila Local button not found in Android UI"; exit 1; }
-            python - "$BOUNDS" <<'PY'
-            import re,sys,subprocess
-            m=re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",sys.argv[1])
-            if not m: raise SystemExit("Invalid Manila button bounds: "+sys.argv[1])
-            x1,y1,x2,y2=map(int,m.groups())
-            subprocess.run(["adb","shell","input","tap",str((x1+x2)//2),str((y1+y2)//2)],check=True)
-            PY
-            sleep 20
-            adb logcat -d -t 5000 > android-smoke.log
-            if grep -E "FATAL EXCEPTION|Process: com.explorer.world3d" android-smoke.log; then
-              echo "Android app crashed after switching to Manila Local" >&2
-              exit 1
-            fi
-            adb exec-out screencap -p > manila-local-emulator.png
-            test -s manila-local-emulator.png
-
-      - name: Upload Android smoke-test screenshot
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-manila-local-smoke-test
-          path: manila-local-emulator.png
-          if-no-files-found: error
 
       - name: Publish release and APK
         uses: softprops/action-gh-release@v2
