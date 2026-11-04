@@ -6,6 +6,7 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/manila-existing-facade-rebuild.yml"
       - "tools/facades/build_review_queue.py"
       - "tools/facades/visual_verify_facades.py"
       - "tools/facades/build_existing_manila_photo_gallery.py"
@@ -22,7 +23,7 @@ permissions:
 
 concurrency:
   group: adam-world-main-writers
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   reconcile:
@@ -50,20 +51,25 @@ jobs:
 
       - name: Compile and test
         run: |
-          python -m py_compile tools/build_offline_city_tiles.py tools/facades/build_review_queue.py tools/facades/visual_verify_facades.py tools/facades/build_existing_manila_photo_gallery.py tools/facades/build_verified_glbs.py tools/facades/validate_manifest.py
+          python -m py_compile tools/build_offline_city_tiles.py tools/facades/review_queue_io.py tools/facades/build_review_queue.py tools/facades/visual_verify_facades.py tools/facades/build_existing_manila_photo_gallery.py tools/facades/build_verified_glbs.py tools/facades/validate_manifest.py
+          bash -n tools/ci/publish-checkpoint.sh
           python -m unittest discover -s tools/facades/tests -p 'test_*.py'
 
       - name: Match canonical footprints to existing Panoramax metadata
         run: |
           set -euo pipefail
-          python tools/facades/build_review_queue.py --city manila --checkpoint-every 100 --publish-checkpoints
+          python tools/facades/build_review_queue.py --city manila --checkpoint-every 500 --publish-checkpoints
           python - <<'PY'
           import json
           from pathlib import Path
           p=Path("data/facades/cities/manila/review_queue.json")
-          q=json.loads(p.read_text())
-          assert q.get("building_count",0)>0, "Review queue is empty: refusing false success"
-          print(f"QUEUE_OK buildings={q['building_count']}")
+          import sys
+          sys.path.insert(0,"tools/facades")
+          from review_queue_io import load_review_queue
+          q=load_review_queue(p)
+          assert q.get("complete") is True and q.get("building_count",0)>0, "Review queue is empty or incomplete"
+          assert len(q.get("buildings",[]))==q["building_count"], "Review queue shard total mismatch"
+          print(f"QUEUE_OK buildings={q['building_count']} shards={len(q.get('shards',[]))}")
           PY
 
       - name: Publish review queue checkpoint
