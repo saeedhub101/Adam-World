@@ -6,7 +6,6 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/manila-existing-facade-rebuild.yml"
       - "tools/facades/build_review_queue.py"
       - "tools/facades/visual_verify_facades.py"
       - "tools/facades/build_existing_manila_photo_gallery.py"
@@ -23,7 +22,7 @@ permissions:
 
 concurrency:
   group: adam-world-main-writers
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   reconcile:
