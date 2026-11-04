@@ -15,6 +15,7 @@ import json
 import math
 import shutil
 import tempfile
+import subprocess
 from collections import defaultdict
 from pathlib import Path
 
@@ -1071,7 +1072,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--city", help="Build only this city slug")
     parser.add_argument("--checkpoint-every", type=int, default=10,
-                        help="Write a resumable partial manifest after this many tiles")
+                        help="Publish a durable resumable checkpoint after this many tiles")
+    parser.add_argument("--publish-checkpoints", action="store_true",
+                        help="Commit and push every completed checkpoint to origin/main")
     args = parser.parse_args()
     catalog = read_json(SOURCE / "catalog.json")
     selected_cities = list(catalog.get("cities", []))
@@ -1128,70 +1131,125 @@ def main():
         city_out = (FULL_SOURCE / slug / "stream") if slug == "tabarbour" else (OUTPUT / slug)
         city_out.mkdir(parents=True, exist_ok=True)
         ordered_buckets = sorted(buckets.items())
-        # Build into a private staging directory. The last published manifest and
-        # its referenced cells remain intact if this build is interrupted.
-        staging = Path(tempfile.mkdtemp(prefix=".stream-build-", dir=city_out))
+        # Durable incremental checkpoints: cells are written into the repository
+        # output directory as they are built. A separate state file is committed
+        # every N cells; the runtime manifest is switched only after full validation.
+        state_path = city_out / ".build-state.json"
+        source_fingerprint = hashlib.sha256(json.dumps(
+            raw_elements, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")).hexdigest()
+        prior_state = read_json(state_path) if state_path.is_file() else {}
+        resumable = prior_state.get("source_fingerprint") == source_fingerprint
+        prior_tiles = {(int(t["ix"]), int(t["iz"])): t for t in prior_state.get("tiles", [])} if resumable else {}
         tiles = []
         digest = hashlib.sha256()
-        try:
-            for tile_index, ((ix, iz), elements) in enumerate(ordered_buckets, 1):
-                filename = f"tile_{ix}_{iz}.json.gz"
-                tile_path = staging / filename
-                tile_path.parent.mkdir(parents=True, exist_ok=True)
-                with gzip.open(tile_path, "wt", encoding="utf-8", compresslevel=9) as handle:
+        checkpoint_every = max(1, args.checkpoint_every)
+
+        def save_checkpoint():
+            state = {
+                "status": "building", "complete": False, "slug": slug,
+                "source_fingerprint": source_fingerprint,
+                "completed_tiles": len(tiles), "expected_tiles": len(ordered_buckets),
+                "tiles": tiles,
+            }
+            atomic_json(state_path, state)
+            if args.publish_checkpoints:
+                paths = [str(city_out / item["file"]) for item in tiles]
+                subprocess.run(["git", "add", "--", *paths, str(state_path.relative_to(ROOT))],
+                               cwd=ROOT, check=True)
+                if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0:
+                    subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=ROOT, check=True)
+                    subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], cwd=ROOT, check=True)
+                    subprocess.run(["git", "commit", "-m", f"Checkpoint {slug} stream: {len(tiles)} tiles"], cwd=ROOT, check=True)
+                    pushed = False
+                    for attempt in range(1, 5):
+                        subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True)
+                        base = subprocess.run(["git", "merge-base", "--is-ancestor", "origin/main", "HEAD"], cwd=ROOT)
+                        if base.returncode != 0:
+                            subprocess.run(["git", "rebase", "origin/main"], cwd=ROOT, check=True)
+                        push = subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT)
+                        if push.returncode == 0:
+                            pushed = True
+                            break
+                        subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True)
+                        accepted = subprocess.run(["git", "merge-base", "--is-ancestor", "HEAD", "origin/main"], cwd=ROOT)
+                        if accepted.returncode == 0:
+                            pushed = True
+                            break
+                    if not pushed:
+                        raise RuntimeError("Could not publish incremental build checkpoint to main")
+            print(f"PUBLISHED_BUILD_CHECKPOINT {slug}: {len(tiles)}/{len(ordered_buckets)} tiles", flush=True)
+
+        for tile_index, ((ix, iz), elements) in enumerate(ordered_buckets, 1):
+            filename = f"tile_{ix}_{iz}.json.gz"
+            tile_path = city_out / filename
+            entry = {
+                "file": filename, "ix": ix, "iz": iz,
+                "min_x": ix * TILE_METERS, "max_x": (ix + 1) * TILE_METERS,
+                "min_z": iz * TILE_METERS, "max_z": (iz + 1) * TILE_METERS,
+                "count": len(elements),
+            }
+            old = prior_tiles.get((ix, iz))
+            if old == entry and tile_path.is_file():
+                try:
+                    with gzip.open(tile_path, "rt", encoding="utf-8") as handle:
+                        existing = json.load(handle)
+                    if len(existing.get("elements", [])) != len(elements):
+                        raise ValueError("stale tile count")
+                except Exception:
+                    old = None
+                else:
+                    pass
+            else:
+                old = None
+            if old is None:
+                tmp_tile = city_out / (filename + ".tmp")
+                with gzip.open(tmp_tile, "wt", encoding="utf-8", compresslevel=9) as handle:
                     json.dump({"elements": elements}, handle, ensure_ascii=False, separators=(",", ":"))
                     handle.write("\n")
-                digest.update(filename.encode("utf-8"))
-                with tile_path.open("rb") as handle:
-                    for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                        digest.update(chunk)
-                tiles.append({
-                    "file": filename, "ix": ix, "iz": iz,
-                    "min_x": ix * TILE_METERS, "max_x": (ix + 1) * TILE_METERS,
-                    "min_z": iz * TILE_METERS, "max_z": (iz + 1) * TILE_METERS,
-                    "count": len(elements),
-                })
-                if tile_index % max(1, args.checkpoint_every) == 0:
-                    print(f"TILE BUILD CHECKPOINT {slug}: {tile_index}/{len(ordered_buckets)} tiles (staged, not published)", flush=True)
+                os.replace(tmp_tile, tile_path)
+            with tile_path.open("rb") as handle:
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            digest.update(filename.encode("utf-8"))
+            tiles.append(entry)
+            if tile_index % checkpoint_every == 0:
+                save_checkpoint()
 
-            manifest = {
-                "schema_version": 1, "slug": slug, "name": city["name"],
-                "center": center,
-                "coverage_radius_m": float(city.get("discovery_radius_m", 650)),
-                "tile_size_m": TILE_METERS,
-                "source": source_path, "source_kind": source_kind,
-                "status": "complete", "complete": True,
-                "element_count": sum(len(v) for v in buckets.values()),
-                "expected_tile_count": len(tiles), "tiles": tiles,
-                "dataset_version": digest.hexdigest()[:24],
-            }
-            if slug == "tabarbour":
-                manifest["building_count"] = sum(
-                    1 for items in buckets.values() for item in items
-                    if (item.get("tags") or {}).get("building") or (item.get("tags") or {}).get("building:part")
-                )
-            elevation_source = city_source / "elevation-grid.json"
-            if slug == "amman" and elevation_source.is_file():
-                shutil.copy2(elevation_source, staging / "elevation-grid.json")
-                manifest["elevation_grid"] = "elevation-grid.json"
-                manifest["elevation_source"] = "Copernicus DEM GLO-30"
-            if slug == "tabarbour" and (
-                manifest["building_count"] < 20000 or manifest["element_count"] < 20000
-            ):
-                raise RuntimeError(
-                    f"Refusing incomplete Tabarbour stream: buildings={manifest['building_count']} elements={manifest['element_count']}"
-                )
-            atomic_json(staging / "manifest.json", manifest)
-            # Publish immutable cell files first and the complete manifest last.
-            for item in tiles:
-                os.replace(staging / item["file"], city_out / item["file"])
-            active_files = {item["file"] for item in tiles}
-            for old_cell in list(city_out.glob("tile_*.json")) + list(city_out.glob("tile_*.json.gz")):
-                if old_cell.name not in active_files:
-                    old_cell.unlink()
-            os.replace(staging / "manifest.json", city_out / "manifest.json")
-        finally:
-            shutil.rmtree(staging, ignore_errors=True)
+        manifest = {
+            "schema_version": 1, "slug": slug, "name": city["name"],
+            "center": center,
+            "coverage_radius_m": float(city.get("discovery_radius_m", 650)),
+            "tile_size_m": TILE_METERS,
+            "source": source_path, "source_kind": source_kind,
+            "status": "complete", "complete": True,
+            "element_count": sum(len(v) for v in buckets.values()),
+            "expected_tile_count": len(tiles), "tiles": tiles,
+            "dataset_version": digest.hexdigest()[:24],
+        }
+        if slug == "tabarbour":
+            manifest["building_count"] = sum(
+                1 for items in buckets.values() for item in items
+                if (item.get("tags") or {}).get("building") or (item.get("tags") or {}).get("building:part")
+            )
+        elevation_source = city_source / "elevation-grid.json"
+        if slug == "amman" and elevation_source.is_file():
+            shutil.copy2(elevation_source, city_out / "elevation-grid.json")
+            manifest["elevation_grid"] = "elevation-grid.json"
+            manifest["elevation_source"] = "Copernicus DEM GLO-30"
+        if slug == "tabarbour" and (
+            manifest["building_count"] < 20000 or manifest["element_count"] < 20000
+        ):
+            raise RuntimeError(
+                f"Refusing incomplete Tabarbour stream: buildings={manifest['building_count']} elements={manifest['element_count']}"
+            )
+        active_files = {item["file"] for item in tiles}
+        for old_cell in list(city_out.glob("tile_*.json")) + list(city_out.glob("tile_*.json.gz")):
+            if old_cell.name not in active_files:
+                old_cell.unlink()
+        atomic_json(city_out / "manifest.json", manifest)
+        if state_path.exists():
+            state_path.unlink()
         count = manifest["element_count"]
         total_elements += count
         total_tiles += len(tiles)
