@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/tabarbour-stream-rebuild.yml"
       - "data/offline-world/tabarbour/merged/**"
       - "data/offline-world/tabarbour/elements.json"
       - "data/offline-world/tabarbour/transit-routes.json"
@@ -16,7 +17,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: adam-world-tabarbour-stream
+  group: adam-world-tabarbour-cell-repair
   cancel-in-progress: false
 
 jobs:
