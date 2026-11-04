@@ -203,10 +203,15 @@ def main():
     a=p.parse_args()
     dirs=[a.cities_root/a.city] if a.city else sorted(x for x in a.cities_root.iterdir() if x.is_dir())
     totals={"checked":0,"candidates":0,"failed":0}
+    errors=[]
     for city in dirs:
         try:
             result=process_city(city,a.limit_per_building,a.delay,a.checkpoint_every,a.publish_checkpoints)
             for key in totals: totals[key]+=result.get(key,0)
-        except Exception as exc: print(f"CV_CITY_ERROR {city.name}: {exc}")
+        except Exception as exc:
+            errors.append(f"{city.name}: {exc}")
+            print(f"CV_CITY_ERROR {city.name}: {exc}")
     print("CV_TOTAL "+json.dumps(totals,sort_keys=True))
+    if errors:
+        raise SystemExit("Visual verification failed: " + " | ".join(errors))
 if __name__=="__main__": main()
