@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import subprocess
+import gzip
 import hashlib
 import json
 import math
@@ -25,6 +26,11 @@ import re
 import tempfile
 from pathlib import Path
 from typing import Any
+
+try:
+    from .review_queue_io import load_review_queue
+except ImportError:
+    from review_queue_io import load_review_queue
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ROOT = ROOT / "data" / "facades" / "cities"
@@ -292,16 +298,60 @@ def build_queue(city_dir: Path, max_distance: float, checkpoint_every: int = 100
     source_sha256 = source_hash.hexdigest()
     final_path = city_dir / "review_queue.json"
     if final_path.is_file():
-        previous_final = json.loads(final_path.read_text(encoding="utf-8"))
-        if previous_final.get("source_sha256") == source_sha256 and previous_final.get("building_count", 0) > 0:
+        previous_final = load_review_queue(final_path)
+        if previous_final.get("source_sha256") == source_sha256 and previous_final.get("complete") is True and previous_final.get("building_count", 0) > 0:
             print(f"QUEUE_ALREADY_COMPLETE city={city_dir.name} buildings={previous_final['building_count']}")
             return previous_final
     checkpoint_path = city_dir / ".review_queue_checkpoint.json"
     previous = json.loads(checkpoint_path.read_text(encoding="utf-8")) if checkpoint_path.is_file() else {}
-    queue = previous.get("buildings", []) if previous.get("source_sha256") == source_sha256 else []
+    if previous.get("source_sha256") == source_sha256 and previous.get("storage") == "sharded-gzip":
+        previous_queue = load_review_queue(checkpoint_path)
+        queue = previous_queue.get("buildings", [])
+        shards = list(previous_queue.get("shards", []))
+    else:
+        queue, shards = [], []
     seen = {str(item.get("osm_way_id")) for item in queue}
+    pending_items = []
     checkpoint_every = max(1, int(checkpoint_every))
-    for building_index, b in enumerate(buildings_fc["features"], 1):
+    building_features = sorted(
+        buildings_fc["features"],
+        key=lambda item: int(building_id(item) or 0),
+    )
+    def save_shard(complete: bool = False):
+        nonlocal pending_items
+        if pending_items:
+            shard_dir = city_dir / "review_queue"
+            shard_dir.mkdir(parents=True, exist_ok=True)
+            filename = f"part_{len(shards):05d}.json.gz"
+            shard_path = shard_dir / filename
+            fd, temp = tempfile.mkstemp(prefix=filename + ".", dir=shard_dir)
+            os.close(fd)
+            try:
+                with gzip.open(temp, "wt", encoding="utf-8", compresslevel=6) as stream:
+                    json.dump(pending_items, stream, ensure_ascii=False, separators=(",", ":"))
+                os.replace(temp, shard_path)
+            finally:
+                if os.path.exists(temp):
+                    os.unlink(temp)
+            digest = hashlib.sha256(shard_path.read_bytes()).hexdigest()
+            shards.append({"file": f"review_queue/{filename}", "count": len(pending_items), "sha256": digest})
+            pending_items = []
+        checkpoint = {
+            "schema_version": 2, "city": city_dir.name,
+            "source_sha256": source_sha256, "storage": "sharded-gzip",
+            "complete": complete, "building_count": len(queue),
+            "processed_buildings": len(queue), "shards": shards,
+        }
+        atomic_json(checkpoint_path, checkpoint)
+        if publish_checkpoints:
+            paths = [checkpoint_path]
+            if shards:
+                paths.append(city_dir / shards[-1]["file"])
+            subprocess.run(["bash", str(ROOT / "tools/ci/publish-checkpoint.sh"),
+                            f"Checkpoint {city_dir.name} review queue {len(queue)} buildings",
+                            *[str(path.relative_to(ROOT)) for path in paths]], cwd=ROOT, check=True)
+        print(f"QUEUE_CHECKPOINT city={city_dir.name} buildings={len(queue)} shards={len(shards)}", flush=True)
+    for building_index, b in enumerate(building_features, 1):
         osm_id = building_id(b)
         center = centroid_lonlat(b.get("geometry") or {})
         if not osm_id or not center or str(osm_id) in seen:
@@ -349,7 +399,7 @@ def build_queue(city_dir: Path, max_distance: float, checkpoint_every: int = 100
                 "must_human_verify": True,
             })
         candidates.sort(key=lambda x: (not x["eligible_for_visual_review"], -x["quality_score"], x["distance_m"], x["azimuth_delta_deg"] if x["azimuth_delta_deg"] is not None else 999))
-        queue.append({
+        building_record = {
             "osm_way_id": osm_id,
             "name": bp.get("name"),
             "building_tags": {k: bp[k] for k in ("building", "building:material", "building:colour", "roof:material", "roof:colour", "height", "building:levels") if k in bp},
@@ -358,18 +408,14 @@ def build_queue(city_dir: Path, max_distance: float, checkpoint_every: int = 100
             "facade_photo_candidates": candidates,
             "identity_status": "unverified",
             "texture_assignment_allowed": False,
-        })
+        }
+        queue.append(building_record)
+        pending_items.append(building_record)
         seen.add(str(osm_id))
-        if publish_checkpoints and len(queue) % checkpoint_every == 0:
-            atomic_json(checkpoint_path, {
-                "source_sha256": source_sha256, "complete": False,
-                "processed_buildings": len(queue), "buildings": queue,
-            })
-            subprocess.run(["bash", str(ROOT / "tools/ci/publish-checkpoint.sh"),
-                            f"Checkpoint {city_dir.name} review queue {len(queue)} buildings",
-                            str(checkpoint_path.relative_to(ROOT))], cwd=ROOT, check=True)
-            print(f"QUEUE_CHECKPOINT city={city_dir.name} buildings={len(queue)}", flush=True)
-    queue.sort(key=lambda x: int(x["osm_way_id"]))
+        if len(pending_items) >= checkpoint_every:
+            save_shard(False)
+    if pending_items:
+        save_shard(False)
     if not queue:
         sample = [(f.get("properties") or {}).get("osm_feature_id") or f.get("id")
                   for f in buildings_fc["features"][:5]]
@@ -377,10 +423,13 @@ def build_queue(city_dir: Path, max_distance: float, checkpoint_every: int = 100
             f"{buildings_path}: {len(buildings_fc['features'])} features but zero usable OSM way IDs; "
             f"sample identifiers={sample}"
         )
-    return {
-        "schema_version": 1,
+    result = {
+        "schema_version": 2,
         "city": city_dir.name,
         "source_sha256": source_sha256,
+        "storage": "sharded-gzip",
+        "complete": True,
+        "shards": shards,
         "matching_policy": {
             "maximum_discovery_distance_m": max_distance,
             "proximity_is_not_identity": True,
@@ -393,6 +442,7 @@ def build_queue(city_dir: Path, max_distance: float, checkpoint_every: int = 100
         "building_count": len(queue),
         "buildings": queue,
     }
+    return result
 
 
 def atomic_json(path: Path, obj: dict[str, Any]) -> None:
@@ -442,7 +492,8 @@ def main() -> None:
             print(f"SKIP {city_dir}: no existing building footprints found")
             continue
         result = build_queue(city_dir, args.max_distance_m, args.checkpoint_every, args.publish_checkpoints)
-        atomic_json(city_dir / "review_queue.json", result)
+        manifest = {key: value for key, value in result.items() if key != "buildings"}
+        atomic_json(city_dir / "review_queue.json", manifest)
         checkpoint_path = city_dir / ".review_queue_checkpoint.json"
         if checkpoint_path.exists():
             checkpoint_path.unlink()
