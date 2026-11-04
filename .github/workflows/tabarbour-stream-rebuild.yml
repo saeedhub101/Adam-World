@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "tools/build_offline_city_tiles.py"
       - "data/offline-world/tabarbour/merged/**"
       - "data/offline-world/tabarbour/elements.json"
       - "data/offline-world/tabarbour/transit-routes.json"
@@ -66,14 +67,30 @@ jobs:
           assert manifest.get("element_count",0) >= manifest["building_count"]
           entries={(int(t["ix"]),int(t["iz"])):t for t in manifest["tiles"]}
           assert len(entries)==len(manifest["tiles"]) and entries, "Duplicate or empty stream manifest"
+          problems=[]
+          actual_elements=0
           for tile in manifest["tiles"]:
               path=root/"stream"/tile["file"]
-              assert path.is_file(), f"Missing listed cell {path}"
-              assert path.stat().st_size < 100_000_000, f"Cell exceeds GitHub's 100 MB limit: {path} ({path.stat().st_size} bytes)"
-              opener = gzip.open if path.suffix == ".gz" else open
-              with opener(path, "rt", encoding="utf-8") as handle:
-                  data=json.load(handle)
-              assert len(data.get("elements",[]))==int(tile["count"]), f"Cell count mismatch {path}"
+              if not path.is_file():
+                  problems.append(f"missing:{path}")
+                  continue
+              if path.stat().st_size >= 100_000_000:
+                  problems.append(f"over-100MB:{path}:{path.stat().st_size}")
+                  continue
+              try:
+                  opener = gzip.open if path.suffix == ".gz" else open
+                  with opener(path, "rt", encoding="utf-8") as handle:
+                      data=json.load(handle)
+              except Exception as exc:
+                  problems.append(f"invalid-json:{path}:{exc}")
+                  continue
+              actual=len(data.get("elements",[]))
+              actual_elements += actual
+              if actual != int(tile["count"]):
+                  problems.append(f"count:{path}:manifest={tile['count']}:actual={actual}")
+          if actual_elements != int(manifest.get("element_count", -1)):
+              problems.append(f"total-elements:manifest={manifest.get('element_count')}:actual={actual_elements}")
+          assert not problems, "Stream cell validation failed: " + " | ".join(problems[:50])
           # The player's start is the dataset origin. Check the 3x3 cells around it,
           # which is the actual first rendered neighborhood, for both roads and buildings.
           buildings=roads=0
