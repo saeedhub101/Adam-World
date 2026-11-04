@@ -1140,7 +1140,7 @@ def main():
                 tile_path.parent.mkdir(parents=True, exist_ok=True)
                 with gzip.open(tile_path, "wt", encoding="utf-8", compresslevel=9) as handle:
                     json.dump({"elements": elements}, handle, ensure_ascii=False, separators=(",", ":"))
-                    handle.write("\\n")
+                    handle.write("\n")
                 digest.update(filename.encode("utf-8"))
                 with tile_path.open("rb") as handle:
                     for chunk in iter(lambda: handle.read(1024 * 1024), b""):
