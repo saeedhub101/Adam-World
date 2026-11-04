@@ -101,18 +101,56 @@ jobs:
           print(json.dumps(manifest["runtime_validation"],indent=2))
           PY
 
-      - name: Commit stream cells and manifest with safe retry
+      - name: Commit and publish stream in small resumable batches
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/offline-world/tabarbour/stream app/src/main/assets/cities/catalog.json
-          if git diff --cached --quiet; then echo "Tabarbour stream is already current"; exit 0; fi
-          git commit -m "Publish all merged Tabarbour buildings into active city stream"
-          for attempt in 1 2 3; do
-            git fetch origin main
-            git rebase origin/main
-            if git push origin HEAD:main; then exit 0; fi
-            if [ "$attempt" -eq 3 ]; then exit 1; fi
-            sleep "$((attempt * 3))"
+          git config http.version HTTP/1.1
+
+          # Keep each push small; a single 1,600+ file push repeatedly hit HTTP 408.
+          mapfile -d '' changed < <(git ls-files -z --others --modified --deleted -- \
+            data/offline-world/tabarbour/stream app/src/main/assets/cities/catalog.json)
+          if [ "${#changed[@]}" -eq 0 ]; then
+            echo "Tabarbour stream is already current"
+            exit 0
+          fi
+
+          batch_size=60
+          total=${#changed[@]}
+          echo "Publishing $total changed paths in batches of $batch_size"
+          for ((start=0; start<total; start+=batch_size)); do
+            batch=("${changed[@]:start:batch_size}")
+            git add -A -- "${batch[@]}"
+            if git diff --cached --quiet; then
+              continue
+            fi
+            git commit -m "Publish Tabarbour stream batch $((start / batch_size + 1))"
+
+            pushed=false
+            for attempt in 1 2 3 4; do
+              git fetch origin main
+              if ! git merge-base --is-ancestor origin/main HEAD; then
+                git rebase origin/main
+              fi
+              if git push origin HEAD:main; then
+                pushed=true
+                break
+              fi
+              # A timed-out HTTP response can occur after GitHub accepted the push.
+              git fetch origin main
+              if git merge-base --is-ancestor HEAD origin/main; then
+                pushed=true
+                break
+              fi
+              if [ "$attempt" -lt 4 ]; then
+                sleep "$((attempt * 5))"
+              fi
+            done
+            if [ "$pushed" != true ]; then
+              echo "::error::Could not publish batch starting at path $start"
+              exit 1
+            fi
+            echo "PUBLISHED_BATCH $((start / batch_size + 1)) paths=$start-$((start + ${#batch[@]} - 1))"
           done
+          echo "All Tabarbour stream batches are committed to main."
