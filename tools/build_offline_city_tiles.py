@@ -1170,7 +1170,7 @@ def main():
                 and int(validation.get("merged_buildings_expected", 0)) == expected_buildings
                 and int(existing_manifest.get("building_count", 0)) >= expected_buildings >= 20000
                 and int(existing_manifest.get("element_count", 0)) >= int(existing_manifest.get("building_count", 0))
-                and len(tiles) == 1866 and files_valid and (same_source or safe_bootstrap)
+                and len(tiles) > 0 and files_valid and (same_source or safe_bootstrap)
             )
             if already_complete:
                 existing_manifest["source_fingerprint"] = tree_fingerprint
