@@ -6,7 +6,6 @@ on:
   push:
     branches: [main]
     paths:
-      - "tools/facades/build_review_queue.py"
       - "tools/facades/build_existing_manila_photo_gallery.py"
       - "tools/facades/build_verified_glbs.py"
       - "tools/facades/validate_manifest.py"
@@ -55,7 +54,7 @@ jobs:
       - name: Match canonical footprints to existing Panoramax metadata
         run: |
           set -euo pipefail
-          python tools/facades/build_review_queue.py --city manila
+          python tools/facades/build_review_queue.py --city manila --checkpoint-every 100 --publish-checkpoints
           python - <<'PY'
           import json
           from pathlib import Path
@@ -66,7 +65,7 @@ jobs:
           PY
 
       - name: Publish review queue checkpoint
-        run: bash tools/ci/publish-checkpoint.sh "Checkpoint Manila review queue" data/facades/cities/manila/review_queue.json
+        run: bash tools/ci/publish-checkpoint.sh "Checkpoint Manila review queue" data/facades/cities/manila/review_queue.json data/facades/cities/manila/.review_queue_checkpoint.json
 
       - name: Screen only images already in the repository
         run: python tools/facades/visual_verify_facades.py --city manila --limit-per-building 3 --delay 0 --checkpoint-every 100 --publish-checkpoints
