@@ -303,24 +303,27 @@ final class TileLoader extends Thread {
         int minZ = (int) Math.floor((-(north - lat0) * ky) / tileSize);
         int maxZ = (int) Math.floor((-(south - lat0) * ky) / tileSize);
         JSONArray manifestTiles = manifest.optJSONArray("tiles");
-        HashSet<String> expectedTiles = new HashSet<>();
+        HashMap<String, String> expectedTiles = new HashMap<>();
         if (manifestTiles != null) for (int i = 0; i < manifestTiles.length(); i++) {
             JSONObject item = manifestTiles.optJSONObject(i);
-            if (item != null) expectedTiles.add(item.optInt("ix") + "_" + item.optInt("iz"));
+            if (item != null) expectedTiles.put(item.optInt("ix") + "_" + item.optInt("iz"),
+                    item.optString("file", "tile_" + item.optInt("ix") + "_" + item.optInt("iz") + ".json"));
         }
         if (expectedTiles.isEmpty()) throw new IOException("Tabarbour manifest contains no spatial cells");
         JSONArray selected = new JSONArray();
         HashSet<String> seen = new HashSet<>();
         for (int x = minX; x <= maxX; x++) for (int z = minZ; z <= maxZ; z++) {
-            if (!expectedTiles.contains(x + "_" + z)) continue;
+            String remoteFile = expectedTiles.get(x + "_" + z);
+            if (remoteFile == null) continue;
             String tileKey = "tabarbour:" + datasetVersion + ":" + x + ":" + z;
             JSONObject tile;
             synchronized (bundledCityTileCache) { tile = bundledCityTileCache.get(tileKey); }
             if (tile == null) {
-                File tileFile = new File(tabarbourOfflineDir,
-                        "tile_" + datasetVersion + "_" + x + "_" + z + ".json");
+                String cachedName = "tile_" + datasetVersion + "_" + x + "_" + z
+                        + (remoteFile.endsWith(".gz") ? ".json.gz" : ".json");
+                File tileFile = new File(tabarbourOfflineDir, cachedName);
                 if (!tileFile.isFile() || tileFile.length() == 0) {
-                    String url = TABARBOUR_DATA_BASE + "/tile_" + x + "_" + z + ".json";
+                    String url = TABARBOUR_DATA_BASE + "/" + remoteFile;
                     try {
                         byte[] bytes = downloadBytes(url);
                         File tmp = new File(tileFile.getPath() + ".tmp");
@@ -332,7 +335,7 @@ final class TileLoader extends Thread {
                     }
                 }
                 try {
-                    tile = new JSONObject(readFile(tileFile));
+                    tile = new JSONObject(remoteFile.endsWith(".gz") ? readGzipFile(tileFile) : readFile(tileFile));
                     if (tile.optJSONArray("elements") == null) throw new IOException("Invalid Tabarbour cell " + tileKey);
                 } catch (Exception invalid) {
                     tileFile.delete();
@@ -604,7 +607,7 @@ final class TileLoader extends Thread {
         long now = System.currentTimeMillis(), total = 0L;
         ArrayList<File> cells = new ArrayList<>();
         for (File file : files) {
-            if (!file.isFile() || !file.getName().startsWith("tile_") || !file.getName().endsWith(".json")) continue;
+            if (!file.isFile() || !file.getName().startsWith("tile_") || !(file.getName().endsWith(".json") || file.getName().endsWith(".json.gz"))) continue;
             if (now - file.lastModified() > CACHE_MAX_AGE_MS && (keep == null || !file.equals(keep))) {
                 file.delete(); continue;
             }
@@ -753,6 +756,10 @@ final class TileLoader extends Thread {
 
     private static String readFile(File f) throws IOException {
         return readAll(new FileInputStream(f));
+    }
+
+    private static String readGzipFile(File f) throws IOException {
+        return readAll(new GZIPInputStream(new FileInputStream(f)));
     }
 
     private static void writeFile(File f, String s) throws IOException {
