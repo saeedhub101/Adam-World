@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import argparse
 import hashlib
+import gzip
 import json
 import math
 import shutil
@@ -1134,9 +1135,12 @@ def main():
         digest = hashlib.sha256()
         try:
             for tile_index, ((ix, iz), elements) in enumerate(ordered_buckets, 1):
-                filename = f"tile_{ix}_{iz}.json"
+                filename = f"tile_{ix}_{iz}.json.gz"
                 tile_path = staging / filename
-                atomic_json(tile_path, {"elements": elements})
+                tile_path.parent.mkdir(parents=True, exist_ok=True)
+                with gzip.open(tile_path, "wt", encoding="utf-8", compresslevel=9) as handle:
+                    json.dump({"elements": elements}, handle, ensure_ascii=False, separators=(",", ":"))
+                    handle.write("\\n")
                 digest.update(filename.encode("utf-8"))
                 with tile_path.open("rb") as handle:
                     for chunk in iter(lambda: handle.read(1024 * 1024), b""):
@@ -1182,7 +1186,7 @@ def main():
             for item in tiles:
                 os.replace(staging / item["file"], city_out / item["file"])
             active_files = {item["file"] for item in tiles}
-            for old_cell in city_out.glob("tile_*.json"):
+            for old_cell in list(city_out.glob("tile_*.json")) + list(city_out.glob("tile_*.json.gz")):
                 if old_cell.name not in active_files:
                     old_cell.unlink()
             os.replace(staging / "manifest.json", city_out / "manifest.json")
