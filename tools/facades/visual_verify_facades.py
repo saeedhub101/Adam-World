@@ -12,6 +12,10 @@ import argparse, hashlib, json, math, tempfile, time, os, subprocess
 from pathlib import Path
 import cv2
 import numpy as np
+try:
+    from .review_queue_io import load_review_queue
+except ImportError:
+    from review_queue_io import load_review_queue
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ROOT = ROOT / "data/facades/cities"
@@ -87,7 +91,7 @@ def process_city(city: Path, limit: int, delay: float = 0.0,
         return {"city": city.name, "status": "no_queue", "checked": 0}
     queue_bytes = queue_path.read_bytes()
     queue_hash = hashlib.sha256(queue_bytes).hexdigest()
-    queue = json.loads(queue_bytes)
+    queue = load_review_queue(queue_path)
     target = city / "visual_verification.json"
     previous = json.loads(target.read_text(encoding="utf-8")) if target.is_file() else {}
     if previous.get("source_sha256") == queue_hash and previous.get("complete") is True:
