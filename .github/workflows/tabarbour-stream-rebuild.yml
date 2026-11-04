@@ -5,7 +5,6 @@ on:
   push:
     branches: [main]
     paths:
-      - "tools/build_offline_city_tiles.py"
       - "data/offline-world/tabarbour/merged/**"
       - "data/offline-world/tabarbour/elements.json"
       - "data/offline-world/tabarbour/transit-routes.json"
