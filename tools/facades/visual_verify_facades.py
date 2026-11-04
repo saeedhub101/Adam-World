@@ -12,9 +12,13 @@ import argparse, hashlib, json, math, tempfile, time, os, subprocess
 from pathlib import Path
 import cv2
 import numpy as np
-try:
+# Support both package imports and importlib-based test loading from an arbitrary
+# working directory. The latter does not add this script's folder to sys.path.
+import sys
+if __package__:
     from .review_queue_io import load_review_queue
-except ImportError:
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
     from review_queue_io import load_review_queue
 
 ROOT = Path(__file__).resolve().parents[2]
