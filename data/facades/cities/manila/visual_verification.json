@@ -3,14 +3,14 @@
   "city": "manila",
   "engine": "OpenCV local computer vision; repository images only",
   "source_sha256": "b69b90ebb30dc50fa9e9e16ea1fc90cf1e2df53ec7c39e08f6b2aafd55b22b00",
-  "complete": false,
-  "processed_items": 200,
+  "complete": true,
+  "processed_items": 209,
   "network_requests": 0,
   "new_images_downloaded": 0,
-  "checked": 42,
+  "checked": 43,
   "quality_and_geometry_candidates": 0,
   "failed": 0,
-  "unmatched_local_images": 158,
+  "unmatched_local_images": 166,
   "identity_policy": "Quality and geometry are candidate evidence only; exact building identity requires human visual confirmation.",
   "texture_assignment_allowed": false,
   "items": [
@@ -7063,6 +7063,301 @@
       },
       "geometry_screen_pass": true,
       "screening_status": "rejected_or_low_confidence"
+    },
+    {
+      "osm_way_id": "11237857902",
+      "building_name": null,
+      "photo_id": "3a09fd8b-009a-45df-9934-05e18f5cd5c2",
+      "distance_m": 33.55,
+      "azimuth_delta_deg": 1.74,
+      "facade_edge_index": 6,
+      "capture_lonlat": [
+        120.9772943,
+        14.5900063
+      ],
+      "target_point_lonlat": [
+        120.977534,
+        14.5901991
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/1ba58dbc-cda5-4620-b84f-46ef37862993/items/3a09fd8b-009a-45df-9934-05e18f5cd5c2",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 52.0,
+        "field_of_view_deg": 92.0,
+        "pitch_deg": null,
+        "roll_deg": null,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "no_matching_repository_local_image"
+    },
+    {
+      "osm_way_id": "11241058060",
+      "building_name": null,
+      "photo_id": "7f04b34c-055e-49c9-b65b-134fff161ea5",
+      "distance_m": 24.03,
+      "azimuth_delta_deg": 1.25,
+      "facade_edge_index": 5,
+      "capture_lonlat": [
+        120.9746468,
+        14.5899373
+      ],
+      "target_point_lonlat": [
+        120.9748256,
+        14.5898081
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/6d479621-aa16-4562-aa14-5f41e6e3495d/items/7f04b34c-055e-49c9-b65b-134fff161ea5",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 128.0,
+        "field_of_view_deg": 92.0,
+        "pitch_deg": null,
+        "roll_deg": null,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "local_image_path": "facade-review/images/7f04b34c-055e-49c9-b65b-134fff161ea5.jpg",
+      "image_sha256": "7a339591025a8caf93e28f1a087c7d5c7f598fc79d809bbdebb4315ac6e34c2f",
+      "computer_vision": {
+        "width": 500,
+        "height": 375,
+        "sharpness_laplacian": 1288.67,
+        "mean_luminance": 0.5118,
+        "contrast_std": 0.2611,
+        "entropy_bits": 5.646,
+        "edge_density": 0.1337,
+        "vertical_line_ratio": 0.2125,
+        "vertical_line_length_px": 3589.4,
+        "checks": {
+          "resolution": false,
+          "sharpness": true,
+          "exposure": true,
+          "contrast": true,
+          "entropy": true,
+          "edge_structure": true,
+          "facade_line_cues": true
+        },
+        "visual_quality_score": 86,
+        "visual_quality_pass": false
+      },
+      "geometry_screen_pass": true,
+      "screening_status": "rejected_or_low_confidence"
+    },
+    {
+      "osm_way_id": "11241058060",
+      "building_name": null,
+      "photo_id": "3d5779ed-a713-4d52-b847-74840324d270",
+      "distance_m": 24.03,
+      "azimuth_delta_deg": 1.25,
+      "facade_edge_index": 5,
+      "capture_lonlat": [
+        120.9746468,
+        14.5899373
+      ],
+      "target_point_lonlat": [
+        120.9748256,
+        14.5898081
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/00c26c19-3e7c-4b36-b1c3-9b16048c1131/items/3d5779ed-a713-4d52-b847-74840324d270",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 128.0,
+        "field_of_view_deg": 92.0,
+        "pitch_deg": null,
+        "roll_deg": null,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "no_matching_repository_local_image"
+    },
+    {
+      "osm_way_id": "11241058060",
+      "building_name": null,
+      "photo_id": "4c76a1b7-c194-4831-9789-bc660e5ed08b",
+      "distance_m": 14.99,
+      "azimuth_delta_deg": 18.07,
+      "facade_edge_index": 5,
+      "capture_lonlat": [
+        120.9747075,
+        14.5898793
+      ],
+      "target_point_lonlat": [
+        120.9748256,
+        14.5898081
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/00c26c19-3e7c-4b36-b1c3-9b16048c1131/items/4c76a1b7-c194-4831-9789-bc660e5ed08b",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 140.0,
+        "field_of_view_deg": 92.0,
+        "pitch_deg": null,
+        "roll_deg": null,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "no_matching_repository_local_image"
+    },
+    {
+      "osm_way_id": "11241087402",
+      "building_name": null,
+      "photo_id": "382497b7-3491-4c44-a56b-fb35396df8b3",
+      "distance_m": 34.64,
+      "azimuth_delta_deg": 22.66,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        120.9760694,
+        14.5906453
+      ],
+      "target_point_lonlat": [
+        120.9763867,
+        14.5906958
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/528934fd-a3b6-4c7f-aaa7-e097e335161f/items/382497b7-3491-4c44-a56b-fb35396df8b3",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 58.0,
+        "field_of_view_deg": 92.0,
+        "pitch_deg": null,
+        "roll_deg": null,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "no_matching_repository_local_image"
+    },
+    {
+      "osm_way_id": "11241087402",
+      "building_name": null,
+      "photo_id": "35bcf2d0-15e4-4f72-ba07-7eb2b4a71677",
+      "distance_m": 34.64,
+      "azimuth_delta_deg": 22.66,
+      "facade_edge_index": 2,
+      "capture_lonlat": [
+        120.9760694,
+        14.5906453
+      ],
+      "target_point_lonlat": [
+        120.9763867,
+        14.5906958
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/7d9348c2-502f-4b88-b26a-fe4dec20a2e7/items/35bcf2d0-15e4-4f72-ba07-7eb2b4a71677",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 58.0,
+        "field_of_view_deg": 92.0,
+        "pitch_deg": null,
+        "roll_deg": null,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "no_matching_repository_local_image"
+    },
+    {
+      "osm_way_id": "11241116582",
+      "building_name": null,
+      "photo_id": "85c62e90-98fc-4abe-8343-8160bb41bba8",
+      "distance_m": 20.66,
+      "azimuth_delta_deg": 11.12,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        120.9747779,
+        14.589783
+      ],
+      "target_point_lonlat": [
+        120.974949,
+        14.5896991
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/00c26c19-3e7c-4b36-b1c3-9b16048c1131/items/85c62e90-98fc-4abe-8343-8160bb41bba8",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 128.0,
+        "field_of_view_deg": 92.0,
+        "pitch_deg": null,
+        "roll_deg": null,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "no_matching_repository_local_image"
+    },
+    {
+      "osm_way_id": "11241116582",
+      "building_name": null,
+      "photo_id": "3fe895a8-b3c2-48e2-a930-395f1171c15a",
+      "distance_m": 20.66,
+      "azimuth_delta_deg": 11.12,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        120.9747779,
+        14.589783
+      ],
+      "target_point_lonlat": [
+        120.974949,
+        14.5896991
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/6d479621-aa16-4562-aa14-5f41e6e3495d/items/3fe895a8-b3c2-48e2-a930-395f1171c15a",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 128.0,
+        "field_of_view_deg": 92.0,
+        "pitch_deg": null,
+        "roll_deg": null,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "no_matching_repository_local_image"
+    },
+    {
+      "osm_way_id": "11241116582",
+      "building_name": null,
+      "photo_id": "83775eeb-e9da-4f35-80d1-295992b2b6f3",
+      "distance_m": 24.33,
+      "azimuth_delta_deg": 18.42,
+      "facade_edge_index": 3,
+      "capture_lonlat": [
+        120.9747545,
+        14.5898103
+      ],
+      "target_point_lonlat": [
+        120.974949,
+        14.5896991
+      ],
+      "metadata_url": "https://api.panoramax.xyz/api/collections/6d479621-aa16-4562-aa14-5f41e6e3495d/items/83775eeb-e9da-4f35-80d1-295992b2b6f3",
+      "license": "CC-BY-SA-4.0",
+      "camera": {
+        "azimuth_deg": 139.0,
+        "field_of_view_deg": 92.0,
+        "pitch_deg": null,
+        "roll_deg": null,
+        "horizontal_accuracy_m": 4.0,
+        "horizontal_pixel_density": 56.0
+      },
+      "source": "panoramax",
+      "identity_status": "unverified_requires_human_confirmation",
+      "texture_assignment_allowed": false,
+      "screening_status": "no_matching_repository_local_image"
     }
   ]
 }
