@@ -26,9 +26,10 @@ All three exact repository JPEGs were opened and inspected at 500 × 375 pixels:
 ## GeoJSON structure
 
 - Camera anchors are georeferenced Point features with the recorded Panoramax coordinates and azimuth.
+- Three existing transportation source segments are retained as georeferenced LineString locators, with their source feature IDs and observed road-surface appearance. These are not road-surface polygons.
 - Scene annotations are individual GeoJSON Features with `geometry: null` and `image_region_px` polygons in the exact source image's pixel coordinate system (origin at top-left).
 - Each annotation retains its Panoramax photo UUID, source image path, scene element type, visible appearance and any candidate source feature ID.
-- The three road source IDs are retained as references only; the nearest source segment is not claimed to be the full road surface polygon.
+- The three road source IDs and their source LineStrings are retained as locators only; the nearest source segment is not claimed to be the full road surface polygon.
 - Candidate building IDs are explicitly marked unverified. No candidate is authorised for final building modification yet.
 
 ## Critical spatial distinction
