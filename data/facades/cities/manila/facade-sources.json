@@ -46,5 +46,20 @@
       "path_pattern": "data/facades/cities/manila/layers/facade-balconies-*.geojson",
       "runtime_enabled": false
     }
+  },
+  "scene_overrides": {
+    "path": "data/facades/cities/manila/layers/panoramax-scene-overrides.geojson",
+    "source": "manual scene-wide annotations from the first three saved Panoramax photographs",
+    "scope": [
+      "building facades and materials",
+      "windows doors entrances gates arches columns shopfronts signs",
+      "roof appearance",
+      "street surface curbs sidewalks",
+      "visible street context"
+    ],
+    "runtime_enabled": false,
+    "spatial_projection": "image-space polygons require calibrated geographic projection before rendering",
+    "verified_building_assignments": 0,
+    "documentation": "docs/MANILA_PANORAMAX_SCENE_OVERRIDES.md"
   }
 }
