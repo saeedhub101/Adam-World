@@ -309,10 +309,6 @@ def build_queue(city_dir: Path, max_distance: float, checkpoint_every: int = 100
         raw_props = b.get("properties") or {}
         bp = dict(raw_props.get("tags") or {}) if isinstance(raw_props.get("tags"), dict) else {}
         bp.update({k: v for k, v in raw_props.items() if k != "tags"})
-        key = osm_id
-        if key in seen:
-            continue
-        seen.add(key)
         candidates = []
         for photo in photos:
             loc = photo.get("capture_lonlat") or []
