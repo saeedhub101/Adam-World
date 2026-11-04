@@ -7,7 +7,6 @@ on:
     branches: [main]
     paths:
       - "tools/facades/build_review_queue.py"
-      - "tools/facades/visual_verify_facades.py"
       - "tools/facades/build_existing_manila_photo_gallery.py"
       - "tools/facades/build_verified_glbs.py"
       - "tools/facades/validate_manifest.py"
@@ -70,7 +69,7 @@ jobs:
         run: bash tools/ci/publish-checkpoint.sh "Checkpoint Manila review queue" data/facades/cities/manila/review_queue.json
 
       - name: Screen only images already in the repository
-        run: python tools/facades/visual_verify_facades.py --city manila --limit-per-building 3
+        run: python tools/facades/visual_verify_facades.py --city manila --limit-per-building 3 --delay 0 --checkpoint-every 100 --publish-checkpoints
 
       - name: Publish visual verification checkpoint
         run: bash tools/ci/publish-checkpoint.sh "Checkpoint Manila visual verification" data/facades/cities/manila/visual_verification.json
