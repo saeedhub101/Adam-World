@@ -14,9 +14,9 @@ Do not replace or duplicate the canonical buildings or road geometry. The overla
 - `data/facades/cities/manila/layers/panoramax-scene-overrides.geojson`
 - `docs/MANILA_PANORAMAX_SCENE_OVERRIDES.md`
 
-The new GeoJSON contains the first three saved Panoramax camera anchors and 19 photo-specific scene annotations. It records the full visible scene classes across the photos, including building facades, entrances/gates, openings/arches, shopfronts/awnings, signage, roof appearance, road surfaces, sidewalks, curbs, wall surfaces and street context.
+The new GeoJSON contains 3 georeferenced camera anchors, 3 georeferenced source-road LineString locators, and 21 photo-specific image-space scene annotations. It records the full visible scene classes across the photos, including building facades, entrances/gates, openings/arches, shopfronts/awnings, signage, roof appearance, road surfaces, sidewalks, curbs, wall surfaces and street context.
 
-Each annotation is tied to its exact Panoramax UUID. Its `image_region_px` is a manually traced polygon in the 500×375 source image coordinate system. These are image-space masks, not longitude/latitude polygons.
+Each annotation is tied to its exact Panoramax UUID. Its `image_region_px` is a manually traced polygon in the 500×375 source image coordinate system. These are image-space masks, not longitude/latitude polygons. The three road LineStrings are source locators only, not full surface polygons.
 
 ## Important limitations — not complete yet
 
