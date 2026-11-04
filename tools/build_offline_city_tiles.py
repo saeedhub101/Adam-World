@@ -1282,6 +1282,8 @@ def main():
                 for t in prior_state.get("tiles", [])
             })
         tiles = []
+        reused_tile_count = 0
+        rebuilt_tile_count = 0
         digest = hashlib.sha256()
         checkpoint_every = max(1, args.checkpoint_every)
 
@@ -1319,7 +1321,10 @@ def main():
                 "min_z": iz * TILE_METERS, "max_z": (iz + 1) * TILE_METERS,
                 "count": len(elements),
             }
-            if not reusable:
+            if reusable:
+                reused_tile_count += 1
+            else:
+                rebuilt_tile_count += 1
                 tmp_tile = city_out / (filename + ".tmp")
                 with gzip.open(tmp_tile, "wt", encoding="utf-8", compresslevel=9) as handle:
                     json.dump({"elements": elements}, handle, ensure_ascii=False, separators=(",", ":"))
@@ -1336,6 +1341,7 @@ def main():
         # Persist the tail batch too, including runs with fewer than N remaining tiles.
         if tiles:
             save_checkpoint()
+        print(f"TILE_REUSE_SUMMARY {slug}: reused={reused_tile_count} rebuilt={rebuilt_tile_count} total={len(tiles)}", flush=True)
 
         manifest = {
             "schema_version": 1, "slug": slug, "name": city["name"],
