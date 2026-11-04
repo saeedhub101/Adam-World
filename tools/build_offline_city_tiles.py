@@ -1133,9 +1133,56 @@ def main():
         kx = 111320.0 * math.cos(math.radians(lat0))
         city_out = (FULL_SOURCE / slug / "stream") if slug == "tabarbour" else (OUTPUT / slug)
         city_out.mkdir(parents=True, exist_ok=True)
+        tree_fingerprint = source_tree_fingerprint(city_source)
+        if slug == "tabarbour":
+            existing_manifest_path = city_out / "manifest.json"
+            existing_manifest = read_json(existing_manifest_path) if existing_manifest_path.is_file() else {}
+            merged_manifest_path = city_source / "merged" / "manifest.json"
+            merged_manifest = read_json(merged_manifest_path) if merged_manifest_path.is_file() else {}
+            expected_buildings = int(merged_manifest.get("merged_building_count", 0))
+            validation = existing_manifest.get("runtime_validation") or {}
+            tiles = existing_manifest.get("tiles") or []
+            manifest_commit = subprocess.run(
+                ["git", "log", "-1", "--format=%ct", "--", str(existing_manifest_path.relative_to(ROOT))],
+                cwd=ROOT, capture_output=True, text=True)
+            source_commit = subprocess.run(
+                ["git", "log", "-1", "--format=%ct", "--",
+                 str(city_source.relative_to(ROOT)),
+                 f":(exclude){city_source.relative_to(ROOT)}/stream/**"],
+                cwd=ROOT, capture_output=True, text=True)
+            try:
+                manifest_time = int(manifest_commit.stdout.strip())
+                source_time = int(source_commit.stdout.strip())
+            except (TypeError, ValueError):
+                manifest_time = source_time = 0
+            files_valid = bool(tiles) and len(tiles) == int(existing_manifest.get("expected_tile_count", -1))
+            if files_valid:
+                for tile in tiles:
+                    cell = city_out / str(tile.get("file") or "")
+                    if not cell.is_file() or cell.stat().st_size >= 100_000_000:
+                        files_valid = False
+                        break
+            same_source = existing_manifest.get("source_fingerprint") == tree_fingerprint
+            safe_bootstrap = not existing_manifest.get("source_fingerprint") and source_time > 0 and manifest_time >= source_time
+            already_complete = (
+                existing_manifest.get("complete") is True and existing_manifest.get("status") == "complete"
+                and validation.get("status") == "passed"
+                and int(validation.get("merged_buildings_expected", 0)) == expected_buildings
+                and int(existing_manifest.get("building_count", 0)) >= expected_buildings >= 20000
+                and int(existing_manifest.get("element_count", 0)) >= int(existing_manifest.get("building_count", 0))
+                and len(tiles) == 1866 and files_valid and (same_source or safe_bootstrap)
+            )
+            if already_complete:
+                existing_manifest["source_fingerprint"] = tree_fingerprint
+                existing_manifest["source_tree_latest_commit"] = source_time
+                atomic_json(existing_manifest_path, existing_manifest)
+                publish_git_paths([existing_manifest_path], "Record verified Tabarbour stream source fingerprint")
+                print(f"SKIP_ALREADY_COMPLETE Tabarbour: buildings={existing_manifest['building_count']} elements={existing_manifest['element_count']} tiles={len(tiles)}; no rebuild required", flush=True)
+                total_elements += int(existing_manifest["element_count"])
+                total_tiles += len(tiles)
+                continue
         cache_dir = city_out / ".build-cache"
         cache_manifest_path = cache_dir / "manifest.json"
-        tree_fingerprint = source_tree_fingerprint(city_source)
         cache_manifest = read_json(cache_manifest_path) if cache_manifest_path.is_file() else {}
         if (slug == "tabarbour" and cache_manifest.get("source_fingerprint") == tree_fingerprint
                 and cache_manifest.get("complete") is True):
