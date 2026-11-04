@@ -1,0 +1,82 @@
+{
+  "city": "manila",
+  "photos": [
+    {
+      "sequence": 1,
+      "photo_id": "0cb04844-65a3-418b-beb8-7d6a65915903",
+      "photo_file": "data/facades/cities/manila/facade-review/images/0cb04844-65a3-418b-beb8-7d6a65915903.jpg",
+      "metadata_url": "https://api.panoramax.xyz/api/pictures/0cb04844-65a3-418b-beb8-7d6a65915903",
+      "capture_location": {
+        "lon": 120.9764015,
+        "lat": 14.588054
+      },
+      "camera_heading_deg": 314.0,
+      "heading_source": "view:azimuth",
+      "building_target_osm_id": "OpenFreeMap|building|id:143300180",
+      "road_target_id": null,
+      "building_match": "camera_ray_intersection",
+      "visual_description": {
+        "scene": "Narrow pedestrian street paved with reddish interlocking brick. On the left is a low pale-pink perimeter wall with a tall dark metal gate, a red medical-cross sign and a small posted sign; palm foliage and dense overhead utility cables cross the view. A white multi-storey building rises behind the trees. On the right is a long weathered light-grey masonry facade with repeated openings and a narrow raised concrete sidewalk.",
+        "street_surface": "reddish interlocking brick pavers",
+        "visible_facade": "pale-pink plaster perimeter wall, dark metal gate and red medical-cross sign; adjoining weathered light-grey masonry facade",
+        "openings": "large metal gate; repeated rectangular openings on the right-side facade, details partly obscured",
+        "street_furniture": "palm trees, overhead utility cables, narrow concrete sidewalks",
+        "signage": "red medical-cross sign and a small wall-mounted poster",
+        "cautions": "Do not infer unseen windows, doors, balconies, exact material composition or building use beyond visible evidence."
+      },
+      "output_feature_count": 2
+    },
+    {
+      "sequence": 2,
+      "photo_id": "134abd91-1ba0-43d5-b1e5-71bb394f71a7",
+      "photo_file": "data/facades/cities/manila/facade-review/images/134abd91-1ba0-43d5-b1e5-71bb394f71a7.jpg",
+      "metadata_url": "https://api.panoramax.xyz/api/pictures/134abd91-1ba0-43d5-b1e5-71bb394f71a7",
+      "capture_location": {
+        "lon": 120.9761578,
+        "lat": 14.5907033
+      },
+      "camera_heading_deg": 53.0,
+      "heading_source": "view:azimuth",
+      "building_target_osm_id": null,
+      "road_target_id": null,
+      "building_match": "no_confirmed_building_match",
+      "visual_description": {
+        "scene": "Straight urban street with grey asphalt/concrete carriageway and a curb painted alternating yellow and white. The left side has a pale masonry wall and an ornate light-coloured facade with a tall arched entrance, decorative mouldings and turquoise/green trim around the ground-floor openings. The right side is a long yellow-and-cream multi-storey facade with repeated arched ground-floor bays, columns and dark awnings/signboards.",
+        "street_surface": "grey paved carriageway",
+        "visible_facade": "left: pale facade with decorative arched portal and turquoise/green trim; right: yellow-and-cream facade with repeated arcaded bays and columns",
+        "openings": "large arched entrance and smaller ground-floor openings on the left; repeated arched openings on the right",
+        "street_furniture": "yellow-and-white curb, utility poles and overhead wires, dark shop awnings",
+        "signage": "dark shop signboards/awnings are visible but lettering is not reliably legible",
+        "cautions": "Do not invent upper-floor window counts, balcony details, building names or exact facade materials."
+      },
+      "output_feature_count": 4
+    },
+    {
+      "sequence": 3,
+      "photo_id": "150e2cd0-7c24-42f3-83c7-71e8f551e1fc",
+      "photo_file": "data/facades/cities/manila/facade-review/images/150e2cd0-7c24-42f3-83c7-71e8f551e1fc.jpg",
+      "metadata_url": "https://api.panoramax.xyz/api/pictures/150e2cd0-7c24-42f3-83c7-71e8f551e1fc",
+      "capture_location": {
+        "lon": 120.9755908,
+        "lat": 14.5885277
+      },
+      "camera_heading_deg": 38.0,
+      "heading_source": "view:azimuth",
+      "building_target_osm_id": "OpenFreeMap|building|id:148859810",
+      "road_target_id": null,
+      "building_match": "camera_ray_intersection",
+      "visual_description": {
+        "scene": "Street bordered on the left by a long dark, rough stone masonry wall and an older pale stone building rising behind it, with a high curved/parapet-like roofline. In the middle distance is a low light-coloured building with repeated arched openings and a reddish tiled roof. On the right foreground is a tall modern light-grey building with large plain wall panels. A red car is parked near the right side.",
+        "street_surface": "grey asphalt/concrete road",
+        "visible_facade": "left: dark rough-cut stone boundary wall and pale historic masonry above; centre: light facade with repeated arches and red tiled roof; right: modern light-grey panelled facade",
+        "openings": "repeated arches on the central building; individual openings on the right are not clearly visible",
+        "street_furniture": "overhead utility wires and parked red car",
+        "signage": "no confidently legible sign is visible",
+        "cautions": "Do not infer unseen doors, windows, balconies, floor counts or exact building function."
+      },
+      "output_feature_count": 2
+    }
+  ],
+  "geojson": "data/facades/cities/manila/first_three_manila_photo_targets.geojson",
+  "feature_count": 8
+}
