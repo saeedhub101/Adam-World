@@ -1154,7 +1154,7 @@ def main():
             }
             atomic_json(state_path, state)
             if args.publish_checkpoints:
-                paths = [str(city_out / item["file"]) for item in tiles]
+                paths = [str((city_out / item["file"]).relative_to(ROOT)) for item in tiles]
                 subprocess.run(["git", "add", "--", *paths, str(state_path.relative_to(ROOT))],
                                cwd=ROOT, check=True)
                 if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0:
