@@ -32,7 +32,7 @@ def main() -> None:
     if not MANIFEST.exists():
         MANIFEST.parent.mkdir(parents=True, exist_ok=True)
         MANIFEST.write_text(
-            json.dumps({"schema_version": 1, "buildings": []}, indent=2) + "\\n",
+            json.dumps({"schema_version": 1, "buildings": []}, indent=2) + "\n",
             encoding="utf-8",
         )
         print("NO_APPROVED_FACADES: initialized empty manifest; no image assignments will be guessed.")
