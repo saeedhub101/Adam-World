@@ -1134,6 +1134,7 @@ def main():
         city_out = (FULL_SOURCE / slug / "stream") if slug == "tabarbour" else (OUTPUT / slug)
         city_out.mkdir(parents=True, exist_ok=True)
         tree_fingerprint = source_tree_fingerprint(city_source)
+        print(f"SOURCE_TREE_FINGERPRINT {slug} {tree_fingerprint}", flush=True)
         if slug == "tabarbour":
             existing_manifest_path = city_out / "manifest.json"
             existing_manifest = read_json(existing_manifest_path) if existing_manifest_path.is_file() else {}
