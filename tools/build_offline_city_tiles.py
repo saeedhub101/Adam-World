@@ -1209,8 +1209,11 @@ def main():
             raw_elements, ensure_ascii=False, sort_keys=True, separators=(",", ":")
         ).encode("utf-8")).hexdigest()
         prior_state = read_json(state_path) if state_path.is_file() else {}
+        prior_manifest_path = city_out / "manifest.json"
+        prior_manifest = read_json(prior_manifest_path) if prior_manifest_path.is_file() else {}
         resumable = prior_state.get("source_fingerprint") == source_fingerprint
-        prior_tiles = {(int(t["ix"]), int(t["iz"])): t for t in prior_state.get("tiles", [])} if resumable else {}
+        prior_tile_list = prior_state.get("tiles", []) if resumable else prior_manifest.get("tiles", [])
+        prior_tiles = {(int(t["ix"]), int(t["iz"])): t for t in prior_tile_list}
         tiles = []
         digest = hashlib.sha256()
         checkpoint_every = max(1, args.checkpoint_every)
@@ -1229,7 +1232,19 @@ def main():
             print(f"PUBLISHED_BUILD_CHECKPOINT {slug}: {len(tiles)}/{len(ordered_buckets)} tiles", flush=True)
 
         for tile_index, ((ix, iz), elements) in enumerate(ordered_buckets, 1):
-            filename = f"tile_{ix}_{iz}.json.gz"
+            old = prior_tiles.get((ix, iz))
+            old_file = str(old.get("file") or "") if old else ""
+            old_path = city_out / old_file if old_file else None
+            reusable = False
+            if old_path and old_path.is_file() and int(old.get("count", -1)) == len(elements):
+                try:
+                    opener = gzip.open if old_path.suffix == ".gz" else open
+                    with opener(old_path, "rt", encoding="utf-8") as handle:
+                        existing = json.load(handle)
+                    reusable = existing.get("elements", []) == elements
+                except Exception:
+                    reusable = False
+            filename = old_file if reusable else f"tile_{ix}_{iz}.json.gz"
             tile_path = city_out / filename
             entry = {
                 "file": filename, "ix": ix, "iz": iz,
@@ -1237,20 +1252,7 @@ def main():
                 "min_z": iz * TILE_METERS, "max_z": (iz + 1) * TILE_METERS,
                 "count": len(elements),
             }
-            old = prior_tiles.get((ix, iz))
-            if old == entry and tile_path.is_file():
-                try:
-                    with gzip.open(tile_path, "rt", encoding="utf-8") as handle:
-                        existing = json.load(handle)
-                    if len(existing.get("elements", [])) != len(elements):
-                        raise ValueError("stale tile count")
-                except Exception:
-                    old = None
-                else:
-                    pass
-            else:
-                old = None
-            if old is None:
+            if not reusable:
                 tmp_tile = city_out / (filename + ".tmp")
                 with gzip.open(tmp_tile, "wt", encoding="utf-8", compresslevel=9) as handle:
                     json.dump({"elements": elements}, handle, ensure_ascii=False, separators=(",", ":"))
