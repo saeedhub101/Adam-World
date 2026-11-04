@@ -19,7 +19,19 @@ This policy applies to every data-import, extraction, conversion, enrichment, ge
 
 `tools/build_offline_city_tiles.py --city tabarbour --checkpoint-every 20 --publish-checkpoints` writes each compressed cell directly into the stream directory and commits checkpoint state after each batch. The state file is `.build-state.json`; it is separate from the runtime `manifest.json`, so the game continues using the last complete manifest until final validation succeeds.
 
-A retry compares the source fingerprint and tile inventory. It reuses valid completed cells and rebuilds only missing or invalid cells. The final complete manifest is published only after all cells have been generated. The workflow then verifies the complete dataset and publishes the final runtime manifest.
+A retry compares the source fingerprint and tile inventory. It reuses valid completed cells and rebuilds only missing or invalid cells. The source assembly is cached in bounded compressed chunks under `.build-cache/`, so a later interruption does not require reassembling all source layers. Each tile batch is published with `.build-state.json`; the final runtime manifest is switched only after validation.
+
+Before doing any expensive rebuild, the script checks the current complete manifest, its successful runtime-validation record, the source tree's latest Git commit, and every referenced cell's existence and size. If the source tree has not changed since the published manifest and all 1,866 cells remain present and valid, it records the source fingerprint and skips the rebuild entirely. This avoids reprocessing an already complete city.
+
+## Other implemented pipeline checkpoints
+
+- `tools/ci/publish-checkpoint.sh` is the shared retry-safe commit/push helper.
+- The Manila facade workflow publishes the review queue, visual-verification report, local-photo gallery, and verified GLB outputs after each completed stage.
+- Manila review-queue matching stores `.review_queue_checkpoint.json` every 100 buildings and resumes from it when the source fingerprint matches.
+- Manila visual screening writes and publishes `visual_verification.json` every 100 photo candidates. It resumes completed candidates when the review-queue fingerprint matches and fails the workflow if checkpoint publication fails.
+- The first-three Panoramax GeoJSON workflow publishes its validated GeoJSON and audit report immediately after validation.
+
+The Android APK release is a packaging workflow, not a source-data extraction pipeline; it publishes the APK/release artifact after the build and verification stage.
 
 ## Acceptance checks
 
