@@ -1,101 +1,254 @@
 {
   "type": "FeatureCollection",
-  "name": "manila_photo_building_street_review",
+  "name": "Manila first three visually reviewed Panoramax photo targets",
   "metadata": {
-    "workflow_document": "docs/PHOTO_BUILDING_STREET_WORKFLOW.md",
     "created": "2026-11-04",
-    "purpose": "Photo-reviewed building and street targets; no guessed footprints or road centerlines.",
     "coordinate_order": "longitude,latitude",
-    "note": "Point geometries below are evidence anchors, not building footprints or street centerlines. Actual geometries must be populated from verified existing source features after image review."
+    "photos_reviewed": 3,
+    "building_footprints_verified": 0,
+    "street_segments_extracted": 3,
+    "policy": "Only the three existing Panoramax photos were inspected. Camera positions and view directions come from the original Panoramax metadata. Street segments are exact source segments selected nearest to each camera from the existing local transportation GeoJSON. No building footprint or OSM building ID is fabricated; each building remains pending extraction from the canonical building layer and visual confirmation.",
+    "workflow_document": "docs/PHOTO_BUILDING_STREET_WORKFLOW.md"
   },
   "features": [
     {
       "type": "Feature",
-      "id": "photo-target-001",
+      "id": "photo-1-camera",
       "geometry": {
         "type": "Point",
         "coordinates": [
-          120.9818584,
-          14.5728234
+          120.9764015,
+          14.588054
         ]
       },
       "properties": {
-        "target_type": "building_evidence_anchor",
-        "review_status": "partially_identified_prior_context_image_reinspection_required",
-        "building_name": "Alkhaleej International Services Inc.",
-        "building_type": "commercial",
-        "reported_floors": 2,
-        "street_name": "Roxas Boulevard",
-        "cross_street": "Quirino Street",
-        "locality": "Malate, Manila, Metro Manila, Philippines",
-        "prior_footprint_reference": "footprints-feature-000342",
-        "osm_id": null,
-        "image_ids": [],
-        "facade_observations": [],
-        "confidence": "medium_for_place_label_low_for_geometry",
-        "unresolved_fields": [
-          "verified OSM ID",
-          "actual footprint polygon",
-          "street centerline geometry",
-          "image asset and image-to-facade visual reinspection"
-        ],
-        "coordinate_role": "saved evidence anchor only; not a footprint"
+        "feature_role": "panoramax_camera_position",
+        "photo_id": "0cb04844-65a3-418b-beb8-7d6a65915903",
+        "sequence": 1,
+        "capture_datetime": "2024-03-10T00:19:58.096000+00:00",
+        "camera_model": "HERO9 Black",
+        "view_azimuth_deg": 314,
+        "field_of_view_deg": 92,
+        "horizontal_accuracy_m": 4,
+        "license": "CC-BY-SA-4.0",
+        "visual_review": "Brick-paved narrow pedestrian street; left side has a pale pink boundary wall and a prominent red cross sign, with a gated frontage and a large white multi-storey building behind; right side is a weathered light-grey multi-storey frontage. Street recedes toward a tree canopy.",
+        "identity_status": "photo_visually_inspected_building_footprint_not_yet_verified",
+        "source_metadata": "data/facades/cities/manila/panoramax-items.geojson"
       }
     },
     {
       "type": "Feature",
-      "id": "photo-target-002",
+      "id": "photo-1-view-direction",
       "geometry": {
-        "type": "Point",
+        "type": "LineString",
         "coordinates": [
-          120.9871317,
-          14.5750948
+          [
+            120.9764015,
+            14.588054
+          ],
+          [
+            120.97610102595537,
+            14.588334810006142
+          ]
         ]
       },
       "properties": {
-        "target_type": "building_evidence_anchor",
-        "review_status": "partially_identified_prior_context_image_reinspection_required",
-        "building_name": null,
-        "building_type": "commercial",
-        "reported_floors": 2,
-        "street_name": "HXGP Vasquez St",
-        "cross_street": null,
-        "locality": "Barangay 696, Malate, Manila, Metro Manila, Philippines",
-        "prior_footprint_reference": "footprints-feature-000343",
-        "osm_id": null,
-        "image_ids": [],
-        "facade_observations": [],
-        "confidence": "medium_for_place_label_low_for_geometry",
-        "unresolved_fields": [
-          "verified OSM ID",
-          "actual footprint polygon",
-          "street centerline geometry",
-          "exact building name",
-          "image asset and image-to-facade visual reinspection"
-        ],
-        "coordinate_role": "saved evidence anchor only; not a footprint"
+        "feature_role": "camera_view_direction",
+        "photo_id": "0cb04844-65a3-418b-beb8-7d6a65915903",
+        "azimuth_deg": 314,
+        "length_m": 45,
+        "not_a_road_or_building_geometry": true
       }
     },
     {
       "type": "Feature",
-      "id": "photo-target-003",
-      "geometry": null,
+      "id": "photo-1-street-segment",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.97574293613434,
+            14.588774977701725
+          ],
+          [
+            120.97650468349457,
+            14.587908001951185
+          ]
+        ]
+      },
       "properties": {
-        "target_type": "building_or_street_target",
-        "review_status": "unresolved_missing_source_evidence",
-        "building_name": null,
-        "street_name": null,
-        "locality": "Manila, Philippines",
-        "osm_id": null,
-        "image_ids": [],
-        "confidence": "none",
-        "unresolved_fields": [
-          "actual third image",
-          "OSM ID or exact coordinates",
-          "building/street identity",
-          "verified geometry"
-        ],
-        "note": "Intentionally left unresolved; no third target could be verified from the recovered prior context."
+        "feature_role": "source_road_segment_nearest_to_camera",
+        "photo_id": "0cb04844-65a3-418b-beb8-7d6a65915903",
+        "source_feature_id": "OpenFreeMap|transportation|id:1638442032",
+        "source_feature_numeric_id": "id:1638442032",
+        "source_layer": "transportation",
+        "road_class": "path",
+        "road_subclass": "pedestrian",
+        "road_surface": "paved",
+        "camera_to_segment_distance_m": 2.13,
+        "source_dataset": "data/facades/cities/manila/layers/transportation.geojson",
+        "identity_status": "source_segment_located_near_camera_not_yet_visually_confirmed_as_named_street",
+        "source_duplicate_policy": "OpenFreeMap/OpenMapTiles duplicate copies are represented once"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-2-camera",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9761578,
+          14.5907033
+        ]
+      },
+      "properties": {
+        "feature_role": "panoramax_camera_position",
+        "photo_id": "134abd91-1ba0-43d5-b1e5-71bb394f71a7",
+        "sequence": 2,
+        "capture_datetime": "2024-03-10T00:35:41.404000+00:00",
+        "camera_model": "HERO9 Black",
+        "view_azimuth_deg": 53,
+        "field_of_view_deg": 92,
+        "horizontal_accuracy_m": 4,
+        "license": "CC-BY-SA-4.0",
+        "visual_review": "Broad paved street; left side is a white colonial-style facade with repeated arched openings and decorative pilasters; right side is a long yellow/tan two-storey arcade with repeated arches and dark shopfronts; distant taller block at the end of the street.",
+        "identity_status": "photo_visually_inspected_building_footprint_not_yet_verified",
+        "source_metadata": "data/facades/cities/manila/panoramax-items.geojson"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-2-view-direction",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.9761578,
+            14.5907033
+          ],
+          [
+            120.97649140051794,
+            14.590946578836812
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "camera_view_direction",
+        "photo_id": "134abd91-1ba0-43d5-b1e5-71bb394f71a7",
+        "azimuth_deg": 53,
+        "length_m": 45,
+        "not_a_road_or_building_geometry": true
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-2-street-segment",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.97602188587189,
+            14.59085674385432
+          ],
+          [
+            120.97616672515869,
+            14.590680235767374
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "source_road_segment_nearest_to_camera",
+        "photo_id": "134abd91-1ba0-43d5-b1e5-71bb394f71a7",
+        "source_feature_id": "OpenFreeMap|transportation|id:43046680",
+        "source_feature_numeric_id": "id:43046680",
+        "source_layer": "transportation",
+        "road_class": "service",
+        "road_subclass": null,
+        "road_surface": null,
+        "camera_to_segment_distance_m": 0.87,
+        "source_dataset": "data/facades/cities/manila/layers/transportation.geojson",
+        "identity_status": "source_segment_located_near_camera_not_yet_visually_confirmed_as_named_street",
+        "source_duplicate_policy": "OpenFreeMap/OpenMapTiles duplicate copies are represented once"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-3-camera",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9755908,
+          14.5885277
+        ]
+      },
+      "properties": {
+        "feature_role": "panoramax_camera_position",
+        "photo_id": "150e2cd0-7c24-42f3-83c7-71e8f551e1fc",
+        "sequence": 3,
+        "capture_datetime": "2024-03-10T00:16:42.095000+00:00",
+        "camera_model": "HERO9 Black",
+        "view_azimuth_deg": 38,
+        "field_of_view_deg": 92,
+        "horizontal_accuracy_m": 4,
+        "license": "CC-BY-SA-4.0",
+        "visual_review": "Street beside a long dark weathered masonry wall and old pale stone building on the left; right side has a tall white/grey facade; red car parked on the right and a covered passage/arcade ahead.",
+        "identity_status": "photo_visually_inspected_building_footprint_not_yet_verified",
+        "source_metadata": "data/facades/cities/manila/panoramax-items.geojson"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-3-view-direction",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.9755908,
+            14.5885277
+          ],
+          [
+            120.97584796732423,
+            14.588846246949077
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "camera_view_direction",
+        "photo_id": "150e2cd0-7c24-42f3-83c7-71e8f551e1fc",
+        "azimuth_deg": 38,
+        "length_m": 45,
+        "not_a_road_or_building_geometry": true
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "photo-3-street-segment",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.97574293613434,
+            14.588774977701725
+          ],
+          [
+            120.97476124763489,
+            14.587560172396977
+          ]
+        ]
+      },
+      "properties": {
+        "feature_role": "source_road_segment_nearest_to_camera",
+        "photo_id": "150e2cd0-7c24-42f3-83c7-71e8f551e1fc",
+        "source_feature_id": "OpenFreeMap|transportation|id:10783602240",
+        "source_feature_numeric_id": "id:10783602240",
+        "source_layer": "transportation",
+        "road_class": "minor",
+        "road_subclass": null,
+        "road_surface": "paved",
+        "camera_to_segment_distance_m": 4.18,
+        "source_dataset": "data/facades/cities/manila/layers/transportation.geojson",
+        "identity_status": "source_segment_located_near_camera_not_yet_visually_confirmed_as_named_street",
+        "source_duplicate_policy": "OpenFreeMap/OpenMapTiles duplicate copies are represented once"
       }
     }
   ]
