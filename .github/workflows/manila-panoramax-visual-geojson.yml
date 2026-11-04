@@ -1,0 +1,67 @@
+name: Build first three Manila Panoramax visual GeoJSON targets
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tools/facades/reconstruct_first_three_manila_photos.py"
+      - ".github/workflows/manila-panoramax-visual-geojson.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adam-world-main-writers
+  cancel-in-progress: false
+
+jobs:
+  build-photo-targets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install geometry dependencies
+        run: python -m pip install --disable-pip-version-check shapely pyproj
+
+      - name: Resolve Panoramax metadata and build photo-specific GeoJSON
+        run: python tools/facades/reconstruct_first_three_manila_photos.py
+
+      - name: Validate all three photo observations and spatial targets
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("data/facades/cities/manila/first_three_manila_photo_targets.geojson")
+          fc=json.loads(p.read_text(encoding="utf-8"))
+          assert fc["type"]=="FeatureCollection"
+          photos={f["properties"].get("photo_id") for f in fc["features"] if f["properties"].get("feature_role")=="panoramax_photo_observation"}
+          assert len(photos)==3, f"Expected 3 distinct Panoramax photo points, got {len(photos)}"
+          assert len(fc["features"])>=6, f"Expected photo points plus spatial targets, got {len(fc['features'])}"
+          print("GEOJSON_VALID",len(fc["features"]),"features",len(photos),"photos")
+          PY
+
+      - name: Commit GeoJSON and audit report to main
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/facades/cities/manila/first_three_manila_photo_targets.geojson data/facades/cities/manila/first_three_manila_photo_targets.json
+          git diff --cached --quiet && { echo "No output changes"; exit 0; }
+          git commit -m "Add photo-specific Manila Panoramax visual GeoJSON targets"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then exit 0; fi
+            if [ "$attempt" -eq 3 ]; then exit 1; fi
+            sleep "$((attempt * 3))"
+          done
