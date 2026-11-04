@@ -1216,6 +1216,10 @@ def main():
             if tile_index % checkpoint_every == 0:
                 save_checkpoint()
 
+        # Persist the tail batch too, including runs with fewer than N remaining tiles.
+        if tiles:
+            save_checkpoint()
+
         manifest = {
             "schema_version": 1, "slug": slug, "name": city["name"],
             "center": center,
