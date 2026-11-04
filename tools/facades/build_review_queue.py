@@ -16,6 +16,7 @@ manifest. A human must inspect each photo and building before approval.
 from __future__ import annotations
 
 import argparse
+import subprocess
 import hashlib
 import json
 import math
@@ -265,7 +266,7 @@ def aerial_candidates(building: dict[str, Any], items: list[dict[str, Any]]) -> 
         })
     return found
 
-def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
+def build_queue(city_dir: Path, max_distance: float, checkpoint_every: int = 100, publish_checkpoints: bool = False) -> dict[str, Any]:
     # Manila's committed canonical building source is the 48 MB
     # layers/building-layer.geojson. Older folders may still use the two
     # compatibility filenames below; use them only when present.
@@ -281,12 +282,29 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
     photos_fc = read_fc(city_dir / "panoramax-items.geojson", required=False)
     aerial_fc = read_fc(city_dir / "aerial-items.geojson", required=False)
     photos = [photo_metadata(f) | {"_geometry": f.get("geometry"), "source": "panoramax"} for f in photos_fc["features"]]
-    queue = []
-    seen = set()
-    for b in buildings_fc["features"]:
+    source_hash = hashlib.sha256()
+    for name, path in ((buildings_path.name, buildings_path),
+                       ("panoramax-items.geojson", city_dir / "panoramax-items.geojson"),
+                       ("aerial-items.geojson", city_dir / "aerial-items.geojson")):
+        source_hash.update(name.encode())
+        if path.exists():
+            source_hash.update(path.read_bytes())
+    source_sha256 = source_hash.hexdigest()
+    final_path = city_dir / "review_queue.json"
+    if final_path.is_file():
+        previous_final = json.loads(final_path.read_text(encoding="utf-8"))
+        if previous_final.get("source_sha256") == source_sha256 and previous_final.get("building_count", 0) > 0:
+            print(f"QUEUE_ALREADY_COMPLETE city={city_dir.name} buildings={previous_final['building_count']}")
+            return previous_final
+    checkpoint_path = city_dir / ".review_queue_checkpoint.json"
+    previous = json.loads(checkpoint_path.read_text(encoding="utf-8")) if checkpoint_path.is_file() else {}
+    queue = previous.get("buildings", []) if previous.get("source_sha256") == source_sha256 else []
+    seen = {str(item.get("osm_way_id")) for item in queue}
+    checkpoint_every = max(1, int(checkpoint_every))
+    for building_index, b in enumerate(buildings_fc["features"], 1):
         osm_id = building_id(b)
         center = centroid_lonlat(b.get("geometry") or {})
-        if not osm_id or not center:
+        if not osm_id or not center or str(osm_id) in seen:
             continue
         raw_props = b.get("properties") or {}
         bp = dict(raw_props.get("tags") or {}) if isinstance(raw_props.get("tags"), dict) else {}
@@ -345,6 +363,16 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
             "identity_status": "unverified",
             "texture_assignment_allowed": False,
         })
+        seen.add(str(osm_id))
+        if publish_checkpoints and len(queue) % checkpoint_every == 0:
+            atomic_json(checkpoint_path, {
+                "source_sha256": source_sha256, "complete": False,
+                "processed_buildings": len(queue), "buildings": queue,
+            })
+            subprocess.run(["bash", str(ROOT / "tools/ci/publish-checkpoint.sh"),
+                            f"Checkpoint {city_dir.name} review queue {len(queue)} buildings",
+                            str(checkpoint_path.relative_to(ROOT))], cwd=ROOT, check=True)
+            print(f"QUEUE_CHECKPOINT city={city_dir.name} buildings={len(queue)}", flush=True)
     queue.sort(key=lambda x: int(x["osm_way_id"]))
     if not queue:
         sample = [(f.get("properties") or {}).get("osm_feature_id") or f.get("id")
@@ -353,16 +381,10 @@ def build_queue(city_dir: Path, max_distance: float) -> dict[str, Any]:
             f"{buildings_path}: {len(buildings_fc['features'])} features but zero usable OSM way IDs; "
             f"sample identifiers={sample}"
         )
-    source_hash = hashlib.sha256()
-    for name in (buildings_path.name, "panoramax-items.geojson", "aerial-items.geojson"):
-        path = city_dir / name
-        source_hash.update(name.encode())
-        if path.exists():
-            source_hash.update(path.read_bytes())
     return {
         "schema_version": 1,
         "city": city_dir.name,
-        "source_sha256": source_hash.hexdigest(),
+        "source_sha256": source_sha256,
         "matching_policy": {
             "maximum_discovery_distance_m": max_distance,
             "proximity_is_not_identity": True,
@@ -399,6 +421,8 @@ def main() -> None:
     parser.add_argument("--cities-root", type=Path, default=DEFAULT_ROOT)
     parser.add_argument("--city", help="process one city folder; default processes every city folder")
     parser.add_argument("--max-distance-m", type=float, default=MAX_DISTANCE_M)
+    parser.add_argument("--checkpoint-every", type=int, default=100)
+    parser.add_argument("--publish-checkpoints", action="store_true")
     args = parser.parse_args()
     if args.max_distance_m <= 0 or args.max_distance_m > 500:
         parser.error("--max-distance-m must be > 0 and <= 500")
@@ -421,8 +445,11 @@ def main() -> None:
         if buildings_path is None:
             print(f"SKIP {city_dir}: no existing building footprints found")
             continue
-        result = build_queue(city_dir, args.max_distance_m)
+        result = build_queue(city_dir, args.max_distance_m, args.checkpoint_every, args.publish_checkpoints)
         atomic_json(city_dir / "review_queue.json", result)
+        checkpoint_path = city_dir / ".review_queue_checkpoint.json"
+        if checkpoint_path.exists():
+            checkpoint_path.unlink()
         candidate_count = sum(len(b["facade_photo_candidates"]) for b in result["buildings"])
         eligible_count = sum(1 for b in result["buildings"] for p in b["facade_photo_candidates"] if p["eligible_for_visual_review"])
         reason_counts: dict[str, int] = {}
