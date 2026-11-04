@@ -93,9 +93,7 @@ final class Landmarks {
         if (x >= xMin && x < xMax && z >= zMin && z < zMax) { int[] st = starts(td); tkts(td, x, z); shift(td, st, Terrain.h(x, z)); }
         x = Geo.x(ROBINSONS_LON); z = Geo.z(ROBINSONS_LAT);
         if (x >= xMin && x < xMax && z >= zMin && z < zMax) {
-            int[] st = starts(td);
             robinsonsPlace(td, x, z);
-            shift(td, st, Terrain.h(x, z));
         }
     }
 
