@@ -7,6 +7,10 @@ human-review gallery; it never marks an assignment verified or textures a mesh.
 from __future__ import annotations
 import argparse, html, json, os, re, subprocess, tempfile, time
 from pathlib import Path
+try:
+    from .review_queue_io import load_review_queue
+except ImportError:
+    from review_queue_io import load_review_queue
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 from PIL import Image
@@ -33,7 +37,7 @@ def process_city(city: Path, limit: int, hd_limit: int) -> dict:
     if not queue_path.is_file():
         print(f"SKIP {city.name}: review_queue.json missing")
         return {"city": city.name, "eligible": 0, "downloaded": 0, "failed": 0}
-    queue = json.loads(queue_path.read_text(encoding="utf-8"))
+    queue = load_review_queue(queue_path)
     chosen = []
     for building in queue.get("buildings", []):
         # Keep near Panoramax images for manual visual review even when azimuth/FOV
