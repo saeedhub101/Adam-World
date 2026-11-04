@@ -27,7 +27,7 @@ concurrency:
 jobs:
   reconcile:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,16 +66,28 @@ jobs:
           print(f"QUEUE_OK buildings={q['building_count']}")
           PY
 
+      - name: Publish review queue checkpoint
+        run: bash tools/ci/publish-checkpoint.sh "Checkpoint Manila review queue" data/facades/cities/manila/review_queue.json
+
       - name: Screen only images already in the repository
         run: python tools/facades/visual_verify_facades.py --city manila --limit-per-building 3
 
+      - name: Publish visual verification checkpoint
+        run: bash tools/ci/publish-checkpoint.sh "Checkpoint Manila visual verification" data/facades/cities/manila/visual_verification.json
+
       - name: Rebuild local-photo gallery
         run: python tools/facades/build_existing_manila_photo_gallery.py
+
+      - name: Publish local-photo gallery checkpoint
+        run: bash tools/ci/publish-checkpoint.sh "Checkpoint Manila local-photo gallery" data/facades/cities/manila/facade-review/existing-photo-audit.json data/facades/cities/manila/facade-review/index.html
 
       - name: Validate human-approved records and build GLBs
         run: |
           python tools/facades/validate_manifest.py
           python tools/facades/build_verified_glbs.py
+
+      - name: Publish verified facade GLB checkpoint
+        run: bash tools/ci/publish-checkpoint.sh "Checkpoint verified Manila facade GLBs" app/src/main/assets/facades/
 
       - name: Commit results with retry-safe fast-forward
         run: |
