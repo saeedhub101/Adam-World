@@ -1,45 +1,45 @@
 # Photo-to-building and street reconstruction workflow
 
-Status: policy and execution specification. Last updated: 2026-11-04.
-Scope: Manila photo evidence and the exact buildings/streets represented by that evidence.
+Status: active execution; three existing Manila Panoramax images visually inspected on 2026-11-04.
+Scope: only the three selected photographs and their exact visible buildings/streets. No unrelated imports, workflow edits, refactors, or city-wide processing.
 
 ## Non-negotiable rules
-- Do not start unrelated imports, rebuilds, refactors, workflow changes, or data collection. Work only on the photo/building/street task explicitly requested.
-- Do not claim that a photo belongs to a building merely because it is nearby. Inspect the image itself and verify its subject using the image's OSM identifier, coordinates, capture position, camera direction, visible surroundings, and address/street context where available.
-- Do not create a script whose only purpose is to guess or automatically associate photos with buildings. Human visual inspection determines the target; GeoJSON records the reviewed result.
-- Never invent an OSM ID, footprint, road geometry, address, facade detail, or third location. Unknown values stay null and are marked unresolved.
-- Preserve source data and provenance. Do not overwrite source-derived values with guesses or model estimates.
-- Use existing repository images and datasets first; do not initiate another broad image/data import.
+- Inspect the actual image, not just metadata or filenames.
+- Every photo belongs only to its own photographed place. Never transfer windows, doors, balconies, entrances, signs, materials, or colors between targets.
+- Use the Panoramax image UUID, GPS camera position, view azimuth, capture time, and the visible scene together.
+- Proximity and camera direction are evidence, not proof of building identity.
+- Do not invent OSM IDs, building footprints, street names, or facade dimensions.
+- Use existing repository images and source geometry first. Do not initiate another broad import.
+- A script may extract source geometry after the human visual review, but it must not guess image-to-building identity or synthesize facade details.
 
-## Required review for each image
-1. Open and visually inspect the actual image.
-2. Record its source identifier, original asset reference/path, capture coordinates, capture position/heading if available, and any OSM ID supplied by the source.
-3. Identify the visible building or street using distinctive facade/signage/roof/entrance/window/balcony details and surrounding geometry.
-4. Match the image to the exact building footprint or road feature. Verify the camera-to-subject direction and ensure the image is not an interior, neighboring building, unrelated street, or wrong viewpoint.
-5. If identity is ambiguous, retain the image as unresolved; do not attach it to a guessed feature.
+## Three images visually inspected
+All three source JPEGs are already committed under `data/facades/cities/manila/facade-review/images/`. Their source metadata is in `data/facades/cities/manila/panoramax-items.geojson`. All are GoPro HERO9 Black captures from 2024-03-10 with CC-BY-SA-4.0.
 
-## GeoJSON output
-- Produce a FeatureCollection with one feature per verified building and one feature per verified street segment.
-- Use the real footprint polygon for a building and the actual road LineString/MultiLineString for a street, sourced from existing repository geometry or explicitly verified source geometry. A Point may be used only as a clearly labelled evidence/locator anchor, never represented as a building footprint.
-- Preserve source IDs and add review metadata: `review_status`, `image_ids`, `osm_id`, `street_name`, `building_name`, `evidence`, `facade_observations`, `confidence`, and `unresolved_fields`.
-- Do not fabricate polygon or line geometry from a point coordinate. Keep unavailable geometry null and explain why.
-- Windows, doors, entrances, balconies, signs, roof, facade material, color and texture must be recorded only when visible and attributable to the exact target. Each image applies only to its own verified target.
+1. `0cb04844-65a3-418b-beb8-7d6a65915903`
+   - Camera: [120.9764015, 14.588054], azimuth 314°, altitude about 47.7 m, horizontal accuracy 4 m.
+   - Visible scene: brick-paved narrow pedestrian street; pale pink wall and red-cross sign/gated frontage on the left; large white multi-storey building behind; weathered light-grey multi-storey frontage on the right; tree canopy down the street.
+2. `134abd91-1ba0-43d5-b1e5-71bb394f71a7`
+   - Camera: [120.9761578, 14.5907033], azimuth 53°, altitude about 47.8 m, horizontal accuracy 4 m.
+   - Visible scene: broad paved street; white colonial-style facade with repeated arches and pilasters on the left; long yellow/tan two-storey arcade with repeated arches and dark shopfronts on the right; taller block in the distance.
+3. `150e2cd0-7c24-42f3-83c7-71e8f551e1fc`
+   - Camera: [120.9755908, 14.5885277], azimuth 38°, altitude about 43.4 m, horizontal accuracy 4 m.
+   - Visible scene: long dark weathered masonry wall and old pale stone building on the left; tall white/grey facade on the right; red car parked on the right; covered passage/arcade ahead.
 
-## Building reconstruction
-- Aerial imagery may establish roof position, roof shape and broad color only.
-- Street-level facade imagery may establish facade materials, color, windows, doors, entrances, balconies, signage and texture only after exact-building and camera-direction verification.
-- Apply the resulting facade details to the surfaces of that building's own mesh; do not add detached/random overlay geometry or transfer details between buildings.
-- Keep building footprint, height and floors source-derived where possible. Record estimates separately with method and confidence; never silently replace measured/source values.
+## GeoJSON currently produced
+`data/facades/cities/manila/layers/photo-building-street-review.geojson` contains, for each photo:
+- the exact Panoramax camera Point;
+- a 45 m camera-view-direction LineString derived from the recorded azimuth;
+- one short, exact LineString segment selected from the existing local transportation dataset nearest to the camera, with its source feature ID and measured offset;
+- the visual observations above and explicit review status.
 
-## Validation and completion
-- Validate GeoJSON syntax, geometry type, coordinate order (longitude, latitude), feature identity, source provenance and duplicate targets.
-- Compare each output feature against the source image and source geometry. Report verified, ambiguous and missing targets separately.
-- Mark the task complete only when each requested image has a reviewed target, each target has correct geometry, and the resulting facade/building data passes visual inspection.
-- Record exact files changed, feature counts, unresolved items and next action here or in the task log. Resume from the last completed review; do not repeat completed work.
+The road segment is a source-derived locator segment, not yet a confirmed named street centerline. The direction ray is not a road or building geometry.
 
-## Known targets recovered from prior project context (not a claim that three images are currently available)
-1. Alkhaleej International Services Inc. — commercial two-storey building; Malate; Roxas Boulevard corner Quirino Street; saved anchor coordinate longitude 120.9818584, latitude 14.5728234; prior footprint reference `footprints-feature-000342`.
-2. Commercial two-storey building — HXGP Vasquez St, Barangay 696, Malate, Manila; saved anchor coordinate longitude 120.9871317, latitude 14.5750948; prior footprint reference `footprints-feature-000343`.
-3. Third target — no verified image, location, OSM ID or coordinates recovered in the available prior context. Must remain unresolved until the actual third image/identifier is available.
+## Remaining required work (do not mark complete yet)
+- Extract the actual building polygon(s) from the canonical `layers/building-layer.geojson` for each visible frontage and retain the source OSM ID. Confirm the correct side/target using the photo, camera position, and azimuth. Do not substitute an unrelated nearby polygon.
+- Inspect the local building properties and any existing source images for height, levels, material/color evidence and addresses.
+- Add image-space annotations only where the facade element is visible and attributable to that exact building: windows, doors, entrances, balconies, signs, roof edge, facade material/color/texture.
+- If the exact footprint cannot be established from the current source, keep the building unresolved and state the missing evidence; do not draw a guessed polygon.
+- Validate geometry, coordinate order, feature/source IDs, and image-to-target consistency.
 
-The two saved coordinates above are evidence anchors only. They are not substitutes for footprint polygons or road centerlines. No OSM IDs are confirmed in the recovered context.
+## Completion rule
+The task is complete only when all three requested images have visually confirmed building footprints and their own street geometries, plus evidence-backed facade annotations. The current GeoJSON is an inspected evidence-and-street-locator stage, not a completed building reconstruction.
