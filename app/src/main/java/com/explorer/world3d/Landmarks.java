@@ -31,8 +31,20 @@ final class Landmarks {
         return Math.hypot(x - Geo.x(lon), z - Geo.z(lat)) < rad;
     }
 
+    // Robinsons Place Manila — photo-guided landmark reconstruction.
+    static final double ROBINSONS_LAT = 14.57644165, ROBINSONS_LON = 120.98379392;
+    private static final float ROBINSONS_RX = 78f, ROBINSONS_RZ = 49f;
+
+    private static boolean insideRobinsons(float x, float z) {
+        float dx = x - Geo.x(ROBINSONS_LON), dz = z - Geo.z(ROBINSONS_LAT);
+        float a = dx / ROBINSONS_RX, b = dz / ROBINSONS_RZ;
+        return a * a + b * b <= 1.10f;
+    }
+
     static boolean suppress(float x, float z) {
-        return near(x, z, BURJ_LAT, BURJ_LON, 45f) || near(x, z, RT_LAT, RT_LON, 75f);
+        return near(x, z, BURJ_LAT, BURJ_LON, 45f)
+                || near(x, z, RT_LAT, RT_LON, 75f)
+                || insideRobinsons(x, z);
     }
 
     static boolean nearSigns(float x, float z) {
@@ -79,6 +91,12 @@ final class Landmarks {
         if (x >= xMin && x < xMax && z >= zMin && z < zMax) { theatre(td, x, z); }
         x = Geo.x(TK_LON); z = Geo.z(TK_LAT);
         if (x >= xMin && x < xMax && z >= zMin && z < zMax) { int[] st = starts(td); tkts(td, x, z); shift(td, st, Terrain.h(x, z)); }
+        x = Geo.x(ROBINSONS_LON); z = Geo.z(ROBINSONS_LAT);
+        if (x >= xMin && x < xMax && z >= zMin && z < zMax) {
+            int[] st = starts(td);
+            robinsonsPlace(td, x, z);
+            shift(td, st, Terrain.h(x, z));
+        }
     }
 
     /* ---------- أدوات هندسية ---------- */
@@ -290,4 +308,179 @@ final class Landmarks {
             b.quad(cx + 7f, 0, zf, cx + 7f, 0, zb, cx + 7f, h, zb, cx + 7f, h, zf, 0.6f, 0.05f, 0.07f);
         }
     }
+
+    /* ---------- Robinsons Place Manila: curved multi-level shopping mall ---------- */
+    private static float[] ellipsePoint(float cx, float cz, float rx, float rz, float a) {
+        return new float[]{cx + rx * (float)Math.cos(a), cz + rz * (float)Math.sin(a)};
+    }
+
+    private static void mallCylinder(GeoBuf b, float cx, float cz, float y0, float y1,
+                                     float radius, float r, float g, float bl) {
+        final int sides = 10;
+        for (int i = 0; i < sides; i++) {
+            double a0 = Math.PI * 2 * i / sides, a1 = Math.PI * 2 * (i + 1) / sides;
+            float x0 = cx + radius * (float)Math.cos(a0), z0 = cz + radius * (float)Math.sin(a0);
+            float x1 = cx + radius * (float)Math.cos(a1), z1 = cz + radius * (float)Math.sin(a1);
+            b.quad(x0,y0,z0, x1,y0,z1, x1,y1,z1, x0,y1,z0, r,g,bl);
+        }
+    }
+
+    private static void mallDecal(TileData td, String text, float x, float z, float y, float scale) {
+        Decal d = new Decal();
+        d.text = text;
+        d.x = x; d.z = z; d.y = y;
+        d.dx = scale; d.dz = 0f; d.vertical = true;
+        td.decals.add(d);
+    }
+
+    private static void mallChair(GeoBuf b, float x, float z, float y, float angle) {
+        float ux = (float)Math.cos(angle), uz = (float)Math.sin(angle);
+        float wx = -uz, wz = ux;
+        // Timber-look seat and back, with four slim metal legs.
+        b.box(x, y + 0.48f, z, 0.72f, 0.10f, 0.72f, 0.43f, 0.31f, 0.22f);
+        b.box(x - ux*0.30f, y + 0.91f, z - uz*0.30f, 0.10f, 0.78f, 0.72f, 0.48f, 0.36f, 0.25f);
+        for (int sx=-1; sx<=1; sx+=2) for (int sz=-1; sz<=1; sz+=2) {
+            float lx=x+ux*sx*0.25f+wx*sz*0.25f, lz=z+uz*sx*0.25f+wz*sz*0.25f;
+            b.box(lx,y+0.22f,lz,0.055f,0.46f,0.055f,0.28f,0.30f,0.31f);
+        }
+    }
+
+    private static void robinsonsPlace(TileData td, float cx, float cz) {
+        GeoBuf wall = td.bufs[TileBuilder.B_FACADE];
+        GeoBuf glass = td.bufs[TileBuilder.B_GLASS];
+        GeoBuf plaza = td.bufs[TileBuilder.B_PLAIN];
+        GeoBuf signs = td.bufs[TileBuilder.B_SIGN];
+        final int segments = 64;
+        final float rx = ROBINSONS_RX, rz = ROBINSONS_RZ;
+        final float base = Terrain.h(cx, cz);
+        final float concreteR=.79f, concreteG=.78f, concreteB=.75f;
+        final float trimR=.91f, trimG=.89f, trimB=.84f;
+
+        // A real-footprint-scale oval mass with a broad, south-facing curved frontage.
+        float[] fx=new float[segments], fz=new float[segments];
+        for(int i=0;i<segments;i++){
+            float a=(float)(2*Math.PI*i/segments);
+            float[] p=ellipsePoint(cx,cz,rx,rz,a); fx[i]=p[0]; fz[i]=p[1];
+        }
+        foot(td,fx,fz);
+
+        // Continuous four-storey exterior shell and inset dark glazing bands.
+        for(int i=0;i<segments;i++){
+            float a0=(float)(2*Math.PI*i/segments), a1=(float)(2*Math.PI*(i+1)/segments);
+            float[] p0=ellipsePoint(cx,cz,rx,rz,a0), p1=ellipsePoint(cx,cz,rx,rz,a1);
+            float x0=p0[0],z0=p0[1],x1=p1[0],z1=p1[1];
+            float yGround=(Terrain.h(x0,z0)+Terrain.h(x1,z1))*.5f;
+            // Ground-floor shop glazing and upper window ribbons.
+            wall.quad(x0,yGround,z0,x1,yGround,z1,x1,yGround+4.45f,z1,x0,yGround+4.45f,z0,
+                    concreteR*.92f,concreteG*.92f,concreteB*.92f);
+            glass.quad(x0,yGround+.72f,z0,x1,yGround+.72f,z1,x1,yGround+3.95f,z1,x0,yGround+3.95f,z0,
+                    .19f,.31f,.36f);
+            for(int floor=1;floor<=3;floor++){
+                float y0=yGround+4.55f+(floor-1)*4.35f, y1=y0+3.15f;
+                wall.quad(x0,y0-.28f,z0,x1,y0-.28f,z1,x1,y0,z1,x0,y0,z0,trimR,trimG,trimB);
+                glass.quad(x0,y0+.22f,z0,x1,y0+.22f,z1,x1,y1,z1,x0,y1,z0,.30f,.46f,.52f);
+                wall.quad(x0,y1,z0,x1,y1,z1,x1,y1+.28f,z1,x0,y1+.28f,z0,trimR,trimG,trimB);
+            }
+            // Heavy horizontal balcony slabs and parapet at each storey.
+            for(int floor=1;floor<=3;floor++){
+                float y=yGround+4.45f+floor*4.35f;
+                plaza.quad(x0,y,z0,x1,y,z1,
+                        cx+(rx-1.2f)*(float)Math.cos(a1),y,cz+(rz-1.2f)*(float)Math.sin(a1),
+                        cx+(rx-1.2f)*(float)Math.cos(a0),y,cz+(rz-1.2f)*(float)Math.sin(a0),
+                        .78f,.77f,.73f);
+                // Glass balustrade with a narrow silver top rail.
+                float rox=rx+.52f, roz=rz+.52f;
+                float[] r0=ellipsePoint(cx,cz,rox,roz,a0),r1=ellipsePoint(cx,cz,rox,roz,a1);
+                glass.quad(r0[0],y+.18f,r0[1],r1[0],y+.18f,r1[1],
+                        r1[0],y+1.12f,r1[1],r0[0],y+1.12f,r0[1],.58f,.72f,.74f);
+                wall.quad(r0[0],y+1.10f,r0[1],r1[0],y+1.10f,r1[1],
+                        r1[0],y+1.22f,r1[1],r0[0],y+1.22f,r0[1],.70f,.71f,.69f);
+            }
+        }
+
+        // White cylindrical columns on the curved front colonnade, spaced like the photo reference.
+        for(int i=0;i<=20;i++){
+            float a=(float)(Math.PI*i/20);
+            float[] p=ellipsePoint(cx,cz,rx+1.15f,rz+1.15f,a);
+            mallCylinder(plaza,p[0],p[1],base+.15f,base+22.7f,.72f,.90f,.89f,.84f);
+            // Column capital and base collars.
+            plaza.box(p[0],base+22.35f,p[1],1.72f,.30f,1.72f,.84f,.83f,.78f);
+            plaza.box(p[0],base+.35f,p[1],1.65f,.38f,1.65f,.78f,.77f,.72f);
+        }
+
+        // Roof parapet, mechanical penthouses and long skylight strips.
+        for(int i=0;i<segments;i++){
+            float a0=(float)(2*Math.PI*i/segments),a1=(float)(2*Math.PI*(i+1)/segments);
+            float[] p0=ellipsePoint(cx,cz,rx,rz,a0),p1=ellipsePoint(cx,cz,rx,rz,a1);
+            wall.quad(p0[0],base+22.0f,p0[1],p1[0],base+22.0f,p1[1],
+                    p1[0],base+23.0f,p1[1],p0[0],base+23.0f,p0[1],.88f,.86f,.81f);
+        }
+        for(int i=0;i<5;i++){
+            float x=cx-35f+i*17.5f, z=cz-9f+(i%2)*18f;
+            plaza.box(x,base+24.0f,z,9f,2.0f,7f,.70f,.70f,.67f);
+            glass.box(x,base+25.1f,z,8.2f,.25f,6.2f,.32f,.45f,.49f);
+        }
+
+        // Sweeping cream entrance canopy and recessed glazed doors on the south-facing front.
+        plaza.box(cx,base+4.8f,cz+rz+5.0f,54f,.82f,9.5f,.83f,.81f,.75f);
+        plaza.box(cx,base+4.30f,cz+rz+5.0f,50f,.18f,8.8f,.40f,.42f,.41f);
+        for(int i=-4;i<=4;i+=2) mallCylinder(plaza,cx+i*5.3f,cz+rz+7.1f,base+.15f,base+4.55f,.20f,.88f,.87f,.81f);
+        // Entrance glass doors, mullions and handles.
+        for(int i=-4;i<=4;i++){
+            float x=cx+i*2.2f, z=cz+rz+1.1f;
+            glass.quad(x-.98f,base+.25f,z,x+.98f,base+.25f,z,x+.98f,base+4.05f,z,x-.98f,base+4.05f,z,
+                    .16f,.28f,.32f);
+            plaza.box(x-.98f,base+2.12f,z-.06f,.10f,3.9f,.12f,.67f,.69f,.67f);
+            plaza.box(x+.98f,base+2.12f,z-.06f,.10f,3.9f,.12f,.67f,.69f,.67f);
+        }
+
+        // Large red Robinsons rooftop signboard and raised white emblem, matching the photo silhouette.
+        float signZ=cz+rz+2.0f, signY=base+25.4f;
+        signs.quad(cx-25f,signY,signZ,cx+25f,signY,signZ,
+                cx+25f,signY+5.3f,signZ,cx-25f,signY+5.3f,signZ,.70f,.035f,.10f);
+        signs.quad(cx-25.5f,signY,signZ+.16f,cx-25f,signY,signZ+.16f,
+                cx-25f,signY+5.3f,signZ+.16f,cx-25.5f,signY+5.3f,signZ+.16f,.42f,.02f,.06f);
+        // White ribbon-like Robinsons mark, built as raised strokes rather than a flat texture.
+        float lx=cx-18.5f, lz=signZ+.28f;
+        signs.quad(lx-2.8f,signY+.8f,lz,lx-1.9f,signY+.8f,lz,
+                lx+2.7f,signY+4.45f,lz,lx+1.7f,signY+4.45f,lz,.98f,.97f,.92f);
+        signs.quad(lx+1.7f,signY+4.45f,lz,lx+2.7f,signY+4.45f,lz,
+                lx+1.2f,signY+2.5f,lz,lx+.3f,signY+2.5f,lz,.98f,.97f,.92f);
+        signs.quad(lx+.3f,signY+2.5f,lz,lx+1.2f,signY+2.5f,lz,
+                lx+3.6f,signY+.8f,lz,lx+2.6f,signY+.8f,lz,.98f,.97f,.92f);
+        mallDecal(td,"ROBINSONS",cx+5.5f,signZ+.32f,signY+3.15f,1f);
+        mallDecal(td,"PLACE MANILA",cx+5.5f,signZ+.32f,signY+1.35f,1f);
+
+        // Retail fascia panels and names visible in the available facade photographs.
+        String[] shops={"UNIQLO","HUAWEI","THE COFFEE BEAN & TEA LEAF","YAKIMIX","SUSHI TEI","GUMBO"};
+        float[] shopAngles={.28f,.57f,.88f,1.20f,1.57f,1.91f};
+        for(int i=0;i<shops.length;i++){
+            float a=shopAngles[i], x=cx+rx*(float)Math.cos(a), z=cz+rz*(float)Math.sin(a);
+            float tx=x*.0f+cx+(x-cx)*.985f, tz=cz+(z-cz)*1.02f;
+            plaza.box(x,base+5.0f,z,10.5f,.82f,.28f,.16f,.20f,.22f);
+            mallDecal(td,shops[i],tx,tz,base+4.72f,1f);
+        }
+
+        // Planters, low benches and outdoor chairs in the entrance forecourt.
+        for(int i=-3;i<=3;i++){
+            float px=cx+i*15f, pz=cz+rz+17f;
+            plaza.box(px,base+.48f,pz,4.2f,.95f,2.0f,.55f,.53f,.47f);
+            plaza.box(px,base+1.05f,pz,3.7f,.18f,1.55f,.28f,.36f,.22f);
+            mallCylinder(plaza,px, pz,base+1.0f,base+3.4f,.13f,.34f,.43f,.27f);
+            for(int k=0;k<5;k++){
+                float a=(float)(k*2*Math.PI/5);
+                float[] leaf=ellipsePoint(px,pz,1.05f,.85f,a);
+                mallCylinder(plaza,leaf[0],leaf[1],base+2.0f,base+3.5f,.045f,.24f,.39f,.22f);
+            }
+        }
+        for(int i=-2;i<=2;i++){
+            float tx=cx+i*11f, tz=cz+rz+27f;
+            plaza.box(tx,base+.78f,tz,.95f,.12f,.95f,.34f,.25f,.16f);
+            for(int k=0;k<4;k++){
+                float a=(float)(k*Math.PI/2);
+                mallChair(plaza,tx+2.1f*(float)Math.cos(a),tz+2.1f*(float)Math.sin(a),base, a);
+            }
+        }
+    }
+
 }
