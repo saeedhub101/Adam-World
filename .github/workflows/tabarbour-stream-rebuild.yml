@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: adam-world-main-writers
+  group: adam-world-tabarbour-stream
   cancel-in-progress: false
 
 jobs:
