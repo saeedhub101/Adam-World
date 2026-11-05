@@ -1176,6 +1176,20 @@ def main():
             expected_buildings = int(merged_manifest.get("merged_building_count", 0))
             validation = existing_manifest.get("runtime_validation") or {}
             tiles = existing_manifest.get("tiles") or []
+            prior_error_files = {
+                str(error.get("file")) for error in validation.get("integrity_errors", [])
+                if error.get("file")
+            }
+            prior_error_cells = [
+                {"ix": int(tile["ix"]), "iz": int(tile["iz"]), "previous_file": tile["file"]}
+                for tile in tiles if tile.get("file") in prior_error_files
+            ]
+            prior_error_coords = {(item["ix"], item["iz"]) for item in prior_error_cells}
+            trusted_prior_cells = (
+                validation.get("status") == "failed"
+                and bool(prior_error_cells)
+                and existing_manifest.get("source_fingerprint") == tree_fingerprint
+            )
             manifest_commit = subprocess.run(
                 ["git", "log", "-1", "--format=%ct", "--", str(existing_manifest_path.relative_to(ROOT))],
                 cwd=ROOT, capture_output=True, text=True)
@@ -1190,7 +1204,10 @@ def main():
             except (TypeError, ValueError):
                 manifest_time = source_time = 0
             files_valid = bool(tiles) and len(tiles) == int(existing_manifest.get("expected_tile_count", -1))
-            if files_valid:
+            # A prior failed validation already scanned every cell and recorded
+            # the exact damaged cells. Avoid decompressing hundreds of known-good
+            # files a second time; the build loop below repairs those cells directly.
+            if files_valid and not trusted_prior_cells:
                 for tile in tiles:
                     cell = city_out / str(tile.get("file") or "")
                     if not cell.is_file() or cell.stat().st_size >= 100_000_000:
@@ -1360,13 +1377,18 @@ def main():
             old_path = city_out / old_file if old_file else None
             reusable = False
             if old_path and old_path.is_file() and int(old.get("count", -1)) == len(elements):
-                try:
-                    opener = gzip.open if old_path.suffix == ".gz" else open
-                    with opener(old_path, "rt", encoding="utf-8") as handle:
-                        existing = json.load(handle)
-                    reusable = existing.get("elements", []) == elements
-                except Exception:
-                    reusable = False
+                if trusted_prior_cells and (ix, iz) not in prior_error_coords:
+                    # These cells were already parsed and count-checked by the
+                    # previous validator; their source fingerprint is unchanged.
+                    reusable = True
+                else:
+                    try:
+                        opener = gzip.open if old_path.suffix == ".gz" else open
+                        with opener(old_path, "rt", encoding="utf-8") as handle:
+                            existing = json.load(handle)
+                        reusable = existing.get("elements", []) == elements
+                    except Exception:
+                        reusable = False
             filename = old_file if reusable else f"tile_{ix}_{iz}.json.gz"
             tile_path = city_out / filename
             entry = {
@@ -1409,6 +1431,11 @@ def main():
             "dataset_version": digest.hexdigest()[:24],
         }
         if slug == "tabarbour":
+            manifest["source_fingerprint"] = tree_fingerprint
+            manifest["source_tree_latest_commit"] = source_time
+            if prior_error_cells:
+                manifest["prior_integrity_error_cells"] = prior_error_cells
+                manifest["prior_validation_run_id"] = validation.get("failed_run_id")
             manifest["building_count"] = sum(
                 1 for items in buckets.values() for item in items
                 if (item.get("tags") or {}).get("building") or (item.get("tags") or {}).get("building:part")

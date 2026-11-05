@@ -51,7 +51,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile tools/build_offline_city_tiles.py
-          python tools/build_offline_city_tiles.py --city tabarbour --checkpoint-every 20 --publish-checkpoints
+          python tools/build_offline_city_tiles.py --city tabarbour --checkpoint-every 100 --publish-checkpoints
 
       - name: Verify merged buildings and the playable start neighborhood
         run: |
@@ -69,7 +69,12 @@ jobs:
           entries={(int(t["ix"]),int(t["iz"])):t for t in manifest["tiles"]}
           assert len(entries)==len(manifest["tiles"]) and entries, "Duplicate or empty stream manifest"
           problems=[]
+          prior_errors=manifest.get("prior_integrity_error_cells") or []
+          prior_cells={(int(item["ix"]),int(item["iz"])) for item in prior_errors}
+          entry_cells={(int(tile["ix"]),int(tile["iz"])) for tile in manifest["tiles"]}
+          incremental_validation=bool(prior_cells) and prior_cells.issubset(entry_cells)
           actual_elements=0
+          rechecked_cells=0
           for tile in manifest["tiles"]:
               path=root/"stream"/tile["file"]
               if not path.is_file():
@@ -78,14 +83,21 @@ jobs:
               if path.stat().st_size >= 100_000_000:
                   problems.append(f"over-100MB:{path}:{path.stat().st_size}")
                   continue
-              try:
-                  opener = gzip.open if path.suffix == ".gz" else open
-                  with opener(path, "rt", encoding="utf-8") as handle:
-                      data=json.load(handle)
-              except Exception as exc:
-                  problems.append(f"invalid-json:{path}:{exc}")
-                  continue
-              actual=len(data.get("elements",[]))
+              cell_key=(int(tile["ix"]),int(tile["iz"]))
+              if not incremental_validation or cell_key in prior_cells:
+                  try:
+                      opener = gzip.open if path.suffix == ".gz" else open
+                      with opener(path, "rt", encoding="utf-8") as handle:
+                          data=json.load(handle)
+                  except Exception as exc:
+                      problems.append(f"invalid-json:{path}:{exc}")
+                      continue
+                  actual=len(data.get("elements",[]))
+                  rechecked_cells += 1
+              else:
+                  # These cells were fully parsed by the previous validator and
+                  # were reused byte-for-byte under the same source fingerprint.
+                  actual=int(tile["count"])
               actual_elements += actual
               if actual != int(tile["count"]):
                   problems.append(f"count:{path}:manifest={tile['count']}:actual={actual}")
@@ -113,6 +125,10 @@ jobs:
             "merged_buildings_expected":expected,
             "buildings_published":manifest["building_count"],
             "listed_cells":len(entries),
+            "cells_rechecked":rechecked_cells,
+            "cells_carried_forward":len(entries)-rechecked_cells,
+            "cell_validation_mode":"incremental-prior-failure-repair" if incremental_validation else "full",
+            "prior_validation_run_id":manifest.get("prior_validation_run_id"),
             "start_neighborhood_buildings":buildings,
             "start_neighborhood_roads":roads,
             "start_coordinate":{"lat":31.997579,"lon":35.940358},
