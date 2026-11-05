@@ -12,6 +12,7 @@ on:
       - "data/offline-world/tabarbour/address-points.geojson"
       - "data/offline-world/tabarbour/overture-address-points.geojson"
       - "tools/build_offline_city_tiles.py"
+      - ".github/workflows/tabarbour-stream-rebuild.yml"
 
 permissions:
   contents: write
@@ -137,7 +138,7 @@ jobs:
             exit 0
           fi
 
-          batch_size=60
+          batch_size=30
           total=${#changed[@]}
           echo "Publishing $total changed paths in batches of $batch_size"
           for ((start=0; start<total; start+=batch_size)); do
