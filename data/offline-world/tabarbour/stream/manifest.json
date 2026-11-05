@@ -18700,5 +18700,25 @@
     "failed_run_id": 41861632470
   },
   "source_fingerprint": "5d4fb2caef2ccd9d9884e3c472238fe3574e001fdea7dda263e9675309b2f9ee",
-  "source_tree_latest_commit": 1793737388
+  "source_tree_latest_commit": 1793737388,
+  "prior_integrity_error_cells": [
+    {
+      "ix": -9,
+      "iz": -22,
+      "previous_file": "tile_-9_-22.json",
+      "previous_count": 3,
+      "expected_count": 4
+    }
+  ],
+  "prior_validation_run_id": 41861632470,
+  "cell_repair": {
+    "file": "tile_-9_-22.json",
+    "ix": -9,
+    "iz": -22,
+    "previous_element_count": 3,
+    "repaired_element_count": 4,
+    "added_source_feature": "openfreemap-transportation_name/402233300",
+    "added_label": "Shafa Badran Street",
+    "source_file": "data/offline-world/tabarbour/transportation.geojson"
+  }
 }

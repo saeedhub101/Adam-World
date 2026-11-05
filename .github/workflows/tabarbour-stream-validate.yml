@@ -1,0 +1,185 @@
+name: Validate repaired Tabarbour stream
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/offline-world/tabarbour/stream/manifest.json"
+      - "data/offline-world/tabarbour/stream/tile_-9_-22.json"
+      - ".github/workflows/tabarbour-stream-validate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adam-world-main-writers
+  cancel-in-progress: false
+
+jobs:
+  validate-stream:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout only the active Tabarbour stream
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+          filter: blob:none
+          sparse-checkout: |
+            /data/offline-world/tabarbour/merged/manifest.json
+            /data/offline-world/tabarbour/stream/manifest.json
+            /data/offline-world/tabarbour/stream/tile_*.json
+            /data/offline-world/tabarbour/stream/tile_*.json.gz
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate every stream cell and the repaired start dataset
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import concurrent.futures
+          import gzip
+          import hashlib
+          import json
+          import multiprocessing
+          import os
+          from pathlib import Path
+
+          ROOT = Path("data/offline-world/tabarbour")
+          STREAM = ROOT / "stream"
+
+          def validate_tile(args):
+              tile, root = args
+              path = root / tile["file"]
+              expected = int(tile["count"])
+              try:
+                  if not path.is_file():
+                      return tile["file"], expected, None, "missing file"
+                  size = path.stat().st_size
+                  if size >= 100_000_000:
+                      return tile["file"], expected, None, f"over 100 MB: {size}"
+                  opener = gzip.open if path.suffix == ".gz" else open
+                  with opener(path, "rt", encoding="utf-8") as handle:
+                      data = json.load(handle)
+                  actual = len(data.get("elements", []))
+                  if actual != expected:
+                      return tile["file"], expected, actual, "count mismatch"
+                  return tile["file"], expected, actual, None
+              except Exception as exc:
+                  return tile["file"], expected, None, repr(exc)
+
+          merged = json.loads((ROOT / "merged/manifest.json").read_text(encoding="utf-8"))
+          manifest_path = STREAM / "manifest.json"
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          expected_buildings = int(merged["merged_building_count"])
+          assert expected_buildings >= 20000, f"Unexpected merged source count: {expected_buildings}"
+          assert manifest.get("complete") is True and manifest.get("status") == "complete"
+          assert int(manifest.get("building_count", 0)) >= expected_buildings
+          assert int(manifest.get("element_count", 0)) >= int(manifest["building_count"])
+
+          tiles = manifest.get("tiles") or []
+          entries = {(int(t["ix"]), int(t["iz"])): t for t in tiles}
+          assert tiles and len(entries) == len(tiles), "Duplicate or empty stream cells"
+          assert len(tiles) == int(manifest.get("expected_tile_count", -1)), "Expected tile count mismatch"
+          metadata_total = sum(int(t["count"]) for t in tiles)
+          assert metadata_total == int(manifest["element_count"]), (
+              f"Manifest total mismatch: tiles={metadata_total}, manifest={manifest['element_count']}"
+          )
+
+          workers = min(4, max(1, os.cpu_count() or 2))
+          context = multiprocessing.get_context("fork")
+          with concurrent.futures.ProcessPoolExecutor(max_workers=workers, mp_context=context) as pool:
+              results = list(pool.map(validate_tile, [(tile, STREAM) for tile in tiles], chunksize=12))
+          problems = [r for r in results if r[3] is not None]
+          if problems:
+              raise AssertionError("Cell validation failed: " + " | ".join(
+                  f"{name}: expected={expected}, actual={actual}, error={error}"
+                  for name, expected, actual, error in problems[:50]
+              ))
+          actual_elements = sum(int(r[2]) for r in results)
+          assert actual_elements == int(manifest["element_count"]), (
+              f"Verified element total mismatch: actual={actual_elements}, manifest={manifest['element_count']}"
+          )
+
+          repaired = entries.get((-9, -22))
+          assert repaired is not None, "Repaired tile (-9,-22) is absent"
+          repaired_path = STREAM / repaired["file"]
+          opener = gzip.open if repaired_path.suffix == ".gz" else open
+          with opener(repaired_path, "rt", encoding="utf-8") as handle:
+              repaired_data = json.load(handle)
+          assert len(repaired_data.get("elements", [])) == 4, "Repaired tile does not contain four elements"
+          assert any(
+              (item.get("tags") or {}).get("adam:label_only") == "yes"
+              and (item.get("tags") or {}).get("name:en") == "Shafa Badran Street"
+              for item in repaired_data.get("elements", [])
+          ), "The missing Shafa Badran street label is not present"
+
+          buildings = roads = 0
+          for ix in (-1, 0, 1):
+              for iz in (-1, 0, 1):
+                  tile = entries.get((ix, iz))
+                  if not tile:
+                      continue
+                  path = STREAM / tile["file"]
+                  opener = gzip.open if path.suffix == ".gz" else open
+                  with opener(path, "rt", encoding="utf-8") as handle:
+                      data = json.load(handle)
+                  for item in data.get("elements", []):
+                      tags = item.get("tags") or {}
+                      if tags.get("building") or tags.get("building:part"):
+                          buildings += 1
+                      if tags.get("highway"):
+                          roads += 1
+          assert buildings > 0, f"No buildings in 750m start neighborhood: {buildings}"
+          assert roads > 0, f"No roads in 750m start neighborhood: {roads}"
+
+          digest = hashlib.sha256()
+          for tile in tiles:
+              path = STREAM / tile["file"]
+              with path.open("rb") as handle:
+                  for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                      digest.update(chunk)
+              digest.update(tile["file"].encode("utf-8"))
+          manifest["dataset_version"] = digest.hexdigest()[:24]
+          manifest["runtime_validation"] = {
+              "merged_buildings_expected": expected_buildings,
+              "buildings_published": int(manifest["building_count"]),
+              "listed_cells": len(entries),
+              "cells_checked": len(results),
+              "verified_element_count": actual_elements,
+              "validation_workers": workers,
+              "repaired_cell": {
+                  "file": repaired["file"], "ix": -9, "iz": -22,
+                  "elements": len(repaired_data.get("elements", [])),
+                  "added_label": "Shafa Badran Street"
+              },
+              "start_neighborhood_buildings": buildings,
+              "start_neighborhood_roads": roads,
+              "start_coordinate": {"lat": 31.997579, "lon": 35.940358},
+              "start_neighborhood_cell_radius": 1,
+              "status": "passed"
+          }
+          manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(manifest["runtime_validation"], ensure_ascii=False, indent=2))
+          PY
+
+      - name: Publish verified manifest to main
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/offline-world/tabarbour/stream/manifest.json
+          if git diff --cached --quiet; then
+            echo "Verified manifest is already published"
+            exit 0
+          fi
+          git commit -m "Validate repaired Tabarbour stream cells"
+          git push origin HEAD:main
