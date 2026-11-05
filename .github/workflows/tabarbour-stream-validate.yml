@@ -8,6 +8,10 @@ on:
       - "data/offline-world/tabarbour/stream/tile_-9_-22.json"
       - ".github/workflows/tabarbour-stream-validate.yml"
   workflow_dispatch:
+  workflow_run:
+    workflows: [Rebuild Tabarbour merged buildings into active stream]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: write
@@ -18,7 +22,7 @@ concurrency:
 
 jobs:
   validate-stream:
-    if: github.actor != 'github-actions[bot]'
+    if: (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name != 'workflow_run' && github.actor != 'github-actions[bot]')
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
