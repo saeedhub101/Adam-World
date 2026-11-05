@@ -120,8 +120,8 @@ jobs:
           with opener(repaired_path, "rt", encoding="utf-8") as handle:
               repaired_data = json.load(handle)
           assert len(repaired_data.get("elements", [])) == int(repaired["count"]), (
-    f"Repaired tile count mismatch: manifest={repaired['count']}, actual={len(repaired_data.get('elements', []))}"
-)
+              f"Repaired tile count mismatch: manifest={repaired['count']}, actual={len(repaired_data.get('elements', []))}"
+          )
           assert any(
               (item.get("tags") or {}).get("adam:label_only") == "yes"
               and (item.get("tags") or {}).get("name:en") == "Shafa Badran Street"
