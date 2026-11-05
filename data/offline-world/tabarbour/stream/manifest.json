@@ -18684,10 +18684,9 @@
     "merged_buildings_expected": 29159,
     "buildings_published": 59266,
     "listed_cells": 1866,
-    "cells_rechecked": 1866,
-    "cells_carried_forward": 0,
+    "cells_checked": 1866,
     "verified_element_count": 107121,
-    "cell_validation_mode": "full",
+    "validation_workers": 4,
     "repaired_cell": {
       "file": "tile_-9_-22.json.gz",
       "ix": -9,
