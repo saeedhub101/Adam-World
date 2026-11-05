@@ -1247,20 +1247,17 @@ def main():
         cache_dir = city_out / ".build-cache"
         cache_manifest_path = cache_dir / "manifest.json"
         cache_manifest = read_json(cache_manifest_path) if cache_manifest_path.is_file() else {}
+        cached_chunks = None
         if (slug == "tabarbour" and cache_manifest.get("source_fingerprint") == tree_fingerprint
                 and cache_manifest.get("complete") is True):
-            raw_elements = []
-            for chunk_index, chunk in enumerate(cache_manifest.get("chunks", []), 1):
-                chunk_path = cache_dir / chunk["file"]
-                with gzip.open(chunk_path, "rt", encoding="utf-8") as handle:
-                    raw_elements.extend(json.load(handle))
-                if chunk_index % 25 == 0 or chunk_index == len(cache_manifest.get("chunks", [])):
-                    print(f"LOADED_SOURCE_CHUNKS {chunk_index}/{len(cache_manifest.get('chunks', []))}: elements={len(raw_elements)}", flush=True)
+            cached_chunks = cache_manifest.get("chunks", [])
+            raw_element_total = int(cache_manifest.get("element_count", 0))
             source_path = cache_manifest["source"]
             source_kind = cache_manifest["source_kind"]
-            print(f"RESUMED cached source assembly: {len(raw_elements)} elements", flush=True)
+            print(f"RESUMED cached source assembly as a streaming input: {raw_element_total} elements in {len(cached_chunks)} chunks", flush=True)
         else:
             raw_elements, source_path, source_kind = source_elements(slug, lat0, lon0)
+            raw_element_total = len(raw_elements)
             if slug == "tabarbour":
                 cache_dir.mkdir(parents=True, exist_ok=True)
                 # Bound each compressed checkpoint well below GitHub's 100 MB
@@ -1302,25 +1299,40 @@ def main():
                 publish_git_paths([cache_manifest_path, *[cache_dir / x["file"] for x in chunks]],
                                   f"Checkpoint Tabarbour source assembly: {len(raw_elements)} elements")
                 print(f"PUBLISHED_SOURCE_CHECKPOINT elements={len(raw_elements)} chunks={len(chunks)}", flush=True)
+        expected_buildings = 0
         if slug == "tabarbour":
             if not source_kind.startswith("tabarbour-canonical-merged-multisource-buildings"):
                 raise SystemExit(f"Refusing to publish incomplete Tabarbour sources: {source_kind}")
             merged_manifest = read_json(city_source / "merged" / "manifest.json")
             expected_buildings = int(merged_manifest.get("merged_building_count", 0))
-            actual_buildings = sum(
-                1 for item in raw_elements
-                if (item.get("tags") or {}).get("building") or (item.get("tags") or {}).get("building:part")
-            )
-            if expected_buildings < 20000 or actual_buildings < 20000:
+            if expected_buildings < 20000 or raw_element_total < 20000:
                 raise SystemExit(
-                    f"Tabarbour merged building source incomplete: {actual_buildings} renderable of {expected_buildings}"
+                    f"Tabarbour merged building source incomplete: {raw_element_total} elements for {expected_buildings} buildings"
                 )
-            print(f"VALID Tabarbour canonical building source: {actual_buildings} features", flush=True)
-        print(f"START_SPATIAL_BUCKETING elements={len(raw_elements)}", flush=True)
+        print(f"START_SPATIAL_BUCKETING elements={raw_element_total} (streaming={cached_chunks is not None})", flush=True)
         buckets = defaultdict(list)
         seen = set()
+        actual_buildings = 0
 
-        for raw_index, raw in enumerate(raw_elements, 1):
+        def iter_source_elements():
+            if cached_chunks is not None:
+                for chunk_index, chunk in enumerate(cached_chunks, 1):
+                    chunk_path = cache_dir / chunk["file"]
+                    print(f"READ_SOURCE_CHUNK {chunk_index}/{len(cached_chunks)} {chunk['file']}", flush=True)
+                    with gzip.open(chunk_path, "rt", encoding="utf-8") as handle:
+                        chunk_items = json.load(handle)
+                    for item in chunk_items:
+                        yield item
+                    del chunk_items
+                    if chunk_index % 10 == 0 or chunk_index == len(cached_chunks):
+                        print(f"STREAMED_SOURCE_CHUNKS {chunk_index}/{len(cached_chunks)}", flush=True)
+            else:
+                yield from raw_elements
+
+        for raw_index, raw in enumerate(iter_source_elements(), 1):
+            raw_tags = raw.get("tags") or {}
+            if raw_tags.get("building") or raw_tags.get("building:part"):
+                actual_buildings += 1
             normalized_items = normalize_osm_element(
                 raw, lat0, lon0, kx, cover_bbox=(slug == "tabarbour"))
             if not normalized_items:
@@ -1332,9 +1344,15 @@ def main():
                     continue
                 seen.add(bucket_key)
                 buckets[(ix, iz)].append(element)
-            if raw_index % 1000 == 0 or raw_index == len(raw_elements):
-                print(f"SPATIAL_BUCKET_PROGRESS {raw_index}/{len(raw_elements)} elements; cells={len(buckets)}; memberships={len(seen)}", flush=True)
+            if raw_index % 1000 == 0 or raw_index == raw_element_total:
+                print(f"SPATIAL_BUCKET_PROGRESS {raw_index}/{raw_element_total} elements; buildings={actual_buildings}; cells={len(buckets)}; memberships={len(seen)}", flush=True)
 
+        if slug == "tabarbour":
+            if actual_buildings < 20000 or actual_buildings < expected_buildings:
+                raise SystemExit(
+                    f"Tabarbour merged building source incomplete: {actual_buildings} renderable of {expected_buildings}"
+                )
+            print(f"VALID Tabarbour canonical building source: {actual_buildings} features", flush=True)
         print(f"SPATIAL_BUCKETING_COMPLETE cells={len(buckets)} memberships={len(seen)}", flush=True)
         # Tabarbour is a remotely streamed city dataset, never Android assets.
         ordered_buckets = sorted(buckets.items())
@@ -1342,7 +1360,7 @@ def main():
         # output directory as they are built. A separate state file is committed
         # every N cells; the runtime manifest is switched only after full validation.
         state_path = city_out / ".build-state.json"
-        source_fingerprint = hashlib.sha256(json.dumps(
+        source_fingerprint = tree_fingerprint if slug == "tabarbour" else hashlib.sha256(json.dumps(
             raw_elements, ensure_ascii=False, sort_keys=True, separators=(",", ":")
         ).encode("utf-8")).hexdigest()
         prior_state = read_json(state_path) if state_path.is_file() else {}
