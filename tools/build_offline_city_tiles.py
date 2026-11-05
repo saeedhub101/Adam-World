@@ -1250,10 +1250,12 @@ def main():
         if (slug == "tabarbour" and cache_manifest.get("source_fingerprint") == tree_fingerprint
                 and cache_manifest.get("complete") is True):
             raw_elements = []
-            for chunk in cache_manifest.get("chunks", []):
+            for chunk_index, chunk in enumerate(cache_manifest.get("chunks", []), 1):
                 chunk_path = cache_dir / chunk["file"]
                 with gzip.open(chunk_path, "rt", encoding="utf-8") as handle:
                     raw_elements.extend(json.load(handle))
+                if chunk_index % 25 == 0 or chunk_index == len(cache_manifest.get("chunks", [])):
+                    print(f"LOADED_SOURCE_CHUNKS {chunk_index}/{len(cache_manifest.get('chunks', []))}: elements={len(raw_elements)}", flush=True)
             source_path = cache_manifest["source"]
             source_kind = cache_manifest["source_kind"]
             print(f"RESUMED cached source assembly: {len(raw_elements)} elements", flush=True)
@@ -1314,10 +1316,11 @@ def main():
                     f"Tabarbour merged building source incomplete: {actual_buildings} renderable of {expected_buildings}"
                 )
             print(f"VALID Tabarbour canonical building source: {actual_buildings} features", flush=True)
+        print(f"START_SPATIAL_BUCKETING elements={len(raw_elements)}", flush=True)
         buckets = defaultdict(list)
         seen = set()
 
-        for raw in raw_elements:
+        for raw_index, raw in enumerate(raw_elements, 1):
             normalized_items = normalize_osm_element(
                 raw, lat0, lon0, kx, cover_bbox=(slug == "tabarbour"))
             if not normalized_items:
@@ -1329,7 +1332,10 @@ def main():
                     continue
                 seen.add(bucket_key)
                 buckets[(ix, iz)].append(element)
+            if raw_index % 1000 == 0 or raw_index == len(raw_elements):
+                print(f"SPATIAL_BUCKET_PROGRESS {raw_index}/{len(raw_elements)} elements; cells={len(buckets)}; memberships={len(seen)}", flush=True)
 
+        print(f"SPATIAL_BUCKETING_COMPLETE cells={len(buckets)} memberships={len(seen)}", flush=True)
         # Tabarbour is a remotely streamed city dataset, never Android assets.
         ordered_buckets = sorted(buckets.items())
         # Durable incremental checkpoints: cells are written into the repository
