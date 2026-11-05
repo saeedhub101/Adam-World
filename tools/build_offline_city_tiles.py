@@ -1244,15 +1244,36 @@ def main():
             raw_elements, source_path, source_kind = source_elements(slug, lat0, lon0)
             if slug == "tabarbour":
                 cache_dir.mkdir(parents=True, exist_ok=True)
+                # Bound each compressed checkpoint well below GitHub's 100 MB
+                # per-file limit. Element counts are highly variable: a fixed
+                # 3,000-element chunk previously produced a 268 MB gzip file.
                 chunks = []
-                for start in range(0, len(raw_elements), 3000):
-                    part = raw_elements[start:start + 3000]
-                    filename = f"raw_{start // 3000:05d}.json.gz"
+                max_chunk_bytes = 24 * 1024 * 1024
+                part = []
+                part_bytes = 2
+                chunk_index = 0
+
+                def write_source_chunk(items, index):
+                    filename = f"raw_{index:05d}.json.gz"
                     tmp = cache_dir / (filename + ".tmp")
                     with gzip.open(tmp, "wt", encoding="utf-8", compresslevel=6) as handle:
-                        json.dump(part, handle, ensure_ascii=False, separators=(",", ":"))
+                        json.dump(items, handle, ensure_ascii=False, separators=(",", ":"))
                     os.replace(tmp, cache_dir / filename)
-                    chunks.append({"file": filename, "count": len(part)})
+                    chunks.append({"file": filename, "count": len(items),
+                                   "compressed_bytes": (cache_dir / filename).stat().st_size})
+                    print(f"SOURCE_CHUNK_SAVED {filename}: elements={len(items)} bytes={(cache_dir / filename).stat().st_size}", flush=True)
+
+                for element in raw_elements:
+                    encoded_size = len(json.dumps(element, ensure_ascii=False, separators=(",", ":")).encode("utf-8")) + 1
+                    if part and part_bytes + encoded_size > max_chunk_bytes:
+                        write_source_chunk(part, chunk_index)
+                        chunk_index += 1
+                        part = []
+                        part_bytes = 2
+                    part.append(element)
+                    part_bytes += encoded_size
+                if part:
+                    write_source_chunk(part, chunk_index)
                 cache_manifest = {
                     "complete": True, "source_fingerprint": tree_fingerprint,
                     "source": source_path, "source_kind": source_kind,
