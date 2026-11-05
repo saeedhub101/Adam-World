@@ -46,27 +46,60 @@ def read_json(path: Path):
 
 
 def publish_git_paths(paths, message):
-    """Commit and push a bounded durable checkpoint to main, tolerating ambiguous pushes."""
-    paths = [str(Path(path).relative_to(ROOT)) for path in paths]
+    """Publish small durable commits so large source caches never require one huge push."""
+    paths = list(dict.fromkeys(str(Path(path).relative_to(ROOT)) for path in paths))
     if not paths:
         return
     subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=ROOT, check=True)
     subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], cwd=ROOT, check=True)
-    subprocess.run(["git", "add", "--", *paths], cwd=ROOT, check=True)
-    if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
-        return
-    subprocess.run(["git", "commit", "-m", message], cwd=ROOT, check=True)
-    for attempt in range(1, 5):
-        subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True)
-        if subprocess.run(["git", "merge-base", "--is-ancestor", "origin/main", "HEAD"], cwd=ROOT).returncode != 0:
-            subprocess.run(["git", "rebase", "origin/main"], cwd=ROOT, check=True)
-        pushed = subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT)
-        if pushed.returncode == 0:
-            return
-        subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True)
-        if subprocess.run(["git", "merge-base", "--is-ancestor", "HEAD", "origin/main"], cwd=ROOT).returncode == 0:
-            return
-    raise RuntimeError("Could not publish durable build checkpoint to main")
+    subprocess.run(["git", "config", "http.version", "HTTP/1.1"], cwd=ROOT, check=True)
+
+    # A checkpoint is durable after each small push. Limit each commit to four
+    # files; this prevents the 25+ compressed source chunks from becoming one
+    # large pack upload that repeatedly times out with HTTP 408.
+    batch_size = 4
+    for offset in range(0, len(paths), batch_size):
+        batch = paths[offset:offset + batch_size]
+        subprocess.run(["git", "add", "-A", "--", *batch], cwd=ROOT, check=True)
+        if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
+            continue
+        subprocess.run(["git", "commit", "-m", f"{message} ({offset + 1}-{offset + len(batch)} of {len(paths)})"], cwd=ROOT, check=True)
+
+        pushed = False
+        for attempt in range(1, 6):
+            fetched = subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT)
+            if fetched.returncode != 0:
+                if attempt < 5:
+                    import time
+                    time.sleep(attempt * 3)
+                    continue
+                break
+            if subprocess.run(["git", "merge-base", "--is-ancestor", "origin/main", "HEAD"], cwd=ROOT).returncode != 0:
+                rebased = subprocess.run(["git", "rebase", "origin/main"], cwd=ROOT)
+                if rebased.returncode != 0:
+                    subprocess.run(["git", "rebase", "--abort"], cwd=ROOT)
+                    if attempt < 5:
+                        import time
+                        time.sleep(attempt * 3)
+                        continue
+                    break
+            result = subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT)
+            if result.returncode == 0:
+                pushed = True
+                break
+            # HTTP 408 can be returned after GitHub accepted the push.
+            fetched = subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT)
+            if fetched.returncode == 0 and subprocess.run(
+                ["git", "merge-base", "--is-ancestor", "HEAD", "origin/main"], cwd=ROOT
+            ).returncode == 0:
+                pushed = True
+                break
+            if attempt < 5:
+                import time
+                time.sleep(attempt * 5)
+        if not pushed:
+            raise RuntimeError(f"Could not publish durable checkpoint batch {offset // batch_size + 1}")
+        print(f"PUBLISHED_GIT_BATCH {offset // batch_size + 1}: {len(batch)} paths", flush=True)
 
 
 def source_tree_fingerprint(city_source):
