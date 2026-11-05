@@ -11,12 +11,13 @@ on:
       - "data/offline-world/tabarbour/transportation.geojson"
       - "data/offline-world/tabarbour/address-points.geojson"
       - "data/offline-world/tabarbour/overture-address-points.geojson"
+      - "tools/build_offline_city_tiles.py"
 
 permissions:
   contents: write
 
 concurrency:
-  group: adam-world-tabarbour-cell-repair
+  group: adam-world-main-writers
   cancel-in-progress: false
 
 jobs:
