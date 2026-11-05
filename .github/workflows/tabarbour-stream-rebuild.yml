@@ -12,6 +12,7 @@ on:
       - "data/offline-world/tabarbour/address-points.geojson"
       - "data/offline-world/tabarbour/overture-address-points.geojson"
       - "tools/build_offline_city_tiles.py"
+      - "tools/build_tabarbour_stream.py"
       - ".github/workflows/tabarbour-stream-rebuild.yml"
 
 permissions:
@@ -50,93 +51,123 @@ jobs:
       - name: Build or resume Tabarbour cells from verified merged sources
         run: |
           set -euo pipefail
-          python -m py_compile tools/build_offline_city_tiles.py
-          python tools/build_offline_city_tiles.py --city tabarbour --checkpoint-every 10 --publish-checkpoints
+          python -m py_compile tools/build_offline_city_tiles.py tools/build_tabarbour_stream.py
+          python tools/build_tabarbour_stream.py --checkpoint-every 10 --publish-checkpoints
 
       - name: Verify merged buildings and the playable start neighborhood
         run: |
+          set -euo pipefail
           python - <<'PY'
-          import gzip, json
+          import gzip
+          import json
           from pathlib import Path
-          root=Path("data/offline-world/tabarbour")
-          merged=json.loads((root/"merged/manifest.json").read_text())
-          manifest=json.loads((root/"stream/manifest.json").read_text())
-          expected=int(merged["merged_building_count"])
+
+          root = Path("data/offline-world/tabarbour")
+          stream = root / "stream"
+          merged = json.loads((root / "merged/manifest.json").read_text(encoding="utf-8"))
+          manifest_path = stream / "manifest.json"
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          expected = int(merged["merged_building_count"])
           assert expected >= 20000, f"Unexpected merged source count: {expected}"
-          assert manifest.get("complete") is True and manifest.get("status")=="complete"
-          assert manifest.get("building_count",0) >= 20000, f"Only {manifest.get('building_count')} buildings published"
-          assert manifest.get("element_count",0) >= manifest["building_count"]
-          entries={(int(t["ix"]),int(t["iz"])):t for t in manifest["tiles"]}
-          assert len(entries)==len(manifest["tiles"]) and entries, "Duplicate or empty stream manifest"
-          problems=[]
-          prior_errors=manifest.get("prior_integrity_error_cells") or []
-          prior_cells={(int(item["ix"]),int(item["iz"])) for item in prior_errors}
-          entry_cells={(int(tile["ix"]),int(tile["iz"])) for tile in manifest["tiles"]}
-          incremental_validation=bool(prior_cells) and prior_cells.issubset(entry_cells)
-          actual_elements=0
-          rechecked_cells=0
-          for tile in manifest["tiles"]:
-              path=root/"stream"/tile["file"]
+          assert manifest.get("complete") is True and manifest.get("status") == "complete"
+          assert int(manifest.get("building_count", 0)) >= expected, (
+              f"Only {manifest.get('building_count')} buildings published; expected at least {expected}"
+          )
+          assert int(manifest.get("element_count", 0)) >= int(manifest["building_count"])
+
+          tiles = manifest.get("tiles") or []
+          entries = {(int(tile["ix"]), int(tile["iz"])): tile for tile in tiles}
+          assert tiles and len(entries) == len(tiles), "Duplicate or empty stream manifest"
+          assert len(entries) == int(manifest.get("expected_tile_count", -1)), "Expected tile count mismatch"
+          metadata_total = sum(int(tile["count"]) for tile in tiles)
+          assert metadata_total == int(manifest["element_count"]), (
+              f"Manifest total mismatch: tiles={metadata_total}, manifest={manifest['element_count']}"
+          )
+
+          problems = []
+          actual_elements = 0
+          for tile in tiles:
+              path = stream / tile["file"]
               if not path.is_file():
                   problems.append(f"missing:{path}")
                   continue
               if path.stat().st_size >= 100_000_000:
                   problems.append(f"over-100MB:{path}:{path.stat().st_size}")
                   continue
-              cell_key=(int(tile["ix"]),int(tile["iz"]))
-              if not incremental_validation or cell_key in prior_cells:
-                  try:
-                      opener = gzip.open if path.suffix == ".gz" else open
-                      with opener(path, "rt", encoding="utf-8") as handle:
-                          data=json.load(handle)
-                  except Exception as exc:
-                      problems.append(f"invalid-json:{path}:{exc}")
-                      continue
-                  actual=len(data.get("elements",[]))
-                  rechecked_cells += 1
-              else:
-                  # These cells were fully parsed by the previous validator and
-                  # were reused byte-for-byte under the same source fingerprint.
-                  actual=int(tile["count"])
+              opener = gzip.open if path.suffix == ".gz" else open
+              try:
+                  with opener(path, "rt", encoding="utf-8") as handle:
+                      data = json.load(handle)
+              except Exception as exc:
+                  problems.append(f"invalid-json:{path}:{exc}")
+                  continue
+              actual = len(data.get("elements", []))
               actual_elements += actual
               if actual != int(tile["count"]):
                   problems.append(f"count:{path}:manifest={tile['count']}:actual={actual}")
-          if actual_elements != int(manifest.get("element_count", -1)):
-              problems.append(f"total-elements:manifest={manifest.get('element_count')}:actual={actual_elements}")
           assert not problems, "Stream cell validation failed: " + " | ".join(problems[:50])
-          # The player's start is the dataset origin. Check the 3x3 cells around it,
-          # which is the actual first rendered neighborhood, for both roads and buildings.
-          buildings=roads=0
-          for ix in (-1,0,1):
-            for iz in (-1,0,1):
-              tile=entries.get((ix,iz))
-              if not tile: continue
-              path=root/"stream"/tile["file"]
-              opener = gzip.open if path.suffix == ".gz" else open
-              with opener(path, "rt", encoding="utf-8") as handle:
-                data=json.load(handle)
-              for item in data.get("elements",[]):
-                tags=item.get("tags") or {}
-                if tags.get("building") or tags.get("building:part"): buildings+=1
-                if tags.get("highway"): roads+=1
-          assert buildings>0, f"No buildings in 750m start neighborhood: {buildings}"
-          assert roads>0, f"No roads in 750m start neighborhood: {roads}"
-          manifest["runtime_validation"]={
-            "merged_buildings_expected":expected,
-            "buildings_published":manifest["building_count"],
-            "listed_cells":len(entries),
-            "cells_rechecked":rechecked_cells,
-            "cells_carried_forward":len(entries)-rechecked_cells,
-            "cell_validation_mode":"incremental-prior-failure-repair" if incremental_validation else "full",
-            "prior_validation_run_id":manifest.get("prior_validation_run_id"),
-            "start_neighborhood_buildings":buildings,
-            "start_neighborhood_roads":roads,
-            "start_coordinate":{"lat":31.997579,"lon":35.940358},
-            "start_neighborhood_cell_radius":1,
-            "status":"passed"
+          assert actual_elements == int(manifest["element_count"]), (
+              f"Verified element total mismatch: actual={actual_elements}, manifest={manifest['element_count']}"
+          )
+
+          repaired = entries.get((-9, -22))
+          assert repaired is not None, "Repaired cell (-9,-22) is absent"
+          repaired_path = stream / repaired["file"]
+          opener = gzip.open if repaired_path.suffix == ".gz" else open
+          with opener(repaired_path, "rt", encoding="utf-8") as handle:
+              repaired_data = json.load(handle)
+          assert len(repaired_data.get("elements", [])) == int(repaired["count"])
+          assert any(
+              (item.get("tags") or {}).get("adam:label_only") == "yes"
+              and (item.get("tags") or {}).get("name:en") == "Shafa Badran Street"
+              for item in repaired_data.get("elements", [])
+          ), "Shafa Badran Street label is missing from tile (-9,-22)"
+
+          buildings = roads = 0
+          for ix in (-1, 0, 1):
+              for iz in (-1, 0, 1):
+                  tile = entries.get((ix, iz))
+                  if not tile:
+                      continue
+                  path = stream / tile["file"]
+                  opener = gzip.open if path.suffix == ".gz" else open
+                  with opener(path, "rt", encoding="utf-8") as handle:
+                      data = json.load(handle)
+                  for item in data.get("elements", []):
+                      tags = item.get("tags") or {}
+                      if tags.get("building") or tags.get("building:part"):
+                          buildings += 1
+                      if tags.get("highway"):
+                          roads += 1
+          assert buildings > 0, f"No buildings in 750m start neighborhood: {buildings}"
+          assert roads > 0, f"No roads in 750m start neighborhood: {roads}"
+
+          manifest["runtime_validation"] = {
+              "merged_buildings_expected": expected,
+              "buildings_published": int(manifest["building_count"]),
+              "listed_cells": len(entries),
+              "cells_rechecked": len(entries),
+              "cells_carried_forward": 0,
+              "verified_element_count": actual_elements,
+              "cell_validation_mode": "full",
+              "repaired_cell": {
+                  "file": repaired["file"],
+                  "ix": -9,
+                  "iz": -22,
+                  "elements": int(repaired["count"]),
+                  "added_label": "Shafa Badran Street"
+              },
+              "start_neighborhood_buildings": buildings,
+              "start_neighborhood_roads": roads,
+              "start_coordinate": {"lat": 31.997579, "lon": 35.940358},
+              "start_neighborhood_cell_radius": 1,
+              "status": "passed"
           }
-          (root/"stream/manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n")
-          print(json.dumps(manifest["runtime_validation"],indent=2))
+          manifest_path.write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8"
+          )
+          print(json.dumps(manifest["runtime_validation"], ensure_ascii=False, indent=2))
           PY
 
       - name: Commit and publish stream in small resumable batches
