@@ -54,10 +54,10 @@ def publish_git_paths(paths, message):
     subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], cwd=ROOT, check=True)
     subprocess.run(["git", "config", "http.version", "HTTP/1.1"], cwd=ROOT, check=True)
 
-    # A checkpoint is durable after each small push. Limit each commit to four
+    # A checkpoint is durable after each small push. Limit each commit to twenty
     # files; this prevents the 25+ compressed source chunks from becoming one
     # large pack upload that repeatedly times out with HTTP 408.
-    batch_size = 4
+    batch_size = 20
     for offset in range(0, len(paths), batch_size):
         batch = paths[offset:offset + batch_size]
         subprocess.run(["git", "add", "-A", "--", *batch], cwd=ROOT, check=True)
