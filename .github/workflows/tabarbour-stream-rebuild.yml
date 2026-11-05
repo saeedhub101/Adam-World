@@ -51,7 +51,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile tools/build_offline_city_tiles.py
-          python tools/build_offline_city_tiles.py --city tabarbour --checkpoint-every 100 --publish-checkpoints
+          python tools/build_offline_city_tiles.py --city tabarbour --checkpoint-every 10 --publish-checkpoints
 
       - name: Verify merged buildings and the playable start neighborhood
         run: |
