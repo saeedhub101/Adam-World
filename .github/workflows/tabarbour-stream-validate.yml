@@ -119,7 +119,9 @@ jobs:
           opener = gzip.open if repaired_path.suffix == ".gz" else open
           with opener(repaired_path, "rt", encoding="utf-8") as handle:
               repaired_data = json.load(handle)
-          assert len(repaired_data.get("elements", [])) == 4, "Repaired tile does not contain four elements"
+          assert len(repaired_data.get("elements", [])) == int(repaired["count"]), (
+    f"Repaired tile count mismatch: manifest={repaired['count']}, actual={len(repaired_data.get('elements', []))}"
+)
           assert any(
               (item.get("tags") or {}).get("adam:label_only") == "yes"
               and (item.get("tags") or {}).get("name:en") == "Shafa Badran Street"
