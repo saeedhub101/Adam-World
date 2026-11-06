@@ -85,5 +85,8 @@
     "adam:height_source",
     "adam:floors_source",
     "adam:floors_quality"
-  ]
+  ],
+  "attribute_merge_implementation_commit": "10628920203b1edef7ee848f98d167d074c955d0",
+  "runtime_attribute_mapping_commit": "8daedc9f70fc87be527c92c3c94dd597880cfec4",
+  "renderer_geometry_commit": "3e32bcf88ec18e75a7b1c6e31b3cf965d761fdc3"
 }
