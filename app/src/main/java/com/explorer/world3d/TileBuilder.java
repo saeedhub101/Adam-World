@@ -16,7 +16,7 @@ final class TileBuilder {
     static final int B_FACADE = 0, B_GLASS = 1, B_SIDEWALK = 2, B_ROADN = 3, B_ROADW = 4, B_PLAIN = 5, B_SIGN = 6, B_WATER = 7;
     private static final JSONObject EMPTY = new JSONObject();
     private static final HashMap<String, Float> RW = new HashMap<>();
-    private static final int[] PALETTE = {0xd9c9a8, 0xcfcfcf, 0xc4876b, 0xece6d8, 0xc2a27a, 0xaeb8c2, 0xd8b98e, 0xe3dccb};
+    private static final int[] PALETTE = {0xe8dfcf, 0xd9c9a8, 0xcfc7b8, 0xece6d8, 0xc2a27a, 0xd8b98e, 0xc9a77e, 0xb58b62, 0xc4876b, 0xaeb8c2, 0x96918a, 0x77736d, 0x514e4a, 0x393b3d};
 
     static {
         RW.put("motorway", 14f); RW.put("trunk", 12f); RW.put("primary", 11f); RW.put("secondary", 9f);
@@ -546,7 +546,15 @@ final class TileBuilder {
         // No per-building random colours: unknown facade colour stays neutral until
         // a verified matching facade image or an explicit mapped colour is available.
         if (manila) return new float[]{0.82f, 0.82f, 0.80f};
-        return tabarbour ? new float[]{0.91f, 0.87f, 0.78f} : new float[]{0.78f, 0.73f, 0.65f};
+        if (tabarbour) {
+            // Stable per-building Jordanian stone palette: limestone, cream,
+            // yellow-beige, ochre, brown and restrained grey/charcoal variants.
+            // The ID-based choice avoids identical city-wide facades without flicker.
+            int colour = PALETTE[Math.floorMod((int)(id ^ (id >>> 32)), PALETTE.length)];
+            return new float[]{((colour >> 16) & 255) / 255f,
+                    ((colour >> 8) & 255) / 255f, (colour & 255) / 255f};
+        }
+        return new float[]{0.78f, 0.73f, 0.65f};
     }
 
     private static void facadeQuad(GeoBuf b,
