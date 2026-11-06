@@ -79,6 +79,20 @@ final class TileBuilder {
         float xMin = Geo.x(west), xMax = Geo.x(east), zMin = Geo.z(north), zMax = Geo.z(south);
         JSONArray els = root.optJSONArray("elements");
         if (els == null) return td;
+        // Collect named shop POI nodes before building extrusion so real storefront
+        // names can be attached to the matching footprint instead of blank/fake signs.
+        ArrayList<JSONObject> mappedShopNodes = new ArrayList<>();
+        for (int si = 0; si < els.length(); si++) {
+            JSONObject candidate = els.optJSONObject(si);
+            if (candidate == null || !candidate.optString("type", "").equals("node")) continue;
+            JSONObject candidateTags = candidate.optJSONObject("tags");
+            if (candidateTags == null || candidateTags.optString("shop", "").isEmpty()) continue;
+            String shopName = candidateTags.optString("name:ar", "");
+            if (shopName.isEmpty()) shopName = candidateTags.optString("name", "");
+            if (shopName.isEmpty()) shopName = candidateTags.optString("brand", "");
+            if (shopName.isEmpty()) shopName = candidateTags.optString("operator", "");
+            if (!shopName.trim().isEmpty()) mappedShopNodes.add(candidate);
+        }
         Hg hg = new Hg(xMin, xMax, zMin, zMax, 5f);
 
         ArrayList<float[]> trees = new ArrayList<>(), lamps = new ArrayList<>();
@@ -854,7 +868,8 @@ final class TileBuilder {
         }
         // Commercial ground floors use full-height glazed shopfronts instead of residential-size windows.
         boolean storefront = tabarbour && (!tg(tags, "shop").isEmpty()
-                || bld.matches("retail|commercial|supermarket|mall|shop"));
+                || bld.matches("retail|commercial|supermarket|mall|shop")
+                || hasNamedShopNode(mappedShopNodes, px, pz));
         if (storefront) {
             int shopEdge = 0;
             float shopEdgeLength = 0f;
@@ -865,6 +880,7 @@ final class TileBuilder {
             }
             if (shopEdgeLength >= 3.2f) {
                 int next=(shopEdge+1)%n;
+                HashSet<Long> assignedShopNodes = new HashSet<>();
                 float ax=px[shopEdge], az=pz[shopEdge], bx=px[next], bz=pz[next];
                 float dx=bx-ax, dz=bz-az, len=shopEdgeLength;
                 float nx=dz/len, nz=-dx/len;
@@ -904,6 +920,49 @@ final class TileBuilder {
                     if(signTop-signBottom>0.12f){
                         facadeQuad(buf,x0,signBottom,z0,x1,signBottom,z1,x1,signTop,z1,x0,signTop,z0,
                                 0.16f,0.17f,0.18f);
+                        // Match a mapped shop node to this bay by its projection on
+                        // the actual footprint facade. Only real mapped names become text.
+                        float bayCenter=(bay+0.5f)/bays, bestScore=Float.POSITIVE_INFINITY;
+                        String mappedName="";
+                        long mappedId=Long.MIN_VALUE;
+                        for(JSONObject shopNode:mappedShopNodes){
+                            long nodeId=shopNode.optLong("id",Long.MIN_VALUE);
+                            if(assignedShopNodes.contains(nodeId)) continue;
+                            float sx=Geo.x(shopNode.optDouble("lon",Double.NaN));
+                            float sz=Geo.z(shopNode.optDouble("lat",Double.NaN));
+                            if(!Float.isFinite(sx)||!Float.isFinite(sz)) continue;
+                            float projection=((sx-ax)*dx+(sz-az)*dz)/(len*len);
+                            projection=Math.max(0f,Math.min(1f,projection));
+                            float pxn=ax+dx*projection,pzn=az+dz*projection;
+                            float distance=(float)Math.hypot(sx-pxn,sz-pzn);
+                            float score=Math.abs(projection-bayCenter)*len+distance*0.65f;
+                            if(distance<=12f && score<bestScore){
+                                JSONObject st=shopNode.optJSONObject("tags");
+                                String candidate=st==null?"":st.optString("name:ar","");
+                                if(candidate.isEmpty()&&st!=null) candidate=st.optString("name","");
+                                if(candidate.isEmpty()&&st!=null) candidate=st.optString("brand","");
+                                if(candidate.isEmpty()&&st!=null) candidate=st.optString("operator","");
+                                if(!candidate.trim().isEmpty()){
+                                    bestScore=score; mappedName=candidate.trim(); mappedId=nodeId;
+                                }
+                            }
+                        }
+                        // A footprint-level business name is valid only when the
+                        // facade has one unit; never copy one business name to 3 shops.
+                        if(mappedName.isEmpty() && bays==1){
+                            mappedName=tg(tags,"name:ar");
+                            if(mappedName.isEmpty()) mappedName=tg(tags,"name");
+                            if(mappedName.isEmpty()) mappedName=tg(tags,"brand");
+                            if(mappedName.isEmpty()) mappedName=tg(tags,"operator");
+                        }
+                        if(!mappedName.isEmpty()){
+                            Decal shopDecal=new Decal();
+                            shopDecal.text=mappedName; shopDecal.x=(x0+x1)*0.5f;
+                            shopDecal.z=(z0+z1)*0.5f; shopDecal.dx=dx; shopDecal.dz=dz;
+                            shopDecal.y=signBottom+0.07f; shopDecal.vertical=true;
+                            td.decals.add(shopDecal);
+                            if(mappedId!=Long.MIN_VALUE) assignedShopNodes.add(mappedId);
+                        }
                     }
                 }
             }
@@ -1637,6 +1696,16 @@ final class TileBuilder {
     }
 
     /** لافتة رأسية على أطول واجهة للمبنى، مع اسم المنشأة أو رقمها وفئة النشاط. */
+    private static boolean hasNamedShopNode(ArrayList<JSONObject> nodes, float[] px, float[] pz) {
+        if (nodes == null || nodes.isEmpty()) return false;
+        for (JSONObject node : nodes) {
+            float x=Geo.x(node.optDouble("lon",Double.NaN));
+            float z=Geo.z(node.optDouble("lat",Double.NaN));
+            if (Float.isFinite(x) && Float.isFinite(z) && Poly.contains(px,pz,x,z)) return true;
+        }
+        return false;
+    }
+
     private static void addFacadeLabel(TileData td, float[] px, float[] pz, String name, float minHeight, int category) {
         int best=0; float longest=0f;
         for(int i=0;i<px.length;i++){
