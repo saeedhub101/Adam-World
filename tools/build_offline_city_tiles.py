@@ -922,8 +922,12 @@ def _merged_tabarbour_building_elements(city_source):
             if address_names and not tags.get("name"):
                 tags["name"] = address_names[0]
 
-            for field in ("adam:sources", "adam:observation_count", "height",
-                          "building:levels", "name", "name:ar", "name:en",
+            for field in ("adam:sources", "adam:observation_count", "height", "building:height",
+                          "height:meters", "building:levels", "building:levels:underground",
+                          "adam:height_source", "adam:floors_source", "adam:floors_quality",
+                          "adam:source:building_class", "adam:source:building_subtype",
+                          "building", "amenity", "healthcare", "tourism", "shop", "sport",
+                          "leisure", "landuse", "natural", "name", "name:ar", "name:en",
                           "addr:housenumber", "addr:street", "building:colour",
                           "building:material", "roof:colour", "roof:material",
                           "adam:building_parts", "adam:entrances", "adam:addresses",
