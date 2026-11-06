@@ -75,5 +75,15 @@
     "active_runtime_stream_manifest": "../stream/manifest.json",
     "published_to_active_runtime_stream": false,
     "note": "The Android TileLoader reads stream/manifest.json and its listed cells, not these merged GeoJSON chunks."
-  }
+  },
+  "attribute_selection_policy": "Per-property source rank: OSM > OpenFreeMap > Overture > OpenBuildingMap; lower-ranked sources fill missing attributes without replacing stronger measured values. OpenBuildingMap GEM HHT/H/HBET is normalized to metric height/storeys before selection.",
+  "height_fields": [
+    "height",
+    "building:height",
+    "height:meters",
+    "building:levels",
+    "adam:height_source",
+    "adam:floors_source",
+    "adam:floors_quality"
+  ]
 }
