@@ -1,12 +1,8 @@
 name: Validate repaired Tabarbour stream
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "data/offline-world/tabarbour/stream/manifest.json"
-      - "data/offline-world/tabarbour/stream/tile_-9_-22.json"
-      - ".github/workflows/tabarbour-stream-validate.yml"
+  # Validate only on demand or after a successful full stream rebuild.
+  # Do not inspect partially published checkpoint cells while a build is running.
   workflow_dispatch:
   workflow_run:
     workflows: [Rebuild Tabarbour merged buildings into active stream]
