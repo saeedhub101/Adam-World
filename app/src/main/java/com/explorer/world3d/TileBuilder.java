@@ -479,7 +479,11 @@ final class TileBuilder {
         // apartment blocks to a 4-6 m extrusion. Keep that value as a lower bound,
         // not as the final height, when stronger floor/class evidence is available.
         float classFloorEstimate = 0f;
-        if (tabarbour) {
+        if (tabarbour && !b.matches("roof|carport|garage|garages|shed|hut")) {
+            // A low generic cartographic extrusion is not accepted as a one-storey
+            // default for Tabarbour; use at least two estimated storeys if no
+            // measured height/floor count exists, then refine by mapped building class.
+            classFloorEstimate = 2f;
             if (b.matches("apartments|dormitory|residential")) classFloorEstimate = 5f;
             else if (b.matches("hotel|motel|hostel|hospital|clinic|commercial|office|retail|supermarket|mall|university")) classFloorEstimate = 4f;
             else if (b.matches("house|detached|semidetached_house|bungalow")) classFloorEstimate = 2f;
