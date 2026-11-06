@@ -16,8 +16,9 @@ on:
 permissions:
   contents: write
 
+# Validation is read-heavy and must not replace a pending stream rebuild in the shared main-writer queue.
 concurrency:
-  group: adam-world-main-writers
+  group: adam-world-tabarbour-validator
   cancel-in-progress: false
 
 jobs:
