@@ -13,6 +13,7 @@ on:
       - "data/offline-world/tabarbour/overture-address-points.geojson"
       - "tools/build_offline_city_tiles.py"
       - "tools/build_tabarbour_stream.py"
+      - "tools/facades/merge_tabarbour_sources.py"
       - ".github/workflows/tabarbour-stream-rebuild.yml"
 
 permissions:
@@ -48,11 +49,16 @@ jobs:
       - name: Install geometry dependency
         run: python -m pip install --disable-pip-version-check shapely
 
-      - name: Build or resume Tabarbour cells from verified merged sources
+      - name: Reconcile all existing Tabarbour sources by per-property quality
         run: |
           set -euo pipefail
-          python -m py_compile tools/build_offline_city_tiles.py tools/build_tabarbour_stream.py
-          python tools/build_tabarbour_stream.py --checkpoint-every 10 --publish-checkpoints
+          python -m py_compile tools/build_offline_city_tiles.py tools/build_tabarbour_stream.py tools/facades/merge_tabarbour_sources.py
+          python tools/facades/merge_tabarbour_sources.py --chunk-size 2500
+
+      - name: Rebuild or resume runtime cells with incremental GitHub checkpoints
+        run: |
+          set -euo pipefail
+          python tools/build_offline_city_tiles.py --city tabarbour --checkpoint-every 10 --publish-checkpoints
 
       - name: Verify merged buildings and the playable start neighborhood
         run: |
