@@ -70,3 +70,38 @@ Hospital and hotel categories are rendered from their OSM building/amenity/touri
 ## Important verification boundary
 
 The changes above are renderer-side and do not enlarge the APK with city geometry. Tabarbour cells remain hosted on GitHub and are fetched/cached around the player. A successful APK build proves compilation/signing only; visual proportions, recessed entry appearance, shop glazing, field equipment, and the actual height distribution still require an Android emulator/device inspection. The class-based minimums are an interim visual correction, not a substitute for per-building surveyed heights.
+
+
+## Jordan / Tabarbour architectural reference requirements (2026-11-06)
+
+The two user-provided Tabarbour-area reference images define a local architectural target. They are references for variation and typology, not permission to stamp one model across all buildings.
+
+### Residential apartment blocks
+- Preserve each source footprint and its orientation. Use footprint proportions and mapped building parts to vary facade composition; do not force every block into the same symmetric elevation.
+- Prefer a centered main entrance when no mapped entrance exists, but keep a mapped entrance coordinate authoritative whenever present. The entrance must be a real opening in the ground-floor wall mesh, with a recessed door and side returns.
+- Where a mapped parking/garage access, driveway, service road, or usable side access geometry exists, model a descending side ramp that follows the local terrain and reaches the below-building parking level. Do not invent a road connection or cut a tunnel through a building when no access evidence/geometry exists. A ramp must be checked against terrain slope, footprint, road connection, and clearance.
+- Vary balconies, window grouping, stone bands, entrance surround, and facade materials according to footprint/building attributes and deterministic per-building variation. Avoid identical repeated elevations.
+
+### Commercial ground floors
+- Split a wide street-facing ground-floor facade into two or three independently framed shop bays when its width supports them; narrow frontages may have one shop. Each bay needs its own glazed frontage and door.
+- Add a signboard above each shop only when a mapped name, brand, or business identity exists. Never invent business names or use internal OSM IDs as shop signs. Preserve Arabic/English names and source attribution where available.
+- Keep the residential upper floors distinct from the commercial ground floor.
+
+### Flat Jordanian roofs
+- Model a raised perimeter parapet, approximately 1.0–1.2 m where no mapped parapet height is available, with variation only when source data supports it.
+- Add rooftop equipment as separate meshes, not painted textures: water tanks, satellite dishes, antenna masts/cables, occasional outdoor AC condensers, solar hot-water tanks/collectors, and photovoltaic panels.
+- Equipment density and type must vary deterministically by building and roof area; keep clear walking/service space and avoid placing equipment on tiny roofs. Do not put every equipment type on every roof.
+
+### Facade material and colour variation
+- Explicit mapped facade colour/material takes priority. Otherwise use a restrained, deterministic Jordanian palette with varied limestone/stone shades: ivory, off-white, cream, pale yellow, sand, ochre, beige-brown, grey, charcoal accents, and occasional dark stone. Avoid a single global facade colour and avoid noisy random per-frame flicker.
+- Colour variation must be stable per building ID and compatible with the material; it must not override verified facade-photo evidence or explicit source attributes.
+
+### Terrain and satellite-view validation
+- Recheck the existing checked-in Tabarbour Terrarium DEM tiles and their georeferencing against the supplied satellite/satview reference before changing terrain elevations. Verify tile z/x/y coverage, pixel-to-coordinate conversion, base elevation, and the rendered road/building alignment.
+- Do not substitute a new DEM or import new datasets without first identifying a demonstrable gap in the existing terrain source. Satellite imagery is a visual alignment/reference layer, not a replacement for elevation measurements.
+
+### Verification requirements
+- Keep this work Tabarbour-scoped; do not alter Manila rendering.
+- Preserve source footprints and mapped heights/floors. Mark inferred heights and architectural defaults as estimates.
+- Build and inspect representative residential, commercial, and mixed-use examples with different footprints and terrain slopes. Confirm that garage ramps connect to actual access geometry, shop signs use real mapped names, roof equipment fits the roof, and facade colours vary without repetition.
+- A successful compile is not visual verification. Record emulator/device evidence and the resulting APK/workflow run before calling the visual work complete.
