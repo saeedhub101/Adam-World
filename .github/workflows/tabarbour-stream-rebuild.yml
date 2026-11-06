@@ -49,6 +49,7 @@ jobs:
       - name: Install geometry dependency
         run: python -m pip install --disable-pip-version-check shapely
 
+      # Reconcile the already-committed OSM, OpenFreeMap, Overture and OpenBuildingMap records; no source re-import.
       - name: Reconcile all existing Tabarbour sources by per-property quality
         run: |
           set -euo pipefail
