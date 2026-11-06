@@ -275,6 +275,8 @@ def main():
   "attached_addresses":point_counts["addresses"],"panoramax_photo_count":len(photo_features),
   "sources_missing_or_empty":missing,
   "merge_policy":"Explicit OSM identity first. Spatial merge only when polygon IoU >= 0.78 and centroids are within about 4m. Parts remain parts; entrances and addresses attach only within 2m of a footprint. Photos are not assigned as verified facades.",
+  "attribute_selection_policy":"Per-property source rank: OSM > OpenFreeMap > Overture > OpenBuildingMap. Lower-ranked sources fill missing properties without replacing stronger mapped values. OpenBuildingMap GEM HHT/H/HBET is normalized to metric height/storeys before selection.",
+  "height_fields":["height","building:height","height:meters","building:levels","adam:height_source","adam:floors_source","adam:floors_quality"],
   "chunks":chunks,"ambiguous_footprint_review_candidates":len(ambiguous_candidates)}
  atomic(outdir/"manifest.json",report)
  atomic(outdir/"source-report.json",{"source_feature_counts":counts,"missing_or_empty":missing,"panoramax_photo_count":len(photo_features),"panoramax_building_photo_candidate_count":photo_candidate_count,"attached_building_parts":part_count,"attached_entrances":point_counts["entrances"],"attached_addresses":point_counts["addresses"]})
