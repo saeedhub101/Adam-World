@@ -804,6 +804,8 @@ final class TileBuilder {
                 float y0=(ground[shopEdge]+ground[next])*0.5f+minHeight+0.18f;
                 float y1=Math.min(y0+2.55f,Math.min(roofY[shopEdge],roofY[next])-0.22f);
                 for(int bay=0;bay<bays;bay++){
+                    // Leave the central shopfront bay open for the recessed entrance door.
+                    if (bays > 1 && bay == bays/2) continue;
                     float t0=(bay+0.10f)/bays, t1=(bay+0.90f)/bays;
                     float x0=ax+dx*t0+nx*0.11f, z0=az+dz*t0+nz*0.11f;
                     float x1=ax+dx*t1+nx*0.11f, z1=az+dz*t1+nz*0.11f;
@@ -927,8 +929,8 @@ final class TileBuilder {
                 buf.box((x0 + x1) * 0.5f, yBase + doorHeight * 0.68f, (z0 + z1) * 0.5f,
                         0.045f, doorHeight * 0.60f, 0.045f, 0.12f, 0.14f, 0.15f);
             }
-            float handleX = ax + dx * (mid + half * 0.68f) + nx * 0.105f;
-            float handleZ = az + dz * (mid + half * 0.68f) + nz * 0.105f;
+            float handleX = ax + dx * (mid + half * 0.68f) + nx * (doorPlaneOffset + 0.02f);
+            float handleZ = az + dz * (mid + half * 0.68f) + nz * (doorPlaneOffset + 0.02f);
             buf.box(handleX, yBase + doorHeight * 0.48f, handleZ, 0.055f, 0.11f, 0.055f, 0.78f, 0.69f, 0.45f);
         }
         // Basement storey joints are modelled below ground and become visible in cutaway mode.
