@@ -22,7 +22,7 @@ The native app does not use Three.js, MapLibre, a WebView game page, or GLB mode
 `CityRenderer.teleportOfflineManila()` selects `offlineManila`. The loader reads `data/offline-city-stream/manila/manifest.json` and the corresponding compressed JSONL/GZIP shard. The builder `tools/build_manila_stream_shards.py` reads the saved `building-layer.geojson`, `transportation.geojson`, available local vector-tile PBFs, saved non-building OSM context and optional thematic CSVs. The building source is not the three-file merge described by older notes.
 
 ### Tabarbour Local
-`CityRenderer.teleportOfflineTabarbour()` selects `offlineCitySlug="tabarbour"`. The loader fetches `data/offline-world/tabarbour/stream/manifest.json`, validates `slug`, `center`, `tiles`, `status` and `complete`, then fetches only the listed 250 m cells. It does not read `merged/manifest.json` or the merged building chunks. See the documented active-stream gap in `TABARBOUR_BUILDING_ENRICHMENT.md`.
+`CityRenderer.teleportOfflineTabarbour()` selects `offlineCitySlug="tabarbour"`. The loader fetches `data/offline-world/tabarbour/stream/manifest.json`, validates `slug`, `center`, `tiles`, `status` and `complete`, then fetches only the listed 250 m cells. It does not read `merged/manifest.json` or the merged building chunks directly; it reads the generated spatial cells listed in the active stream manifest. The current manifest lists 1,866 cells and 107,121 elements, including 59,266 published buildings. The validator checked all 1,866 cells and the start-area buildings/roads, and records `runtime_validation.status="passed"`. This is data/manifest validation; it is not a substitute for visual testing on an Android device.
 
 ### Generic/search location
 When none of the local city flags is active, `TileLoader.loadTile()` queries public Overpass instances for nearby OSM buildings, highways, land cover, water and selected nodes. Search geocoding in `MainActivity` uses Nominatim. This is a network-backed fallback, not a packaged global basemap.
@@ -60,7 +60,7 @@ These are code-level safeguards, not a guarantee of zero frame drops on every de
 
 ## APK and manifests
 
-The current release workflow is `.github/workflows/android-release.yml`. It builds a signed APK; it does not build an AAB or run device-based gameplay tests. The Android manifest declares internet and location permissions and requires OpenGL ES 2.0.
+The current release workflow is `.github/workflows/android-release.yml`. It builds a signed APK and validates the active Tabarbour stream inventory; it does not build an AAB or run device-based gameplay tests. The Android manifest declares internet and location permissions and requires OpenGL ES 2.0.
 
 Runtime manifests:
 - `data/offline-city-stream/amman/manifest.json`
