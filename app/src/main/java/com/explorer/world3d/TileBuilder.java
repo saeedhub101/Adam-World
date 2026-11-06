@@ -780,6 +780,43 @@ final class TileBuilder {
             }
         }
         }
+        // Commercial ground floors use full-height glazed shopfronts instead of residential-size windows.
+        boolean storefront = tabarbour && (!tg(tags, "shop").isEmpty()
+                || bld.matches("retail|commercial|supermarket|mall|shop"));
+        if (storefront) {
+            int shopEdge = 0;
+            float shopEdgeLength = 0f;
+            for (int edge = 0; edge < n; edge++) {
+                int next = (edge + 1) % n;
+                float len = (float) Math.hypot(px[next]-px[edge], pz[next]-pz[edge]);
+                if (len > shopEdgeLength) { shopEdgeLength=len; shopEdge=edge; }
+            }
+            if (shopEdgeLength >= 3.2f) {
+                int next=(shopEdge+1)%n;
+                float ax=px[shopEdge], az=pz[shopEdge], bx=px[next], bz=pz[next];
+                float dx=bx-ax, dz=bz-az, len=shopEdgeLength;
+                float nx=dz/len, nz=-dx/len;
+                if (Poly.contains(px,pz,(ax+bx)*0.5f+nx,(az+bz)*0.5f+nz)) { nx=-nx; nz=-nz; }
+                int bays=Math.max(1,Math.min(10,(int)(len/3.1f)));
+                float pitch=len/bays;
+                float y0=(ground[shopEdge]+ground[next])*0.5f+minHeight+0.18f;
+                float y1=Math.min(y0+2.55f,Math.min(roofY[shopEdge],roofY[next])-0.22f);
+                for(int bay=0;bay<bays;bay++){
+                    float t0=(bay+0.10f)/bays, t1=(bay+0.90f)/bays;
+                    float x0=ax+dx*t0+nx*0.11f, z0=az+dz*t0+nz*0.11f;
+                    float x1=ax+dx*t1+nx*0.11f, z1=az+dz*t1+nz*0.11f;
+                    if(y1-y0<1.6f) continue;
+                    facadeQuad(td.bufs[B_GLASS],x0,y0,z0,x1,y0,z1,x1,y1,z1,x0,y1,z0,
+                            0.22f,0.39f,0.45f);
+                    float fw=0.055f;
+                    facadeQuad(buf,x0,y0,z0,x1,y0,z1,x1,y0+fw,z1,x0,y0+fw,z0,0.16f,0.18f,0.19f);
+                    facadeQuad(buf,x0,y1-fw,z0,x1,y1-fw,z1,x1,y1,z1,x0,y1,z0,0.16f,0.18f,0.19f);
+                    float mx=(x0+x1)*0.5f, mz=(z0+z1)*0.5f;
+                    buf.box(mx,y0+(y1-y0)*0.5f,mz,0.045f,y1-y0,0.045f,0.18f,0.20f,0.21f);
+                }
+            }
+        }
+
         // A ground-floor entrance is modelled on the longest street-facing facade.
         // Its position is a visual fallback because most source footprints do not map door coordinates.
         int doorEdge = 0;
@@ -837,8 +874,9 @@ final class TileBuilder {
             float half = doorWidth / (2f * doorEdgeLength);
             float t0 = Math.max(0.02f, mid - half), t1 = Math.min(0.98f, mid + half);
             float yBase = (ground[doorEdge] + ground[next]) * 0.5f + minHeight;
-            float x0 = ax + dx * t0 + nx * 0.085f, z0 = az + dz * t0 + nz * 0.085f;
-            float x1 = ax + dx * t1 + nx * 0.085f, z1 = az + dz * t1 + nz * 0.085f;
+            float doorPlaneOffset = tabarbour ? -0.30f : 0.085f;
+            float x0 = ax + dx * t0 + nx * doorPlaneOffset, z0 = az + dz * t0 + nz * doorPlaneOffset;
+            float x1 = ax + dx * t1 + nx * doorPlaneOffset, z1 = az + dz * doorPlaneOffset;
             // Recessed apartment entrance: dark inner wall, stone side returns and a door set back from the facade.
             if (tabarbour) {
                 float recessWidth = Math.max(2.15f, doorWidth + 1.05f);
