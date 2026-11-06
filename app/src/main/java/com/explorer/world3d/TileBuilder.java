@@ -183,10 +183,10 @@ final class TileBuilder {
                 boolean estimatedFloors = tg(tags, "adam:floors_quality").equals("estimated_range");
                 String floorLabel = mappedFloors > 0f
                         ? (estimatedFloors ? "≈" : "") + Math.round(mappedFloors) + " طوابق"
-                        : (bHeight(tags, id, bld) > 0f
-                            ? "≈" + Math.max(1, Math.round(bHeight(tags, id, bld) / 3.2f)) + " طوابق"
+                        : (bHeight(tags, id, bld, tabarbour) > 0f
+                            ? "≈" + Math.max(1, Math.round(bHeight(tags, id, bld, tabarbour) / 3.2f)) + " طوابق"
                             : "الطوابق غير موثقة");
-                float shownHeight = bHeight(tags, id, bld);
+                float shownHeight = bHeight(tags, id, bld, tabarbour);
                 float mappedHeight = metricMeasure(tg(tags, "height"));
                 if (!(mappedHeight > 0f)) mappedHeight = metricMeasure(tg(tags, "building:height"));
                 boolean estimatedHeight = !(mappedHeight > 0f)
@@ -196,7 +196,7 @@ final class TileBuilder {
                         : "الارتفاع غير موثق";
                 buildingLabel += " · " + floorLabel + " · " + heightLabel;
                 if (!buildingLabel.trim().isEmpty()) {
-                    addFacadeLabel(td, px, pz, buildingLabel, bMinHeight(tags, bHeight(tags, id, bld)), poi);
+                    addFacadeLabel(td, px, pz, buildingLabel, bMinHeight(tags, bHeight(tags, id, bld, tabarbour)), poi);
                 }
             } else if (!hw.isEmpty() && RW.containsKey(hw)) {
                 String nm = tg(tags, "name:ar");
@@ -455,7 +455,7 @@ final class TileBuilder {
         return measure(value);
     }
 
-    private static float bHeight(JSONObject t, long id, String b) {
+    private static float bHeight(JSONObject t, long id, String b, boolean tabarbour) {
         // Use explicit metric heights from source data first. OpenFreeMap's
         // render_height is a cartographic fallback (often a generic 5 m), not
         // a surveyed building height, so it must never override missing data.
@@ -479,9 +479,11 @@ final class TileBuilder {
         // apartment blocks to a 4-6 m extrusion. Keep that value as a lower bound,
         // not as the final height, when stronger floor/class evidence is available.
         float classFloorEstimate = 0f;
-        if (b.matches("apartments|dormitory|residential")) classFloorEstimate = 5f;
-        else if (b.matches("hotel|motel|hostel|hospital|clinic|commercial|office|retail|supermarket|mall|university")) classFloorEstimate = 4f;
-        else if (b.matches("house|detached|semidetached_house|bungalow")) classFloorEstimate = 2f;
+        if (tabarbour) {
+            if (b.matches("apartments|dormitory|residential")) classFloorEstimate = 5f;
+            else if (b.matches("hotel|motel|hostel|hospital|clinic|commercial|office|retail|supermarket|mall|university")) classFloorEstimate = 4f;
+            else if (b.matches("house|detached|semidetached_house|bungalow")) classFloorEstimate = 2f;
+        }
         if (classFloorEstimate > 0f) {
             float classHeight = classFloorEstimate * 3.2f;
             if (renderHeight > 0f && renderHeight <= 250f) return Math.max(classHeight, Math.max(2.5f, renderHeight));
@@ -638,7 +640,7 @@ final class TileBuilder {
             hMin = Math.min(hMin, ground[i]);
             hMax = Math.max(hMax, ground[i]);
         }
-        float h = bHeight(tags, id, bld);
+        float h = bHeight(tags, id, bld, tabarbour);
         float minHeight = bMinHeight(tags, h);
         float partMinLevel = measure(tg(tags, "building:min_level"));
         if (!(minHeight > 0f) && partMinLevel > 0f) minHeight = Math.min(h - 0.5f, partMinLevel * 3.2f);
