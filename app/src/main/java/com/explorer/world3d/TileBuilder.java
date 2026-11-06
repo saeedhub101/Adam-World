@@ -874,8 +874,6 @@ final class TileBuilder {
                 float y0=(ground[shopEdge]+ground[next])*0.5f+minHeight+0.18f;
                 float y1=Math.min(y0+2.55f,Math.min(roofY[shopEdge],roofY[next])-0.22f);
                 for(int bay=0;bay<bays;bay++){
-                    // Leave the central shopfront bay open for the recessed entrance door.
-                    if (bays > 1 && bay == bays/2) continue;
                     float t0=(bay+0.10f)/bays, t1=(bay+0.90f)/bays;
                     float x0=ax+dx*t0+nx*0.11f, z0=az+dz*t0+nz*0.11f;
                     float x1=ax+dx*t1+nx*0.11f, z1=az+dz*t1+nz*0.11f;
@@ -887,6 +885,26 @@ final class TileBuilder {
                     facadeQuad(buf,x0,y1-fw,z0,x1,y1-fw,z1,x1,y1,z1,x0,y1,z0,0.16f,0.18f,0.19f);
                     float mx=(x0+x1)*0.5f, mz=(z0+z1)*0.5f;
                     buf.box(mx,y0+(y1-y0)*0.5f,mz,0.045f,y1-y0,0.045f,0.18f,0.20f,0.21f);
+                    // Every commercial unit gets its own glazed entry door and a sign fascia.
+                    float doorW=Math.min(0.92f,(t1-t0)*len*0.34f);
+                    float doorT=t1-doorW/len-0.10f/len;
+                    float q0=Math.max(t0+0.035f,doorT), q1=Math.min(t1-0.025f,q0+doorW/len);
+                    float qx0=ax+dx*q0+nx*0.13f, qz0=az+dz*q0+nz*0.13f;
+                    float qx1=ax+dx*q1+nx*0.13f, qz1=az+dz*q1+nz*0.13f;
+                    float doorTop=Math.min(y0+2.25f,y1-0.12f);
+                    if(doorTop-y0>1.65f){
+                        facadeQuad(td.bufs[B_GLASS],qx0,y0+0.04f,qz0,qx1,y0+0.04f,qz1,
+                                qx1,doorTop,qz1,qx0,doorTop,qz0,0.18f,0.30f,0.34f);
+                        facadeQuad(buf,qx0,y0+0.04f,qz0,qx1,y0+0.04f,qz1,
+                                qx1,y0+0.12f,qz1,qx0,y0+0.12f,qz0,0.16f,0.18f,0.19f);
+                        facadeQuad(buf,qx0,doorTop-0.06f,qz0,qx1,doorTop-0.06f,qz1,
+                                qx1,doorTop,qz1,qx0,doorTop,qz0,0.16f,0.18f,0.19f);
+                    }
+                    float signBottom=y1+0.12f, signTop=Math.min(y1+0.52f,roofY[shopEdge]+minHeight-0.12f);
+                    if(signTop-signBottom>0.12f){
+                        facadeQuad(buf,x0,signBottom,z0,x1,signBottom,z1,x1,signTop,z1,x0,signTop,z0,
+                                0.16f,0.17f,0.18f);
+                    }
                 }
             }
         }
@@ -934,7 +952,7 @@ final class TileBuilder {
             }
         }
         if ((!manila || !tg(tags, "entrance").isEmpty() || !tg(tags, "door").isEmpty())
-                && doorEdgeLength >= 2.2f && h >= 2.4f) {
+                && !(tabarbour && storefront) && doorEdgeLength >= 2.2f && h >= 2.4f) {
             int next = (doorEdge + 1) % n;
             float ax = px[doorEdge], az = pz[doorEdge], bx = px[next], bz = pz[next];
             float dx = bx - ax, dz = bz - az;
