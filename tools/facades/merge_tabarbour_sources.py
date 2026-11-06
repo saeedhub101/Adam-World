@@ -69,6 +69,42 @@ def atomic(path,obj):
  finally:
   if os.path.exists(tmp): os.unlink(tmp)
 
+def normalized_source_properties(source, value):
+ p = dict(value or {})
+ if source == "openbuildingmap":
+  raw = str(p.get("height") or "")
+  heights, floors, floor_range = [], [], []
+  for token in raw.split("+"):
+   if ":" not in token: continue
+   code, raw_value = token.split(":", 1)
+   numbers = []
+   for number in re.findall(r"\d+(?:\.\d+)?", raw_value):
+    try: numbers.append(float(number))
+    except ValueError: pass
+   if not numbers: continue
+   if code == "HHT": heights.extend(numbers)
+   elif code == "H": floors.extend(numbers)
+   elif code == "HBET": floor_range.extend(numbers)
+  if heights:
+   p["height"] = str(max(heights))
+   p["adam:height_source"] = "OpenBuildingMap/GHSL GEM HHT"
+  else:
+   p.pop("height", None)
+  if floors:
+   p["building:levels"] = str(max(floors))
+   p["adam:floors_source"] = "OpenBuildingMap/GEM H"
+  elif floor_range:
+   p["building:levels"] = str(sum(floor_range) / len(floor_range))
+   p["adam:floors_source"] = "OpenBuildingMap/GEM HBET"
+   p["adam:floors_quality"] = "estimated_range"
+  p["adam:obm_height_code"] = raw
+  occupancy = str(p.get("occupancy") or "")
+  building = {"RES":"residential","COM":"commercial","MIX":"yes","IND":"industrial",
+              "EDU":"school","GOV":"government","AGR":"farm","ASS":"civic"}.get(occupancy[:3])
+  if building and not p.get("building"): p["building"] = building
+ return p
+
+
 def main():
  ap=argparse.ArgumentParser()
  ap.add_argument("--chunk-size",type=int,default=2500)
@@ -87,16 +123,19 @@ def main():
    oid=osm_identity(f)
    fid=str(f.get("id") or props(f).get("id") or i)
    key="osm:"+oid if oid else f"src:{source}:{fid}"
-   rec=records.setdefault(key,{"id":key,"osm_id":oid,"observations":[],"_rank":-1,"_geometry":None,"_attrs":{},"_conflicts":defaultdict(list)})
-   observation={"source":source,"source_feature_id":fid,"properties":props(f),"geometry":g}
+   rec=records.setdefault(key,{"id":key,"osm_id":oid,"observations":[],"_rank":-1,"_geometry":None,"_attrs":{},"_attr_ranks":{},"_conflicts":defaultdict(list)})
+   source_props=normalized_source_properties(source, props(f))
+   observation={"source":source,"source_feature_id":fid,"properties":source_props,"geometry":g}
    rec["observations"].append(observation)
-   for k,v in props(f).items():
+   for k,v in source_props.items():
     if k in ("sources","tags") and isinstance(v,dict): items=v.items()
     else: items=[(k,v)]
     for name,value in items:
      if clean(value):
       if value not in rec["_conflicts"][name]: rec["_conflicts"][name].append(value)
-      if rank>rec["_rank"] and clean(value): rec["_attrs"][name]=value
+      if rank > rec["_attr_ranks"].get(name, -1) and clean(value):
+       rec["_attrs"][name] = value
+       rec["_attr_ranks"][name] = rank
    if rank>rec["_rank"]:
     rec["_rank"]=rank; rec["_geometry"]=g
  # Conservative spatial reconciliation for provider records lacking explicit shared OSM IDs.
@@ -127,7 +166,10 @@ def main():
     # Keep the source feature in the stronger record and preserve the geometry variant.
     best["observations"].extend(rec["observations"])
     best["_conflicts"]["spatial_match_iou"].append(round(bestscore,4))
-    best["_attrs"].update({k:v for k,v in rec["_attrs"].items() if k not in best["_attrs"]})
+    for name, value in rec["_attrs"].items():
+     if name not in best["_attrs"] or rec["_attr_ranks"].get(name, -1) > best["_attr_ranks"].get(name, -1):
+      best["_attrs"][name] = value
+      best["_attr_ranks"][name] = rec["_attr_ranks"].get(name, -1)
     records.pop(rec["id"],None)
  # Keep uncertain partial overlaps as explicit QA candidates; do not auto-merge them.
  review_dir=CITY/"sources"; review_dir.mkdir(parents=True,exist_ok=True)
