@@ -945,7 +945,7 @@ final class TileBuilder {
             float x1 = ax + dx * t1 + nx * doorPlaneOffset, z1 = az + dz * doorPlaneOffset;
             // Recessed apartment entrance: dark inner wall, stone side returns and a door set back from the facade.
             if (tabarbour) {
-                float recessWidth = Math.max(2.15f, doorWidth + 1.05f);
+                float recessWidth = Math.max(2.25f, doorWidth + 1.30f);
                 float recessDepth = 0.42f;
                 float rHalf = recessWidth / (2f * doorEdgeLength);
                 float rt0 = Math.max(0.015f, mid-rHalf), rt1 = Math.min(0.985f, mid+rHalf);
@@ -958,14 +958,24 @@ final class TileBuilder {
                 facadeQuad(buf, ix1,yBase,iz1, fx1,yBase,fz1, fx1,top,fz1, ix1,top,iz1, 0.56f,0.52f,0.45f);
                 facadeQuad(buf, fx0,top,fz0, ix0,top,iz0, ix1,top,iz1, fx1,top,fz1, 0.68f,0.64f,0.57f);
                 facadeQuad(buf, ix0,yBase,iz0, ix1,yBase,iz1, ix1,top,iz1, ix0,top,iz0, 0.16f,0.18f,0.19f);
-                // The central recess is flanked by two open ground-floor terrace/balcony bays.
-                float bayWidth = Math.max(0.75f, (doorEdgeLength-recessWidth)*0.5f-0.35f);
-                if (bayWidth > 1.0f) {
-                    float slabY = yBase+0.08f;
-                    buf.box(ax+dx*(rt0*0.5f),slabY,(az+dz*(rt0*0.5f))+nz*0.42f,
-                            Math.min(1.4f,bayWidth*0.45f),0.16f,0.65f,0.66f,0.61f,0.53f);
-                    buf.box(ax+dx*((rt1+1f)*0.5f),slabY,(az+dz*((rt1+1f)*0.5f))+nz*0.42f,
-                            Math.min(1.4f,bayWidth*0.45f),0.16f,0.65f,0.66f,0.61f,0.53f);
+                // Two open ground-floor terrace bays flank the central recessed entrance.
+                float terraceDepth = 0.82f;
+                for (int side=0; side<2; side++) {
+                    float ta = side==0 ? 0.025f : rt1;
+                    float tb = side==0 ? rt0 : 0.975f;
+                    if ((tb-ta)*doorEdgeLength < 1.0f) continue;
+                    float ax0=ax+dx*ta+nx*0.10f, az0=az+dz*ta+nz*0.10f;
+                    float bx0=ax+dx*tb+nx*0.10f, bz0=az+dz*tb+nz*0.10f;
+                    float ax1=ax0+nx*terraceDepth, az1=az0+nz*terraceDepth;
+                    float bx1=bx0+nx*terraceDepth, bz1=bz0+nz*terraceDepth;
+                    float slabY=yBase+0.08f;
+                    facadeQuad(buf,ax0,slabY,az0,bx0,slabY,bz0,bx1,slabY,bz1,ax1,slabY,az1,
+                            0.66f,0.61f,0.53f);
+                    // Low open railings define each apartment terrace without closing the entrance.
+                    facadeQuad(buf,ax1,slabY,az1,bx1,slabY,bz1,bx1,slabY+0.88f,bz1,ax1,slabY+0.88f,az1,
+                            0.34f,0.36f,0.36f);
+                    buf.box(ax1,slabY+0.44f,az1,0.08f,0.88f,0.08f,0.34f,0.36f,0.36f);
+                    buf.box(bx1,slabY+0.44f,bz1,0.08f,0.88f,0.08f,0.34f,0.36f,0.36f);
                 }
             }
             float frame = 0.09f;
