@@ -49,3 +49,24 @@ The terrain source is stored in `terrain/`. Its manifest records 25 zoom-14 Terr
 3. Regenerate `stream/manifest.json` with the exact active tile list, element counts, source paths and dataset version.
 4. Verify the central Tabarbour cells are listed and contain building/road features before release.
 5. Test the published stream through the actual Android loader; source merge success alone is not runtime success.
+
+
+## Runtime geometry corrections (2026-11-06)
+
+The native Android renderer now applies this priority for building height:
+
+1. Explicit metric `height`, `building:height`, and `height:meters`.
+2. Mapped `building:levels` / `num_floors` / `levels` multiplied by the storey height, plus mapped roof height.
+3. The cartographic `adam:render_height_m` only as a fallback, with a class-based minimum where the feature is a known multi-storey class. The minimum is explicitly an estimate, not a surveyed height.
+
+For unmeasured classes the current visual minimums are five storeys for apartments/dormitories/residential blocks, four for hotels/hospitals/offices/commercial/retail/university buildings, and two for detached/semidetached houses. These are provisional visual estimates and must never be reported as verified real-world measurements. Where OSM, Overture, or OpenBuildingMap measurements exist, those take precedence.
+
+Tabarbour ground-floor commercial footprints now receive full-height glazed shopfront bays with mullions. The apartment entrance treatment now includes stone side returns, a recessed dark entry bay, and a door plane set behind the outer facade; the two flanking ground-floor areas receive low terrace slabs. This is a geometric depth treatment, but the source currently has only three attached entrance points, so unmapped entrances still use the longest-footprint-edge fallback and are not verified door positions.
+
+Mapped sports pitches now receive field markings and goal geometry. Mapped playground polygons receive a sand-coloured surface and basic low-profile play equipment. Park/garden polygons use an earth-toned base with tree placement, while mapped forest, grass, sand, and wetland classes retain separate surface colours.
+
+Hospital and hotel categories are rendered from their OSM building/amenity/tourism tags and receive category signage where the source includes those tags. Missing source classification is not guessed from building shape.
+
+## Important verification boundary
+
+The changes above are renderer-side and do not enlarge the APK with city geometry. Tabarbour cells remain hosted on GitHub and are fetched/cached around the player. A successful APK build proves compilation/signing only; visual proportions, recessed entry appearance, shop glazing, field equipment, and the actual height distribution still require an Android emulator/device inspection. The class-based minimums are an interim visual correction, not a substitute for per-building surveyed heights.
