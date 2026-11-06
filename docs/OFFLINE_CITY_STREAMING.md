@@ -34,9 +34,13 @@ The exact limits are code constants and may change with later commits. Do not co
 
 Terrain is enabled only for Amman and Tabarbour. The runtime requests zoom-14 Terrarium XYZ tiles and samples them relative to the starting elevation. Tabarbour uses the checked-in `data/offline-world/tabarbour/terrain/{z}/{x}/{y}.png` path first and AWS Terrarium as a fallback. Manila uses a flat ground plane. The terrain JSON manifest is an inventory; Java computes tile coordinates and fetches PNG paths directly.
 
-## Current Tabarbour limitation
+## Current Tabarbour stream status
 
-`data/offline-world/tabarbour/merged/manifest.json` reports 29,159 merged building features across 12 chunks. However, `TileLoader.loadBundledCityRoot()` reads only cells listed in `stream/manifest.json`. The active stream manifest currently reports 2,229 elements in 1,108 cells and identifies its source as the context/transit extract. It is not the 29,159-building merged dataset. Unlisted `tile_*.json` files in the folder are ignored by the loader. Do not report the merged buildings as playable until the stream is rebuilt from the merged source and the active manifest is updated and verified.
+The active stream is now built from the canonical merged building source plus the required road and non-building context. `TileLoader.loadBundledCityRoot()` reads `stream/manifest.json`, maps the nearby render bounds to listed 250 m cells, downloads those files (including GZIP cells), parses each cell's `elements`, deduplicates OSM type/ID pairs, and sends the selected elements to `TileBuilder`. Unlisted files are ignored.
+
+The current verified manifest contains **1,866** cells and **107,121** elements, including **59,266** building features. The validator parsed every cell and confirmed its recorded element count, then checked the repaired start-area cells: **785 buildings** and **299 road elements** in the configured neighborhood. `runtime_validation.status` is `passed`. See [validator run 42121546729](https://github.com/saeedhub101/Adam-World/actions/runs/42121546729).
+
+This is a repository/manifest integrity check plus code-path inspection. It does not constitute an on-device visual/gameplay test.
 
 ## Build validation
 
