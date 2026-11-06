@@ -1303,6 +1303,17 @@ final class TileBuilder {
                 float sx=cx-1.4f,sz=cz+1.2f;
                 if(Poly.contains(px,pz,sx,sz)) buf.box(sx,roofBase+1.15f,sz,0.62f,0.34f,0.62f,0.76f,0.79f,0.78f);
             }
+            // Sparse solar hot-water collectors, distinct from photovoltaic panels.
+            if(area>110f && rnd(id,181)>0.58f){
+                float hx=cx+(rnd(id,182)-0.5f)*Math.min(3.5f,(maxx-minx)*0.22f);
+                float hz=cz+(rnd(id,183)-0.5f)*Math.min(3.5f,(maxz-minz)*0.22f);
+                if(Poly.contains(px,pz,hx,hz)){
+                    buf.box(hx,roofBase+1.02f,hz-0.58f,0.78f,0.22f,0.27f,0.79f,0.82f,0.83f);
+                    facadeQuad(td.bufs[B_GLASS],hx-0.88f,roofBase+0.28f,hz-0.48f,
+                            hx+0.88f,roofBase+0.28f,hz-0.48f,hx+0.88f,roofBase+0.78f,hz+0.48f,
+                            hx-0.88f,roofBase+0.78f,hz+0.48f,0.16f,0.23f,0.27f);
+                }
+            }
         }
         // No random billboard panels: Manila signage must come from mapped names or verified photo evidence.
         Footprint f = new Footprint();
