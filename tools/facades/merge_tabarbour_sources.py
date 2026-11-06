@@ -71,6 +71,18 @@ def atomic(path,obj):
 
 def normalized_source_properties(source, value):
  p = dict(value or {})
+ if source == "overture":
+  if p.get("num_floors") not in (None, "") and p.get("building:levels") in (None, ""):
+   p["building:levels"] = str(p["num_floors"])
+  if p.get("num_floors_underground") not in (None, "") and p.get("building:levels:underground") in (None, ""):
+   p["building:levels:underground"] = str(p["num_floors_underground"])
+  if p.get("min_floor") not in (None, "") and p.get("building:min_level") in (None, ""):
+   p["building:min_level"] = str(p["min_floor"])
+  for pair in p.get("source_tags") or []:
+   if isinstance(pair, (list, tuple)) and len(pair) >= 2 and clean(pair[1]):
+    key = str(pair[0])
+    if key in ("height", "building:levels", "building:height", "name", "name:ar", "name:en", "ref") and p.get(key) in (None, ""):
+     p[key] = str(pair[1])
  if source == "openbuildingmap":
   raw = str(p.get("height") or "")
   heights, floors, floor_range = [], [], []
