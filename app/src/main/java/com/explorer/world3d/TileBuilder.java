@@ -1058,6 +1058,70 @@ final class TileBuilder {
                 break;
             }
         }
+        // A mapped garage entrance is preferred. If the building itself explicitly
+        // declares underground parking, provide a conservative side-ramp fallback;
+        // never infer basement parking for ordinary residential buildings.
+        if (tabarbour && !storefront) {
+            String parkingKind = tg(tags, "parking").toLowerCase(java.util.Locale.US);
+            String parkingCondition = tg(tags, "parking:condition").toLowerCase(java.util.Locale.US);
+            float undergroundFloors = measure(tg(tags, "building:levels:underground"));
+            boolean hasVerifiedBasementParking = parkingKind.equals("underground")
+                    || parkingCondition.equals("underground") || undergroundFloors > 0f;
+            boolean hasMappedGarage = false;
+            if (mappedEntrances != null) {
+                for (int ei = 0; ei < mappedEntrances.length(); ei++) {
+                    JSONObject entry = mappedEntrances.optJSONObject(ei);
+                    JSONObject ep = entry == null ? null : entry.optJSONObject("properties");
+                    JSONObject et = ep == null ? null : ep.optJSONObject("tags");
+                    String ek = et == null ? (ep == null ? "" : ep.optString("entrance", ""))
+                            : et.optString("entrance", "");
+                    String bk = et == null ? "" : et.optString("building", "");
+                    if (ek.equals("garage") || bk.equals("garages")) { hasMappedGarage = true; break; }
+                }
+            }
+            if (hasVerifiedBasementParking && !hasMappedGarage && doorEdgeLength >= 4.0f) {
+                int edge = doorEdge;
+                int next = (edge + 1) % n;
+                float ex = px[next] - px[edge], ez = pz[next] - pz[edge];
+                float edgeLength = (float) Math.hypot(ex, ez);
+                if (edgeLength >= 4.0f) {
+                    float nx = ez / edgeLength, nz = -ex / edgeLength;
+                    float mx = (px[edge] + px[next]) * 0.5f;
+                    float mz = (pz[edge] + pz[next]) * 0.5f;
+                    if (Poly.contains(px, pz, mx + nx, mz + nz)) { nx = -nx; nz = -nz; }
+                    float tx = ex / edgeLength, tz = ez / edgeLength;
+                    float depth = undergroundFloors > 0f
+                            ? Math.max(2.65f, Math.min(6.0f, undergroundFloors * 2.8f)) : 2.65f;
+                    float[] rx = {mx - nx * 0.35f, mx + nx * 3.5f,
+                            mx + nx * 6.5f + tx * 3.0f, mx + nx * 10.0f + tx * 3.0f};
+                    float[] rz = {mz - nz * 0.35f, mz + nz * 3.5f,
+                            mz + nz * 6.5f + tz * 3.0f, mz + nz * 10.0f + tz * 3.0f};
+                    float baseY = (ground[edge] + ground[next]) * 0.5f;
+                    float[] ry = {baseY - depth, baseY - depth * 0.70f,
+                            baseY - depth * 0.32f, Terrain.h(rx[3], rz[3]) + 0.10f};
+                    float half = 1.55f;
+                    for (int seg = 0; seg < 3; seg++) {
+                        float dx = rx[seg + 1] - rx[seg], dz = rz[seg + 1] - rz[seg];
+                        float len = (float) Math.hypot(dx, dz);
+                        if (len < 0.1f) continue;
+                        float sx = -dz / len * half, sz = dx / len * half;
+                        float ax = rx[seg] + sx, az = rz[seg] + sz;
+                        float bx = rx[seg + 1] + sx, bz = rz[seg + 1] + sz;
+                        float cx = rx[seg + 1] - sx, cz = rz[seg + 1] - sz;
+                        float dx2 = rx[seg] - sx, dz2 = rz[seg] - sz;
+                        facadeQuad(td.bufs[B_ROADN], ax, ry[seg], az, bx, ry[seg + 1], bz,
+                                cx, ry[seg + 1], cz, dx2, ry[seg], dz2, 0.31f, 0.32f, 0.32f);
+                        float wall = 0.55f;
+                        facadeQuad(buf, ax, ry[seg], az, ax, ry[seg] + wall, az,
+                                bx, ry[seg + 1] + wall, bz, bx, ry[seg + 1], bz,
+                                0.48f, 0.47f, 0.43f);
+                        facadeQuad(buf, cx, ry[seg + 1], cz, cx, ry[seg + 1] + wall, cz,
+                                dx2, ry[seg] + wall, dz2, dx2, ry[seg], dz2,
+                                0.48f, 0.47f, 0.43f);
+                    }
+                }
+            }
+        }
         if ((!manila || !tg(tags, "entrance").isEmpty() || !tg(tags, "door").isEmpty())
                 && !(tabarbour && storefront) && doorEdgeLength >= 2.2f && h >= 2.4f) {
             int next = (doorEdge + 1) % n;
