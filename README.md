@@ -27,7 +27,7 @@ The active app does not run the legacy `old_app` HTML/Three.js client. The Gradl
 ## Important current data facts
 
 - **Manila:** 1,759 source building features; 1,748 have a positive `render_height` value; 11 do not. The source has 213,808 polygon components. The game builder maps `render_height` to `adam:render_height_m`; `TileBuilder.bHeight()` uses that normalized value after explicit height and floor-count tags.
-- **Tabarbour:** `merged/manifest.json` reports 29,159 merged building features. This is not the same as the active `stream/manifest.json`, which reports 2,229 elements across 1,108 listed cells. The native loader reads the stream manifest and its listed cells; it does not directly read the merged chunks. Do not claim the 29,159 merged buildings are already in the active runtime stream.
+- **Tabarbour:** the active `stream/manifest.json` now lists 1,866 cells and 107,121 verified elements, including 59,266 published building features. The runtime validator checked every cell and the repaired start-area dataset; `runtime_validation.status` is `passed`. The native loader reads these listed cells, not the merged source chunks directly.
 - **Amman:** the native loader reads the Amman manifest and compressed JSONL/GZIP shards. It does not load the ten-city catalog as its city-data index.
 
 ## Documentation map
@@ -36,14 +36,14 @@ The active app does not run the legacy `old_app` HTML/Three.js client. The Gradl
 - [Spatial streaming details](docs/OFFLINE_CITY_STREAMING.md)
 - [Manila local data](docs/MANILA_OFFLINE_DATA.md)
 - [Manila render-height statistics](docs/manila-building-layer-height.md)
-- [Tabarbour building data and known stream gap](docs/TABARBOUR_BUILDING_ENRICHMENT.md)
+- [Tabarbour building data and active runtime stream](docs/TABARBOUR_BUILDING_ENRICHMENT.md)
 - [Surface rendering](docs/REAL_WORLD_SURFACE_PIPELINE.md)
 - [Facade evidence limitations](docs/FACADE_RECONSTRUCTION_PIPELINE.md)\n- [Robinsons Place Manila native reconstruction](docs/ROBINSONS_PLACE_MANILA_REBUILD.md)
 - [Current implementation status](docs/REALISM_REBUILD_STATUS.md)
 
 ## Build and release
 
-The active release workflow is `.github/workflows/android-release.yml`. It rebuilds Manila spatial shards from the saved building layer, validates the committed Amman/Manila shard inventories, builds and signs the Android APK, verifies the APK signature, and publishes a GitHub release. A successful build does not replace on-device visual testing.
+The active release workflow is `.github/workflows/android-release.yml`. It rebuilds Manila spatial shards from the saved building layer, validates the committed Amman/Manila inventories and the Tabarbour active stream, builds and signs the Android APK, verifies the APK signature, and publishes a GitHub release. A successful build does not replace on-device visual testing. A successful build does not replace on-device visual testing.
 
 ## Project rules
 
