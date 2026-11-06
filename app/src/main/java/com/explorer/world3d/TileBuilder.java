@@ -1116,6 +1116,75 @@ final class TileBuilder {
         }
         float mxc = 0, mzc = 0;
         for (int i = 0; i < n; i++) { mxc += px[i]; mzc += pz[i]; }
+        // Tabarbour/Jordan flat roofs: raised perimeter parapet and varied, separate rooftop equipment.
+        // Equipment is deterministic per building and scaled to the actual footprint area.
+        if (tabarbour && !pyramid && !rshape.equals("gabled") && !rshape.equals("skillion")) {
+            float parapet = Math.max(0.95f, Math.min(1.25f, measure(tg(tags, "roof:parapet:height")) > 0f
+                    ? measure(tg(tags, "roof:parapet:height")) : 1.08f));
+            for (int edge=0; edge<n; edge++) {
+                int next=(edge+1)%n;
+                float ax=px[edge], az=pz[edge], bx=px[next], bz=pz[next];
+                float len=(float)Math.hypot(bx-ax,bz-az);
+                if(len<0.7f) continue;
+                float nx=(bz-az)/len, nz=-(bx-ax)/len;
+                if(Poly.contains(px,pz,(ax+bx)*0.5f+nx,(az+bz)*0.5f+nz)){nx=-nx;nz=-nz;}
+                float off=0.06f, y0=(roofY[edge]+roofY[next])*0.5f;
+                facadeQuad(buf,ax+nx*off,y0,az+nz*off,bx+nx*off,y0,bz+nz*off,
+                        bx+nx*off,y0+parapet,bz+nz*off,ax+nx*off,y0+parapet,az+nz*off,
+                        cr*0.88f,cg*0.88f,cb*0.88f);
+            }
+            float area=Math.abs(Poly.area(px,pz));
+            float roofBase=0f;
+            for(int k=0;k<n;k++) roofBase+=roofY[k];
+            roofBase/=n;
+            float cx=0f,cz=0f;
+            for(int k=0;k<n;k++){cx+=px[k];cz+=pz[k];}
+            cx/=n;cz/=n;
+            float usable=Math.min(1f,Math.max(0f,(area-55f)/260f));
+            int tanks=area>85f ? 1+(rnd(id,71)>0.62f?1:0)+(area>260f&&rnd(id,72)>0.45f?1:0) : 0;
+            for(int k=0;k<tanks;k++){
+                float ox=(rnd(id,80+k)-0.5f)*Math.min(5f,(maxx-minx)*0.32f);
+                float oz=(rnd(id,90+k)-0.5f)*Math.min(5f,(maxz-minz)*0.32f);
+                float tx=cx+ox,tz=cz+oz;
+                if(!Poly.contains(px,pz,tx,tz)) continue;
+                float radius=0.48f+rnd(id,100+k)*0.30f;
+                buf.box(tx,roofBase+0.82f,tz,radius,1.64f,radius,0.78f,0.80f,0.79f);
+                buf.box(tx,roofBase+1.68f,tz,radius*0.92f,0.08f,radius*0.92f,0.62f,0.65f,0.66f);
+            }
+            // Satellite dishes and antenna masts: present on many, but deliberately not all, roofs.
+            int dishes=area>45f ? 1+(rnd(id,111)>0.48f?1:0)+(area>220f&&rnd(id,112)>0.55f?1:0) : 0;
+            for(int k=0;k<dishes;k++){
+                float ox=(rnd(id,120+k)-0.5f)*Math.min(6f,(maxx-minx)*0.38f);
+                float oz=(rnd(id,130+k)-0.5f)*Math.min(6f,(maxz-minz)*0.38f);
+                float dx=cx+ox,dz=cz+oz;
+                if(!Poly.contains(px,pz,dx,dz)) continue;
+                buf.box(dx,roofBase+0.72f,dz,0.045f,0.72f,0.045f,0.48f,0.49f,0.50f);
+                float tilt=(rnd(id,140+k)-0.5f)*0.55f;
+                facadeQuad(td.bufs[B_GLASS],dx-0.48f,roofBase+0.78f,dz+tilt,
+                        dx+0.48f,roofBase+0.78f,dz-tilt,
+                        dx+0.48f,roofBase+1.30f,dz-tilt-0.18f,
+                        dx-0.48f,roofBase+1.30f,dz+tilt-0.18f,0.62f,0.65f,0.67f);
+            }
+            // Occasional AC condensers, solar hot-water collectors and PV panels.
+            if(area>95f && rnd(id,151)>0.38f){
+                float ax=cx+(rnd(id,152)-0.5f)*Math.min(4f,(maxx-minx)*0.25f);
+                float az=cz+(rnd(id,153)-0.5f)*Math.min(4f,(maxz-minz)*0.25f);
+                if(Poly.contains(px,pz,ax,az)) buf.box(ax,roofBase+0.42f,az,0.48f,0.78f,0.34f,0.72f,0.74f,0.72f);
+            }
+            if(area>125f && rnd(id,161)>0.52f){
+                float sx=cx+(rnd(id,162)-0.5f)*Math.min(3f,(maxx-minx)*0.20f);
+                float sz=cz+(rnd(id,163)-0.5f)*Math.min(3f,(maxz-minz)*0.20f);
+                if(Poly.contains(px,pz,sx,sz)){
+                    facadeQuad(td.bufs[B_GLASS],sx-1.0f,roofBase+0.22f,sz-0.55f,
+                            sx+1.0f,roofBase+0.22f,sz-0.55f,sx+1.0f,roofBase+0.92f,sz+0.55f,
+                            sx-1.0f,roofBase+0.92f,sz+0.55f,0.12f,0.18f,0.22f);
+                }
+            }
+            if(area>170f && rnd(id,171)>0.66f){
+                float sx=cx-1.4f,sz=cz+1.2f;
+                if(Poly.contains(px,pz,sx,sz)) buf.box(sx,roofBase+1.15f,sz,0.62f,0.34f,0.62f,0.76f,0.79f,0.78f);
+            }
+        }
         // No random billboard panels: Manila signage must come from mapped names or verified photo evidence.
         Footprint f = new Footprint();
         f.xs = px; f.zs = pz; f.minx = minx; f.maxx = maxx; f.minz = minz; f.maxz = maxz;
