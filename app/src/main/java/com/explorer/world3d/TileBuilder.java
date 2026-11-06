@@ -1010,8 +1010,8 @@ final class TileBuilder {
                 }
             }
         }
-        // A below-grade vehicle ramp is created only for a mapped garage entrance.
-        // Its outer end follows the existing DEM; no speculative access road is fabricated.
+        // Build a real dog-leg driveway only where OSM marks a garage entrance.
+        // The lane drops below grade, bends laterally, then reaches the mapped access side.
         if (tabarbour && mappedEntrances != null) {
             for (int ei=0; ei<mappedEntrances.length(); ei++) {
                 JSONObject entry=mappedEntrances.optJSONObject(ei);
@@ -1026,29 +1026,35 @@ final class TileBuilder {
                 float gx=Geo.x(ec.optDouble(0,Double.NaN)), gz=Geo.z(ec.optDouble(1,Double.NaN));
                 int edgeBest=-1; float tBest=0f, dBest=Float.POSITIVE_INFINITY;
                 for(int edge=0;edge<n;edge++){
-                    int j=(edge+1)%n; float ex=px[j]-px[edge], ez=pz[j]-pz[edge], l2=ex*ex+ez*ez;
+                    int next=(edge+1)%n; float ex=px[next]-px[edge], ez=pz[next]-pz[edge], l2=ex*ex+ez*ez;
                     if(l2<0.01f) continue;
                     float t=Math.max(0f,Math.min(1f,((gx-px[edge])*ex+(gz-pz[edge])*ez)/l2));
                     float d=(float)Math.hypot(gx-(px[edge]+ex*t),gz-(pz[edge]+ez*t));
                     if(d<dBest){dBest=d;edgeBest=edge;tBest=t;}
                 }
                 if(edgeBest<0||dBest>2.2f) continue;
-                int j=(edgeBest+1)%n; float ex=px[j]-px[edgeBest], ez=pz[j]-pz[edgeBest];
-                float el=(float)Math.hypot(ex,ez); if(el<2f) continue;
-                float nx=ez/el,nz=-ex/el;
+                int next=(edgeBest+1)%n; float ex=px[next]-px[edgeBest], ez=pz[next]-pz[edgeBest];
+                float edgeLength=(float)Math.hypot(ex,ez); if(edgeLength<2f) continue;
+                float nx=ez/edgeLength,nz=-ex/edgeLength;
                 if(Poly.contains(px,pz,gx+nx,gz+nz)){nx=-nx;nz=-nz;}
+                float tx=ex/edgeLength,tz=ez/edgeLength;
                 float half=1.55f;
-                float wx=-ez/el*half,wz=ex/el*half;
-                float inX=gx-nx*0.35f,inZ=gz-nz*0.35f;
-                float outX=gx+nx*7.5f,outZ=gz+nz*7.5f;
-                float inY=(ground[edgeBest]+(ground[j]-ground[edgeBest])*tBest)-2.65f;
-                float outY=Terrain.h(outX,outZ)+0.10f;
-                facadeQuad(td.bufs[B_ROADN],inX+wx,inY,inZ+wz,outX+wx,outY,outZ+wz,
-                        outX-wx,outY,outZ-wz,inX-wx,inY,inZ-wz,0.31f,0.32f,0.32f);
-                facadeQuad(buf,inX+wx,inY,inZ+wz,outX+wx,outY,outZ+wz,
-                        outX+wx,outY+0.55f,outZ+wz,inX+wx,inY+0.55f,inZ+wz,0.48f,0.47f,0.43f);
-                facadeQuad(buf,outX-wx,outY,outZ-wz,inX-wx,inY,inZ-wz,
-                        inX-wx,inY+0.55f,inZ-wz,outX-wx,outY+0.55f,outZ-wz,0.48f,0.47f,0.43f);
+                // Four stations create a broad, drivable dog-leg instead of a straight trench.
+                float[] rx={gx-nx*0.35f,gx+nx*4.0f+tx*0.2f,gx+nx*7.0f+tx*3.8f,gx+nx*12.0f+tx*3.8f};
+                float[] rz={gz-nz*0.35f,gz+nz*4.0f+tz*0.2f,gz+nz*7.0f+tz*3.8f,gz+nz*12.0f+tz*3.8f};
+                float baseY=(ground[edgeBest]+(ground[next]-ground[edgeBest])*tBest);
+                float[] ry={baseY-2.65f,baseY-1.9f,baseY-0.85f,Terrain.h(rx[3],rz[3])+0.10f};
+                for(int seg=0;seg<3;seg++){
+                    float dx=rx[seg+1]-rx[seg], dz=rz[seg+1]-rz[seg];
+                    float len=(float)Math.hypot(dx,dz); if(len<0.1f) continue;
+                    float sx=-dz/len*half, sz=dx/len*half;
+                    float ax=rx[seg]+sx, az=rz[seg]+sz, bx=rx[seg+1]+sx, bz=rz[seg+1]+sz;
+                    float cx=rx[seg+1]-sx, cz=rz[seg+1]-sz, dx2=rx[seg]-sx, dz2=rz[seg]-sz;
+                    facadeQuad(td.bufs[B_ROADN],ax,ry[seg],az,bx,ry[seg+1],bz,cx,ry[seg+1],cz,dx2,ry[seg],dz2,0.31f,0.32f,0.32f);
+                    float wall=0.55f;
+                    facadeQuad(buf,ax,ry[seg],az,ax,ry[seg]+wall,az,bx,ry[seg+1]+wall,bz,bx,ry[seg+1],bz,0.48f,0.47f,0.43f);
+                    facadeQuad(buf,cx,ry[seg+1],cz,cx,ry[seg+1]+wall,cz,dx2,ry[seg]+wall,dz2,dx2,ry[seg],dz2,0.48f,0.47f,0.43f);
+                }
                 break;
             }
         }
