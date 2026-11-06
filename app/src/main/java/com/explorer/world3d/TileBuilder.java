@@ -173,7 +173,7 @@ final class TileBuilder {
                     addBalconyPart(td, tags, px, pz);
                     continue; // A balcony is a suspended slab/railing, never a ground-level building/collision.
                 }
-                addBuilding(td, tags, id, bld, px, pz, tabarbour, manila);
+                addBuilding(td, tags, id, bld, px, pz, tabarbour, manila, mappedShopNodes);
                 int poi = poiCategory(tags);
                 String buildingLabel = poiName(tags);
                 String houseNumber = tg(tags, "addr:housenumber");
@@ -657,7 +657,7 @@ final class TileBuilder {
         return 0f;
     }
 
-    private static void addBuilding(TileData td, JSONObject tags, long id, String bld, float[] px, float[] pz, boolean tabarbour, boolean manila) {
+    private static void addBuilding(TileData td, JSONObject tags, long id, String bld, float[] px, float[] pz, boolean tabarbour, boolean manila, ArrayList<JSONObject> mappedShopNodes) {
         int n = px.length;
         float hMin = 1e9f, hMax = -1e9f;
         float[] ground = new float[n], roofY = new float[n];
