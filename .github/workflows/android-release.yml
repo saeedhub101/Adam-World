@@ -11,6 +11,7 @@ on:
       - "data/offline-city-stream/manila/**"
       - "data/offline-city-stream/amman/**"
       - "data/offline-world/manila/**"
+      - "data/offline-world/tabarbour/stream/**"
       - ".github/workflows/android-release.yml"
   workflow_dispatch:
 
@@ -38,6 +39,7 @@ jobs:
             /data/offline-city-stream/amman/
             /data/offline-city-stream/manila/
             /data/offline-world/manila/
+            /data/offline-world/tabarbour/stream/
             /build.gradle
             /settings.gradle
             /gradle.properties
@@ -90,7 +92,50 @@ jobs:
               if not p.is_file() or p.stat().st_size == 0:
                   raise SystemExit(f"Missing saved Amman shard: {p}")
 
-          print(f"OFFLINE_DATA_OK Manila cells={len(cells)} heights={len(heights)} Amman shards={len(amman_shards)}")
+          tab_root = Path("data/offline-world/tabarbour/stream")
+          tab = json.loads((tab_root / "manifest.json").read_text(encoding="utf-8"))
+          runtime = tab.get("runtime_validation") or {}
+          tiles = tab.get("tiles") or []
+          if tab.get("slug") != "tabarbour" or tab.get("status") != "complete" or not tab.get("complete"):
+              raise SystemExit("Tabarbour active stream manifest is incomplete")
+          if len(tiles) != tab.get("expected_tile_count") or runtime.get("status") != "passed":
+              raise SystemExit("Tabarbour manifest tile inventory/runtime validation is not passed")
+          total = 0
+          buildings = 0
+          seen = set()
+          for item in tiles:
+              name = item.get("file", "")
+              if not name or Path(name).name != name or name in seen:
+                  raise SystemExit(f"Invalid or duplicate Tabarbour cell path: {name}")
+              seen.add(name)
+              p = tab_root / name
+              if not p.is_file() or p.stat().st_size == 0:
+                  raise SystemExit(f"Missing saved Tabarbour cell: {p}")
+              opener = gzip.open if name.endswith(".gz") else open
+              with opener(p, "rt", encoding="utf-8") as stream:
+                  cell = json.load(stream)
+              elements = cell.get("elements")
+              if not isinstance(elements, list) or len(elements) != item.get("count"):
+                  raise SystemExit(f"Tabarbour cell count mismatch: {name}")
+              total += len(elements)
+              for feature in elements:
+                  tags = feature.get("tags") or {}
+                  if feature.get("type") == "way" and (
+                      (tags.get("building") and tags.get("building") != "no") or tags.get("building:part")
+                  ):
+                      buildings += 1
+          if total != tab.get("element_count") or total != runtime.get("verified_element_count"):
+              raise SystemExit(f"Tabarbour element total mismatch: {total}")
+          if buildings != tab.get("building_count") or buildings != runtime.get("buildings_published"):
+              raise SystemExit(f"Tabarbour building total mismatch: {buildings}")
+          if runtime.get("cells_checked") != len(tiles):
+              raise SystemExit("Tabarbour validator cell count does not match manifest")
+
+          print(
+              f"OFFLINE_DATA_OK Manila cells={len(cells)} heights={len(heights)} "
+              f"Amman shards={len(amman_shards)} Tabarbour cells={len(tiles)} "
+              f"elements={total} buildings={buildings}"
+          )
           PY
 
       - name: Set up Java 17
