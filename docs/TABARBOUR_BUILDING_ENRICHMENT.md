@@ -12,21 +12,25 @@ Tabarbour source material is kept under `data/offline-world/tabarbour/`. The mer
 
 The merge policy prefers explicit OSM identity and uses conservative spatial matching. It preserves source provenance and does not treat a nearby Panoramax candidate as a verified facade photo.
 
-## Active Android stream — important distinction
+## Active Android stream — verified and connected
 
-The native Android loader does **not** read `merged/manifest.json` or the 12 merged GeoJSON chunks. It reads only:
+The native Android runtime reads only:
 
 `data/offline-world/tabarbour/stream/manifest.json`
 
-and the cell files named by that manifest. The current active stream manifest reports:
+It validates the manifest, selects nearby 250 m cells from its `tiles` array, downloads only those cells, and passes their OSM-style `elements` into `TileBuilder`. It does not read the merged GeoJSON chunks directly at runtime; the stream builder has already converted the canonical merged source and required context into the active cells.
 
-- 1,108 listed cells
-- 250 m cell size
-- 2,229 elements across the listed cells
-- `source_kind: osm-nonroad-context-only+transit-routes`
-- `status: complete` and `complete: true` for that listed stream dataset
+Latest verified active stream:
 
-This completion flag does not mean the 29,159 merged buildings were published into the stream. The merged source and active runtime stream are currently disconnected. The Java loader checks the manifest's `tiles` array; a `tile_*.json` file that exists in the directory but is not listed is ignored. The stream must be regenerated from the merged building source and its manifest updated before claiming those buildings are playable.
+- **1,866** listed cells, all present and validated.
+- **107,121** elements across the stream.
+- **59,266** published building features.
+- **785** buildings and **299** road elements in the start-neighborhood validation window.
+- Start coordinate: **31.997579, 35.940358**.
+- `runtime_validation.status: passed`; all 1,866 cells were parsed and their per-cell counts checked.
+- The Shafa Badran Street label is present in repaired cell `tile_-9_-22.json.gz`.
+
+The validator run is [42121546729](https://github.com/saeedhub101/Adam-World/actions/runs/42121546729). This confirms repository data integrity and manifest completeness. It does **not** claim that a physical Android device has completed a visual/gameplay test. The Java loader integration is documented in `docs/GAME_RUNTIME.md` and `docs/OFFLINE_CITY_STREAMING.md`.
 
 ## Height and property policy
 
