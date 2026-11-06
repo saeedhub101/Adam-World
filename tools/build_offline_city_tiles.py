@@ -884,6 +884,22 @@ def _merged_tabarbour_building_elements(city_source):
             polygons = [coords] if kind == "Polygon" else (coords if kind == "MultiPolygon" else [])
             tags = _feature_tags(feature)
             tags["building"] = tags.get("building") or "yes"
+            # Promote explicit Overture class/subtype labels into renderer-recognized
+            # building types so hospital/hotel/commercial height and facade rules apply.
+            if tags["building"] == "yes":
+                subtype = str(tags.get("adam:source:building_subtype") or "").strip().lower()
+                source_class = str(tags.get("adam:source:building_class") or "").strip().lower()
+                known_types = {
+                    "apartments":"apartments", "residential":"residential", "house":"house",
+                    "detached":"detached", "commercial":"commercial", "retail":"retail",
+                    "office":"office", "hotel":"hotel", "hospital":"hospital", "clinic":"clinic",
+                    "school":"school", "university":"university", "warehouse":"warehouse",
+                    "industrial":"industrial", "church":"religious", "mosque":"religious"
+                }
+                if subtype in known_types:
+                    tags["building"] = known_types[subtype]
+                elif source_class in known_types:
+                    tags["building"] = known_types[source_class]
             tags["adam:source"] = "Tabarbour merged multi-source database"
             tags["adam:entity_id"] = str(props.get("adam:entity_id") or feature.get("id") or "")
             if props.get("adam:osm_id"):
