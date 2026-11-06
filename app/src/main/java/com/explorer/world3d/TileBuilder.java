@@ -951,6 +951,48 @@ final class TileBuilder {
                 }
             }
         }
+        // A below-grade vehicle ramp is created only for a mapped garage entrance.
+        // Its outer end follows the existing DEM; no speculative access road is fabricated.
+        if (tabarbour && mappedEntrances != null) {
+            for (int ei=0; ei<mappedEntrances.length(); ei++) {
+                JSONObject entry=mappedEntrances.optJSONObject(ei);
+                JSONObject ep=entry==null?null:entry.optJSONObject("properties");
+                JSONObject et=ep==null?null:ep.optJSONObject("tags");
+                String entryKind=et==null?(ep==null?"":ep.optString("entrance","")):et.optString("entrance","");
+                String accessKind=et==null?"":et.optString("building","");
+                if(!entryKind.equals("garage") && !accessKind.equals("garages")) continue;
+                JSONObject eg=entry.optJSONObject("geometry");
+                JSONArray ec=eg==null?null:eg.optJSONArray("coordinates");
+                if(ec==null||ec.length()<2) continue;
+                float gx=Geo.x(ec.optDouble(0,Double.NaN)), gz=Geo.z(ec.optDouble(1,Double.NaN));
+                int edgeBest=-1; float tBest=0f, dBest=Float.POSITIVE_INFINITY;
+                for(int edge=0;edge<n;edge++){
+                    int j=(edge+1)%n; float ex=px[j]-px[edge], ez=pz[j]-pz[edge], l2=ex*ex+ez*ez;
+                    if(l2<0.01f) continue;
+                    float t=Math.max(0f,Math.min(1f,((gx-px[edge])*ex+(gz-pz[edge])*ez)/l2));
+                    float d=(float)Math.hypot(gx-(px[edge]+ex*t),gz-(pz[edge]+ez*t));
+                    if(d<dBest){dBest=d;edgeBest=edge;tBest=t;}
+                }
+                if(edgeBest<0||dBest>2.2f) continue;
+                int j=(edgeBest+1)%n; float ex=px[j]-px[edgeBest], ez=pz[j]-pz[edgeBest];
+                float el=(float)Math.hypot(ex,ez); if(el<2f) continue;
+                float nx=ez/el,nz=-ex/el;
+                if(Poly.contains(px,pz,gx+nx,gz+nz)){nx=-nx;nz=-nz;}
+                float half=1.55f;
+                float wx=-ez/el*half,wz=ex/el*half;
+                float inX=gx-nx*0.35f,inZ=gz-nz*0.35f;
+                float outX=gx+nx*7.5f,outZ=gz+nz*7.5f;
+                float inY=(ground[edgeBest]+(ground[j]-ground[edgeBest])*tBest)-2.65f;
+                float outY=Terrain.h(outX,outZ)+0.10f;
+                facadeQuad(td.bufs[B_ROADN],inX+wx,inY,inZ+wz,outX+wx,outY,outZ+wz,
+                        outX-wx,outY,outZ-wz,inX-wx,inY,inZ-wz,0.31f,0.32f,0.32f);
+                facadeQuad(buf,inX+wx,inY,inZ+wz,outX+wx,outY,outZ+wz,
+                        outX+wx,outY+0.55f,outZ+wz,inX+wx,inY+0.55f,inZ+wz,0.48f,0.47f,0.43f);
+                facadeQuad(buf,outX-wx,outY,outZ-wz,inX-wx,inY,inZ-wz,
+                        inX-wx,inY+0.55f,inZ-wz,outX-wx,outY+0.55f,outZ-wz,0.48f,0.47f,0.43f);
+                break;
+            }
+        }
         if ((!manila || !tg(tags, "entrance").isEmpty() || !tg(tags, "door").isEmpty())
                 && !(tabarbour && storefront) && doorEdgeLength >= 2.2f && h >= 2.4f) {
             int next = (doorEdge + 1) % n;
