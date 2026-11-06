@@ -705,6 +705,11 @@ final class TileBuilder {
         float vMax = (yTop - hMin - minHeight + undergroundDepth + 0.08f) / 13.6f, lo = 0.78f;
         // Select the same mapped entrance used by the door renderer, then remove
         // its ground-floor wall rectangle from the facade mesh itself.
+        float undergroundParkingFloors = measure(tg(tags, "building:levels:underground"));
+        String undergroundParkingKind = tg(tags, "parking").toLowerCase(java.util.Locale.US);
+        String undergroundParkingCondition = tg(tags, "parking:condition").toLowerCase(java.util.Locale.US);
+        boolean explicitUndergroundParking = undergroundParkingKind.equals("underground")
+                || undergroundParkingCondition.equals("underground") || undergroundParkingFloors > 0f;
         int cutEntranceEdge = 0;
         float cutEntranceLength = 0f, cutEntranceMid = 0.5f;
         boolean cutEntranceMapped = false;
@@ -753,7 +758,7 @@ final class TileBuilder {
             float yBotA = ground[i] + minHeight - belowGroundDepth - 0.08f;
             float yBotB = ground[j] + minHeight - belowGroundDepth - 0.08f;
             if (tabarbour && i == cutEntranceEdge && len >= 2.5f) {
-                float openingWidth = 2.25f;
+                float openingWidth = explicitUndergroundParking ? 3.35f : 2.25f;
                 float halfOpening = openingWidth / (2f * len);
                 float t0 = Math.max(0.02f, cutEntranceMid-halfOpening);
                 float t1 = Math.min(0.98f, cutEntranceMid+halfOpening);
@@ -762,8 +767,9 @@ final class TileBuilder {
                 float bottom0=yBotA+(yBotB-yBotA)*t0, bottom1=yBotA+(yBotB-yBotA)*t1;
                 float top0=roofY[i]+(roofY[j]-roofY[i])*t0;
                 float top1=roofY[i]+(roofY[j]-roofY[i])*t1;
-                float openingTop0=Math.min(bottom0+2.85f,top0-0.20f);
-                float openingTop1=Math.min(bottom1+2.85f,top1-0.20f);
+                float openingClearHeight = explicitUndergroundParking ? 2.75f : 2.85f;
+                float openingTop0=Math.min(bottom0+openingClearHeight,top0-0.20f);
+                float openingTop1=Math.min(bottom1+openingClearHeight,top1-0.20f);
                 // Left pier, right pier and lintel: the central ground-floor wall is genuinely absent.
                 facadeQuad(buf,ax,yBotA,az,x0,bottom0,z0,x0,top0,z0,ax,roofY[i],az,
                         cr*lo,cg*lo,cb*lo);
@@ -1062,11 +1068,8 @@ final class TileBuilder {
         // declares underground parking, provide a conservative side-ramp fallback;
         // never infer basement parking for ordinary residential buildings.
         if (tabarbour && !storefront) {
-            String parkingKind = tg(tags, "parking").toLowerCase(java.util.Locale.US);
-            String parkingCondition = tg(tags, "parking:condition").toLowerCase(java.util.Locale.US);
-            float undergroundFloors = measure(tg(tags, "building:levels:underground"));
-            boolean hasVerifiedBasementParking = parkingKind.equals("underground")
-                    || parkingCondition.equals("underground") || undergroundFloors > 0f;
+            float undergroundFloors = undergroundParkingFloors;
+            boolean hasVerifiedBasementParking = explicitUndergroundParking;
             boolean hasMappedGarage = false;
             if (mappedEntrances != null) {
                 for (int ei = 0; ei < mappedEntrances.length(); ei++) {
