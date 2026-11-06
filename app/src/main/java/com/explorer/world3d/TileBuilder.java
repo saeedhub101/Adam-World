@@ -271,16 +271,53 @@ final class TileBuilder {
                     || natural.matches("wood|scrub|beach|sand|dune|wetland|heath|grassland")) {
                 float[][] P = clean(xs, zs);
                 if (P == null || !overlaps(P, xMin, xMax, zMin, zMax)) continue;
-                boolean sand = natural.matches("beach|sand|dune") || landuse.equals("sand");
+                boolean pitch = leisure.equals("pitch") || !tg(tags, "sport").isEmpty();
+                boolean playground = leisure.equals("playground");
+                boolean garden = leisure.equals("garden") || leisure.equals("park")
+                        || landuse.matches("recreation_ground|village_green");
+                boolean sand = natural.matches("beach|sand|dune") || landuse.equals("sand") || playground;
                 boolean forest = natural.equals("wood") || landuse.equals("forest");
                 boolean farm = landuse.matches("farmland|orchard|vineyard");
                 float gr = 0.44f, gg = 0.56f, gb = 0.31f, yo = 0.13f;
-                if (sand) { gr = 0.84f; gg = 0.76f; gb = 0.57f; yo = 0.12f; }
+                if (sand) { gr = 0.78f; gg = 0.68f; gb = 0.48f; yo = 0.12f; }
+                else if (pitch) { gr = 0.22f; gg = 0.43f; gb = 0.20f; yo = 0.15f; }
+                else if (garden) { gr = 0.43f; gg = 0.39f; gb = 0.29f; yo = 0.11f; }
                 else if (forest) { gr = 0.27f; gg = 0.40f; gb = 0.21f; yo = 0.14f; }
                 else if (farm) { gr = 0.58f; gg = 0.55f; gb = 0.33f; yo = 0.10f; }
                 else if (natural.matches("scrub|heath|grassland")) { gr = 0.50f; gg = 0.52f; gb = 0.32f; yo = 0.12f; }
                 else if (natural.equals("wetland")) { gr = 0.36f; gg = 0.50f; gb = 0.40f; yo = 0.11f; }
                 int cells = fillCells(td.bufs[B_PLAIN], P[0], P[1], xMin, xMax, zMin, zMax, 5f, hg, Float.NaN, yo, gr, gg, gb, id);
+                if (pitch) {
+                    float[] centerPitch = centroid(P[0], P[1]);
+                    float minPX = 1e9f, maxPX = -1e9f, minPZ = 1e9f, maxPZ = -1e9f;
+                    for (int pi = 0; pi < P[0].length; pi++) {
+                        minPX = Math.min(minPX, P[0][pi]); maxPX = Math.max(maxPX, P[0][pi]);
+                        minPZ = Math.min(minPZ, P[1][pi]); maxPZ = Math.max(maxPZ, P[1][pi]);
+                    }
+                    // Painted field boundary, halfway line and small goals, clipped to the mapped pitch polygon.
+                    float[][] lines = {
+                        {minPX,minPZ,maxPX,minPZ}, {maxPX,minPZ,maxPX,maxPZ},
+                        {maxPX,maxPZ,minPX,maxPZ}, {minPX,maxPZ,minPX,minPZ},
+                        {centerPitch[0],minPZ,centerPitch[0],maxPZ}
+                    };
+                    for (float[] line : lines) {
+                        float[] lx = {line[0], line[2]}, lz = {line[1], line[3]};
+                        addClippedRibbon(td, lx, lz, 0.12f, 0.18f, td.bufs[B_PLAIN], 0.95f, 0.95f, 0.88f);
+                    }
+                    float goalZ = Math.max(1.5f, Math.min(3.0f, (maxPZ-minPZ)*0.12f));
+                    td.bufs[B_PLAIN].box(minPX+0.5f, Terrain.h(minPX+0.5f,centerPitch[1])+0.7f, centerPitch[1],
+                            0.18f,1.4f,goalZ,0.88f,0.88f,0.82f);
+                    td.bufs[B_PLAIN].box(maxPX-0.5f, Terrain.h(maxPX-0.5f,centerPitch[1])+0.7f, centerPitch[1],
+                            0.18f,1.4f,goalZ,0.88f,0.88f,0.82f);
+                }
+                if (playground) {
+                    float[] playCenter = centroid(P[0], P[1]);
+                    float py = Terrain.h(playCenter[0], playCenter[1]);
+                    // Simple, low-profile playground equipment on the mapped sand surface.
+                    td.bufs[B_PLAIN].box(playCenter[0]-2.0f,py+0.65f,playCenter[1],2.4f,0.12f,0.8f,0.82f,0.18f,0.12f);
+                    td.bufs[B_PLAIN].box(playCenter[0]-2.9f,py+1.15f,playCenter[1],0.12f,1.0f,0.12f,0.75f,0.72f,0.62f);
+                    td.bufs[B_PLAIN].box(playCenter[0]+1.4f,py+0.8f,playCenter[1],0.12f,1.5f,0.12f,0.16f,0.32f,0.62f);
+                }
                 int nt = sand ? 0 : Math.min(forest ? 40 : 25, (int) (cells * 25f / (forest ? 70f : 220f)));
                 float mnx = 1e9f, mxx = -1e9f, mnz = 1e9f, mxz = -1e9f;
                 for (int i = 0; i < P[0].length; i++) {
@@ -438,11 +475,23 @@ final class TileBuilder {
         // Use it only as a last-resort approximate visual height and label it ≈;
         // never let it replace explicit height or floor-count measurements.
         float renderHeight = measure(tg(t, "adam:render_height_m"));
+        // Tabarbour's cartographic render heights frequently collapse multi-storey
+        // apartment blocks to a 4-6 m extrusion. Keep that value as a lower bound,
+        // not as the final height, when stronger floor/class evidence is available.
+        float classFloorEstimate = 0f;
+        if (b.matches("apartments|dormitory|residential")) classFloorEstimate = 5f;
+        else if (b.matches("hotel|motel|hostel|hospital|clinic|commercial|office|retail|supermarket|mall|university")) classFloorEstimate = 4f;
+        else if (b.matches("house|detached|semidetached_house|bungalow")) classFloorEstimate = 2f;
+        if (classFloorEstimate > 0f) {
+            float classHeight = classFloorEstimate * 3.2f;
+            if (renderHeight > 0f && renderHeight <= 250f) return Math.max(classHeight, Math.max(2.5f, renderHeight));
+            return classHeight;
+        }
         if (renderHeight > 0f && renderHeight <= 250f) return Math.max(2.5f, renderHeight);
-        // Explicitly conservative class fallback when no source supplies height/floors.
+        // Explicit class fallback when no measured height/floor count is available.
         if (b.equals("roof") || b.equals("carport") || b.equals("garage") || b.equals("garages")) return 3.5f;
-        if (b.matches("house|detached|shed|hut|cabin|semidetached_house|bungalow|residential")) return 6.5f;
-        if (b.matches("apartments|commercial|office|hotel|retail|hospital|university|school")) return 10.5f;
+        if (b.matches("house|detached|shed|hut|cabin|semidetached_house|bungalow")) return 6.5f;
+        if (b.matches("apartments|commercial|office|hotel|retail|hospital|university|school")) return 12.8f;
         if (b.matches("industrial|warehouse|factory")) return 8.5f;
         return 7.5f;
     }
@@ -790,6 +839,31 @@ final class TileBuilder {
             float yBase = (ground[doorEdge] + ground[next]) * 0.5f + minHeight;
             float x0 = ax + dx * t0 + nx * 0.085f, z0 = az + dz * t0 + nz * 0.085f;
             float x1 = ax + dx * t1 + nx * 0.085f, z1 = az + dz * t1 + nz * 0.085f;
+            // Recessed apartment entrance: dark inner wall, stone side returns and a door set back from the facade.
+            if (tabarbour) {
+                float recessWidth = Math.max(2.15f, doorWidth + 1.05f);
+                float recessDepth = 0.42f;
+                float rHalf = recessWidth / (2f * doorEdgeLength);
+                float rt0 = Math.max(0.015f, mid-rHalf), rt1 = Math.min(0.985f, mid+rHalf);
+                float fx0 = ax+dx*rt0+nx*0.10f, fz0=az+dz*rt0+nz*0.10f;
+                float fx1 = ax+dx*rt1+nx*0.10f, fz1=az+dz*rt1+nz*0.10f;
+                float ix0 = ax+dx*rt0-nx*recessDepth, iz0=az+dz*rt0-nz*recessDepth;
+                float ix1 = ax+dx*rt1-nx*recessDepth, iz1=az+dz*rt1-nz*recessDepth;
+                float top = yBase + Math.min(2.85f, Math.max(2.55f, doorHeight+0.35f));
+                facadeQuad(buf, fx0,yBase,fz0, ix0,yBase,iz0, ix0,top,iz0, fx0,top,fz0, 0.56f,0.52f,0.45f);
+                facadeQuad(buf, ix1,yBase,iz1, fx1,yBase,fz1, fx1,top,fz1, ix1,top,iz1, 0.56f,0.52f,0.45f);
+                facadeQuad(buf, fx0,top,fz0, ix0,top,iz0, ix1,top,iz1, fx1,top,fz1, 0.68f,0.64f,0.57f);
+                facadeQuad(buf, ix0,yBase,iz0, ix1,yBase,iz1, ix1,top,iz1, ix0,top,iz0, 0.16f,0.18f,0.19f);
+                // The central recess is flanked by two open ground-floor terrace/balcony bays.
+                float bayWidth = Math.max(0.75f, (doorEdgeLength-recessWidth)*0.5f-0.35f);
+                if (bayWidth > 1.0f) {
+                    float slabY = yBase+0.08f;
+                    buf.box(ax+dx*(rt0*0.5f),slabY,(az+dz*(rt0*0.5f))+nz*0.42f,
+                            Math.min(1.4f,bayWidth*0.45f),0.16f,0.65f,0.66f,0.61f,0.53f);
+                    buf.box(ax+dx*((rt1+1f)*0.5f),slabY,(az+dz*((rt1+1f)*0.5f))+nz*0.42f,
+                            Math.min(1.4f,bayWidth*0.45f),0.16f,0.65f,0.66f,0.61f,0.53f);
+                }
+            }
             float frame = 0.09f;
             facadeQuad(buf, x0 - dx * frame / doorEdgeLength, yBase, z0 - dz * frame / doorEdgeLength,
                     x1 + dx * frame / doorEdgeLength, yBase, z1 + dz * frame / doorEdgeLength,
