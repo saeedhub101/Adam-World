@@ -681,6 +681,43 @@ final class TileBuilder {
         else if (rmat.matches("concrete")) { rr = 0.62f; rg = 0.62f; rb = 0.60f; }
         // Unmapped roof colours remain neutral; do not invent a tile colour.
         float vMax = (yTop - hMin - minHeight + undergroundDepth + 0.08f) / 13.6f, lo = 0.78f;
+        // Select the same mapped entrance used by the door renderer, then remove
+        // its ground-floor wall rectangle from the facade mesh itself.
+        int cutEntranceEdge = 0;
+        float cutEntranceLength = 0f, cutEntranceMid = 0.5f;
+        boolean cutEntranceMapped = false;
+        if (tabarbour) {
+            for (int edge = 0; edge < n; edge++) {
+                int next = (edge + 1) % n;
+                float len = (float)Math.hypot(px[next]-px[edge], pz[next]-pz[edge]);
+                if (len > cutEntranceLength) { cutEntranceLength=len; cutEntranceEdge=edge; }
+            }
+            JSONArray cutPoints = tags.optJSONArray("adam:entrances");
+            if (cutPoints != null) {
+                float bestDistance = 4.0f;
+                for (int ei=0; ei<cutPoints.length(); ei++) {
+                    JSONObject entrance=cutPoints.optJSONObject(ei);
+                    JSONObject geometry=entrance==null?null:entrance.optJSONObject("geometry");
+                    JSONArray coordinates=geometry==null?null:geometry.optJSONArray("coordinates");
+                    if(coordinates==null||coordinates.length()<2) continue;
+                    double lon=coordinates.optDouble(0,Double.NaN), lat=coordinates.optDouble(1,Double.NaN);
+                    if(Double.isNaN(lon)||Double.isNaN(lat)) continue;
+                    float ex=Geo.x(lon), ez=Geo.z(lat);
+                    for(int edge=0;edge<n;edge++){
+                        int next=(edge+1)%n;
+                        float dx=px[next]-px[edge], dz=pz[next]-pz[edge], len2=dx*dx+dz*dz;
+                        if(len2<0.01f) continue;
+                        float t=Math.max(0f,Math.min(1f,((ex-px[edge])*dx+(ez-pz[edge])*dz)/len2));
+                        float qx=px[edge]+dx*t, qz=pz[edge]+dz*t;
+                        float distance=(float)Math.hypot(ex-qx,ez-qz);
+                        if(distance<bestDistance){
+                            bestDistance=distance; cutEntranceEdge=edge;
+                            cutEntranceLength=(float)Math.sqrt(len2); cutEntranceMid=t; cutEntranceMapped=true;
+                        }
+                    }
+                }
+            }
+        }
         float minx = 1e9f, maxx = -1e9f, minz = 1e9f, maxz = -1e9f;
         for (int i = 0; i < n; i++) {
             int j = (i + 1) % n;
@@ -693,14 +730,35 @@ final class TileBuilder {
             float belowGroundDepth = minHeight >= 2.2f ? 0f : undergroundDepth;
             float yBotA = ground[i] + minHeight - belowGroundDepth - 0.08f;
             float yBotB = ground[j] + minHeight - belowGroundDepth - 0.08f;
-            buf.v(ax, yBotA, az, 0, vMax, cr * lo, cg * lo, cb * lo);
-            buf.v(bx, yBotB, bz, u, vMax, cr * lo, cg * lo, cb * lo);
-            buf.v(bx, roofY[j], bz, u, 0, cr, cg, cb);
-            buf.fixTri();
-            buf.v(ax, yBotA, az, 0, vMax, cr * lo, cg * lo, cb * lo);
-            buf.v(bx, roofY[j], bz, u, 0, cr, cg, cb);
-            buf.v(ax, roofY[i], az, 0, 0, cr, cg, cb);
-            buf.fixTri();
+            if (tabarbour && i == cutEntranceEdge && len >= 2.5f) {
+                float openingWidth = 2.25f;
+                float halfOpening = openingWidth / (2f * len);
+                float t0 = Math.max(0.02f, cutEntranceMid-halfOpening);
+                float t1 = Math.min(0.98f, cutEntranceMid+halfOpening);
+                float x0=ax+(bx-ax)*t0, z0=az+(bz-az)*t0;
+                float x1=ax+(bx-ax)*t1, z1=az+(bz-az)*t1;
+                float bottom0=yBotA+(yBotB-yBotA)*t0, bottom1=yBotA+(yBotB-yBotA)*t1;
+                float top0=roofY[i]+(roofY[j]-roofY[i])*t0;
+                float top1=roofY[i]+(roofY[j]-roofY[i])*t1;
+                float openingTop0=Math.min(bottom0+2.85f,top0-0.20f);
+                float openingTop1=Math.min(bottom1+2.85f,top1-0.20f);
+                // Left pier, right pier and lintel: the central ground-floor wall is genuinely absent.
+                facadeQuad(buf,ax,yBotA,az,x0,bottom0,z0,x0,top0,z0,ax,roofY[i],az,
+                        cr*lo,cg*lo,cb*lo);
+                facadeQuad(buf,x1,bottom1,z1,bx,yBotB,bz,bx,roofY[j],bz,x1,top1,z1,
+                        cr*lo,cg*lo,cb*lo);
+                facadeQuad(buf,x0,openingTop0,z0,x1,openingTop1,z1,x1,top1,z1,x0,top0,z0,
+                        cr,cg,cb);
+            } else {
+                buf.v(ax, yBotA, az, 0, vMax, cr * lo, cg * lo, cb * lo);
+                buf.v(bx, yBotB, bz, u, vMax, cr * lo, cg * lo, cb * lo);
+                buf.v(bx, roofY[j], bz, u, 0, cr, cg, cb);
+                buf.fixTri();
+                buf.v(ax, yBotA, az, 0, vMax, cr * lo, cg * lo, cb * lo);
+                buf.v(bx, roofY[j], bz, u, 0, cr, cg, cb);
+                buf.v(ax, roofY[i], az, 0, 0, cr, cg, cb);
+                buf.fixTri();
+            }
         }
         // Architectural plinth: preserve its mapped height as a distinct stone/concrete base band.
         float plinthHeight = measure(tg(tags, "building:plinth:height"));
