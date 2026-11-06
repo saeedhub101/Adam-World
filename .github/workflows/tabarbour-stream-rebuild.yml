@@ -92,6 +92,15 @@ jobs:
 
           problems = []
           actual_elements = 0
+          seen_buildings = set()
+          height_count = floor_count = hotel_count = hospital_count = shop_count = 0
+          park_count = pitch_count = playground_count = 0
+          def positive_number(value):
+              try:
+                  number = float(str(value).lower().replace("meters", "").replace("meter", "").replace("m", "").strip())
+                  return number if number > 0 else None
+              except (TypeError, ValueError):
+                  return None
           for tile in tiles:
               path = stream / tile["file"]
               if not path.is_file():
@@ -111,6 +120,31 @@ jobs:
               actual_elements += actual
               if actual != int(tile["count"]):
                   problems.append(f"count:{path}:manifest={tile['count']}:actual={actual}")
+              for feature in data.get("elements", []):
+                  tags = feature.get("tags") or {}
+                  if not (tags.get("building") or tags.get("building:part")):
+                      if tags.get("leisure") in ("park", "garden", "pitch", "playground"): park_count += 1
+                      continue
+                  identity = (feature.get("type"), str(feature.get("id")))
+                  if identity in seen_buildings: continue
+                  seen_buildings.add(identity)
+                  if any(positive_number(tags.get(key)) for key in ("height", "building:height", "height:meters")):
+                      height_count += 1
+                  if any(positive_number(tags.get(key)) for key in ("building:levels", "num_floors", "levels")):
+                      floor_count += 1
+                  building = str(tags.get("building") or "").lower()
+                  if building in ("hotel", "motel", "hostel") or tags.get("tourism") in ("hotel", "motel", "hostel", "guest_house"):
+                      hotel_count += 1
+                  if building in ("hospital", "clinic", "health_centre") or tags.get("amenity") in ("hospital", "clinic") or tags.get("healthcare") in ("hospital", "clinic"):
+                      hospital_count += 1
+                  if tags.get("shop") or building in ("retail", "shop", "supermarket", "mall", "commercial"):
+                      shop_count += 1
+                  if tags.get("leisure") in ("park", "garden") or tags.get("landuse") in ("recreation_ground", "village_green"):
+                      park_count += 1
+                  if tags.get("leisure") == "pitch" or tags.get("sport"):
+                      pitch_count += 1
+                  if tags.get("leisure") == "playground":
+                      playground_count += 1
           assert not problems, "Stream cell validation failed: " + " | ".join(problems[:50])
           assert actual_elements == int(manifest["element_count"]), (
               f"Verified element total mismatch: actual={actual_elements}, manifest={manifest['element_count']}"
@@ -173,7 +207,21 @@ jobs:
               json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
               encoding="utf-8"
           )
+          manifest["building_attribute_audit"] = {
+              "unique_buildings": len(seen_buildings),
+              "explicit_metric_height": height_count,
+              "mapped_floor_count": floor_count,
+              "hotel_features": hotel_count,
+              "hospital_features": hospital_count,
+              "commercial_shop_features": shop_count,
+              "park_garden_features": park_count,
+              "sports_pitch_features": pitch_count,
+              "playground_features": playground_count,
+              "height_coverage_percent": round(100.0 * height_count / max(1, len(seen_buildings)), 2),
+              "floor_coverage_percent": round(100.0 * floor_count / max(1, len(seen_buildings)), 2)
+          }
           print(json.dumps(manifest["runtime_validation"], ensure_ascii=False, indent=2))
+          print(json.dumps(manifest["building_attribute_audit"], ensure_ascii=False, indent=2))
           PY
 
       - name: Publish final manifest and remove obsolete tiles safely
