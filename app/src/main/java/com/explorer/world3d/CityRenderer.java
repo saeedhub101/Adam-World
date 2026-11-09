@@ -281,6 +281,14 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         importedVehicleModels[ProceduralVehicleModels.PICKUP] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/pickup.awmesh");
         importedVehicleModels[ProceduralVehicleModels.BUS] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/city-bus.awmesh");
         importedVehicleModels[ProceduralVehicleModels.MOTORBIKE] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/motorcycle.awmesh");
+        // Imported replacements make their procedural GPU copies redundant. Release them
+        // immediately to avoid keeping both full meshes resident on memory-constrained TVs.
+        for (int type = 0; type < importedVehicleModels.length; type++) {
+            if (importedVehicleModels[type] != null && vehicleModels[type] != null) {
+                vehicleModels[type].release();
+                vehicleModels[type] = null;
+            }
+        }
         vehicleGlassModels = advancedShader ? ProceduralVehicleModels.buildGlassAll() : null;
         wheelMesh = Mesh.from(ProceduralVehicleModels.buildWheel());
         humanRigModels = ProceduralHumanRig.buildAll();
