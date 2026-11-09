@@ -139,7 +139,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private final float[] proj = new float[16], view = new float[16], vp = new float[16];
     private final float[] ident = new float[16], tmp = new float[16], base = new float[16];
     private float aspect = 1f;
-    private long lastN = System.nanoTime(), lastUnload, lastAgentMs, lastHudMs, spawnDeadline;
+    private long lastN = System.nanoTime(), lastUnload, lastAgentMs, lastHudMs, spawnDeadline, lastAudioWeaponShot;
     private boolean started, needSpawn, spawned, spawnTimeoutNotified;
     private float lookDx, lookDy;
     private volatile float gamepadLookX, gamepadLookY;
@@ -761,6 +761,10 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
         if (spawned) {
             game.update(dt, this);
+            if (game.lastWeaponShotMs != 0L && game.lastWeaponShotMs != lastAudioWeaponShot) {
+                lastAudioWeaponShot = game.lastWeaponShotMs;
+                worldAudio.playEffect(game.equippedWeapon);
+            }
             if (!flightSchoolMode && nowMs - lastAgentMs > 700) { lastAgentMs = nowMs; spawnAgents(); }
             if (nowMs - lastHudMs > 200) {
                 lastHudMs = nowMs;
