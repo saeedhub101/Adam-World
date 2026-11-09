@@ -224,6 +224,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
     }
 
+    private void showVehicleSelector() {
+        final String[] names = {"سيدان", "SUV", "بيك أب", "باص", "شرطة", "دراجة نارية",
+                "دراجة هوائية", "دبابة", "هليكوبتر", "طائرة"};
+        new AlertDialog.Builder(this).setTitle("اختر المركبة")
+                .setItems(names, (dialog, which) -> runOnGl(() -> renderer.selectVehicleType(which)))
+                .setNegativeButton("إلغاء", null).show();
+    }
+
     private Button touchAction(String label, final Runnable press, final Runnable release) {
         Button b = btn(label);
         b.setTextSize(12);
@@ -409,7 +417,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         LinearLayout vehicleRow = new LinearLayout(this);
         vehicleRow.setGravity(Gravity.CENTER);
         Button vehicleTouch = touchAction("دخول / خروج", () -> runOnGl(() -> renderer.toggleCar()), null);
-        Button vehicleTypeTouch = touchAction("نوع المركبة", () -> runOnGl(() -> renderer.cycleVehicleType()), null);
+        Button vehicleTypeTouch = touchAction("اختيار مركبة", () -> showVehicleSelector(), null);
         touchVehicleButton = vehicleTouch;
         touchVehicleTypeButton = vehicleTypeTouch;
         vehicleRow.addView(vehicleTouch, new LinearLayout.LayoutParams(0, dp(46), 1.45f));
