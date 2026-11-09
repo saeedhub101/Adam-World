@@ -15,6 +15,7 @@
 - **Implemented:** mobile-only action pad (kept off non-touch TV devices); jump, punch, kick, hold-to-guard, hold-to-sprint, dodge, vehicle summon/enter/exit, and vehicle-type cycling.
 - **Implemented:** contextual HUD hides on-foot combat/run/dodge controls while driving and exposes climb/descent controls only while piloting a helicopter or airplane.
 - **Implemented:** held sprint/guard/lift states are released on touch-up/cancel and when the activity pauses.
+- **Implemented:** gamepad D-pad up/down controls aircraft climb/descent (R1 camera-zoom modifier retains priority); aircraft body pitch and bank now respond to flight input and steering, with attitude reset on vehicle entry/exit.
 - **Reused:** existing `Game` request/state fields and `CityRenderer.toggleCar()/cycleVehicleType()`; no parallel gameplay system was introduced.
 - **Still in progress:** flight handling needs refinement (especially airplane pitch/takeoff/landing and dedicated throttle controls), vehicle spawn/selection needs a clearer garage flow, and end-to-end build/release confirmation is pending. Existing type cycling already includes helicopter and airplane, but no dedicated airport/hangar placement has been established by this change.
 
