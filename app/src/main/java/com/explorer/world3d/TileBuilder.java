@@ -117,6 +117,8 @@ final class TileBuilder {
                 else if (tg(tags, "highway").equals("street_lamp") && lamps.size() < 60) lamps.add(new float[]{x, z});
                 else if (tg(tags,"highway").equals("traffic_signals") || tg(tags,"crossing").equals("traffic_signals")) addTrafficSignal(td,x,z);
                 else if (poiCategory(tags) > 0) addPoi(td, x, z, poiName(tags), poiCategory(tags), Terrain.h(x, z) + 2.8f);
+                else if (!tg(tags, "addr:housenumber").isEmpty())
+                    addPoi(td, x, z, "رقم " + tg(tags, "addr:housenumber"), 10, Terrain.h(x, z) + 2.8f);
                 else if (isWaterUtility(tags)) addUtilityMarker(td, x, z, tags);
                 else if (tg(tags,"railway").matches("station|halt|tram_stop|subway_entrance") || tg(tags,"public_transport").matches("station|platform|stop_position")) addPoi(td,x,z,poiName(tags),7,Terrain.h(x,z)+2.8f);
                 else if (tg(tags,"highway").equals("bus_stop")) addPoi(td,x,z,poiName(tags),6,Terrain.h(x,z)+2.8f);
@@ -1656,7 +1658,6 @@ final class TileBuilder {
             else if (surface.matches("grass|grass_paver")) { rr = 0.52f; rg = 0.64f; rb = 0.43f; }
             else if (surface.matches("wood|metal")) { rr = 0.62f; rg = 0.59f; rb = 0.54f; }
             if (w >= 6f || hw.equals("service") || mappedBusway) {
-                if (!bridge && !tunnel) ribbon(px, pz, w + 4.2f, 0.20f, td.bufs[B_SIDEWALK], (w + 4.2f) / 2f, 2f, 1f, 1f, 1f);
                 GeoBuf roadBuf = (w >= 7f ? td.bufs[B_ROADW] : td.bufs[B_ROADN]);
                 ribbonOffset(px, pz, w, yOffset, roadBuf, 1f, 12f, rr, rg, rb);
                 if (bridge) addBridgeParapets(px, pz, w, yOffset, roadBuf, footOrCycle ? 1.15f : 0.85f);
@@ -1669,6 +1670,8 @@ final class TileBuilder {
             }
             RoadPath rp = new RoadPath(px, pz, w, veh);
             rp.name = name;
+            if (!bridge && !tunnel && veh && !footOrCycle)
+                addRoadSidewalks(td, rp, tags, hw, yOffset);
             if (tg(tags, "junction").equals("roundabout")) addRoundaboutIsland(td, px, pz, w);
             if (veh && w >= 5.0f) addRoadMarkings(td, rp, tags, hw, yOffset, w);
             String medianKind = (tg(tags, "median") + " " + tg(tags, "divider") + " " + tg(tags, "separator") + " " + tg(tags, "dual_carriageway")).toLowerCase(java.util.Locale.US);
@@ -1683,6 +1686,71 @@ final class TileBuilder {
                 float[] o = new float[4];
                 addDecal(td, rp, rp.total * 0.5f, name, o);
                 for (float s = 125f; s < rp.total - 8f; s += 150f) addDecal(td, rp, s, name, o);
+            }
+        }
+    }
+
+    /**
+     * Builds two independent, terrain-conforming sidewalks beside the carriageway.
+     * Widths and presence are source-driven when tagged; urban defaults are used
+     * only when the source omits sidewalk metadata. The complete sidewalk polygon
+     * is registered as a vehicle obstacle, not merely painted on the road.
+     */
+    private static void addRoadSidewalks(TileData td, RoadPath path, JSONObject tags,
+                                         String highway, float roadYOffset) {
+        if (path == null || path.total < 2f) return;
+        String both = tg(tags, "sidewalk").toLowerCase(java.util.Locale.US);
+        boolean urban = highway.matches("motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service|road");
+        for (int side : new int[]{-1, 1}) {
+            String sideName = side < 0 ? "right" : "left";
+            String sideTag = tg(tags, "sidewalk:" + sideName).toLowerCase(java.util.Locale.US);
+            String presence = sideTag.isEmpty() ? both : sideTag;
+            if (presence.matches("no|none|separate|0")) continue;
+            if (presence.isEmpty() && !urban) continue;
+            float width = measure(tg(tags, "sidewalk:" + sideName + ":width"));
+            if (!(width >= 0.7f && width <= 12f)) width = measure(tg(tags, "sidewalk:width"));
+            if (!(width >= 0.7f && width <= 12f)) width = presence.equals("yes") || presence.equals("both") ? 1.8f : 1.5f;
+            float inner = path.w * 0.5f;
+            float centerOffset = side * (inner + width * 0.5f);
+            int count = Math.max(2, (int)Math.ceil(path.total / 5f) + 1);
+            float[] cx = new float[count], cz = new float[count];
+            float[] ix = new float[count], iz = new float[count];
+            float[] ox = new float[count], oz = new float[count];
+            float[] p = new float[4];
+            for (int i = 0; i < count; i++) {
+                float distance = path.total * i / (count - 1f);
+                path.posAt(distance, centerOffset, p); cx[i] = p[0]; cz[i] = p[1];
+                path.posAt(distance, side * inner, p); ix[i] = p[0]; iz[i] = p[1];
+                path.posAt(distance, side * (inner + width), p); ox[i] = p[0]; oz[i] = p[1];
+            }
+            ribbonOffset(cx, cz, width, roadYOffset + 0.20f, td.bufs[B_SIDEWALK),
+                    1f, 8f, 0.78f, 0.77f, 0.72f);
+            float[] curbX = new float[count], curbZ = new float[count];
+            for (int i = 0; i < count; i++) {
+                path.posAt(path.total * i / (count - 1f), side * (inner + 0.10f), p);
+                curbX[i] = p[0]; curbZ[i] = p[1];
+            }
+            ribbonOffset(curbX, curbZ, 0.20f, roadYOffset + 0.30f, td.bufs[B_SIDEWALK],
+                    1f, 2f, 0.58f, 0.59f, 0.56f);
+            for (int i = 0; i + 1 < count; i++) {
+                float baseA = Terrain.h(ix[i], iz[i]) + roadYOffset;
+                float baseB = Terrain.h(ix[i + 1], iz[i + 1]) + roadYOffset;
+                float topA = Terrain.h(ix[i], iz[i]) + roadYOffset + 0.30f;
+                float topB = Terrain.h(ix[i + 1], iz[i + 1]) + roadYOffset + 0.30f;
+                facadeQuad(td.bufs[B_SIDEWALK], ix[i], baseA, iz[i], ix[i + 1], baseB, iz[i + 1],
+                        ix[i + 1], topB, iz[i + 1], ix[i], topA, iz[i],
+                        0.48f, 0.49f, 0.46f);
+                float[] fx = {ix[i], ox[i], ox[i + 1], ix[i + 1]};
+                float[] fz = {iz[i], oz[i], oz[i + 1], iz[i + 1]};
+                Footprint obstacle = new Footprint();
+                obstacle.xs = fx; obstacle.zs = fz;
+                obstacle.minx = obstacle.maxx = fx[0];
+                obstacle.minz = obstacle.maxz = fz[0];
+                for (int k = 1; k < 4; k++) {
+                    obstacle.minx = Math.min(obstacle.minx, fx[k]); obstacle.maxx = Math.max(obstacle.maxx, fx[k]);
+                    obstacle.minz = Math.min(obstacle.minz, fz[k]); obstacle.maxz = Math.max(obstacle.maxz, fz[k]);
+                }
+                Collision.add(td.grid, obstacle);
             }
         }
     }
@@ -1718,6 +1786,15 @@ final class TileBuilder {
     private static void addTrafficIsland(TileData td, float[] xs, float[] zs) {
         if (xs == null || zs == null || xs.length < 3) return;
         int[] triangles = Poly.earClip(xs, zs);
+        Footprint islandObstacle = new Footprint();
+        islandObstacle.xs = xs; islandObstacle.zs = zs;
+        islandObstacle.minx = islandObstacle.maxx = xs[0];
+        islandObstacle.minz = islandObstacle.maxz = zs[0];
+        for (int i = 1; i < xs.length; i++) {
+            islandObstacle.minx = Math.min(islandObstacle.minx, xs[i]); islandObstacle.maxx = Math.max(islandObstacle.maxx, xs[i]);
+            islandObstacle.minz = Math.min(islandObstacle.minz, zs[i]); islandObstacle.maxz = Math.max(islandObstacle.maxz, zs[i]);
+        }
+        Collision.add(td.grid, islandObstacle);
         GeoBuf fill = td.bufs[B_SIDEWALK];
         for (int i = 0; i + 2 < triangles.length; i += 3) {
             for (int k = 0; k < 3; k++) {
