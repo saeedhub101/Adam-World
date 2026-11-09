@@ -360,6 +360,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             actionPad.setVisibility(View.GONE);
         }
 
+        LinearLayout combatControls = new LinearLayout(this);
+        combatControls.setOrientation(LinearLayout.VERTICAL);
         LinearLayout combatRow = new LinearLayout(this);
         combatRow.setGravity(Gravity.CENTER);
         Button jumpTouch = touchAction("قفز", () -> runOnGl(() -> {
@@ -370,7 +372,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }), null);
         combatRow.addView(jumpTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
         combatRow.addView(punchTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        actionPad.addView(combatRow);
+        combatControls.addView(combatRow);
 
         LinearLayout combatRow2 = new LinearLayout(this);
         combatRow2.setGravity(Gravity.CENTER);
@@ -381,8 +383,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 () -> runOnGl(() -> renderer.game.guardRequested = false));
         combatRow2.addView(kickTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
         combatRow2.addView(guardTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        actionPad.addView(combatRow2);
-        touchCombatRow = actionPad;
+        combatControls.addView(combatRow2);
 
         LinearLayout runRow = new LinearLayout(this);
         runRow.setGravity(Gravity.CENTER);
@@ -393,7 +394,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }), null);
         runRow.addView(touchSprintButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
         runRow.addView(touchDodgeButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        actionPad.addView(runRow);
+        combatControls.addView(runRow);
+        touchCombatRow = combatControls;
+        actionPad.addView(combatControls);
 
         LinearLayout vehicleRow = new LinearLayout(this);
         vehicleRow.setGravity(Gravity.CENTER);
