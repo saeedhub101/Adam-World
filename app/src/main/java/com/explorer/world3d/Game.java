@@ -263,13 +263,17 @@ final class Game {
                     float frontStep = Math.max(frontLeft, frontRight), rearStep = Math.max(rearLeft, rearRight);
                     boolean frontContact = frontStep > 0.015f, rearContact = rearStep > 0.015f;
                     float impactSpeed = Math.min(0.16f, 0.055f + Math.abs(cv) * 0.003f);
-                    if (frontContact && !vehicleFrontStepContact) {
-                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.min(1.25f, frontStep / 0.18f));
+                    // Trigger a short jolt both when the axle climbs onto the edge
+                    // and when it drops back to the roadway.
+                    if (frontContact != vehicleFrontStepContact) {
+                        float frontEdge = Math.max(frontStep, Math.max(vehicleWheelFL, vehicleWheelFR));
+                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.min(1.25f, frontEdge / 0.18f));
                         vehicleBumpTime = 0f;
                         vehicleBumpSide = Math.signum(frontLeft - frontRight);
                     }
-                    if (rearContact && !vehicleRearStepContact) {
-                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.min(1.25f, rearStep / 0.18f));
+                    if (rearContact != vehicleRearStepContact) {
+                        float rearEdge = Math.max(rearStep, Math.max(vehicleWheelRL, vehicleWheelRR));
+                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.min(1.25f, rearEdge / 0.18f));
                         vehicleBumpTime = 0f;
                         vehicleBumpSide = Math.signum(rearLeft - rearRight);
                     }
