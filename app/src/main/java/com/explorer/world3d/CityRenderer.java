@@ -728,7 +728,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         for (Game.Agent a : g.agents) {
             if (Math.hypot(a.x - g.camX, a.z - g.camZ) > 350) continue;
             if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, a.cr, a.cg, a.cb, a.sp * a.dir, 0f);
-            else drawPerson(a.x, Terrain.h(a.x, a.z), a.z, a.yaw, a.ph, a.humanType);
+            else drawPerson(a.x, Terrain.h(a.x, a.z), a.z, a.yaw, a.ph, a.humanType, a.hostile, a.knockedOut);
         }
         if (spawned) {
             drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.altitude, 0.75f, 0.22f, 0.17f, g.cv, g.sx);
@@ -921,7 +921,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         mesh.draw();
     }
 
-    private void drawPerson(float x,float y,float z,float yaw,float phase,int variant) {
+    private void drawPerson(float x,float y,float z,float yaw,float phase,int variant,boolean hostile,boolean knockedOut) {
         if(humanRigModels==null||humanRigModels.length==0)return;
         int id=(variant%humanRigModels.length+humanRigModels.length)%humanRigModels.length;
         Mesh[] rig=humanRigModels[id];
@@ -930,6 +930,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         Matrix.setIdentityM(base,0);
         Matrix.translateM(base,0,x,y+bob,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
+        if (knockedOut) Matrix.rotateM(base,0,88f,1f,0f,0f);
         drawHumanPart(rig[0],0,1.08f,0,0,0,0,0,1,1,1);
         drawHumanPart(rig[1],0,1.58f,0,0,0,0,0,1,1,1);
         drawHumanPart(rig[2],0,1.69f,-.018f,0,0,0,0,1,1,1);
@@ -940,6 +941,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         for(int side=-1;side<=1;side+=2) {
             float legAngle=(side<0?swing:-swing)*57.29578f;
             float armAngle=(side<0?-swing:swing)*42f;
+            if (hostile && side > 0) armAngle = (float)Math.sin(phase*2.5f)*24f - 62f;
             drawHumanPart(rig[3],side*.21f,1.32f,0,armAngle,side*.075f,-.15f,0,1,1,1);
             drawHumanPart(rig[4],side*.29f,1.00f,0,armAngle*.42f,side*.012f,-.12f,.01f,1,1,1);
             drawHumanPart(rig[5],side*.115f,.78f,0,legAngle,0,-.16f,0,1,1,1);
