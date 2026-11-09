@@ -33,6 +33,6 @@ This note records the code changes made in the runtime and Amman stream builder.
 
 ## Build and publication
 
-The Android release workflow builds the signed APK and AAB from `main` and uses the existing signing secrets. The Amman stream rebuild workflow reprocesses only the already-committed Amman import and OSM-context files, publishes the regenerated local stream, then requests the Android release workflow.
+The Android release workflow builds the signed APK from `main` and uses the existing signing secrets. The Amman stream rebuild workflow reprocesses only the already-committed Amman import and OSM-context files, publishes the regenerated local stream, then requests the Android release workflow.
 
 No test-only workflow is introduced by this implementation.
