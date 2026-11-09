@@ -137,8 +137,29 @@ def make_elements(feature, layer, part=False):
             return []
         nm=name_value(p.get("names"))
         if nm: tags["name"]=nm
-        for key in ("ref","network","operator","service","layer","bridge","tunnel"):
-            if p.get(key) is not None and key not in tags: tags[key]=val(p[key])
+        # Preserve measured road geometry/operation attributes instead of
+        # dropping them during Overture -> OSM-style normalization. These
+        # source tags are consumed segment-by-segment by TileBuilder.
+        road_keys = (
+            "width", "width:carriageway", "width:lanes", "width:lanes:forward",
+            "width:lanes:backward", "est_width", "lanes", "lanes:forward",
+            "lanes:backward", "oneway", "junction", "turn:lanes",
+            "turn:lanes:forward", "turn:lanes:backward", "change:lanes",
+            "busway", "bus:lanes", "psv:lanes", "cycleway", "cycleway:left",
+            "cycleway:right", "sidewalk", "sidewalk:left", "sidewalk:right",
+            "parking:lane:both", "parking:lane:left", "parking:lane:right",
+            "median", "median:width", "divider", "separator", "dual_carriageway",
+            "maxspeed", "surface", "smoothness", "lit", "bridge", "tunnel",
+            "layer", "ref", "network", "operator", "service", "name:ar",
+            "name:en", "highway", "traffic_calming", "crossing",
+            "traffic_signals", "destination", "destination:lanes"
+        )
+        for key in road_keys:
+            value = st.get(key)
+            if value not in (None, ""):
+                tags[key] = value
+            elif p.get(key) not in (None, ""):
+                tags[key] = val(p[key])
         widths=p.get("width_rules")
         if isinstance(widths,list) and widths:
             candidates=[item for item in widths if isinstance(item,dict) and item.get("value") is not None]
