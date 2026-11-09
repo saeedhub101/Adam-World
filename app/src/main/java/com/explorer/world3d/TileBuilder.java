@@ -210,6 +210,9 @@ final class TileBuilder {
                 }
                 if (!streetName.isEmpty() && !buildingLabel.contains(streetName))
                     buildingLabel += " · " + streetName;
+                if (poi == 1) buildingLabel = "مستشفى · " + buildingLabel;
+                else if (poi == 8) buildingLabel = "مدرسة · " + buildingLabel;
+                else if (poi == 9) buildingLabel = "صيدلية · " + buildingLabel;
                 float mappedFloors = measure(tg(tags, "building:levels"));
                 boolean estimatedFloors = tg(tags, "adam:floors_quality").equals("estimated_range");
                 String floorLabel = mappedFloors > 0f
@@ -2105,6 +2108,8 @@ final class TileBuilder {
         else if(category==3){cr=0.43f;cg=0.25f;cb=0.14f;}
         else if(category==4){cr=0.42f;cg=0.20f;cb=0.62f;}
         else if(category==5){cr=0.12f;cg=0.48f;cb=0.28f;}
+        else if(category==8){cr=0.12f;cg=0.32f;cb=0.72f;}
+        else if(category==9){cr=0.10f;cg=0.58f;cb=0.28f;}
         GeoBuf sign=td.bufs[B_SIGN];
         sign.v(lx,y,lz,0,1,cr,cg,cb); sign.v(rx,y,rz,1,1,cr,cg,cb);
         sign.v(rx,y+height,rz,1,0,cr,cg,cb); sign.fixTri();
