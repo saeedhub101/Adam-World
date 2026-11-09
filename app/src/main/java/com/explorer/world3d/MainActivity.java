@@ -509,7 +509,16 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             });
         }
     }
-    @Override protected void onPause() { glView.onPause(); super.onPause(); }
+    @Override protected void onPause() {
+        // Never leave held touch actions latched when Android interrupts the activity.
+        if (renderer != null) {
+            renderer.game.sprint = false;
+            renderer.game.guardRequested = false;
+            renderer.game.liftInput = 0f;
+        }
+        glView.onPause();
+        super.onPause();
+    }
     @Override protected void onDestroy() { renderer.shutdown(); super.onDestroy(); }
 
     private void teleport(final double lat, final double lon) {
