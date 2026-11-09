@@ -182,10 +182,14 @@ def main():
      manifest["feature_count"]=sum(p["features"] for p in manifest["parts"]);manifest["raw_feature_count"]=raw_feature_count;manifest["matched_feature_count"]=matched_feature_count;manifest["rejected_feature_count"]=serialization_or_geometry_errors
      if matched_feature_count>0 and manifest["feature_count"]==0:
       manifest["status"]="partial";manifest["empty_reason"]="matched_features_not_written";save(manifest_path,json.dumps(manifest,indent=2).encode());checkpoint([manifest_path],slug)
-      raise RuntimeError(f"{typ}: {matched_feature_count} matched features but no GeoJSON parts were written")
+      city_layer_failures.append((dest,typ,"matched features but no parts were written"))
+      print("LAYER OUTPUT INCOMPLETE; continuing",slug,typ,flush=True)
+      continue
      if matched_feature_count==0 and raw_feature_count>0:
       manifest["status"]="partial";manifest["empty_reason"]="download_returned_features_but_none_intersected_city_boundary";save(manifest_path,json.dumps(manifest,indent=2).encode());checkpoint([manifest_path],slug)
-      raise RuntimeError(f"{typ}: downloaded {raw_feature_count} features but 0 intersected city boundary; refusing false complete manifest")
+      city_layer_failures.append((dest,typ,"downloaded features but none intersected verified city boundary"))
+      print("LAYER BOUNDARY MISMATCH; continuing",slug,typ,flush=True)
+      continue
      if matched_feature_count==0:
       manifest["status"]="empty";manifest["empty_reason"]="source_returned_zero_features"
      else:manifest["status"]="complete"
