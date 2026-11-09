@@ -37,6 +37,8 @@ final class Game {
     float guardBlend, hurtFlash, playerPoseTime, playerFall;
     int playerPose;
     volatile float cameraLookOffset;
+    // Hold the camera modifier and use D-pad up/down for smooth zoom.
+    volatile float cameraZoomInput;
     float jumpVelocity, jumpHeight, attackSeconds;
     // Damped suspension response when wheels climb/drop over curbs and islands.
     float vehicleBumpAmplitude, vehicleBumpTime, vehicleBumpOffset, vehicleBumpRoll, vehicleBumpPitch;
@@ -66,7 +68,7 @@ final class Game {
 
     void reset() {
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; health = 100; dead = false;
-        paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f;
+        paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
@@ -79,16 +81,6 @@ final class Game {
 
     float focusX() { return driving ? cx : px; }
     float focusZ() { return driving ? cz : pz; }
-
-    void setCameraPreset(String preset) {
-        switch (preset) {
-            case "street": camDistance = 5.2f; camPitch = 0.28f; break;
-            case "near": camDistance = 13f; camPitch = 0.52f; break;
-            case "high": camDistance = 38f; camPitch = 0.92f; break;
-            case "drone": camDistance = 105f; camPitch = 1.48f; break;
-            default: return;
-        }
-    }
 
     void zoom(float factor) {
         if (Float.isFinite(factor) && factor > 0f) camDistance = clamp(camDistance * factor, 3.2f, 180f);
@@ -103,6 +95,10 @@ final class Game {
     void update(float dt, World w) {
         if (paused) return;
         dt = clamp(dt, 0f, 0.05f);
+        if (cameraZoomInput != 0f) {
+            float zoomFactor = (float) Math.exp(-clamp(cameraZoomInput, -1f, 1f) * dt * 1.45f);
+            camDistance = clamp(camDistance * zoomFactor, 3.2f, 180f);
+        }
         long now = System.currentTimeMillis();
         if (dead) {
             sx = sy = 0f;

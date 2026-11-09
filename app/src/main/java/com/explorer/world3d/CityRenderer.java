@@ -138,6 +138,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private boolean started, needSpawn, spawned, spawnTimeoutNotified;
     private float lookDx, lookDy;
     private volatile float gamepadLookX, gamepadLookY;
+    private float smoothGamepadLookX, smoothGamepadLookY;
     private volatile float lookSensitivity = 1f;
     public volatile int timeIdx = 0;
     private int environmentTimeIdx = -1;
@@ -584,7 +585,14 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         synchronized (this) { ldx = lookDx; ldy = lookDy; lookDx = 0; lookDy = 0; }
         if (ldx != 0 || ldy != 0) game.look(ldx * lookSensitivity, ldy * lookSensitivity);
         float gx = gamepadLookX, gy = gamepadLookY;
-        if (gx != 0f || gy != 0f) game.look(gx * dt * 260f * lookSensitivity, gy * dt * 260f * lookSensitivity);
+        float lookBlend = 1f - (float) Math.exp(-dt * 16f);
+        smoothGamepadLookX += (gx - smoothGamepadLookX) * lookBlend;
+        smoothGamepadLookY += (gy - smoothGamepadLookY) * lookBlend;
+        if (Math.abs(smoothGamepadLookX) < 0.0015f && gx == 0f) smoothGamepadLookX = 0f;
+        if (Math.abs(smoothGamepadLookY) < 0.0015f && gy == 0f) smoothGamepadLookY = 0f;
+        if (smoothGamepadLookX != 0f || smoothGamepadLookY != 0f)
+            game.look(smoothGamepadLookX * dt * 235f * lookSensitivity,
+                    smoothGamepadLookY * dt * 235f * lookSensitivity);
 
         TileData td;
         int ups = 0;

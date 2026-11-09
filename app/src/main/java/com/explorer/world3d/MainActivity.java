@@ -56,15 +56,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private EditText query;
     private Button timeBtn;
     private boolean keyUp, keyDown, keyLeft, keyRight;
-    private int gamepadCameraPreset;
     private AlertDialog pauseDialog;
     private ToneGenerator hornTone;
-    private boolean padL2, padR2;
+    private boolean padL2, padR2, padCameraModifier;
     private TextView healthHud;
     private MiniMapView miniMap;
     private long lastHudRefresh;
-    private final String[] CAMERA_LABELS = {"شارع", "قريب", "مرتفع", "درون"};
-    private final String[] CAMERA_PRESETS = {"street", "near", "high", "drone"};
 
     private int dp(int v) { return dp((float) v); }
     private int dp(float v) { return (int) (v * getResources().getDisplayMetrics().density + 0.5f); }
@@ -77,11 +74,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void runOnGl(final Runnable action) { if (glView != null) glView.queueEvent(action); }
     private void setGamePaused(final boolean paused) {
         runOnGl(new Runnable() { @Override public void run() { renderer.game.paused = paused; } });
-    }
-    private void cycleGameCamera() {
-        gamepadCameraPreset = (gamepadCameraPreset + 1) % CAMERA_PRESETS.length;
-        final String preset = CAMERA_PRESETS[gamepadCameraPreset];
-        runOnGl(new Runnable() { @Override public void run() { renderer.game.setCameraPreset(preset); } });
     }
     private void attackOrHeal() {
         if (renderer.game.driving) { playHorn(); return; }
@@ -146,6 +138,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         int code = event.getKeyCode();
         boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
         boolean pressed = down && event.getRepeatCount() == 0;
+        if (padCameraModifier && (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN)) {
+            if (renderer != null) renderer.game.cameraZoomInput = down
+                    ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
+            return true;
+        }
         if (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_W) { keyUp = down; updateRemoteMovement(); return true; }
         if (code == KeyEvent.KEYCODE_DPAD_DOWN || code == KeyEvent.KEYCODE_S) { keyDown = down; updateRemoteMovement(); return true; }
         if (code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_A) { keyLeft = down; updateRemoteMovement(); return true; }
@@ -160,7 +157,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed && !renderer.game.driving) runOnGl(new Runnable() { @Override public void run() { renderer.game.punchRequested = true; } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_L1) { if (!renderer.game.driving) renderer.game.guardRequested = down; else renderer.game.cameraLookOffset = down ? -0.95f : 0f; return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_R1) { renderer.game.cameraLookOffset = down ? 0.95f : 0f; return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_R1) {
+            padCameraModifier = down;
+            if (!down) renderer.game.cameraZoomInput = 0f;
+            return true;
+        }
         if (code == KeyEvent.KEYCODE_BUTTON_L2 || code == KeyEvent.KEYCODE_BUTTON_R2) {
             padL2 = code == KeyEvent.KEYCODE_BUTTON_L2 ? down : padL2;
             padR2 = code == KeyEvent.KEYCODE_BUTTON_R2 ? down : padR2;
