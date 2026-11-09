@@ -247,7 +247,7 @@ def main():
                 for first, count, material_index in submeshes:
                     stream.write(struct.pack("<III", first, count, material_index))
                 for material in materials:
-                    stream.write(struct.pack("<10fIII", *material[:10], int(material[10]), int(material[11]), int(material[12])))
+                    stream.write(struct.pack("<10fIII", *material[:10], int(material[10]), int(material[11]), (int(material[12]) & 0xFFFFFFFF)))
                 for width, height, payload in textures:
                     stream.write(struct.pack("<IIII", width, height, 1, len(payload)))
                     stream.write(payload)
