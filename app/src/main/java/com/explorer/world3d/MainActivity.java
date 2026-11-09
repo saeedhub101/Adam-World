@@ -146,6 +146,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
             return true;
         }
+        if (renderer != null && renderer.game.driving
+                && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
+                || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE)
+                && (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN)) {
+            renderer.game.liftInput = down
+                    ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
+            return true;
+        }
         if (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_W) { keyUp = down; updateRemoteMovement(); return true; }
         if (code == KeyEvent.KEYCODE_DPAD_DOWN || code == KeyEvent.KEYCODE_S) { keyDown = down; updateRemoteMovement(); return true; }
         if (code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_A) { keyLeft = down; updateRemoteMovement(); return true; }
