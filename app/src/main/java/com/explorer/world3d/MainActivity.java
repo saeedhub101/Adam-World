@@ -453,7 +453,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.addView(miniMap, miniParams);
 
         Button heal = btn("✚ علاج");
-        heal.setOnClickListener(v -> { glView.queueEvent(() -> renderer.game.heal()); Toast.makeText(this,"استخدم آدم العلاج المتاح",Toast.LENGTH_SHORT).show(); });
+        heal.setOnClickListener(v -> { glView.queueEvent(() -> { if (renderer.game.dead) renderer.game.revive(); else renderer.game.heal(); }); Toast.makeText(this,renderer.game.dead?"عاد آدم إلى اللعب":"تم استخدام العلاج إن كان متاحاً",Toast.LENGTH_SHORT).show(); });
         FrameLayout.LayoutParams healParams = new FrameLayout.LayoutParams(dp(92), dp(44), Gravity.BOTTOM | Gravity.END);
         healParams.setMargins(0,0,dp(22),dp(220));
         root.addView(heal,healParams);
@@ -618,7 +618,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if (System.currentTimeMillis()-lastHudRefresh>250 && renderer!=null) {
                 lastHudRefresh=System.currentTimeMillis();
                 int hp=renderer.game.health;
-                healthHud.setText("♥ "+hp+" / 100"+(renderer.game.dead?"  — متوفى":""));
+                healthHud.setText("♥ "+hp+" / 100"+(renderer.game.dead?"  — متوفى | اضغط إحياء":""));
                 healthHud.setTextColor(hp>60?0xff65e58b:hp>25?0xffffc857:0xffff5555);
                 miniMap.invalidate();
             }

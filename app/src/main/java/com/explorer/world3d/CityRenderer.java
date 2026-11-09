@@ -191,8 +191,6 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
     public synchronized void addLook(float dx, float dy) { lookDx += dx; lookDy += dy; }
 
-    private float lookSensitivity = 1f;
-    public void setLookSensitivity(float value) { lookSensitivity = Math.max(0.4f, Math.min(2f, value)); }
     public void setGamepadLook(float x, float y) {
         gamepadLookX = Math.max(-1f, Math.min(1f, x));
         gamepadLookY = Math.max(-1f, Math.min(1f, y));
@@ -599,7 +597,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             }
         }
 
-        if (spawned && !game.paused) {
+        if (spawned) {
             game.update(dt, this);
             if (nowMs - lastAgentMs > 700) { lastAgentMs = nowMs; spawnAgents(); }
             if (nowMs - lastHudMs > 200) {
