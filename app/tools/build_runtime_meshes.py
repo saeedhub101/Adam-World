@@ -127,6 +127,8 @@ def vertex_normals(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
 def convert(raw: bytes, target_length: float, fallback):
     meshes = scene_meshes(raw)
     all_vertices, all_normals, all_uvs, all_colors, all_faces = [], [], [], [], []
+    uv_meshes = 0
+    uv_vertices = 0
     offset = 0
     for mesh in meshes:
         vertices = np.asarray(mesh.vertices, dtype=np.float32)
@@ -138,6 +140,10 @@ def convert(raw: bytes, target_length: float, fallback):
             uv = np.zeros((len(vertices), 2), dtype=np.float32)
         else:
             uv = np.asarray(uv, dtype=np.float32)
+            valid_uv = np.isfinite(uv).all(axis=1)
+            uv_vertices += int(valid_uv.sum())
+            if valid_uv.any():
+                uv_meshes += 1
             uv = np.nan_to_num(uv, nan=0.0, posinf=0.0, neginf=0.0)
         all_vertices.append(vertices)
         all_normals.append(normals)
@@ -184,6 +190,8 @@ def convert(raw: bytes, target_length: float, fallback):
             expanded[cursor, 6:8] = uv_by_vertex[vertex_index]
             expanded[cursor, 8:11] = np.clip(color[:3], 0.0, 1.0)
             cursor += 1
+    total_vertices = sum(len(v) for v in all_vertices)
+    print(f"AWM_UV meshes_with_uv={uv_meshes}/{len(all_vertices)} vertices_with_uv={uv_vertices}/{total_vertices}", flush=True)
     return expanded
 
 
@@ -199,7 +207,7 @@ def main():
                 stream.write(b"AWM2")
                 stream.write(struct.pack("<I", len(vertices)))
                 stream.write(vertices.astype("<f4", copy=False).tobytes())
-            print(f"AWM_BUILT {name} vertices={len(vertices)} bytes={destination.stat().st_size}", flush=True)
+            print(f"AWM_BUILT {name} format=AWM2 vertices={len(vertices)} bytes={destination.stat().st_size}", flush=True)
             built += 1
         except Exception as exc:
             # Keep the release build resilient; the renderer uses its detailed procedural
