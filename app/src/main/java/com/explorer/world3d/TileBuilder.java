@@ -122,6 +122,22 @@ final class TileBuilder {
                 else if (tg(tags,"highway").equals("bus_stop")) addPoi(td,x,z,poiName(tags),6,Terrain.h(x,z)+2.8f);
                 continue;
             }
+            if (type.equals("relation")) {
+                if (tg(tags, "route").matches("bus|trolleybus")) {
+                    JSONArray members = el.optJSONArray("members");
+                    String routeText = (tg(tags, "name") + " " + tg(tags, "network") + " " + tg(tags, "ref") + " " + tg(tags, "operator")).toLowerCase(java.util.Locale.US);
+                    boolean brt = routeText.contains("brt") || routeText.contains("الباص السريع") || routeText.contains("rapid bus");
+                    float[] colour = hex(tg(tags, "colour")); float rr = brt ? 0.60f : 0.12f, rg = brt ? 0.08f : 0.42f, rb = brt ? 0.68f : 0.88f;
+                    if (colour != null) { rr = colour[0]; rg = colour[1]; rb = colour[2]; }
+                    if (members != null) for (int mi = 0; mi < members.length(); mi++) {
+                        JSONObject member = members.optJSONObject(mi); JSONArray mg = member == null ? null : member.optJSONArray("geometry"); if (mg == null || mg.length() < 2) continue;
+                        float[] mx = new float[mg.length()], mz = new float[mg.length()];
+                        for (int q = 0; q < mg.length(); q++) { JSONObject point = mg.optJSONObject(q); if (point == null) { mx = null; break; } mx[q] = Geo.x(point.optDouble("lon", Double.NaN)); mz[q] = Geo.z(point.optDouble("lat", Double.NaN)); }
+                        if (mx != null) addClippedRibbon(td, mx, mz, brt ? 3.8f : 2.2f, brt ? 0.36f : 0.30f, td.bufs[B_ROADN], rr, rg, rb);
+                    }
+                }
+                continue;
+            }
             if (!type.equals("way")) continue;
             JSONArray g = el.optJSONArray("geometry");
             if (g == null || g.length() < 2) continue;
@@ -138,6 +154,7 @@ final class TileBuilder {
             if (bld.isEmpty() && !tg(tags, "building:part").isEmpty()) bld = "yes";
             String hw = tg(tags, "highway");
             String leisure = tg(tags, "leisure"), landuse = tg(tags, "landuse"), natural = tg(tags, "natural");
+            String amenity = tg(tags, "amenity");
             String waterway = tg(tags, "waterway");
 
             if (natural.equals("coastline")) {
@@ -212,6 +229,17 @@ final class TileBuilder {
                 if (!buildingLabel.trim().isEmpty()) {
                     addFacadeLabel(td, px, pz, buildingLabel, bMinHeight(tags, bHeight(tags, id, bld, tabarbour)), poi);
                 }
+            } else if (amenity.equals("parking") || tg(tags, "parking").matches("surface|multi-storey")) {
+                float[][] lot = clean(xs, zs);
+                if (lot != null && overlaps(lot, xMin, xMax, zMin, zMax)) {
+                    fillCells(td.bufs[B_SIDEWALK], lot[0], lot[1], xMin, xMax, zMin, zMax, 2.5f, hg, Float.NaN, 0.20f, 0.66f, 0.67f, 0.65f, id);
+                    for (int pi = 0; pi < lot[0].length; pi++) { int pj = (pi + 1) % lot[0].length; ribbonOffset(new float[]{lot[0][pi], lot[0][pj]}, new float[]{lot[1][pi], lot[1][pj]}, 0.22f, 0.30f, td.bufs[B_SIDEWALK], 1f, 2f, 0.48f, 0.49f, 0.47f); }
+                    addParkingLotBays(td, lot[0], lot[1]);
+                }
+            } else if (hw.equals("traffic_island") || tg(tags, "area:highway").equals("traffic_island")) {
+                float[][] island = clean(xs, zs);
+                if (island != null && overlaps(island, xMin, xMax, zMin, zMax))
+                    addTrafficIsland(td, island[0], island[1]);
             } else if (!hw.isEmpty() && RW.containsKey(hw)) {
                 String nm = tg(tags, "name:ar");
                 if (nm.isEmpty()) nm = tg(tags, "name");
@@ -252,8 +280,21 @@ final class TileBuilder {
                         if (clipped!=null) addBridgeParapets(clipped[0],clipped[1],railWidth,railDeck,td.bufs[B_ROADN],1.2f);
                     }
                 }
-            } else if (tg(tags,"route").matches("bus|trolleybus")) {
-                addClippedRibbon(td,xs,zs,2.4f,0.25f,td.bufs[B_ROADN],0.12f,0.42f,0.88f);
+            } else if (tg(tags,"route").matches("bus|trolleybus")
+                    || tg(tags,"public_transport_route").matches("bus|trolleybus")) {
+                String routeNetwork = tg(tags, "route_network");
+                String routeName = tg(tags, "route_name");
+                String routeRef = tg(tags, "route_ref");
+                boolean brt = routeNetwork.toLowerCase(java.util.Locale.US).contains("brt")
+                        || routeName.toLowerCase(java.util.Locale.US).contains("brt")
+                        || routeName.contains("الباص السريع");
+                float[] routeColour = hex(tg(tags, "route_colour"));
+                float rr = brt ? 0.60f : 0.12f;
+                float rg = brt ? 0.08f : 0.42f;
+                float rb = brt ? 0.68f : 0.88f;
+                if (routeColour != null) { rr = routeColour[0]; rg = routeColour[1]; rb = routeColour[2]; }
+                addClippedRibbon(td, xs, zs, brt ? 3.6f : 2.1f, brt ? 0.34f : 0.29f,
+                        td.bufs[B_ROADN], rr, rg, rb);
             } else if (isWaterUtility(tags)) {
                 if (tg(tags,"man_made").matches("pipeline") || waterway.matches("drain|ditch|sewer")) {
                     if (g.length() >= 2) addWaterUtilityLine(td,tags,xs,zs);
@@ -721,7 +762,7 @@ final class TileBuilder {
             }
             JSONArray cutPoints = tags.optJSONArray("adam:entrances");
             if (cutPoints != null) {
-                float bestDistance = 4.0f;
+                float bestDistance = 1.75f;
                 for (int ei=0; ei<cutPoints.length(); ei++) {
                     JSONObject entrance=cutPoints.optJSONObject(ei);
                     JSONObject geometry=entrance==null?null:entrance.optJSONObject("geometry");
@@ -757,7 +798,7 @@ final class TileBuilder {
             float belowGroundDepth = minHeight >= 2.2f ? 0f : undergroundDepth;
             float yBotA = ground[i] + minHeight - belowGroundDepth - 0.08f;
             float yBotB = ground[j] + minHeight - belowGroundDepth - 0.08f;
-            if (tabarbour && i == cutEntranceEdge && len >= 2.5f) {
+            if (tabarbour && cutEntranceMapped && i == cutEntranceEdge && len >= 2.5f) {
                 float openingWidth = explicitUndergroundParking ? 3.35f : 2.25f;
                 float halfOpening = openingWidth / (2f * len);
                 float t0 = Math.max(0.02f, cutEntranceMid-halfOpening);
@@ -987,9 +1028,14 @@ final class TileBuilder {
         boolean mappedEntrance = false;
         JSONArray mappedEntrances = tags.optJSONArray("adam:entrances");
         if (tabarbour && mappedEntrances != null) {
-            float bestDistance = 4.0f;
+            float bestDistance = 1.0f;
             for (int ei = 0; ei < mappedEntrances.length(); ei++) {
                 JSONObject entrance = mappedEntrances.optJSONObject(ei);
+                JSONObject properties = entrance == null ? null : entrance.optJSONObject("properties");
+                JSONObject entranceTags = properties == null ? null : properties.optJSONObject("tags");
+                String entranceKind = entranceTags == null ? (properties == null ? "" : properties.optString("entrance", "")) : entranceTags.optString("entrance", "");
+                String entranceBuilding = entranceTags == null ? "" : entranceTags.optString("building", "");
+                if (entranceKind.matches("garage|service") || entranceBuilding.equals("garages")) continue;
                 JSONObject geometry = entrance == null ? null : entrance.optJSONObject("geometry");
                 JSONArray coordinates = geometry == null ? null : geometry.optJSONArray("coordinates");
                 if (coordinates == null || coordinates.length() < 2) continue;
@@ -1038,7 +1084,7 @@ final class TileBuilder {
                     float d=(float)Math.hypot(gx-(px[edge]+ex*t),gz-(pz[edge]+ez*t));
                     if(d<dBest){dBest=d;edgeBest=edge;tBest=t;}
                 }
-                if(edgeBest<0||dBest>2.2f) continue;
+                if(edgeBest<0||dBest>1.75f) continue;
                 int next=(edgeBest+1)%n; float ex=px[next]-px[edgeBest], ez=pz[next]-pz[edgeBest];
                 float edgeLength=(float)Math.hypot(ex,ez); if(edgeLength<2f) continue;
                 float nx=ez/edgeLength,nz=-ex/edgeLength;
@@ -1126,7 +1172,7 @@ final class TileBuilder {
             }
         }
         if ((!manila || !tg(tags, "entrance").isEmpty() || !tg(tags, "door").isEmpty())
-                && !(tabarbour && storefront) && doorEdgeLength >= 2.2f && h >= 2.4f) {
+                && !(tabarbour && storefront) && (!tabarbour || mappedEntrance) && doorEdgeLength >= 2.2f && h >= 2.4f) {
             int next = (doorEdge + 1) % n;
             float ax = px[doorEdge], az = pz[doorEdge], bx = px[next], bz = pz[next];
             float dx = bx - ax, dz = bz - az;
@@ -1142,7 +1188,7 @@ final class TileBuilder {
             float yBase = (ground[doorEdge] + ground[next]) * 0.5f + minHeight;
             float doorPlaneOffset = tabarbour ? -0.30f : 0.085f;
             float x0 = ax + dx * t0 + nx * doorPlaneOffset, z0 = az + dz * t0 + nz * doorPlaneOffset;
-            float x1 = ax + dx * t1 + nx * doorPlaneOffset, z1 = az + dz * doorPlaneOffset;
+            float x1 = ax + dx * t1 + nx * doorPlaneOffset, z1 = az + dz * t1 + nz * doorPlaneOffset;
             // Recessed apartment entrance: dark inner wall, stone side returns and a door set back from the facade.
             if (tabarbour) {
                 float recessWidth = Math.max(2.25f, doorWidth + 1.30f);
@@ -1575,7 +1621,8 @@ final class TileBuilder {
         String surface = tg(tags, "surface").toLowerCase(java.util.Locale.US);
         boolean bridge = !tg(tags, "bridge").isEmpty() && !tg(tags, "bridge").equals("no");
         boolean tunnel = !tg(tags, "tunnel").isEmpty() && !tg(tags, "tunnel").equals("no");
-        boolean veh = w >= 4.5f && !hw.equals("pedestrian");
+        boolean mappedBusway = hw.equals("busway") || tg(tags, "busway").matches("lane|track|yes");
+        boolean veh = (w >= 4.5f || mappedBusway) && !hw.equals("pedestrian");
         boolean labelOnly = tg(tags, "adam:label_only").equals("yes");
         for (ArrayList<float[]> pc : clipLine(xs, zs, xMin, xMax, zMin, zMax)) {
             float[][] a = toArrays(pc);
@@ -1602,7 +1649,7 @@ final class TileBuilder {
             else if (surface.matches("sand|mud")) { rr = 0.88f; rg = 0.77f; rb = 0.58f; }
             else if (surface.matches("grass|grass_paver")) { rr = 0.52f; rg = 0.64f; rb = 0.43f; }
             else if (surface.matches("wood|metal")) { rr = 0.62f; rg = 0.59f; rb = 0.54f; }
-            if (w >= 6f || hw.equals("service")) {
+            if (w >= 6f || hw.equals("service") || mappedBusway) {
                 if (!bridge && !tunnel) ribbon(px, pz, w + 4.2f, 0.20f, td.bufs[B_SIDEWALK], (w + 4.2f) / 2f, 2f, 1f, 1f, 1f);
                 GeoBuf roadBuf = (w >= 7f ? td.bufs[B_ROADW] : td.bufs[B_ROADN]);
                 ribbonOffset(px, pz, w, yOffset, roadBuf, 1f, 12f, rr, rg, rb);
@@ -1616,6 +1663,12 @@ final class TileBuilder {
             }
             RoadPath rp = new RoadPath(px, pz, w, veh);
             rp.name = name;
+            if (tg(tags, "junction").equals("roundabout")) addRoundaboutIsland(td, px, pz, w);
+            if (veh && w >= 5.0f) addRoadMarkings(td, rp, tags, hw, yOffset, w);
+            String medianKind = (tg(tags, "median") + " " + tg(tags, "divider") + " " + tg(tags, "separator") + " " + tg(tags, "dual_carriageway")).toLowerCase(java.util.Locale.US);
+            if (veh && !tg(tags, "oneway").matches("yes|1|true") && (medianKind.matches(".*(yes|grass|concrete|kerb|barrier|median).*") || !tg(tags, "median:width").isEmpty())) addRoadMedian(td, rp, tags, yOffset);
+            String busLaneTags = (tg(tags, "bus:lanes") + " " + tg(tags, "psv:lanes") + " " + tg(tags, "busway")).toLowerCase(java.util.Locale.US);
+            if (mappedBusway || busLaneTags.matches(".*(designated|permissive|yes|lane|track).*")) addBusLaneMarking(td, rp, yOffset, mappedBusway);
             if (rp.total > 20f) td.paths.add(rp);
             // Label every mapped named street segment; label-only vector-tile
             // features are handled above and never create a duplicate road surface.
@@ -1626,6 +1679,216 @@ final class TileBuilder {
                 for (float s = 125f; s < rp.total - 8f; s += 150f) addDecal(td, rp, s, name, o);
             }
         }
+    }
+
+    /** Build a concrete inner island and raised curb inside a mapped closed roundabout way. */
+    private static void addRoundaboutIsland(TileData td, float[] xs, float[] zs, float roadWidth) {
+        if (xs == null || zs == null || xs.length < 5) return;
+        int count = xs.length;
+        if (Math.hypot(xs[0] - xs[count - 1], zs[0] - zs[count - 1]) > 1.5f) return;
+        count--;
+        if (count < 4) return;
+        float[] ringX = new float[count], ringZ = new float[count];
+        System.arraycopy(xs, 0, ringX, 0, count);
+        System.arraycopy(zs, 0, ringZ, 0, count);
+        float[] center = centroid(ringX, ringZ);
+        float radius = 0f;
+        for (int i = 0; i < count; i++)
+            radius += (float) Math.hypot(ringX[i] - center[0], ringZ[i] - center[1]);
+        radius /= count;
+        if (radius < roadWidth * 0.7f + 1.5f) return;
+        float scale = Math.max(0.18f, Math.min(0.82f, 1f - (roadWidth * 0.5f + 0.85f) / radius));
+        float[] islandX = new float[count], islandZ = new float[count];
+        for (int i = 0; i < count; i++) {
+            islandX[i] = center[0] + (ringX[i] - center[0]) * scale;
+            islandZ[i] = center[1] + (ringZ[i] - center[1]) * scale;
+        }
+        addTrafficIsland(td, islandX, islandZ);
+        ribbonOffset(islandX, islandZ, 0.52f, 0.40f, td.bufs[B_SIDEWALK],
+                1f, 2f, 0.62f, 0.62f, 0.59f);
+    }
+
+    /** Filled concrete traffic island with a visible raised perimeter curb. */
+    private static void addTrafficIsland(TileData td, float[] xs, float[] zs) {
+        if (xs == null || zs == null || xs.length < 3) return;
+        int[] triangles = Poly.earClip(xs, zs);
+        GeoBuf fill = td.bufs[B_SIDEWALK];
+        for (int i = 0; i + 2 < triangles.length; i += 3) {
+            for (int k = 0; k < 3; k++) {
+                int v = triangles[i + k];
+                float x = xs[v], z = zs[v];
+                fill.v(x, Terrain.h(x, z) + 0.30f, z, 0, 0, 0.73f, 0.72f, 0.67f);
+            }
+            fill.fixTri();
+        }
+        for (int i = 0; i < xs.length; i++) {
+            int j = (i + 1) % xs.length;
+            float[] ex = {xs[i], xs[j]}, ez = {zs[i], zs[j]};
+            ribbonOffset(ex, ez, 0.42f, 0.28f, td.bufs[B_SIDEWALK],
+                    1f, 2f, 0.55f, 0.55f, 0.52f);
+        }
+    }
+
+    private static void addRoadMedian(TileData td, RoadPath path, JSONObject tags, float roadYOffset) {
+        float w = measure(tg(tags, "median:width")); if (!(w >= 0.6f && w <= 20f)) w = 1.4f;
+        String kind = (tg(tags, "median") + " " + tg(tags, "divider") + " " + tg(tags, "separator")).toLowerCase(java.util.Locale.US);
+        boolean grass = kind.contains("grass") || kind.contains("green"); float r = grass ? 0.38f : 0.66f, g = grass ? 0.52f : 0.66f, b = grass ? 0.29f : 0.63f;
+        float[] a = new float[4], c = new float[4];
+        for (float s = 0; s < path.total - 1; s += 7f) { float e = Math.min(path.total, s + 7f); path.posAt(s, 0, a); path.posAt(e, 0, c); drawMarkingQuad(td,a[0],a[1],c[0],c[1],roadYOffset+0.16f,w,r,g,b);
+            for (int side : new int[]{-1,1}) { path.posAt(s,side*w*0.5f,a); path.posAt(e,side*w*0.5f,c); drawMarkingQuad(td,a[0],a[1],c[0],c[1],roadYOffset+0.24f,0.18f,0.48f,0.49f,0.47f); }
+        }
+    }
+    private static void addBusLaneMarking(TileData td, RoadPath path, float roadYOffset, boolean fullBusway) {
+        if(path==null||path.total<6f)return; float off=fullBusway?0f:path.w*0.5f-1.65f;
+        for(float s=3f;s<path.total-2f;s+=12f){float[] a=new float[4],b=new float[4];path.posAt(s,off,a);path.posAt(Math.min(path.total,s+5f),off,b);drawMarkingQuad(td,a[0],a[1],b[0],b[1],roadYOffset+0.06f,0.42f,0.08f,0.48f,0.72f);}
+    }
+    private static void addParkingLotBays(TileData td,float[] px,float[] pz){
+        float minX=Float.POSITIVE_INFINITY,maxX=Float.NEGATIVE_INFINITY,minZ=Float.POSITIVE_INFINITY,maxZ=Float.NEGATIVE_INFINITY;
+        for(int i=0;i<px.length;i++){minX=Math.min(minX,px[i]);maxX=Math.max(maxX,px[i]);minZ=Math.min(minZ,pz[i]);maxZ=Math.max(maxZ,pz[i]);}
+        for(float z=minZ+1.5f;z<maxZ-1f;z+=5.2f)for(float x=minX+1f;x<maxX-1f;x+=2.7f){float x1=Math.min(maxX-0.5f,x+2.5f),mid=(x+x1)*0.5f;if(Poly.contains(px,pz,mid,z)&&Poly.contains(px,pz,mid,Math.min(maxZ,z+4.5f)))drawMarkingQuad(td,x,z,x1,z,0.25f,0.10f,0.94f,0.94f,0.90f);}
+    }
+
+    /** Draw source-driven lane dividers and mapped curbside parking-bay markings. */
+    private static void addRoadMarkings(TileData td, RoadPath path, JSONObject tags,
+                                        String highway, float roadYOffset, float width) {
+        if (path == null || path.total < 8f) return;
+        float lanesValue = measure(tg(tags, "lanes"));
+        if (!(lanesValue > 0f && lanesValue <= 12f)) {
+            float forward = measure(tg(tags, "lanes:forward"));
+            float backward = measure(tg(tags, "lanes:backward"));
+            lanesValue = (forward > 0f && forward <= 12f ? forward : 0f)
+                    + (backward > 0f && backward <= 12f ? backward : 0f);
+        }
+        int lanes = lanesValue > 0f ? Math.max(1, Math.min(12, Math.round(lanesValue)))
+                : Math.max(1, Math.min(8, Math.round(width / 3.2f)));
+        String oneWayTag = tg(tags, "oneway").toLowerCase(java.util.Locale.US);
+        boolean oneWay = oneWayTag.matches("yes|1|true");
+        if (lanes >= 2) {
+            if (oneWay) {
+                for (int lane = 1; lane < lanes; lane++) {
+                    float offset = -width * 0.5f + width * lane / lanes;
+                    drawDashedLaneLine(td, path, offset, roadYOffset, 2.8f, 6.5f,
+                            0.92f, 0.92f, 0.88f);
+                }
+            } else {
+                drawDashedLaneLine(td, path, 0f, roadYOffset, 3.0f, 6.0f,
+                        0.96f, 0.82f, 0.28f);
+                int eachSide = lanes / 2;
+                if (eachSide > 1) {
+                    for (int lane = 1; lane < eachSide; lane++) {
+                        float offset = width * lane / lanes;
+                        drawDashedLaneLine(td, path, -offset, roadYOffset, 2.8f, 6.5f,
+                                0.92f, 0.92f, 0.88f);
+                        drawDashedLaneLine(td, path, offset, roadYOffset, 2.8f, 6.5f,
+                                0.92f, 0.92f, 0.88f);
+                    }
+                }
+            }
+        }
+        float forwardLanes = measure(tg(tags, "lanes:forward"));
+        float backwardLanes = measure(tg(tags, "lanes:backward"));
+        if (oneWay && lanes >= 1 && width >= 5.5f) {
+            float laneOffset = -width * 0.5f + width / (2f * lanes);
+            for (float distance = 24f; distance < path.total - 8f; distance += 52f)
+                drawRoadArrow(td, path, distance, laneOffset, roadYOffset, false);
+        } else if (forwardLanes > 0f && backwardLanes > 0f
+                && forwardLanes + backwardLanes <= 12f && width >= 6f) {
+            float fw = width * forwardLanes / (forwardLanes + backwardLanes);
+            float bw = width - fw;
+            for (int lane = 0; lane < Math.min(4, Math.round(forwardLanes)); lane++) {
+                float offset = -width * 0.5f + fw * (lane + 0.5f) / forwardLanes;
+                for (float distance = 28f + lane * 5f; distance < path.total - 8f; distance += 58f)
+                    drawRoadArrow(td, path, distance, offset, roadYOffset, false);
+            }
+            for (int lane = 0; lane < Math.min(4, Math.round(backwardLanes)); lane++) {
+                float offset = bw * (lane + 0.5f) / backwardLanes;
+                for (float distance = 28f + lane * 5f; distance < path.total - 8f; distance += 58f)
+                    drawRoadArrow(td, path, distance, offset, roadYOffset, true);
+            }
+        }
+        String leftParking = tg(tags, "parking:lane:left").toLowerCase(java.util.Locale.US);
+        String rightParking = tg(tags, "parking:lane:right").toLowerCase(java.util.Locale.US);
+        String bothParking = tg(tags, "parking:lane:both").toLowerCase(java.util.Locale.US);
+        if (bothParking.matches("parallel|diagonal|perpendicular|marked|yes")) {
+            leftParking = bothParking;
+            rightParking = bothParking;
+        }
+        if (leftParking.matches("parallel|diagonal|perpendicular|marked|yes"))
+            drawParkingBayLines(td, path, 1f, width, roadYOffset);
+        if (rightParking.matches("parallel|diagonal|perpendicular|marked|yes"))
+            drawParkingBayLines(td, path, -1f, width, roadYOffset);
+    }
+
+    private static void drawDashedLaneLine(TileData td, RoadPath path, float offset,
+                                           float roadYOffset, float dash, float gap,
+                                           float r, float g, float b) {
+        for (float s = 2f; s < path.total - 1f; s += dash + gap) {
+            drawMarkingSegment(td, path, s, Math.min(path.total, s + dash), offset,
+                    roadYOffset, 0.11f, r, g, b);
+        }
+    }
+
+    private static void drawParkingBayLines(TileData td, RoadPath path, float side,
+                                            float roadWidth, float roadYOffset) {
+        float inner = side * (roadWidth * 0.5f + 0.18f);
+        float outer = side * (roadWidth * 0.5f + 2.45f);
+        for (float s = 5f; s < path.total - 2f; s += 6.2f) {
+            float[] a = new float[4], b = new float[4];
+            path.posAt(s, inner, a);
+            path.posAt(s, outer, b);
+            drawMarkingQuad(td, a[0], a[1], b[0], b[1], roadYOffset,
+                    0.10f, 0.88f, 0.88f, 0.84f);
+        }
+    }
+
+    private static void drawRoadArrow(TileData td, RoadPath path, float distance,
+                                      float offset, float roadYOffset, boolean reverse) {
+        float[] p = new float[4];
+        path.posAt(distance, offset, p);
+        float dx = reverse ? -p[2] : p[2];
+        float dz = reverse ? -p[3] : p[3];
+        float nx = -dz, nz = dx;
+        float bx = p[0] - dx * 1.15f, bz = p[1] - dz * 1.15f;
+        float tipX = p[0] + dx * 1.25f, tipZ = p[1] + dz * 1.25f;
+        float wing = 0.72f;
+        drawMarkingQuad(td, bx, bz, tipX, tipZ, roadYOffset, 0.13f, 0.94f, 0.94f, 0.90f);
+        drawMarkingQuad(td, tipX, tipZ,
+                p[0] - dx * 0.20f + nx * wing, p[1] - dz * 0.20f + nz * wing,
+                roadYOffset, 0.13f, 0.94f, 0.94f, 0.90f);
+        drawMarkingQuad(td, tipX, tipZ,
+                p[0] - dx * 0.20f - nx * wing, p[1] - dz * 0.20f - nz * wing,
+                roadYOffset, 0.13f, 0.94f, 0.94f, 0.90f);
+    }
+
+    private static void drawMarkingSegment(TileData td, RoadPath path, float start, float end,
+                                           float offset, float roadYOffset, float thickness,
+                                           float r, float g, float b) {
+        float[] a = new float[4], c = new float[4];
+        path.posAt(start, offset, a);
+        path.posAt(end, offset, c);
+        drawMarkingQuad(td, a[0], a[1], c[0], c[1], roadYOffset,
+                thickness, r, g, b);
+    }
+
+    private static void drawMarkingQuad(TileData td, float x0, float z0, float x1, float z1,
+                                        float roadYOffset, float thickness,
+                                        float r, float g, float b) {
+        float dx = x1 - x0, dz = z1 - z0;
+        float len = (float) Math.hypot(dx, dz);
+        if (len < 0.04f) return;
+        float nx = -dz / len * thickness * 0.5f;
+        float nz = dx / len * thickness * 0.5f;
+        float ax = x0 + nx, az = z0 + nz, bx = x1 + nx, bz = z1 + nz;
+        float cx = x1 - nx, cz = z1 - nz, dx2 = x0 - nx, dz2 = z0 - nz;
+        GeoBuf mark = td.bufs[B_SIGN];
+        float ya = Terrain.h(ax, az) + roadYOffset + 0.045f;
+        float yb = Terrain.h(bx, bz) + roadYOffset + 0.045f;
+        float yc = Terrain.h(cx, cz) + roadYOffset + 0.045f;
+        float yd = Terrain.h(dx2, dz2) + roadYOffset + 0.045f;
+        mark.v(ax, ya, az, 0, 0, r, g, b); mark.v(bx, yb, bz, 1, 0, r, g, b);
+        mark.v(cx, yc, cz, 1, 1, r, g, b); mark.fixTri();
+        mark.v(ax, ya, az, 0, 0, r, g, b); mark.v(cx, yc, cz, 1, 1, r, g, b);
+        mark.v(dx2, yd, dz2, 0, 1, r, g, b); mark.fixTri();
     }
 
     /** Side parapets make elevated road, rail and pedestrian bridge decks legible. */
@@ -1742,6 +2005,8 @@ final class TileBuilder {
     private static int poiCategory(JSONObject tags) {
         String amenity=tg(tags,"amenity"), shop=tg(tags,"shop"), tourism=tg(tags,"tourism"), building=tg(tags,"building"), healthcare=tg(tags,"healthcare");
         if (amenity.matches("hospital|clinic|doctors|dentist|healthcare") || healthcare.matches("hospital|clinic|doctor|dentist")) return 1;
+        if (amenity.equals("pharmacy") || healthcare.equals("pharmacy") || shop.equals("chemist")) return 9;
+        if (amenity.matches("school|kindergarten|college|university") || building.matches("school|kindergarten|college|university")) return 8;
         if (tg(tags,"highway").equals("bus_stop") || tg(tags,"public_transport").matches("platform|stop_position") && tg(tags,"bus").equals("yes")) return 6;
         if (tg(tags,"railway").matches("station|halt|tram_stop|subway_entrance") || tg(tags,"public_transport").equals("station")) return 7;
         if (building.matches("hospital|clinic|health_centre")) return 1;
@@ -1749,7 +2014,7 @@ final class TileBuilder {
         if (amenity.matches("cafe|coffee_shop|bar")) return 3;
         if (tourism.matches("hotel|motel|hostel|guest_house")) return 4;
         if (building.matches("hotel|motel|hostel")) return 4;
-        if (shop.matches("mall|supermarket|convenience|department_store|retail|general|clothes|bakery|butcher|electronics|chemist") || building.matches("retail|supermarket|mall|shop")) return 5;
+        if (shop.matches("mall|supermarket|convenience|department_store|retail|general|clothes|bakery|butcher|electronics") || building.matches("retail|supermarket|mall|shop")) return 5;
         return 0;
     }
 
@@ -1766,13 +2031,22 @@ final class TileBuilder {
     /** علامة فئوية واضحة ولافتة اسمية فوق موقع النشاط، بارتفاع يتبع المبنى/التضاريس. */
     private static void addPoi(TileData td, float x, float z, String name, int category, float y) {
         float r=0.18f,g=0.62f,b=0.88f;
-        if(category==2){r=0.94f;g=0.43f;b=0.16f;}
+        if(category==1){r=0.78f;g=0.16f;b=0.18f;}
+        else if(category==8){r=0.16f;g=0.34f;b=0.78f;}
+        else if(category==9){r=0.12f;g=0.62f;b=0.30f;}
+        else if(category==2){r=0.94f;g=0.43f;b=0.16f;}
         else if(category==3){r=0.58f;g=0.34f;b=0.20f;}
         else if(category==4){r=0.55f;g=0.32f;b=0.76f;}
         else if(category==5){r=0.20f;g=0.68f;b=0.42f;}
         GeoBuf sign=td.bufs[B_SIGN];
         sign.box(x,y-1.0f,z,0.12f,2.0f,0.12f,0.25f,0.25f,0.27f);
         sign.box(x,y+0.20f,z,0.95f,0.48f,0.14f,r,g,b);
+        if(category==1 || category==9){
+            sign.box(x,y+0.20f,z+0.09f,0.14f,0.34f,0.035f,1f,1f,1f);
+            sign.box(x,y+0.20f,z+0.09f,0.34f,0.14f,0.035f,1f,1f,1f);
+        } else if(category==8){
+            for(int wx=-1;wx<=1;wx++) sign.box(x+wx*0.23f,y+0.20f,z+0.09f,0.10f,0.16f,0.035f,0.94f,0.94f,0.90f);
+        }
         if(name!=null&&!name.trim().isEmpty()){
             Decal d=new Decal(); d.text=name.trim(); d.x=x; d.z=z; d.dx=1f; d.dz=0f; d.y=y-0.55f; d.vertical=true;
             td.decals.add(d);
