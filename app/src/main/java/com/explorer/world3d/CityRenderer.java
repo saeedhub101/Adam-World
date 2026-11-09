@@ -152,10 +152,12 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     public void toggleUndergroundCutaway() { undergroundCutaway = !undergroundCutaway; }
     private long lastErrToast;
     private final Random rng = new Random();
+    private final WorldAudio worldAudio;
 
     public CityRenderer(Context ctx, Listener l) {
         this.ctx = ctx;
         this.L = l;
+        worldAudio = new WorldAudio();
         Matrix.setIdentityM(ident, 0);
         Terrain.init(new File(ctx.getCacheDir(), "dem"), new AndroidDecoder(), ctx.getAssets());
         loader = new TileLoader(ctx, new File(ctx.getCacheDir(), "tiles"), new TileLoader.ErrorCallback() {
@@ -172,7 +174,12 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         loader.start();
     }
 
-    public void shutdown() { loader.shutdown(); }
+    public void shutdown() { loader.shutdown(); worldAudio.release(); }
+    public void pauseAudio() { worldAudio.pause(); }
+    public void resumeAudio() { worldAudio.resume(); }
+    public void setAudioEnabled(boolean enabled) { worldAudio.setEnabled(enabled); }
+    public void setAudioVolumes(float master, float engine, float ambience, float effects) { worldAudio.setVolumes(master, engine, ambience, effects); }
+    public void playHorn() { worldAudio.playHorn(); }
     /** Called on the GL thread after Android signals memory pressure. */
     public void trimMemory() {
         loader.trimMemory();
@@ -770,6 +777,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             }
         }
 
+        worldAudio.update(game);
         draw();
     }
 
