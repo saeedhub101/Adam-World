@@ -19,7 +19,8 @@ final class WorldAudio {
     private volatile float speed, throttle, wind, traffic, trafficPan, playerPan;
     private volatile int hornSamples;
     private double hornPhase;
-    private volatile int transientEffect;
+    private volatile int effectSamples, effectType;
+    private double effectPhase;
     private AudioTrack track;
     private final Thread thread;
     private double phase, rotorPhase, trafficPhase, windPhase, stepPhase;
@@ -78,7 +79,7 @@ final class WorldAudio {
     }
 
     void playHorn() { hornSamples = RATE / 4; }
-    void playEffect(int effect) { transientEffect = effect; }
+    void playEffect(int effect) { effectType = Math.max(0, Math.min(4, effect)); effectSamples = RATE / (effectType == 4 ? 7 : 11); }
     void setEnabled(boolean value) { enabled = value; }
     void setVolumes(float masterValue, float engine, float ambience, float effects) {
         master = clamp(masterValue); engineVolume = clamp(engine);
@@ -137,6 +138,14 @@ final class WorldAudio {
                         hornPhase += 2.0 * Math.PI * 440.0 / RATE;
                         fx = (Math.sin(hornPhase) + Math.sin(hornPhase * 1.26)) * 0.18;
                         hornSamples--;
+                    }
+                    if (effectSamples > 0) {
+                        double decay = effectSamples / (double)(RATE / (effectType == 4 ? 7 : 11));
+                        effectPhase += 2.0 * Math.PI * (effectType == 4 ? 78.0 : 115.0 + effectType * 34.0) / RATE;
+                        double noise = noise();
+                        double crack = Math.sin(effectPhase) * (effectType == 3 ? 0.42 : 0.30);
+                        fx += (noise * 0.48 + crack) * decay * effectsVolume;
+                        effectSamples--;
                     }
                 }
                 double base = audible ? (engine * engineVolume + rotor * engineVolume + ambience + fx) * master : 0;
