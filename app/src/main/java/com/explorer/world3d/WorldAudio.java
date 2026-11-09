@@ -84,8 +84,18 @@ final class WorldAudio {
         master = clamp(masterValue); engineVolume = clamp(engine);
         ambienceVolume = clamp(ambience); effectsVolume = clamp(effects);
     }
-    void pause() { if (track != null && track.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) track.pause(); }
-    void resume() { if (track != null && running && track.getPlayState() != AudioTrack.PLAYSTATE_PLAYING) { track.flush(); track.play(); } }
+    void pause() {
+        try { if (track != null && track.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) track.pause(); }
+        catch (RuntimeException ignored) { }
+    }
+    void resume() {
+        try {
+            if (track != null && running && track.getPlayState() != AudioTrack.PLAYSTATE_PLAYING) {
+                track.flush();
+                track.play();
+            }
+        } catch (RuntimeException ignored) { }
+    }
 
     private void render() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
