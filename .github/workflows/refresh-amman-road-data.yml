@@ -1,0 +1,89 @@
+name: Refresh Amman road attributes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/build_amman_stream_shards.py"
+      - ".github/workflows/refresh-amman-road-data.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adam-world-amman-road-data
+  cancel-in-progress: false
+
+jobs:
+  rebuild-amman-shards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout main and saved source imports
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install shard builder dependencies
+        run: python -m pip install --disable-pip-version-check ijson shapely
+
+      - name: Rebuild Amman runtime shards from already-saved source data
+        run: |
+          set -euo pipefail
+          test -d data/full-city-imports/amman/09_transport_overture/segment
+          python tools/build_amman_stream_shards.py
+
+      - name: Validate measured road attribute coverage
+        run: |
+          python - <<'PY'
+          import gzip, json
+          from pathlib import Path
+          root = Path("data/offline-city-stream/amman")
+          manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+          roads = 0
+          exact_width = 0
+          lane_counts = 0
+          directions = 0
+          for cell in manifest["cells"]:
+              path = root / manifest["shards"][cell]["file"]
+              with gzip.open(path, "rt", encoding="utf-8") as stream:
+                  for line in stream:
+                      item = json.loads(line)
+                      tags = item.get("tags") or {}
+                      if item.get("type") != "way" or not tags.get("highway"):
+                          continue
+                      roads += 1
+                      if any(tags.get(k) not in (None, "") for k in
+                             ("width", "width:carriageway", "width:lanes", "est_width")):
+                          exact_width += 1
+                      if any(tags.get(k) not in (None, "") for k in
+                             ("lanes", "lanes:forward", "lanes:backward")):
+                          lane_counts += 1
+                      if tags.get("oneway") not in (None, ""):
+                          directions += 1
+          print(f"AMMAN_ROAD_DATA roads={roads} explicit_width={exact_width} "
+                f"lane_data={lane_counts} direction_data={directions}")
+          if roads == 0:
+              raise SystemExit("No Amman road features in rebuilt shards")
+          PY
+
+      - name: Publish rebuilt Amman data directly to main
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- data/offline-city-stream/amman
+          if git diff --cached --quiet; then
+            echo "Amman shards already contain all attributes available in saved source imports."
+            exit 0
+          fi
+          git commit -m "Refresh Amman road attributes from saved source data"
+          git push origin HEAD:main
