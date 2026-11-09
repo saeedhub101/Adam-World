@@ -325,7 +325,7 @@ def add_existing_osm_context(writer, box, shape):
     sources=[folder/"elements.json",folder/"transit-routes.json"]
     sources.extend(sorted((folder/"transport-progress").glob("chunk-*.json")))
     sources.extend(sorted((folder/"transit-route-progress").glob("chunk-*.json")))
-    allowed=("waterway","railway","public_transport","public_transport_route","route","man_made","utility","substance","bus","highway")
+    allowed=("waterway","railway","public_transport","public_transport_route","route","man_made","utility","substance","bus","highway","amenity","education","building","addr:housenumber","crossing")
     merged={}
     for path in sources:
         if not path.is_file():
@@ -343,7 +343,7 @@ def add_existing_osm_context(writer, box, shape):
             tags=item.get("tags") or {}
             if tags.get("building") or tags.get("building:part"):
                 continue
-            if tags.get("highway") and tags.get("highway") not in ("bus_stop",):
+            if tags.get("highway") and tags.get("highway") not in ("bus_stop","crossing","traffic_signals"):
                 continue
             if not any(tags.get(k) for k in allowed):
                 continue
