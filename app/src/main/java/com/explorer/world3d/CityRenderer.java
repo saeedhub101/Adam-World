@@ -34,7 +34,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n"
             + "uniform sampler2D uTex; uniform sampler2D uEmis; uniform sampler2D uNormalMap; uniform sampler2D uRoughMap; uniform sampler2D uMetalMap; uniform samplerCube uEnvMap; uniform vec3 uTint; uniform vec3 uCam;\n"
             + "uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uAmb; uniform vec3 uFog;\n"
-            + "uniform float uFogN; uniform float uFogF; uniform float uEmisK; uniform float uWater; uniform float uDecal; uniform float uTime; uniform float uPbr; uniform float uGlass;\n"
+            + "uniform float uFogN; uniform float uFogF; uniform float uEmisK; uniform vec2 uMatParams; uniform float uWater; uniform float uDecal; uniform float uTime; uniform float uPbr; uniform float uGlass;\n"
             + "varying vec2 vUV; varying vec3 vCol; varying vec3 vNor; varying float vDist; varying vec3 vWorld; varying vec3 vRel;\n"
             + "void main(){\n"
             + " float f=clamp((vDist-uFogN)/(uFogF-uFogN),0.0,1.0);\n"
@@ -71,8 +71,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             + "    vec3 nz=normalize(vec3(sign(n.z)*sz.x,sz.y,sign(n.z)*sz.z));\n"
             + "    n=normalize(nx*w.x+ny*w.y+nz*w.z); d=max(dot(n,normalize(uSunDir)),0.0);\n"
             + "    vec3 L=normalize(uSunDir), H=normalize(V+L);\n"
-            + "    float rough=clamp(texture2D(uRoughMap,uvX).r*w.x+texture2D(uRoughMap,uvY).r*w.y+texture2D(uRoughMap,uvZ).r*w.z,0.08,0.96);\n"
-            + "    float metal=clamp(texture2D(uMetalMap,uvX).r*w.x+texture2D(uMetalMap,uvY).r*w.y+texture2D(uMetalMap,uvZ).r*w.z,0.0,1.0);\n"
+            + "    float rough=clamp((texture2D(uRoughMap,uvX).r*w.x+texture2D(uRoughMap,uvY).r*w.y+texture2D(uRoughMap,uvZ).r*w.z)*uMatParams.y,0.08,0.96);\n"
+            + "    float metal=clamp((texture2D(uMetalMap,uvX).r*w.x+texture2D(uMetalMap,uvY).r*w.y+texture2D(uMetalMap,uvZ).r*w.z)*uMatParams.x,0.0,1.0);\n"
             + "    float a=rough*rough, a2=a*a; float nh=max(dot(n,H),0.0), nv=max(dot(n,V),0.001), vh=max(dot(V,H),0.0);\n"
             + "    float den=nh*nh*(a2-1.0)+1.0; float D=a2/max(3.14159*den*den,0.001);\n"
             + "    float k=(rough+1.0)*(rough+1.0)/8.0; float G=(nv/(nv*(1.0-k)+k))*(d/(d*(1.0-k)+k));\n"
@@ -120,12 +120,12 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private final TileLoader loader;
     private final HashMap<Long, Tile> tiles = new HashMap<>();
     private int prog, skyProg;
-    private int uVP, uModel, uCam, uTint, uTex, uEmis, uSunDir, uSunCol, uAmb, uFog, uFogN, uFogF, uEmisK, uTop, uHor, uWater, uDecal, uTime, uPbr, uGlass, uNormalMap, uRoughMap, uMetalMap, uEnvMap;
+    private int uVP, uModel, uCam, uTint, uMatParams, uTex, uEmis, uSunDir, uSunCol, uAmb, uFog, uFogN, uFogF, uEmisK, uTop, uHor, uWater, uDecal, uTime, uPbr, uGlass, uNormalMap, uRoughMap, uMetalMap, uEnvMap;
     private Textures tex;
     private ProceduralMaterialMaps vehicleMaps;
     private Mesh cube, groundMesh, skyQuad, seaMesh;
     private Mesh[] vehicleModels;
-    private Mesh[] importedVehicleModels;
+    private AssetMeshLoader.Model[] importedVehicleModels;
     private Mesh[] vehicleGlassModels;
     private Mesh wheelMesh;
     private final float[] wheelMatrix = new float[16];
@@ -249,6 +249,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         uModel = GLES20.glGetUniformLocation(prog, "uModel");
         uCam = GLES20.glGetUniformLocation(prog, "uCam");
         uTint = GLES20.glGetUniformLocation(prog, "uTint");
+        uMatParams = GLES20.glGetUniformLocation(prog, "uMatParams");
         uTex = GLES20.glGetUniformLocation(prog, "uTex");
         uEmis = GLES20.glGetUniformLocation(prog, "uEmis");
         uSunDir = GLES20.glGetUniformLocation(prog, "uSunDir");
@@ -276,7 +277,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         cube = makeCube();
         vehicleModels = ProceduralVehicleModels.buildAll();
         // Prefer build-time converted real meshes; procedural meshes remain a safe fallback.
-        importedVehicleModels = new Mesh[ProceduralVehicleModels.COUNT];
+        importedVehicleModels = new AssetMeshLoader.Model[ProceduralVehicleModels.COUNT];
         importedVehicleModels[ProceduralVehicleModels.SEDAN] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/sedan.awmesh");
         importedVehicleModels[ProceduralVehicleModels.PICKUP] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/pickup.awmesh");
         importedVehicleModels[ProceduralVehicleModels.BUS] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/city-bus.awmesh");
@@ -838,10 +839,11 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform3f(uTint,.70f+cr*.30f,.70f+cg*.30f,.70f+cb*.30f);
         GLES20.glUniform1f(uGlass,0f);
         GLES20.glUniform1f(uPbr,1f);
+        GLES20.glUniform2f(uMatParams, 1f, 1f);
         bindVehicleMaps();
-        Mesh imported = importedVehicleModels != null ? importedVehicleModels[type] : null;
-        if(imported != null) imported.draw();
-        else vehicleModels[type].draw();
+        AssetMeshLoader.Model imported = importedVehicleModels != null ? importedVehicleModels[type] : null;
+        if(imported != null) imported.draw(uTint, uMatParams);
+        else { GLES20.glUniform2f(uMatParams, 1f, 1f); vehicleModels[type].draw(); }
         GLES20.glUniform1f(uPbr,0f);
         GLES20.glUniform3f(uTint,1f,1f,1f);
         if(imported == null) {

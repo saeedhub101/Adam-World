@@ -31,15 +31,17 @@ final class Mesh {
         return new Mesh(id[0], n / stride, stride);
     }
 
-    /** للشبكات ذات التنسيق الكامل (11 رقماً). */
-    void draw() {
+    /** Draw the complete mesh or one AWM3 submesh vertex range. */
+    void draw() { drawRange(0, count); }
+    void drawRange(int first, int vertices) {
+        if (vbo == 0 || first < 0 || vertices <= 0 || first + (long) vertices > count) return;
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo);
         int s = stride * 4;
         GLES20.glVertexAttribPointer(0, 3, GLES20.GL_FLOAT, false, s, 0);
         GLES20.glVertexAttribPointer(1, 3, GLES20.GL_FLOAT, false, s, 12);
         GLES20.glVertexAttribPointer(2, 2, GLES20.GL_FLOAT, false, s, 24);
         GLES20.glVertexAttribPointer(3, 3, GLES20.GL_FLOAT, false, s, 32);
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, count);
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, first, vertices);
     }
 
     /** للسماء: موضع ثنائي الأبعاد فقط. */

@@ -2,7 +2,7 @@
 """Build-time GLB -> Adam World Mesh converter.
 
 Downloads only the existing repository's individually catalogued CC0-1.0 vehicle
-sources, converts their transformed geometry, UVs, and material colors to AWM2, and writes
+sources, converts their transformed geometry, UVs, and material colors to AWM3, and writes
 only the custom binary format into Android assets. Source GLBs stay in a temporary
 directory and are never packaged or required by the Android runtime.
 """
@@ -126,7 +126,8 @@ def vertex_normals(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
 
 def convert(raw: bytes, target_length: float, fallback):
     meshes = scene_meshes(raw)
-    all_vertices, all_normals, all_uvs, all_colors, all_faces = [], [], [], [], []
+    all_vertices, all_normals, all_uvs, all_colors = [], [], [], []
+    face_groups, material_records = [], []
     uv_meshes = 0
     uv_vertices = 0
     offset = 0
@@ -149,12 +150,24 @@ def convert(raw: bytes, target_length: float, fallback):
         all_normals.append(normals)
         all_uvs.append(uv)
         all_colors.append(colors)
-        all_faces.append(faces + offset)
+        face_groups.append(faces.copy())
+        material = getattr(mesh.visual, "material", None)
+        def mf(name, default):
+            try: return float(getattr(material, name, default)) if material is not None else float(default)
+            except (TypeError, ValueError): return float(default)
+        emissive = getattr(material, "emissiveFactor", (0, 0, 0)) if material is not None else (0, 0, 0)
+        try:
+            emissive = np.asarray(emissive, dtype=np.float32).reshape(-1)[:3]
+            if len(emissive) != 3: emissive = np.zeros(3, dtype=np.float32)
+            if float(emissive.max()) > 1.0: emissive /= 255.0
+        except Exception: emissive = np.zeros(3, dtype=np.float32)
+        material_records.append((1.,1.,1.,1.,float(emissive[0]),float(emissive[1]),float(emissive[2]),
+            float(np.clip(mf("metallicFactor",0.0),0,1)),float(np.clip(mf("roughnessFactor",.72),.04,1)),.5,
+            0,int(bool(getattr(material,"doubleSided",False))) if material is not None else 0))
         offset += len(vertices)
 
     vertices = np.concatenate(all_vertices, axis=0)
     normals = np.concatenate(all_normals, axis=0)
-    faces = np.concatenate(all_faces, axis=0)
     # Apply a single world-space transform to all scene parts before flattening.
     bounds = np.vstack((vertices.min(axis=0), vertices.max(axis=0)))
     extents = bounds[1] - bounds[0]
@@ -178,21 +191,27 @@ def convert(raw: bytes, target_length: float, fallback):
     # Expand indexed triangles, preserving normals and each source material's color.
     uv_by_vertex = np.concatenate(all_uvs, axis=0)
     colors_by_vertex = np.concatenate(all_colors, axis=0)
-    expanded = np.empty((len(faces) * 3, 11), dtype=np.float32)
+    expanded = np.empty((sum(len(g) for g in face_groups) * 3, 11), dtype=np.float32)
+    submeshes = []
     cursor = 0
-    for face in faces:
-        for vertex_index in face:
-            color = colors_by_vertex[vertex_index]
-            if np.asarray(color).ndim == 2:
-                color = color[0]
-            expanded[cursor, 0:3] = vertices[vertex_index]
-            expanded[cursor, 3:6] = normals[vertex_index]
-            expanded[cursor, 6:8] = uv_by_vertex[vertex_index]
-            expanded[cursor, 8:11] = np.clip(color[:3], 0.0, 1.0)
-            cursor += 1
+    vertex_offset = 0
+    for material_index, group in enumerate(face_groups):
+        first = cursor
+        for face in group:
+            for local_index in face:
+                vertex_index = vertex_offset + int(local_index)
+                color = colors_by_vertex[vertex_index]
+                if np.asarray(color).ndim == 2: color = color[0]
+                expanded[cursor, 0:3] = vertices[vertex_index]
+                expanded[cursor, 3:6] = normals[vertex_index]
+                expanded[cursor, 6:8] = uv_by_vertex[vertex_index]
+                expanded[cursor, 8:11] = np.clip(color[:3], 0.0, 1.0)
+                cursor += 1
+        submeshes.append((first, cursor-first, material_index))
+        vertex_offset += len(all_vertices[material_index])
     total_vertices = sum(len(v) for v in all_vertices)
     print(f"AWM_UV meshes_with_uv={uv_meshes}/{len(all_vertices)} vertices_with_uv={uv_vertices}/{total_vertices}", flush=True)
-    return expanded
+    return expanded, submeshes, material_records
 
 
 def main():
@@ -202,12 +221,15 @@ def main():
         destination = OUT / (name + ".awmesh")
         try:
             raw = fetch(item["url"])
-            vertices = convert(raw, item["length"], item["fallback"])
+            vertices, submeshes, materials = convert(raw, item["length"], item["fallback"])
             with destination.open("wb") as stream:
-                stream.write(b"AWM2")
-                stream.write(struct.pack("<I", len(vertices)))
+                stream.write(struct.pack("<4sIIII", b"AWM3", len(vertices), len(submeshes), len(materials), 11))
                 stream.write(vertices.astype("<f4", copy=False).tobytes())
-            print(f"AWM_BUILT {name} format=AWM2 vertices={len(vertices)} bytes={destination.stat().st_size}", flush=True)
+                for first, count, material_index in submeshes:
+                    stream.write(struct.pack("<III", first, count, material_index))
+                for material in materials:
+                    stream.write(struct.pack("<10fII", *material))
+            print(f"AWM_BUILT {name} format=AWM3 vertices={len(vertices)} submeshes={len(submeshes)} materials={len(materials)} bytes={destination.stat().st_size}", flush=True)
             built += 1
         except Exception as exc:
             # Keep the release build resilient; the renderer uses its detailed procedural
