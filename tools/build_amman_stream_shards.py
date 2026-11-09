@@ -72,6 +72,7 @@ def poi_tags(category, props):
     c=(category or "").lower().replace(" ","_")
     if any(v in c for v in ("hospital","medical_centre","healthcare.hospital")): return {"amenity":"hospital"}
     if any(v in c for v in ("clinic","doctor","dentist","medical_clinic")): return {"amenity":"clinic"}
+    if any(v in c for v in ("school","kindergarten","education","university","college","academy")): return {"amenity":"school" if "kindergarten" not in c else "kindergarten"}
     if any(v in c for v in ("restaurant","fast_food","food_court")): return {"amenity":"restaurant"}
     if any(v in c for v in ("cafe","coffee_shop","coffee")): return {"amenity":"cafe"}
     if any(v in c for v in ("hotel","motel","hostel","guest_house")): return {"tourism":"hotel"}
@@ -310,7 +311,9 @@ def sources():
       ("land_use","10_landcover_overture/land_use",False),
       ("water","10_landcover_overture/water",False),
       ("place","11_places_addresses/place",False),
-      ("infrastructure","10_landcover_overture/infrastructure",False)]
+      ("infrastructure","10_landcover_overture/infrastructure",False),
+      # Overture place features contain schools, campuses, civic services and named POIs.
+      ("place","11_places_addresses/place",False)]
     for layer,relative,part in definitions:
         for path in sorted((SOURCE/relative).glob("part-*.geojson")):
             yield layer,path,part
