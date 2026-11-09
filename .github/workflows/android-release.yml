@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   verify-pr:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -86,6 +86,7 @@ jobs:
             echo "ANDROID_EMULATOR_STARTUP_OK"
 
   release:
+    needs: verify-pr
     if: github.event_name != 'pull_request' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 20
