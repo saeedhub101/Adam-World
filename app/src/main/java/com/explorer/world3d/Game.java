@@ -202,10 +202,19 @@ final class Game {
                 if (vehicleType == ProceduralVehicleModels.AIRPLANE && cv < 9f && altitude > 0f) altitude -= 3.5f * dt;
                 altitude = clamp(altitude, 0f, vehicleType == ProceduralVehicleModels.HELICOPTER ? 260f : 700f);
                 cx = nx; cz = nz;
-            } else if (w.blocked(nx + fx * 2.1f, nz + fz * 2.1f, 0.9f) || w.blocked(nx - fx * 2.1f, nz - fz * 2.1f, 0.9f)
-                    || w.blocked(nx, nz, 1.0f)) {
-                cv = -cv * 0.25f;
-            } else { cx = nx; cz = nz; }
+            } else {
+                // Match the collision probes to the actual vehicle footprint. The
+                // previous 2.1 m front/rear probes made narrow sidewalks feel like walls.
+                float vehicleProbe = vehicleType == ProceduralVehicleModels.BUS ? 3.0f
+                        : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 0.95f : 1.55f;
+                float vehicleRadius = vehicleType == ProceduralVehicleModels.BUS ? 1.05f
+                        : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 0.38f : 0.72f;
+                boolean blockedVehicle = w.blocked(nx + fx * vehicleProbe, nz + fz * vehicleProbe, vehicleRadius)
+                        || w.blocked(nx - fx * vehicleProbe, nz - fz * vehicleProbe, vehicleRadius)
+                        || w.blocked(nx, nz, vehicleRadius);
+                if (blockedVehicle) cv = -cv * 0.25f;
+                else { cx = nx; cz = nz; }
+            }
             px = cx; pz = cz;
             float ground = w.heightAt(cx, cz);
             py += (ground + altitude - py) * Math.min(1f, dt * (aircraft ? 4f : 10f));

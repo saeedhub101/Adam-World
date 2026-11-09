@@ -1730,6 +1730,12 @@ final class TileBuilder {
      * only when the source omits sidewalk metadata. The complete sidewalk polygon
      * is registered as a vehicle obstacle, not merely painted on the road.
      */
+    /**
+     * Build traversable sidewalks with a shallow beveled transition from asphalt.
+     * The pavement remains visible and continuous, but it is never registered as
+     * a collision obstacle. A low ramp replaces the former vertical kerb wall so
+     * pedestrians and ordinary road vehicles can cross the street/sidewalk edge.
+     */
     private static void addRoadSidewalks(TileData td, RoadPath path, JSONObject tags,
                                          String highway, float roadYOffset) {
         if (path == null || path.total < 2f) return;
@@ -1752,48 +1758,42 @@ final class TileBuilder {
             if (sidewalkEnd - sidewalkStart < 5f) continue;
             int count = Math.max(2, (int)Math.ceil((sidewalkEnd - sidewalkStart) / 5f) + 1);
             float[] cx = new float[count], cz = new float[count];
-            float[] ix = new float[count], iz = new float[count];
-            float[] ox = new float[count], oz = new float[count];
             float[] p = new float[4];
             for (int i = 0; i < count; i++) {
                 float distance = sidewalkStart + (sidewalkEnd - sidewalkStart) * i / (count - 1f);
-                path.posAt(distance, centerOffset, p); cx[i] = p[0]; cz[i] = p[1];
-                path.posAt(distance, side * inner, p); ix[i] = p[0]; iz[i] = p[1];
-                path.posAt(distance, side * (inner + width), p); ox[i] = p[0]; oz[i] = p[1];
+                path.posAt(distance, centerOffset, p);
+                cx[i] = p[0]; cz[i] = p[1];
             }
-            ribbonOffset(cx, cz, width, roadYOffset + 0.20f, td.bufs[B_SIDEWALK],
-                    1f, 8f, 0.78f, 0.77f, 0.72f);
+
             String kerbType = (tg(tags, "kerb") + " " + tg(tags, "curb")).toLowerCase(java.util.Locale.US);
             float kerbRise = measure(tg(tags, "kerb:height"));
-            if (!(kerbRise >= 0.05f && kerbRise <= 0.40f)) kerbRise = 0.10f;
-            if (kerbType.matches(".*(flush|lowered|rolled).*")) kerbRise = Math.min(0.06f, kerbRise);
-            float[] curbX = new float[count], curbZ = new float[count];
-            for (int i = 0; i < count; i++) {
-                path.posAt(sidewalkStart + (sidewalkEnd - sidewalkStart) * i / (count - 1f), side * (inner + 0.10f), p);
-                curbX[i] = p[0]; curbZ[i] = p[1];
-            }
-            ribbonOffset(curbX, curbZ, 0.20f, roadYOffset + 0.20f + kerbRise, td.bufs[B_SIDEWALK],
-                    1f, 2f, 0.58f, 0.59f, 0.56f);
+            if (!(kerbRise >= 0.02f && kerbRise <= 0.12f)) kerbRise = 0.08f;
+            if (kerbType.matches(".*(flush|lowered|rolled).*")) kerbRise = Math.min(0.035f, kerbRise);
+            final float pavementY = roadYOffset + kerbRise;
+
+            // Flat sidewalk deck, raised only a few centimetres above the road.
+            ribbonOffset(cx, cz, width, pavementY, td.bufs[B_SIDEWALK],
+                    1f, 8f, 0.78f, 0.77f, 0.72f);
+
+            // A 65 cm bevel gives both tyres and the character a continuous ramp.
+            // It replaces the old vertical concrete face at the carriageway edge.
+            float rampWidth = 0.65f;
             for (int i = 0; i + 1 < count; i++) {
-                float baseA = Terrain.h(ix[i], iz[i]) + roadYOffset;
-                float baseB = Terrain.h(ix[i + 1], iz[i + 1]) + roadYOffset;
-                float topA = Terrain.h(ix[i], iz[i]) + roadYOffset + 0.20f + kerbRise;
-                float topB = Terrain.h(ix[i + 1], iz[i + 1]) + roadYOffset + 0.20f + kerbRise;
-                facadeQuad(td.bufs[B_SIDEWALK], ix[i], baseA, iz[i], ix[i + 1], baseB, iz[i + 1],
-                        ix[i + 1], topB, iz[i + 1], ix[i], topA, iz[i],
-                        0.48f, 0.49f, 0.46f);
-                float[] fx = {ix[i], ox[i], ox[i + 1], ix[i + 1]};
-                float[] fz = {iz[i], oz[i], oz[i + 1], iz[i + 1]};
-                Footprint obstacle = new Footprint();
-                obstacle.xs = fx; obstacle.zs = fz;
-                obstacle.obstacleHeight = 0.32f;
-                obstacle.minx = obstacle.maxx = fx[0];
-                obstacle.minz = obstacle.maxz = fz[0];
-                for (int k = 1; k < 4; k++) {
-                    obstacle.minx = Math.min(obstacle.minx, fx[k]); obstacle.maxx = Math.max(obstacle.maxx, fx[k]);
-                    obstacle.minz = Math.min(obstacle.minz, fz[k]); obstacle.maxz = Math.max(obstacle.maxz, fz[k]);
-                }
-                // Sidewalk pavement is traversable; the curb remains visible but does not trap the player.
+                float s0 = sidewalkStart + (sidewalkEnd - sidewalkStart) * i / (count - 1f);
+                float s1 = sidewalkStart + (sidewalkEnd - sidewalkStart) * (i + 1) / (count - 1f);
+                float[] a = new float[4], b = new float[4], c = new float[4], d = new float[4];
+                path.posAt(s0, side * inner, a);
+                path.posAt(s1, side * inner, b);
+                path.posAt(s1, side * (inner + rampWidth), c);
+                path.posAt(s0, side * (inner + rampWidth), d);
+                float baseA = Terrain.h(a[0], a[1]) + roadYOffset + 0.012f;
+                float baseB = Terrain.h(b[0], b[1]) + roadYOffset + 0.012f;
+                float topC = Terrain.h(c[0], c[1]) + pavementY;
+                float topD = Terrain.h(d[0], d[1]) + pavementY;
+                facadeQuad(td.bufs[B_SIDEWALK],
+                        a[0], baseA, a[1], b[0], baseB, b[1],
+                        c[0], topC, c[1], d[0], topD, d[1],
+                        0.58f, 0.59f, 0.56f);
             }
         }
     }
