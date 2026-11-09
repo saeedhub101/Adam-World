@@ -18,7 +18,8 @@
 - **Implemented:** gamepad D-pad up/down controls aircraft climb/descent (R1 camera-zoom modifier retains priority); aircraft body pitch and bank now respond to flight input and steering, with attitude reset on vehicle entry/exit.
 - **Implemented:** direct vehicle garage selection for all 10 model types (including helicopter and airplane), available from the top navigation on touch and TV, plus the compact touch action pad.
 - **Reused:** existing `Game` request/state fields and `CityRenderer.toggleCar()/cycleVehicleType()`; no parallel gameplay system was introduced.
-- **Still in progress:** flight physics still need a full airplane runway/takeoff/landing envelope and a dedicated throttle/flight-instrument presentation; aircraft spawn placement is currently the existing nearby vehicle summon behavior, not a dedicated airport/hangar. End-to-end build/release confirmation is pending.
+- **Release verified:** signed Android release `adam-world-v431` was published from commit `d57ae97175b7fea41be39f7401fb589390d0cd27`, which includes the mobile aircraft throttle/brake controls and input-reset fixes. Published APK: 4,116,025 bytes; AAB: 4,087,241 bytes.
+- **Still in progress:** this delivery does not yet provide airport/hangar spawn points, a modeled runway with takeoff/landing ground roll, or full flight instruments/autopilot. The current aircraft can be selected and summoned through the existing nearby-vehicle system; airplane lift is gated by speed, but it is not yet a complete runway-based flight simulation. These are explicitly not claimed as completed.
 
 ## Delivery stages
 
