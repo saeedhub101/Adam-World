@@ -421,11 +421,56 @@ final class Game {
         if(id<0||id>=WeaponSystem.NAME.length||now-lastWeaponShotMs<WeaponSystem.FIRE_INTERVAL_MS[id])return;
         if(magazineAmmo<=0){reloadWeapon();return;}
         lastWeaponShotMs=now;magazineAmmo--;weaponMagazines[id]=magazineAmmo;
-        float fx=(float)Math.sin(pyaw),fz=(float)Math.cos(pyaw);
-        float range=WeaponSystem.RANGE[id],cone=weaponAimHeld?0.94f:0.82f;
+
+        // Hitscan with deterministic weapon-specific dispersion and world occlusion.
+        // A target behind a building/wall can no longer be damaged through geometry.
+        float baseYaw=pyaw;
+        float spread=weaponAimHeld?0.006f:0.022f;
+        if(id==3)spread*=2.8f;       // shotgun pellet cone
+        if(id==4)spread*=0.22f;      // precision rifle
+        long seed=now^(id*0x9E3779B97F4A7C15L);
+        seed^=seed>>>12;seed^=seed<<25;seed^=seed>>>27;
+        float jitter=(((seed*2685821657736338717L)>>>40)/(float)(1L<<24)-0.5f)*2f*spread;
+        float shotYaw=baseYaw+jitter;
+        float fx=(float)Math.sin(shotYaw),fz=(float)Math.cos(shotYaw);
+        float range=WeaponSystem.RANGE[id];
         Agent target=null;float best=range;
-        for(Agent a:agents)if(!a.car&&!a.knockedOut){float dx=a.x-px,dz=a.z-pz,d=(float)Math.hypot(dx,dz);if(d<0.65f||d>best)continue;float facing=(dx*fx+dz*fz)/(d+0.0001f);if(facing>cone){best=d;target=a;}}
-        if(target!=null){target.health=Math.max(0,target.health-WeaponSystem.DAMAGE[id]);target.hostile=true;target.state=1;target.stateTime=0f;target.stunSeconds=0.5f;target.hitFlash=0.28f;if(target.health==0){target.knockedOut=true;target.hostile=false;target.state=3;target.stateTime=0f;target.knockdownSeconds=22f;target.sp=0f;}}
+        for(Agent a:agents)if(!a.car&&!a.knockedOut){
+            float dx=a.x-px,dz=a.z-pz,d=(float)Math.hypot(dx,dz);
+            if(d<0.65f||d>best)continue;
+            float facing=(dx*fx+dz*fz)/(d+0.0001f);
+            float hitCone=weaponAimHeld?0.992f:0.965f;
+            if(id==3)hitCone=weaponAimHeld?0.975f:0.91f;
+            if(facing<=hitCone)continue;
+            boolean occluded=false;
+            if(w instanceof CityRenderer){
+                int samples=Math.max(1,(int)(d/0.55f));
+                for(int n=1;n<samples;n++){
+                    float t=n/(float)samples;
+                    if(((CityRenderer)w).blockedAtHeight(px+dx*t,pz+dz*t,0.16f,0.65f)){
+                        occluded=true;break;
+                    }
+                }
+            }else{
+                int samples=Math.max(1,(int)(d/0.55f));
+                for(int n=1;n<samples;n++){
+                    float t=n/(float)samples;
+                    if(w.blocked(px+dx*t,pz+dz*t,0.16f)){occluded=true;break;}
+                }
+            }
+            if(!occluded){best=d;target=a;}
+        }
+        if(target!=null){
+            int damage=WeaponSystem.DAMAGE[id];
+            if(id==3)damage=Math.max(12,damage-(int)(best*2.0f));
+            target.health=Math.max(0,target.health-damage);
+            target.hostile=true;target.state=1;target.stateTime=0f;
+            target.stunSeconds=id==4?0.85f:0.5f;target.hitFlash=0.28f;
+            if(target.health==0){
+                target.knockedOut=true;target.hostile=false;target.state=3;
+                target.stateTime=0f;target.knockdownSeconds=22f;target.sp=0f;
+            }
+        }
     }
     void reloadWeapon(){int id=equippedWeapon;if(weaponReloadSeconds>0f||magazineAmmo>=WeaponSystem.MAGAZINE[id]||reserveAmmo[id]<=0)return;int moved=Math.min(WeaponSystem.MAGAZINE[id]-magazineAmmo,reserveAmmo[id]);reserveAmmo[id]-=moved;magazineAmmo+=moved;weaponMagazines[id]=magazineAmmo;weaponReloadSeconds=WeaponSystem.RELOAD_SECONDS[id];weaponFireHeld=false;}
     boolean equipWeapon(int id){if(id<0||id>=ownedWeapons.length||!ownedWeapons[id])return false;weaponMagazines[equippedWeapon]=magazineAmmo;equippedWeapon=id;magazineAmmo=Math.min(WeaponSystem.MAGAZINE[id],Math.max(0,weaponMagazines[id]));weaponFireHeld=false;weaponReloadSeconds=0f;return true;}
