@@ -30,7 +30,7 @@ final class Game {
     int vehicleType = ProceduralVehicleModels.SEDAN;
     float altitude;
     volatile float liftInput;
-    volatile boolean paused, attackRequested, jumpRequested, handbrake, guardRequested, dodgeRequested;
+    volatile boolean paused, attackRequested, punchRequested, kickRequested, jumpRequested, handbrake, guardRequested, dodgeRequested;
     volatile float stamina = 100f;
     float dodgeSeconds, dodgeX, dodgeZ;
     long lastDodgeMs;
@@ -38,6 +38,7 @@ final class Game {
     int playerPose;
     volatile float cameraLookOffset;
     float jumpVelocity, jumpHeight, attackSeconds;
+    int attackType;
     long lastPlayerAttackMs;
     int comboStep;
     float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
@@ -58,7 +59,7 @@ final class Game {
 
     void reset() {
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; health = 100; dead = false;
-        paused = attackRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f;
+        paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
@@ -131,24 +132,29 @@ final class Game {
             jumpVelocity -= 13.8f * dt;
             if (jumpHeight <= 0f) { jumpHeight = 0f; jumpVelocity = 0f; }
         }
-        if (attackRequested) {
-            attackRequested = false;
-            if (!driving && !dead && now - lastPlayerAttackMs >= 420L) {
+        boolean punch = punchRequested || attackRequested;
+        boolean kick = kickRequested;
+        punchRequested = kickRequested = attackRequested = false;
+        if ((punch || kick) && !driving && !dead && playerPose == 0) {
+            long cooldown = kick ? 620L : 280L;
+            if (now - lastPlayerAttackMs >= cooldown) {
                 lastPlayerAttackMs = now;
-                comboStep = (comboStep + 1) % 3;
-                attackSeconds = 0.38f;
-                float range = comboStep == 2 ? 2.35f : 1.95f;
-                float damage = comboStep == 2 ? 48f : 32f;
+                attackType = kick ? 2 : 1;
+                comboStep = punch ? (comboStep + 1) % 3 : 0;
+                attackSeconds = kick ? 0.58f : 0.34f;
+                float range = kick ? 2.65f : 1.72f;
+                float damage = kick ? 38f : (comboStep == 2 ? 26f : 19f);
                 float fx = (float)Math.sin(pyaw), fz = (float)Math.cos(pyaw);
                 Agent target = null; float best = range;
                 for (Agent a : agents) if (!a.car && !a.knockedOut) {
                     float dx=a.x-px, dz=a.z-pz, d=(float)Math.hypot(dx,dz);
                     float facing=(dx*fx+dz*fz)/(d+0.0001f);
-                    if (d < best && facing > 0.10f) { best=d; target=a; }
+                    if (d < best && facing > (kick ? -0.05f : 0.18f)) { best=d; target=a; }
                 }
                 if (target != null) {
                     target.health = Math.max(0, target.health-(int)damage);
-                    target.hostile = true; target.state=1; target.stateTime=0f; target.stunSeconds = 0.42f; target.hitFlash=.24f;
+                    target.hostile = true; target.state=1; target.stateTime=0f;
+                    target.stunSeconds = kick ? 0.62f : 0.34f; target.hitFlash=.24f;
                     if (target.health == 0) { target.knockedOut = true; target.hostile = false; target.state=3; target.stateTime=0f; target.knockdownSeconds = 18f; target.sp = 0f; }
                 }
             }
@@ -168,9 +174,13 @@ final class Game {
                 float speed = (sprint ? 8.5f : 4.6f) * mag;
                 if (dodgeSeconds > 0f) { dx = dodgeX; dz = dodgeZ; speed = 12.5f; }
                 float nx = px + dx * speed * dt, nz = pz + dz * speed * dt;
-                if (!w.blocked(nx, nz, 0.45f)) { px = nx; pz = nz; }
-                else if (!w.blocked(nx, pz, 0.45f)) px = nx;
-                else if (!w.blocked(px, nz, 0.45f)) pz = nz;
+                float jumpClearance = Math.max(0f, jumpHeight - 0.18f);
+                boolean blockedAhead = (w instanceof CityRenderer) ? ((CityRenderer) w).blockedAtHeight(nx, nz, 0.45f, jumpClearance) : w.blocked(nx, nz, 0.45f);
+                boolean blockedX = (w instanceof CityRenderer) ? ((CityRenderer) w).blockedAtHeight(nx, pz, 0.45f, jumpClearance) : w.blocked(nx, pz, 0.45f);
+                boolean blockedZ = (w instanceof CityRenderer) ? ((CityRenderer) w).blockedAtHeight(px, nz, 0.45f, jumpClearance) : w.blocked(px, nz, 0.45f);
+                if (!blockedAhead) { px = nx; pz = nz; }
+                else if (!blockedX) px = nx;
+                else if (!blockedZ) pz = nz;
                 pyaw += angDiff(pyaw, (float) Math.atan2(dx, dz)) * Math.min(1f, dt * 12f);
                 phase += speed * dt * 1.7f;
                 swingAmp = 0.8f * Math.min(1f, speed / 4f);

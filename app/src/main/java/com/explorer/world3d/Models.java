@@ -6,6 +6,7 @@ import java.util.HashMap;
 final class Footprint {
     float[] xs, zs;
     float minx, maxx, minz, maxz;
+    float obstacleHeight = Float.POSITIVE_INFINITY;
 }
 
 final class Decal {
@@ -82,9 +83,14 @@ final class Collision {
     }
 
     static boolean hit(HashMap<Long, ArrayList<Footprint>> grid, float x, float z) {
+        return hit(grid, x, z, 0f);
+    }
+
+    static boolean hit(HashMap<Long, ArrayList<Footprint>> grid, float x, float z, float clearance) {
         ArrayList<Footprint> l = grid.get(ck((int) Math.floor(x / CELL), (int) Math.floor(z / CELL)));
         if (l == null) return false;
         for (Footprint f : l) {
+            if (f.obstacleHeight <= clearance) continue;
             if (x < f.minx || x > f.maxx || z < f.minz || z > f.maxz) continue;
             if (Poly.contains(f.xs, f.zs, x, z)) return true;
         }

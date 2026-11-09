@@ -419,19 +419,24 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     /* ---------- التصادم ---------- */
-    private boolean hit(float x, float z) {
+    private boolean hit(float x, float z, float clearance) {
         int ix = Geo.tileX(x), iz = Geo.tileZ(z);
         for (int di = -1; di <= 1; di++) {
             for (int dj = -1; dj <= 1; dj++) {
                 Tile t = tiles.get(Geo.key(ix + di, iz + dj));
-                if (t != null && Collision.hit(t.grid, x, z)) return true;
+                if (t != null && Collision.hit(t.grid, x, z, clearance)) return true;
             }
         }
         return false;
     }
 
     @Override public boolean blocked(float x, float z, float r) {
-        return hit(x, z) || hit(x + r, z) || hit(x - r, z) || hit(x, z + r) || hit(x, z - r);
+        return blockedAtHeight(x, z, r, 0f);
+    }
+
+    public boolean blockedAtHeight(float x, float z, float r, float clearance) {
+        return hit(x, z, clearance) || hit(x + r, z, clearance) || hit(x - r, z, clearance)
+                || hit(x, z + r, clearance) || hit(x, z - r, clearance);
     }
 
     /* ---------- حلقة الرسم ---------- */

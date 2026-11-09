@@ -85,7 +85,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     }
     private void attackOrHeal() {
         if (renderer.game.driving) { playHorn(); return; }
-        runOnGl(new Runnable() { @Override public void run() { renderer.game.attackRequested = true; } });
+        runOnGl(new Runnable() { @Override public void run() { renderer.game.punchRequested = true; } });
     }
     private void showGameSettings() {
         final String[] options = {"الصوت", "جودة الرسومات", "حساسية الكاميرا", "إعدادات التحكم", "إغلاق"};
@@ -158,14 +158,15 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             else if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.jumpRequested = true; } });
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_B) { if (pressed) attackOrHeal(); return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_B) { if (pressed && !renderer.game.driving) runOnGl(new Runnable() { @Override public void run() { renderer.game.kickRequested = true; } }); return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed && !renderer.game.driving) runOnGl(new Runnable() { @Override public void run() { renderer.game.punchRequested = true; } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed) cycleGameCamera(); return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_X) return true;
         if (code == KeyEvent.KEYCODE_BUTTON_Y) {
             if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } });
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_L1) { renderer.game.cameraLookOffset = down ? -0.95f : 0f; return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_L1) { if (!renderer.game.driving) renderer.game.guardRequested = down; else renderer.game.cameraLookOffset = down ? -0.95f : 0f; return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_R1) { renderer.game.cameraLookOffset = down ? 0.95f : 0f; return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_L2 || code == KeyEvent.KEYCODE_BUTTON_R2) {
             padL2 = code == KeyEvent.KEYCODE_BUTTON_L2 ? down : padL2;
@@ -389,7 +390,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 return true;
             }
         });
-        Button attack = btn("هجوم");
+        Button punch = btn("👊 لكمة");
+        Button kick = btn("🦵 ركلة");
         attack.setOnTouchListener(new View.OnTouchListener() {
             @Override public boolean onTouch(View v, MotionEvent e) {
                 if (e.getActionMasked() == MotionEvent.ACTION_DOWN && !renderer.game.driving)
@@ -397,7 +399,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 return true;
             }
         });
-        Button guard = btn("دفاع");
+        kick.setOnTouchListener(new View.OnTouchListener() {
+            @Override public boolean onTouch(View v, MotionEvent e) {
+                if (e.getActionMasked() == MotionEvent.ACTION_DOWN && !renderer.game.driving)
+                    runOnGl(new Runnable() { @Override public void run() { renderer.game.kickRequested = true; } });
+                return true;
+            }
+        });
+        Button guard = btn("🛡 صد");
         guard.setOnTouchListener(new View.OnTouchListener() {
             @Override public boolean onTouch(View v, MotionEvent e) {
                 int a=e.getActionMasked();
@@ -466,7 +475,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         ab.setMargins(0, dp(10), 0, 0);
         acts.addView(sprint, ab);
         acts.addView(jump, new LinearLayout.LayoutParams(dp(72), dp(44)));
-        acts.addView(attack, new LinearLayout.LayoutParams(dp(72), dp(44)));
+        acts.addView(punch, new LinearLayout.LayoutParams(dp(88), dp(44)));
+        acts.addView(kick, new LinearLayout.LayoutParams(dp(88), dp(44)));
         acts.addView(guard, new LinearLayout.LayoutParams(dp(72), dp(44)));
         acts.addView(dodge, new LinearLayout.LayoutParams(dp(72), dp(44)));
         acts.addView(cameraBack, new LinearLayout.LayoutParams(dp(84), dp(44)));

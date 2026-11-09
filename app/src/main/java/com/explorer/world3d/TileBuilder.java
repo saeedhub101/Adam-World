@@ -1477,6 +1477,7 @@ final class TileBuilder {
         // No random billboard panels: Manila signage must come from mapped names or verified photo evidence.
         Footprint f = new Footprint();
         f.xs = px; f.zs = pz; f.minx = minx; f.maxx = maxx; f.minz = minz; f.maxz = maxz;
+        f.obstacleHeight = Math.max(2.2f, h);
         // Elevated building parts/overhangs are visible above the street but must not block ground traffic.
         if (minHeight < 2.2f) Collision.add(td.grid, f);
     }
@@ -1746,13 +1747,16 @@ final class TileBuilder {
             if (!(width >= 0.7f && width <= 12f)) width = presence.equals("yes") || presence.equals("both") ? 1.8f : 1.5f;
             float inner = path.w * 0.5f;
             float centerOffset = side * (inner + width * 0.5f);
-            int count = Math.max(2, (int)Math.ceil(path.total / 5f) + 1);
+            float junctionClearance = Math.min(7f, path.total * 0.22f);
+            float sidewalkStart = junctionClearance, sidewalkEnd = path.total - junctionClearance;
+            if (sidewalkEnd - sidewalkStart < 5f) continue;
+            int count = Math.max(2, (int)Math.ceil((sidewalkEnd - sidewalkStart) / 5f) + 1);
             float[] cx = new float[count], cz = new float[count];
             float[] ix = new float[count], iz = new float[count];
             float[] ox = new float[count], oz = new float[count];
             float[] p = new float[4];
             for (int i = 0; i < count; i++) {
-                float distance = path.total * i / (count - 1f);
+                float distance = sidewalkStart + (sidewalkEnd - sidewalkStart) * i / (count - 1f);
                 path.posAt(distance, centerOffset, p); cx[i] = p[0]; cz[i] = p[1];
                 path.posAt(distance, side * inner, p); ix[i] = p[0]; iz[i] = p[1];
                 path.posAt(distance, side * (inner + width), p); ox[i] = p[0]; oz[i] = p[1];
@@ -1765,7 +1769,7 @@ final class TileBuilder {
             if (kerbType.matches(".*(flush|lowered|rolled).*")) kerbRise = Math.min(0.06f, kerbRise);
             float[] curbX = new float[count], curbZ = new float[count];
             for (int i = 0; i < count; i++) {
-                path.posAt(path.total * i / (count - 1f), side * (inner + 0.10f), p);
+                path.posAt(sidewalkStart + (sidewalkEnd - sidewalkStart) * i / (count - 1f), side * (inner + 0.10f), p);
                 curbX[i] = p[0]; curbZ[i] = p[1];
             }
             ribbonOffset(curbX, curbZ, 0.20f, roadYOffset + 0.20f + kerbRise, td.bufs[B_SIDEWALK],
@@ -1782,13 +1786,14 @@ final class TileBuilder {
                 float[] fz = {iz[i], oz[i], oz[i + 1], iz[i + 1]};
                 Footprint obstacle = new Footprint();
                 obstacle.xs = fx; obstacle.zs = fz;
+                obstacle.obstacleHeight = 0.32f;
                 obstacle.minx = obstacle.maxx = fx[0];
                 obstacle.minz = obstacle.maxz = fz[0];
                 for (int k = 1; k < 4; k++) {
                     obstacle.minx = Math.min(obstacle.minx, fx[k]); obstacle.maxx = Math.max(obstacle.maxx, fx[k]);
                     obstacle.minz = Math.min(obstacle.minz, fz[k]); obstacle.maxz = Math.max(obstacle.maxz, fz[k]);
                 }
-                Collision.add(td.grid, obstacle);
+                // Sidewalk pavement is traversable; the curb remains visible but does not trap the player.
             }
         }
     }
