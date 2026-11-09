@@ -120,7 +120,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("يتم التحكم أثناء اللعب باستخدام يد التحكم الخارجية فقط. لا تظهر أسماء الأزرار أو تعليمات الحركات على شاشة اللعب.")
+                .setMessage("على الهاتف: العصا اليسرى للحركة، واسحب على مساحة اللعب لتحريك الكاميرا، واستخدم أزرار القفز واللكم والركل والصد والركض والمراوغة. زر المركبة للاستدعاء والدخول والخروج، ومن قائمة المركبات اختر الهليكوبتر أو الطائرة. أثناء الطيران استخدم العصا للتوجيه والتقدم وأزرار الصعود والهبوط. على التلفاز: استخدم يد التحكم؛ العصا اليسرى للحركة أو قيادة المركبة، والعصا اليمنى للكاميرا، وأزرار A/B/X/Y للحركات والتفاعل.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
