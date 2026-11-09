@@ -52,6 +52,12 @@ final class Game {
     float vehicleWheelBodyLift, vehicleWheelBodyRoll, vehicleWheelBodyPitch;
     int attackType;
     long lastPlayerAttackMs;
+    volatile boolean weaponFireHeld, weaponAimHeld, reloadRequested;
+    int equippedWeapon=0, cash=2500, magazineAmmo=12;
+    final boolean[] ownedWeapons={true,false,false,false,false};
+    final int[] reserveAmmo={48,0,0,0,0};
+    long lastWeaponShotMs;
+    float weaponReloadSeconds;
     int comboStep;
     float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
     long lastLookMs;
@@ -240,6 +246,9 @@ final class Game {
         if (health > 0 && health < 100 && now - lastDamageMs >= 5000L)
             health = Math.min(100, health + Math.max(1, (int)(dt * 12f)));
         attackSeconds = Math.max(0f, attackSeconds - dt);
+        weaponReloadSeconds=Math.max(0f,weaponReloadSeconds-dt);
+        if(reloadRequested){reloadRequested=false;reloadWeapon();}
+        if(weaponFireHeld&&!driving&&weaponReloadSeconds<=0f)fireWeapon(now);
         dodgeSeconds = Math.max(0f, dodgeSeconds - dt);
         hurtFlash=Math.max(0f,hurtFlash-dt);
         guardBlend += ((guardRequested && !driving && stamina>0f ? 1f:0f)-guardBlend)*Math.min(1f,dt*12f);
@@ -402,6 +411,23 @@ final class Game {
 
         updateCamera(dt);
     }
+
+    void fireWeapon(long now){
+        int id=equippedWeapon;
+        if(id<0||id>=WeaponSystem.NAME.length||now-lastWeaponShotMs<WeaponSystem.FIRE_INTERVAL_MS[id])return;
+        if(magazineAmmo<=0){reloadWeapon();return;}
+        lastWeaponShotMs=now;magazineAmmo--;
+        float fx=(float)Math.sin(pyaw),fz=(float)Math.cos(pyaw);
+        float range=WeaponSystem.RANGE[id],cone=weaponAimHeld?0.94f:0.82f;
+        Agent target=null;float best=range;
+        for(Agent a:agents)if(!a.car&&!a.knockedOut){float dx=a.x-px,dz=a.z-pz,d=(float)Math.hypot(dx,dz);if(d<0.65f||d>best)continue;float facing=(dx*fx+dz*fz)/(d+0.0001f);if(facing>cone){best=d;target=a;}}
+        if(target!=null){target.health=Math.max(0,target.health-WeaponSystem.DAMAGE[id]);target.hostile=true;target.state=1;target.stateTime=0f;target.stunSeconds=0.5f;target.hitFlash=0.28f;if(target.health==0){target.knockedOut=true;target.hostile=false;target.state=3;target.stateTime=0f;target.knockdownSeconds=22f;target.sp=0f;}}
+    }
+    void reloadWeapon(){int id=equippedWeapon;if(weaponReloadSeconds>0f||magazineAmmo>=WeaponSystem.MAGAZINE[id]||reserveAmmo[id]<=0)return;int moved=Math.min(WeaponSystem.MAGAZINE[id]-magazineAmmo,reserveAmmo[id]);reserveAmmo[id]-=moved;magazineAmmo+=moved;weaponReloadSeconds=WeaponSystem.RELOAD_SECONDS[id];weaponFireHeld=false;}
+    boolean equipWeapon(int id){if(id<0||id>=ownedWeapons.length||!ownedWeapons[id])return false;equippedWeapon=id;magazineAmmo=Math.min(WeaponSystem.MAGAZINE[id],Math.max(0,magazineAmmo));weaponFireHeld=false;weaponReloadSeconds=0f;return true;}
+    boolean purchaseWeapon(int id){if(id<0||id>=ownedWeapons.length||ownedWeapons[id]||cash<WeaponSystem.PRICE[id])return false;cash-=WeaponSystem.PRICE[id];ownedWeapons[id]=true;reserveAmmo[id]=WeaponSystem.START_AMMO[id];equippedWeapon=id;magazineAmmo=WeaponSystem.MAGAZINE[id];return true;}
+    void cycleWeapon(){for(int n=1;n<=ownedWeapons.length;n++){int id=(equippedWeapon+n)%ownedWeapons.length;if(ownedWeapons[id]){equipWeapon(id);return;}}}
+    boolean buyAmmo(){int id=equippedWeapon;int cost=WeaponSystem.AMMO_PACK_PRICE[id];if(cash<cost)return false;cash-=cost;reserveAmmo[id]+=WeaponSystem.AMMO_PACK[id];return true;}
 
     private void updateCamera(float dt) {
         float tx = focusX(), tz = focusZ();
