@@ -17,7 +17,7 @@ This document is the implementation contract for the shared 3D asset pipeline us
 | AWM2 | AWM1 fields plus UV coordinates | Current vehicle build output; UV is zero-filled if absent in source |
 | AWM3 | Length-checked header, expanded triangle geometry, submesh ranges, material table and per-submesh PBR scalar factors | Implemented for vehicle geometry/material factors; source texture payloads and texture references remain pending |
 
-AWM3 layout is little-endian: 20-byte header (`AWM3`, vertex count, submesh count, material count, stride=11), expanded 11-float vertices, 12-byte submesh records (first vertex, vertex count, material index), then 48-byte material records (base RGBA, emissive RGB, metallic, roughness, alpha cutoff, alpha mode, flags). The Android reader validates counts, ranges, stride, finite vertex data and exact file length before creating the GPU mesh. The renderer draws each submesh with its own base-color tint and metallic/roughness factors. Alpha-mode metadata is retained but transparent/masked material rendering is not yet active.\n\nAWM2 layout is little-endian: 4-byte magic, uint32 vertex count, then 11 float32 values per expanded triangle vertex: position(3), normal(3), UV(2), RGB(3). AWM1 remains readable with 9 float32 values per vertex.
+AWM3 layout is little-endian: 20-byte header (`AWM3`, vertex count, submesh count, material count, stride=11), expanded 11-float vertices, 12-byte submesh records (first vertex, vertex count, material index), then 48-byte material records (base RGBA, emissive RGB, metallic, roughness, alpha cutoff, alpha mode, flags). The Android reader validates counts, ranges, stride, finite vertex data and exact file length before creating the GPU mesh. The renderer draws each submesh with its own metallic/roughness factors. In this converter revision, source base-color RGB is baked into expanded vertex colors; the vehicle paint tint remains a separate multiplier. Alpha-mode metadata is retained but transparent/masked material rendering is not yet active.\n\nAWM2 layout is little-endian: 4-byte magic, uint32 vertex count, then 11 float32 values per expanded triangle vertex: position(3), normal(3), UV(2), RGB(3). AWM1 remains readable with 9 float32 values per vertex.
 
 AWM3 must use a length-delimited header and independently addressable sections. It must include bounds and section offsets/sizes, explicit limits, and checksums so malformed or truncated assets can be rejected before GPU allocation. Geometry sections must retain material/submesh boundaries. Material records must carry base color, metallic, roughness, emissive, alpha mode/cutoff, double-sided state, and optional texture indices for base color, normal, metallic-roughness, occlusion, and emissive maps. Texture records must include MIME/codec, dimensions, mip count, byte range, and color-space intent.
 
@@ -53,7 +53,8 @@ AWM3 must use a length-delimited header and independently addressable sections. 
 - [x] AWM1 backward-compatible reader.
 - [x] AWM2 reader and build-time writer for position, normals, UV, and RGB.
 - [x] Vehicle source conversion runs during the Android release build; source GLBs are not runtime dependencies.
-- [x] Imported vehicle meshes replace procedural GPU meshes when available.
+- [x] Imported vehicle meshes replace procedural GPU meshes when available, and the draw path accepts imported-only slots without requiring a procedural mesh.
+- [x] Preserve vehicle paint tint while applying per-submesh metallic/roughness values.
 - [x] Procedural GPU copies are released after successful imported mesh upload.
 - [ ] Verify per-source UV coverage; zero UV fallback must be visible in build logs.
 - [ ] AWM3 binary container and material/submesh table.

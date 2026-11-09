@@ -27,11 +27,11 @@ final class AssetMeshLoader {
             if(mesh==null)return;
             for(Part p:parts) {
                 Material m=materials[p.material];
-                GLES20.glUniform3f(tint,m.r,m.g,m.b);
+                // Vertex RGB currently contains the source material base color.
+                // Preserve the caller's vehicle paint tint; only apply per-part PBR factors.
                 GLES20.glUniform2f(params,m.metallic,m.roughness);
                 mesh.drawRange(p.first,p.count);
             }
-            GLES20.glUniform3f(tint,1f,1f,1f);
             GLES20.glUniform2f(params,1f,1f);
         }
         void release(){if(mesh!=null)mesh.release();}

@@ -823,7 +823,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private void drawVehicle(float x,float z,float yaw,int type,float yOffset,float cr,float cg,float cb,float speed,float steering,
                              float suspensionY,float suspensionRoll,float suspensionPitch,
                              float wheelFL,float wheelFR,float wheelRL,float wheelRR) {
-        if(vehicleModels==null || type<0 || type>=vehicleModels.length || vehicleModels[type]==null) return;
+        if(type<0 || vehicleModels==null || type>=vehicleModels.length) return;
+        AssetMeshLoader.Model imported = importedVehicleModels != null ? importedVehicleModels[type] : null;
+        if(imported==null && vehicleModels[type]==null) return;
         float length=(type==ProceduralVehicleModels.AIRPLANE?7.0f:type==ProceduralVehicleModels.BUS?8.3f:5.0f);
         float sy=(float)Math.sin(yaw), cy=(float)Math.cos(yaw);
         float hf=Terrain.h(x+sy*length*.42f,z+cy*length*.42f);
@@ -841,7 +843,6 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform1f(uPbr,1f);
         GLES20.glUniform2f(uMatParams, 1f, 1f);
         bindVehicleMaps();
-        AssetMeshLoader.Model imported = importedVehicleModels != null ? importedVehicleModels[type] : null;
         if(imported != null) imported.draw(uTint, uMatParams);
         else { GLES20.glUniform2f(uMatParams, 1f, 1f); vehicleModels[type].draw(); }
         GLES20.glUniform1f(uPbr,0f);
