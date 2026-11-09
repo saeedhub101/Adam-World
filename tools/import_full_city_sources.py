@@ -75,13 +75,14 @@ def main():
    bfile=bd/"city-boundary.geojson";save(bfile,json.dumps(bfc).encode());saved.append(bfile)
    from ijson import items as json_items
    MAX_PART_BYTES=35*1024*1024
+   city_layer_failures=[]
    for dest,types in TYPES.items():
     for typ in types:
      layer_dir=folder/dest/typ
      layer_dir.mkdir(parents=True,exist_ok=True)
      manifest_path=layer_dir/"manifest.json"
      manifest={}
-     if manifest_path.exists() and not a.refresh:
+     if manifest_path.exists():
       try: manifest=json.loads(manifest_path.read_text())
       except Exception: manifest={}
       if manifest.get("status")=="empty" and manifest.get("empty_reason")=="source_returned_zero_features":
@@ -102,6 +103,7 @@ def main():
      except Exception as layer_error:
       manifest.update({"status":"partial","last_error":str(layer_error),"last_attempt_at":datetime.now(timezone.utc).isoformat()})
       save(manifest_path,json.dumps(manifest,indent=2).encode());checkpoint([manifest_path],slug)
+      city_layer_failures.append((dest,typ,str(layer_error)))
       print("LAYER FAILED; continuing to next source layer",slug,typ,str(layer_error),flush=True)
       continue
      # Overture CLI may report “No data found” and exit successfully without creating an output file.
@@ -110,7 +112,24 @@ def main():
       manifest["status"]="empty";manifest["empty_reason"]="source_returned_zero_features";manifest["feature_count"]=0;manifest["raw_feature_count"]=0;manifest["matched_feature_count"]=0;manifest["completed_at"]=datetime.now(timezone.utc).isoformat()
       save(manifest_path,json.dumps(manifest,indent=2).encode());saved.append(manifest_path);checkpoint([manifest_path],slug)
       print("SAVED",slug,typ,0,"features (source returned no output)",flush=True);continue
-     known=len(manifest.get("parts",[]));part_index=0;part_features=[];part_size=0;total_features=sum(p.get("features",0) for p in manifest.get("parts",[]));raw_feature_count=0;matched_feature_count=0;serialization_or_geometry_errors=0
+     # Resume only from the longest contiguous prefix of verified parts.
+     # If a middle part is missing/corrupt, rebuild from that point; never skip
+     # a missing part merely because later manifest entries exist.
+     existing_parts=manifest.get("parts",[])
+     valid_prefix=[]
+     for expected_index,entry in enumerate(existing_parts,1):
+      expected_name=f"part-{expected_index:05d}.geojson"
+      part_path=layer_dir/expected_name
+      if entry.get("file")!=expected_name or not part_path.is_file() or part_path.stat().st_size!=entry.get("bytes"):
+       break
+      valid_prefix.append(entry)
+     if len(valid_prefix)!=len(existing_parts):
+      manifest["parts"]=valid_prefix
+      manifest["status"]="partial"
+      manifest["feature_count"]=sum(p.get("features",0) for p in valid_prefix)
+      save(manifest_path,json.dumps(manifest,indent=2).encode())
+      checkpoint([manifest_path],slug)
+     known=len(valid_prefix);part_index=0;part_features=[];part_size=0;total_features=sum(p.get("features",0) for p in valid_prefix);raw_feature_count=0;matched_feature_count=0;serialization_or_geometry_errors=0
      def flush_part():
       nonlocal part_index,part_features,part_size,total_features,manifest
       if not part_features:return
@@ -174,6 +193,9 @@ def main():
      save(manifest_path,json.dumps(manifest,indent=2).encode());saved.append(manifest_path)
      checkpoint([manifest_path],slug)
      print("SAVED",slug,typ,manifest["feature_count"],"features in",len(manifest["parts"]),"parts",flush=True)
+   if city_layer_failures:
+    failed.append(slug)
+    print("CITY HAS RETRYABLE LAYERS",slug,json.dumps(city_layer_failures,ensure_ascii=False),flush=True)
    # Public image catalogues: metadata discovery only; image bytes require per-item licence checks.
    for foldername,filename,url in [
     ("05_aerial_openaerialmap","imagery-catalog.json",f"https://api.openaerialmap.org/meta?bbox={w},{s},{e},{n}&limit=100"),
