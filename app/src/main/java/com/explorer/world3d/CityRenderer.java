@@ -742,7 +742,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         }
         if (spawned) {
             drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.altitude, 0.75f, 0.22f, 0.17f, g.cv, g.sx);
-            if (!g.driving) drawKid(g.px,g.py+g.jumpHeight,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash);
+            if (!g.driving) drawKid(g.px,g.py+g.jumpHeight,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash);
         }
     }
 
@@ -886,7 +886,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     /** اللاعب: نسخة طفولية من الشخصية الإجرائية نفسها مع مفاصل ووجه وملابس مولّدة. */
-    private void drawKid(float x,float y,float z,float yaw,float ph,float amp,float attack,int pose,float poseTime,float guard,float hurt) {
+    private void drawKid(float x,float y,float z,float yaw,float ph,float amp,float attack,int attackType,int pose,float poseTime,float guard,float hurt) {
         if(humanRigModels==null||humanRigModels.length==0)return;
         Mesh[] rig=humanRigModels[0];
         float swing=(float)Math.sin(ph)*amp*.58f;
@@ -910,7 +910,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             if(guard>.05f)arm=side>0?-72f*guard:-58f*guard;
             if(hurt>0f)arm=side>0?65f:-55f;
             if(fall>.05f)arm=side>0?-65f:55f;
-            if (attack > 0f && side > 0) arm = -105f * Math.min(1f, attack / 0.16f);
+            float attackPulse = Math.min(1f, attack / (attackType == 2 ? 0.22f : 0.16f));
+            if (attack > 0f && attackType == 1 && side > 0) arm = -112f * attackPulse;
+            if (attack > 0f && attackType == 2 && side > 0) leg = -82f * attackPulse;
             drawHumanPart(rig[3],side*.21f,1.32f,0,arm,side*.075f,-.15f,0,1,1,1);
             drawHumanPart(rig[4],side*.29f,1.00f,0,arm*.42f,side*.012f,-.12f,.01f,1,1,1);
             drawHumanPart(rig[5],side*.115f,.78f,0,leg,0,-.16f,0,1,1,1);
