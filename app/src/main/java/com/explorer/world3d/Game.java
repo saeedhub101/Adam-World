@@ -236,24 +236,24 @@ final class Game {
                     CityRenderer city = (CityRenderer) w;
                     float rx = -fz, rz = fx;
                     float halfWidth = vehicleType == ProceduralVehicleModels.BUS ? 1.05f : 0.78f;
-                    float frontStep = Math.max(
-                            city.lowObstacleHeightAt(cx + fx * vehicleProbe + rx * halfWidth, cz + fz * vehicleProbe + rz * halfWidth),
-                            city.lowObstacleHeightAt(cx + fx * vehicleProbe - rx * halfWidth, cz + fz * vehicleProbe - rz * halfWidth));
-                    float rearStep = Math.max(
-                            city.lowObstacleHeightAt(cx - fx * vehicleProbe + rx * halfWidth, cz - fz * vehicleProbe + rz * halfWidth),
-                            city.lowObstacleHeightAt(cx - fx * vehicleProbe - rx * halfWidth, cz - fz * vehicleProbe - rz * halfWidth));
+                    float frontLeft = city.lowObstacleHeightAt(cx + fx * vehicleProbe + rx * halfWidth, cz + fz * vehicleProbe + rz * halfWidth);
+                    float frontRight = city.lowObstacleHeightAt(cx + fx * vehicleProbe - rx * halfWidth, cz + fz * vehicleProbe - rz * halfWidth);
+                    float rearLeft = city.lowObstacleHeightAt(cx - fx * vehicleProbe + rx * halfWidth, cz - fz * vehicleProbe + rz * halfWidth);
+                    float rearRight = city.lowObstacleHeightAt(cx - fx * vehicleProbe - rx * halfWidth, cz - fz * vehicleProbe - rz * halfWidth);
+                    float frontStep = Math.max(frontLeft, frontRight);
+                    float rearStep = Math.max(rearLeft, rearRight);
                     boolean frontContact = frontStep > 0.015f;
                     boolean rearContact = rearStep > 0.015f;
                     float impactSpeed = Math.min(0.22f, 0.085f + Math.abs(cv) * 0.0045f);
                     if (frontContact && !vehicleFrontStepContact) {
-                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.max(0.45f, frontStep / 0.12f));
+                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.max(0.45f, Math.min(1.5f, frontStep / 0.18f)));
                         vehicleBumpTime = 0f;
-                        vehicleBumpSide = frontStep;
+                        vehicleBumpSide = Math.signum(frontLeft - frontRight);
                     }
                     if (rearContact && !vehicleRearStepContact) {
-                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.max(0.45f, rearStep / 0.12f));
+                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.max(0.45f, Math.min(1.5f, rearStep / 0.18f)));
                         vehicleBumpTime = 0f;
-                        vehicleBumpSide = rearStep;
+                        vehicleBumpSide = Math.signum(rearLeft - rearRight);
                     }
                     vehicleFrontStepContact = frontContact;
                     vehicleRearStepContact = rearContact;
@@ -276,7 +276,7 @@ final class Game {
             float wave = (float) Math.sin(24f * vehicleBumpTime);
             vehicleBumpOffset = vehicleBumpAmplitude * envelope * wave;
             vehicleBumpPitch = vehicleBumpAmplitude * 95f * envelope * (float) Math.sin(19f * vehicleBumpTime);
-            vehicleBumpRoll = vehicleBumpAmplitude * 75f * envelope * (float) Math.sin(22f * vehicleBumpTime + vehicleBumpSide);
+            vehicleBumpRoll = vehicleBumpAmplitude * 75f * envelope * (float) Math.sin(22f * vehicleBumpTime) * vehicleBumpSide;
             if (vehicleBumpTime > 1.15f) {
                 vehicleBumpAmplitude = vehicleBumpOffset = vehicleBumpRoll = vehicleBumpPitch = 0f;
             }
