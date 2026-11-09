@@ -64,6 +64,12 @@ jobs:
         with:
           gradle-version: "8.5"
 
+      - name: Convert licensed vehicle models to Adam World binary meshes
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --no-input numpy trimesh
+          python3 app/tools/build_runtime_meshes.py
+
       - name: Prepare signing and calculate release version
         env:
           ADAM_WORLD_KEYSTORE_BASE64: ${{ secrets.ADAM_WORLD_KEYSTORE_BASE64 }}

@@ -125,6 +125,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private ProceduralMaterialMaps vehicleMaps;
     private Mesh cube, groundMesh, skyQuad, seaMesh;
     private Mesh[] vehicleModels;
+    private Mesh[] importedVehicleModels;
     private Mesh[] vehicleGlassModels;
     private Mesh wheelMesh;
     private final float[] wheelMatrix = new float[16];
@@ -274,6 +275,12 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         vehicleMaps = advancedShader ? ProceduralMaterialMaps.create() : null;
         cube = makeCube();
         vehicleModels = ProceduralVehicleModels.buildAll();
+        // Prefer build-time converted real meshes; procedural meshes remain a safe fallback.
+        importedVehicleModels = new Mesh[ProceduralVehicleModels.COUNT];
+        importedVehicleModels[ProceduralVehicleModels.SEDAN] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/sedan.awmesh");
+        importedVehicleModels[ProceduralVehicleModels.PICKUP] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/pickup.awmesh");
+        importedVehicleModels[ProceduralVehicleModels.BUS] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/city-bus.awmesh");
+        importedVehicleModels[ProceduralVehicleModels.MOTORBIKE] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/motorcycle.awmesh");
         vehicleGlassModels = advancedShader ? ProceduralVehicleModels.buildGlassAll() : null;
         wheelMesh = Mesh.from(ProceduralVehicleModels.buildWheel());
         humanRigModels = ProceduralHumanRig.buildAll();
@@ -824,13 +831,17 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform1f(uGlass,0f);
         GLES20.glUniform1f(uPbr,1f);
         bindVehicleMaps();
-        vehicleModels[type].draw();
+        Mesh imported = importedVehicleModels != null ? importedVehicleModels[type] : null;
+        if(imported != null) imported.draw();
+        else vehicleModels[type].draw();
         GLES20.glUniform1f(uPbr,0f);
         GLES20.glUniform3f(uTint,1f,1f,1f);
-        drawVehicleGlass(type);
-        if(type==ProceduralVehicleModels.TANK) drawTankTracks(speed);
-        if(type==ProceduralVehicleModels.HELICOPTER) drawHelicopterRotor();
-        if(type!=ProceduralVehicleModels.TANK && type!=ProceduralVehicleModels.HELICOPTER && type!=ProceduralVehicleModels.AIRPLANE) drawVehicleWheels(type,speed,steering,wheelFL,wheelFR,wheelRL,wheelRR);
+        if(imported == null) {
+            drawVehicleGlass(type);
+            if(type==ProceduralVehicleModels.TANK) drawTankTracks(speed);
+            if(type==ProceduralVehicleModels.HELICOPTER) drawHelicopterRotor();
+            if(type!=ProceduralVehicleModels.TANK && type!=ProceduralVehicleModels.HELICOPTER && type!=ProceduralVehicleModels.AIRPLANE) drawVehicleWheels(type,speed,steering,wheelFL,wheelFR,wheelRL,wheelRR);
+        }
     }
 
     private void drawVehicleGlass(int type) {
