@@ -946,6 +946,14 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         L.onToast("المركبة: "+ProceduralVehicleModels.name(playerVehicleType)+" — اضغط 🚗 لاستدعائها أو ركوبها");
     }
 
+    /** اختيار مباشر لنوع المركبة من واجهة الهاتف. */
+    public void selectVehicleType(int type) {
+        if (game.driving) { L.onToast("اخرج من المركبة أولاً لتغيير النوع"); return; }
+        if (type < 0 || type >= ProceduralVehicleModels.COUNT) return;
+        playerVehicleType = type;
+        L.onToast("المركبة المحددة: " + ProceduralVehicleModels.name(playerVehicleType) + " — اضغط استدعاء / دخول");
+    }
+
     /** اللاعب: نسخة طفولية من الشخصية الإجرائية نفسها مع مفاصل ووجه وملابس مولّدة. */
     private void drawKid(float x,float y,float z,float yaw,float ph,float amp,float attack,int attackType,int pose,float poseTime,float guard,float hurt) {
         if(humanRigModels==null||humanRigModels.length==0)return;
