@@ -2,7 +2,7 @@
 """Build-time GLB -> Adam World Mesh converter.
 
 Downloads only the existing repository's individually catalogued CC0-1.0 vehicle
-sources, converts their transformed geometry, UVs, and material colors to AWM3, and writes
+sources, converts their transformed geometry, UVs, base-color textures, and material data to AWM4, and writes
 only the custom binary format into Android assets. Source GLBs stay in a temporary
 directory and are never packaged or required by the Android runtime.
 """
@@ -128,6 +128,7 @@ def convert(raw: bytes, target_length: float, fallback):
     meshes = scene_meshes(raw)
     all_vertices, all_normals, all_uvs, all_colors = [], [], [], []
     face_groups, material_records = [], []
+    texture_payloads, texture_ids = [], {}
     uv_meshes = 0
     uv_vertices = 0
     offset = 0
@@ -161,9 +162,27 @@ def convert(raw: bytes, target_length: float, fallback):
             if len(emissive) != 3: emissive = np.zeros(3, dtype=np.float32)
             if float(emissive.max()) > 1.0: emissive /= 255.0
         except Exception: emissive = np.zeros(3, dtype=np.float32)
+        texture_index = -1
+        source_image = getattr(material, "baseColorTexture", None) if material is not None else None
+        if source_image is None and material is not None:
+            source_image = getattr(material, "image", None)
+        if source_image is not None:
+            try:
+                if hasattr(source_image, "convert") and hasattr(source_image, "save"):
+                    rgba = source_image.convert("RGBA")
+                    encoded = io.BytesIO()
+                    rgba.save(encoded, format="PNG", optimize=True)
+                    payload = encoded.getvalue()
+                    digest = __import__("hashlib").sha256(payload).hexdigest()
+                    if digest not in texture_ids:
+                        texture_ids[digest] = len(texture_payloads)
+                        texture_payloads.append((int(rgba.width), int(rgba.height), payload))
+                    texture_index = texture_ids[digest]
+            except Exception as texture_error:
+                print(f"AWM_TEXTURE_SKIPPED: {texture_error}", flush=True)
         material_records.append((1.,1.,1.,1.,float(emissive[0]),float(emissive[1]),float(emissive[2]),
             float(np.clip(mf("metallicFactor",0.0),0,1)),float(np.clip(mf("roughnessFactor",.72),.04,1)),.5,
-            0,int(bool(getattr(material,"doubleSided",False))) if material is not None else 0))
+            0,int(bool(getattr(material,"doubleSided",False))) if material is not None else 0,texture_index))
         offset += len(vertices)
 
     vertices = np.concatenate(all_vertices, axis=0)
@@ -211,7 +230,7 @@ def convert(raw: bytes, target_length: float, fallback):
         vertex_offset += len(all_vertices[material_index])
     total_vertices = sum(len(v) for v in all_vertices)
     print(f"AWM_UV meshes_with_uv={uv_meshes}/{len(all_vertices)} vertices_with_uv={uv_vertices}/{total_vertices}", flush=True)
-    return expanded, submeshes, material_records
+    return expanded, submeshes, material_records, texture_payloads
 
 
 def main():
@@ -221,15 +240,18 @@ def main():
         destination = OUT / (name + ".awmesh")
         try:
             raw = fetch(item["url"])
-            vertices, submeshes, materials = convert(raw, item["length"], item["fallback"])
+            vertices, submeshes, materials, textures = convert(raw, item["length"], item["fallback"])
             with destination.open("wb") as stream:
-                stream.write(struct.pack("<4sIIII", b"AWM3", len(vertices), len(submeshes), len(materials), 11))
+                stream.write(struct.pack("<4sIIIII", b"AWM4", len(vertices), len(submeshes), len(materials), 11, len(textures)))
                 stream.write(vertices.astype("<f4", copy=False).tobytes())
                 for first, count, material_index in submeshes:
                     stream.write(struct.pack("<III", first, count, material_index))
                 for material in materials:
-                    stream.write(struct.pack("<10fII", *material))
-            print(f"AWM_BUILT {name} format=AWM3 vertices={len(vertices)} submeshes={len(submeshes)} materials={len(materials)} bytes={destination.stat().st_size}", flush=True)
+                    stream.write(struct.pack("<10fIII", *material[:10], int(material[10]), int(material[11]), int(material[12])))
+                for width, height, payload in textures:
+                    stream.write(struct.pack("<IIII", width, height, 1, len(payload)))
+                    stream.write(payload)
+            print(f"AWM_BUILT {name} format=AWM4 textures={len(textures)} vertices={len(vertices)} submeshes={len(submeshes)} materials={len(materials)} bytes={destination.stat().st_size}", flush=True)
             built += 1
         except Exception as exc:
             # Keep the release build resilient; the renderer uses its detailed procedural

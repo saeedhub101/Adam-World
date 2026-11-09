@@ -843,7 +843,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform1f(uPbr,1f);
         GLES20.glUniform2f(uMatParams, 1f, 1f);
         bindVehicleMaps();
-        if(imported != null) imported.draw(uTint, uMatParams);
+        if(imported != null) imported.draw(uMatParams, tex.white);
         else { GLES20.glUniform2f(uMatParams, 1f, 1f); vehicleModels[type].draw(); }
         GLES20.glUniform1f(uPbr,0f);
         GLES20.glUniform3f(uTint,1f,1f,1f);
