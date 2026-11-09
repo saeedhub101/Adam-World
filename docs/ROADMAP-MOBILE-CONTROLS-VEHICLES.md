@@ -13,7 +13,7 @@
 ## Implementation progress (2026-11-09)
 - **Committed to `main`:** first Android touch HUD implementation in `MainActivity`.
 - **Implemented:** mobile-only action pad (kept off non-touch TV devices); jump, punch, kick, hold-to-guard, hold-to-sprint, dodge, vehicle summon/enter/exit, and vehicle-type cycling.
-- **Implemented:** contextual HUD hides on-foot combat/run/dodge controls while driving and exposes climb/descent controls only while piloting a helicopter or airplane.
+- **Implemented:** contextual HUD hides on-foot combat/run/dodge controls while driving and exposes aircraft-specific throttle/ braking and climb/descent touch controls only while piloting a helicopter or airplane. Touch throttle temporarily overrides forward/back input; releasing it restores joystick control.
 - **Implemented:** held sprint/guard/lift states are released on touch-up/cancel and when the activity pauses.
 - **Implemented:** gamepad D-pad up/down controls aircraft climb/descent (R1 camera-zoom modifier retains priority); aircraft body pitch and bank now respond to flight input and steering, with attitude reset on vehicle entry/exit.
 - **Implemented:** direct vehicle garage selection for all 10 model types (including helicopter and airplane), available from the top navigation on touch and TV, plus the compact touch action pad.
@@ -41,7 +41,7 @@
 - Ensure aircraft can be summoned at a safe, clear spawn point and are not presented as merely decorative models.
 
 ### Stage 4 — Helicopter and airplane flight controls
-- Provide touch controls for throttle, steering, climb, and descent; use aircraft-specific layouts and hide irrelevant combat controls.
+- Provide touch controls for throttle, braking/reverse, steering, climb, and descent; use aircraft-specific layouts and hide irrelevant combat controls.
 - Helicopter: vertical takeoff/landing, hover, yaw, forward/backward flight, altitude limits.
 - Airplane: ground acceleration, takeoff only at suitable speed, pitch/climb/descent, steering, landing and safe deceleration.
 - Keep the existing gamepad flight mapping coherent with touch mapping.
