@@ -30,6 +30,7 @@ import android.widget.Toast;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
 import android.widget.SeekBar;
+import android.widget.CheckBox;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -102,6 +103,15 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         final LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setPadding(dp(22), dp(12), dp(22), dp(8));
+        CheckBox soundToggle = new CheckBox(this);
+        soundToggle.setText("تشغيل جميع أصوات اللعبة");
+        soundToggle.setTextColor(Color.WHITE);
+        soundToggle.setChecked(enabled);
+        soundToggle.setOnCheckedChangeListener((button, checked) -> {
+            prefs.edit().putBoolean("enabled", checked).apply();
+            renderer.setAudioEnabled(checked);
+        });
+        panel.addView(soundToggle);
         final SeekBar[] bars = new SeekBar[4];
         final String[] names = {"الصوت العام", "صوت المحرك والمركبات", "الرياح وحركة الشوارع", "المؤثرات والخطوات"};
         final String[] keys = {"master", "engine", "ambience", "effects"};
@@ -117,11 +127,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             panel.addView(bar);
         }
         new AlertDialog.Builder(this).setTitle("إعدادات الصوت")
-                .setMultiChoiceItems(new String[]{"تشغيل جميع أصوات اللعبة"}, new boolean[]{enabled},
-                        (dialog, which, checked) -> {
-                            prefs.edit().putBoolean("enabled", checked).apply();
-                            renderer.setAudioEnabled(checked);
-                        })
                 .setView(panel)
                 .setPositiveButton("حفظ", (dialog, which) -> {
                     prefs.edit().putInt("master", bars[0].getProgress())
