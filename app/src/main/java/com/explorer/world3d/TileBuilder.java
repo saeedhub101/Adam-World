@@ -1031,7 +1031,10 @@ final class TileBuilder {
         boolean mappedEntrance = false;
         JSONArray mappedEntrances = tags.optJSONArray("adam:entrances");
         if (tabarbour && mappedEntrances != null) {
-            float bestDistance = 1.0f;
+            // Keep door placement consistent with the facade-opening matcher above.
+            // Entrance points commonly sit just outside the footprint boundary; a
+            // 1.0 m threshold could cut the wall opening but reject the actual door.
+            float bestDistance = 1.75f;
             for (int ei = 0; ei < mappedEntrances.length(); ei++) {
                 JSONObject entrance = mappedEntrances.optJSONObject(ei);
                 JSONObject properties = entrance == null ? null : entrance.optJSONObject("properties");
