@@ -28,7 +28,7 @@ final class Game {
     volatile boolean dead;
     long lastDamageMs, deathStartedMs;
     int vehicleType = ProceduralVehicleModels.SEDAN;
-    float altitude;
+    float altitude, aircraftPitch, aircraftRoll;
     volatile float liftInput;
     volatile boolean paused, attackRequested, punchRequested, kickRequested, jumpRequested, handbrake, guardRequested, dodgeRequested;
     volatile float stamina = 100f;
@@ -67,6 +67,7 @@ final class Game {
     }
 
     void reset() {
+        aircraftPitch = aircraftRoll = 0f;
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; health = 100; dead = false;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
@@ -211,6 +212,14 @@ final class Game {
                 if (vehicleType == ProceduralVehicleModels.HELICOPTER || cv > 13f) altitude += liftInput * liftRate * dt;
                 if (vehicleType == ProceduralVehicleModels.AIRPLANE && cv < 9f && altitude > 0f) altitude -= 3.5f * dt;
                 altitude = clamp(altitude, 0f, vehicleType == ProceduralVehicleModels.HELICOPTER ? 260f : 700f);
+                // Aircraft body attitude follows climb input, forward speed and bank.
+                float targetPitch = vehicleType == ProceduralVehicleModels.AIRPLANE
+                        ? (cv > 13f ? -liftInput * 13f : 0f)
+                        : -clamp(jy, -1f, 1f) * 7f;
+                float targetRoll = -clamp(jx, -1f, 1f) * (vehicleType == ProceduralVehicleModels.AIRPLANE ? 18f : 9f);
+                float attitudeBlend = Math.min(1f, dt * 3.8f);
+                aircraftPitch += (targetPitch - aircraftPitch) * attitudeBlend;
+                aircraftRoll += (targetRoll - aircraftRoll) * attitudeBlend;
                 cx = nx; cz = nz;
             } else {
                 // Match the collision probes to the actual vehicle footprint. The
