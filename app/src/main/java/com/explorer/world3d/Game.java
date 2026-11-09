@@ -14,6 +14,10 @@ final class Game {
         Tile tile;
         float off, s, sp, ph, x, z, yaw;
         int dir = 1;
+        int health = 100;
+        boolean hostile, knockedOut;
+        long lastAttackMs;
+        float stunSeconds;
         float cr, cg, cb;
     }
 
@@ -25,6 +29,10 @@ final class Game {
     int vehicleType = ProceduralVehicleModels.SEDAN;
     float altitude;
     volatile float liftInput;
+    volatile boolean paused, attackRequested, jumpRequested, handbrake;
+    volatile float cameraLookOffset;
+    float jumpVelocity, jumpHeight, attackSeconds;
+    long lastPlayerAttackMs;
     float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
     long lastLookMs;
     volatile float sx, sy;
@@ -42,7 +50,7 @@ final class Game {
     }
 
     void reset() {
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; health = 100; dead = false; lastDamageMs = deathStartedMs = 0L; agents.clear();
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; health = 100; dead = false; paused = attackRequested = jumpRequested = handbrake = false; cameraLookOffset = 0f; jumpVelocity = jumpHeight = attackSeconds = 0f; lastPlayerAttackMs = lastDamageMs = deathStartedMs = 0L; agents.clear();
     }
 
     float focusX() { return driving ? cx : px; }
@@ -69,7 +77,28 @@ final class Game {
     }
 
     void update(float dt, World w) {
+        if (paused) return;
         long now = System.currentTimeMillis();
+        dt = clamp(dt, 0f, 0.05f);
+        attackSeconds = Math.max(0f, attackSeconds - dt);
+        if (jumpRequested && !driving && jumpHeight <= 0.001f && !dead) jumpVelocity = 5.2f;
+        jumpRequested = false;
+        if (jumpHeight > 0f || jumpVelocity > 0f) {
+            jumpHeight += jumpVelocity * dt;
+            jumpVelocity -= 13.5f * dt;
+            if (jumpHeight <= 0f) { jumpHeight = 0f; jumpVelocity = 0f; }
+        }
+        if (attackRequested && !driving && now - lastPlayerAttackMs >= 520L && !dead) {
+            attackRequested = false; lastPlayerAttackMs = now; attackSeconds = 0.32f;
+            float fx = (float)Math.sin(pyaw), fz = (float)Math.cos(pyaw);
+            Agent target = null; float best = 2.15f;
+            for (Agent a : agents) if (!a.car && !a.knockedOut) {
+                float dx=a.x-px, dz=a.z-pz, d=(float)Math.hypot(dx,dz);
+                float facing=(dx*fx+dz*fz)/(d+0.0001f);
+                if (d < best && facing > 0.15f) { best=d; target=a; }
+            }
+            if (target != null) { target.health=Math.max(0,target.health-35); target.hostile=true; target.stunSeconds=0.65f; if(target.health==0){target.knockedOut=true;target.hostile=false;} }
+        } else if (attackRequested && driving) attackRequested=false;
         if (dead) {
             sx = sy = 0f;
             if (now - deathStartedMs >= 4500L) { dead = false; health = 50; px = cx; pz = cz; cv = 0f; altitude = 0f; }
@@ -136,11 +165,19 @@ final class Game {
             a.yaw = (float) Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
             if (!a.car) {
                 a.ph += a.sp * dt * 2.2f;
-                if (!driving && Math.hypot(a.x - px, a.z - pz) < 0.8f && now - lastDamageMs > 1200L) {
-                    health = Math.max(0, health - 12);
-                    lastDamageMs = now;
-                    if (health == 0) { dead = true; deathStartedMs = now; }
+                if (a.stunSeconds > 0f) a.stunSeconds = Math.max(0f, a.stunSeconds-dt);
+                if (a.hostile && !a.knockedOut && !driving && a.stunSeconds <= 0f) {
+                    float dx=px-a.x, dz=pz-a.z, d=(float)Math.hypot(dx,dz);
+                    if (d < 7f && d > 0.001f) {
+                        float step=Math.min(1.8f*dt, Math.max(0f,d-0.72f));
+                        a.x += dx/d*step; a.z += dz/d*step; a.yaw=(float)Math.atan2(dx,dz);
+                    }
+                    if (d < 1.05f && now-a.lastAttackMs>1450L && now-lastDamageMs>900L) {
+                        a.lastAttackMs=now; health=Math.max(0,health-8); lastDamageMs=now;
+                        if(health==0){dead=true;deathStartedMs=now;}
+                    }
                 }
+                if (a.knockedOut) a.sp=0f;
             }
         }
 
