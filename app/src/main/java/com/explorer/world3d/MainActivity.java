@@ -379,6 +379,36 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         acts.setOrientation(LinearLayout.VERTICAL);
         acts.setGravity(Gravity.CENTER_HORIZONTAL);
         Button sprint = btn("🏃");
+        Button jump = btn("قفز");
+        jump.setOnTouchListener(new View.OnTouchListener() {
+            @Override public boolean onTouch(View v, MotionEvent e) {
+                if (e.getActionMasked() == MotionEvent.ACTION_DOWN && !renderer.game.driving)
+                    runOnGl(new Runnable() { @Override public void run() { renderer.game.jumpRequested = true; } });
+                return true;
+            }
+        });
+        Button attack = btn("هجوم");
+        attack.setOnTouchListener(new View.OnTouchListener() {
+            @Override public boolean onTouch(View v, MotionEvent e) {
+                if (e.getActionMasked() == MotionEvent.ACTION_DOWN && !renderer.game.driving)
+                    runOnGl(new Runnable() { @Override public void run() { renderer.game.attackRequested = true; } });
+                return true;
+            }
+        });
+        Button mapAction = btn("الخريطة");
+        mapAction.setOnClickListener(v -> showMapDialog(false));
+        Button pauseAction = btn("Ⅱ");
+        pauseAction.setOnClickListener(v -> showPauseMenu());
+        Button cameraBack = btn("نظر للخلف");
+        cameraBack.setOnTouchListener(new View.OnTouchListener() {
+            @Override public boolean onTouch(View v, MotionEvent e) {
+                int action=e.getActionMasked();
+                final float offset = action==MotionEvent.ACTION_DOWN ? (float)Math.PI : 0f;
+                if(action==MotionEvent.ACTION_DOWN || action==MotionEvent.ACTION_UP || action==MotionEvent.ACTION_CANCEL)
+                    runOnGl(new Runnable() { @Override public void run() { renderer.game.cameraLookOffset=offset; } });
+                return true;
+            }
+        });
         sprint.setTextSize(26);
         sprint.setOnTouchListener(new View.OnTouchListener() {
             @Override public boolean onTouch(View v, MotionEvent e) {
@@ -422,6 +452,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         LinearLayout.LayoutParams ab = new LinearLayout.LayoutParams(dp(72), dp(72));
         ab.setMargins(0, dp(10), 0, 0);
         acts.addView(sprint, ab);
+        acts.addView(jump, new LinearLayout.LayoutParams(dp(72), dp(44)));
+        acts.addView(attack, new LinearLayout.LayoutParams(dp(72), dp(44)));
+        acts.addView(cameraBack, new LinearLayout.LayoutParams(dp(84), dp(44)));
+        acts.addView(mapAction, new LinearLayout.LayoutParams(dp(84), dp(44)));
+        acts.addView(pauseAction, new LinearLayout.LayoutParams(dp(72), dp(44)));
         acts.addView(car, ab);
         acts.addView(vehicleType, new LinearLayout.LayoutParams(dp(96), dp(48)));
         acts.addView(liftUp, new LinearLayout.LayoutParams(dp(72), dp(44)));

@@ -148,6 +148,7 @@ final class Game {
             if (jy > 0.1f) cv += jy * (aircraft ? 24f : 14f) * dt;
             else if (jy < -0.1f) cv += jy * (cv > 0 ? (aircraft ? 30f : 24f) : 8f) * dt;
             else cv -= Math.signum(cv) * Math.min(Math.abs(cv), (aircraft ? 3f : 5f) * dt);
+            if (handbrake && !aircraft) cv -= Math.signum(cv) * Math.min(Math.abs(cv), 18f * dt);
             cv = clamp(cv, aircraft ? -12f : -8f, aircraft ? (vehicleType == ProceduralVehicleModels.AIRPLANE ? 90f : 48f) : 32f);
             cyaw -= jx * (aircraft ? 0.85f : 1.7f) * dt * clamp(cv / 8f, -1f, 1f);
             float fx = (float) Math.sin(cyaw), fz = (float) Math.cos(cyaw);
@@ -212,8 +213,9 @@ final class Game {
         float tx = focusX(), tz = focusZ();
         float dist = camDistance * (driving ? 1.6f : 1f), th = driving ? 1.6f : 1.55f;
         float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);
-        float dx = tx - (float) Math.sin(camYaw) * dist * cp;
-        float dz = tz - (float) Math.cos(camYaw) * dist * cp;
+        float effectiveYaw = camYaw + cameraLookOffset;
+        float dx = tx - (float) Math.sin(effectiveYaw) * dist * cp;
+        float dz = tz - (float) Math.cos(effectiveYaw) * dist * cp;
         float dy = Math.max(py + 0.6f, py + th + dist * sp);
         float k = 1f - (float) Math.exp(-dt * 14f);
         camX += (dx - camX) * k; camY += (dy - camY) * k; camZ += (dz - camZ) * k;
