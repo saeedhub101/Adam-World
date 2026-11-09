@@ -11,7 +11,7 @@ This note records the code changes made in the runtime and Amman stream builder.
 - Traffic-island polygons are now registered in the same collision grid.
 - Mapped crossing nodes are projected to the nearest vehicle road path and rendered as zebra stripes across the carriageway.
 - Narrow vehicle roads (4.5–6 m) now render into a road buffer rather than the sidewalk buffer.
-- Address-only OSM nodes with `addr:housenumber` now receive a visible numbered marker.
+- Address-only OSM nodes with `addr:housenumber` receive a visible numbered marker; address points falling inside a building footprint are also attached to that building's facade label.
 - Existing lane, turn-arrow, median, roundabout, signal, road-name, and terrain-sampled road mesh code remains active.
 
 ## Amman data builder changes
