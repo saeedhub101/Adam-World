@@ -732,7 +732,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         }
         if (spawned) {
             drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.altitude, 0.75f, 0.22f, 0.17f, g.cv, g.sx);
-            if (!g.driving) drawKid(g.px, g.py, g.pz, g.pyaw, g.phase, g.swingAmp);
+            if (!g.driving) drawKid(g.px, g.py + g.jumpHeight, g.pz, g.pyaw, g.phase, g.swingAmp, g.attackSeconds);
         }
     }
 
@@ -876,7 +876,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     /** اللاعب: نسخة طفولية من الشخصية الإجرائية نفسها مع مفاصل ووجه وملابس مولّدة. */
-    private void drawKid(float x,float y,float z,float yaw,float ph,float amp) {
+    private void drawKid(float x,float y,float z,float yaw,float ph,float amp,float attack) {
         if(humanRigModels==null||humanRigModels.length==0)return;
         Mesh[] rig=humanRigModels[0];
         float swing=(float)Math.sin(ph)*amp*.58f;
@@ -895,6 +895,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         for(int side=-1;side<=1;side+=2) {
             float leg=(side<0?swing:-swing)*57.29578f;
             float arm=(side<0?-swing:swing)*42f;
+            if (attack > 0f && side > 0) arm = -105f * Math.min(1f, attack / 0.16f);
             drawHumanPart(rig[3],side*.21f,1.32f,0,arm,side*.075f,-.15f,0,1,1,1);
             drawHumanPart(rig[4],side*.29f,1.00f,0,arm*.42f,side*.012f,-.12f,.01f,1,1,1);
             drawHumanPart(rig[5],side*.115f,.78f,0,leg,0,-.16f,0,1,1,1);
