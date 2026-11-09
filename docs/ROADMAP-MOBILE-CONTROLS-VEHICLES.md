@@ -10,6 +10,14 @@
 - `CityRenderer` already contains vehicle-type cycling and procedural vehicle model/render paths. `ProceduralVehicleModels` includes helicopter and airplane types.
 - Vehicle interaction currently uses `toggleCar()`: when away from the active vehicle it attempts to summon it; when near it enters; while driving it exits. The same selected vehicle type is used for this interaction. Aircraft physics/altitude handling exists, but the complete player-facing aircraft experience and mobile controls are not yet established.
 
+## Implementation progress (2026-11-09)
+- **Committed to `main`:** first Android touch HUD implementation in `MainActivity`.
+- **Implemented:** mobile-only action pad (kept off non-touch TV devices); jump, punch, kick, hold-to-guard, hold-to-sprint, dodge, vehicle summon/enter/exit, and vehicle-type cycling.
+- **Implemented:** contextual HUD hides on-foot combat/run/dodge controls while driving and exposes climb/descent controls only while piloting a helicopter or airplane.
+- **Implemented:** held sprint/guard/lift states are released on touch-up/cancel and when the activity pauses.
+- **Reused:** existing `Game` request/state fields and `CityRenderer.toggleCar()/cycleVehicleType()`; no parallel gameplay system was introduced.
+- **Still in progress:** flight handling needs refinement (especially airplane pitch/takeoff/landing and dedicated throttle controls), vehicle spawn/selection needs a clearer garage flow, and end-to-end build/release confirmation is pending. Existing type cycling already includes helicopter and airplane, but no dedicated airport/hangar placement has been established by this change.
+
 ## Delivery stages
 
 ### Stage 1 — Mobile action HUD
