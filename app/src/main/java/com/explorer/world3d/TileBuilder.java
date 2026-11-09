@@ -82,11 +82,15 @@ final class TileBuilder {
         // Collect named shop POI nodes before building extrusion so real storefront
         // names can be attached to the matching footprint instead of blank/fake signs.
         ArrayList<JSONObject> mappedShopNodes = new ArrayList<>();
+        ArrayList<JSONObject> mappedAddressNodes = new ArrayList<>();
         for (int si = 0; si < els.length(); si++) {
             JSONObject candidate = els.optJSONObject(si);
             if (candidate == null || !candidate.optString("type", "").equals("node")) continue;
             JSONObject candidateTags = candidate.optJSONObject("tags");
-            if (candidateTags == null || candidateTags.optString("shop", "").isEmpty()) continue;
+            if (candidateTags == null) continue;
+            if (!candidateTags.optString("addr:housenumber", "").trim().isEmpty())
+                mappedAddressNodes.add(candidate);
+            if (candidateTags.optString("shop", "").isEmpty()) continue;
             String shopName = candidateTags.optString("name:ar", "");
             if (shopName.isEmpty()) shopName = candidateTags.optString("name", "");
             if (shopName.isEmpty()) shopName = candidateTags.optString("brand", "");
@@ -198,6 +202,7 @@ final class TileBuilder {
                 int poi = poiCategory(tags);
                 String buildingLabel = poiName(tags);
                 String houseNumber = tg(tags, "addr:housenumber");
+                if (houseNumber.isEmpty()) houseNumber = mappedHouseNumber(mappedAddressNodes, px, pz);
                 String streetName = tg(tags, "addr:street:ar");
                 if (streetName.isEmpty()) streetName = tg(tags, "addr:street");
                 if (streetName.isEmpty()) streetName = tg(tags, "addr:street:en");
@@ -2185,6 +2190,22 @@ final class TileBuilder {
             Decal d=new Decal(); d.text=name.trim(); d.x=x; d.z=z; d.dx=1f; d.dz=0f; d.y=y-0.55f; d.vertical=true;
             td.decals.add(d);
         }
+    }
+
+    /** Find a real OSM address point strictly inside its matching building footprint. */
+    private static String mappedHouseNumber(ArrayList<JSONObject> nodes, float[] px, float[] pz) {
+        if (nodes == null || nodes.isEmpty()) return "";
+        for (JSONObject node : nodes) {
+            double lat = node.optDouble("lat", Double.NaN), lon = node.optDouble("lon", Double.NaN);
+            if (!Double.isFinite(lat) || !Double.isFinite(lon)) continue;
+            float x = Geo.x(lon), z = Geo.z(lat);
+            if (!Poly.contains(px, pz, x, z)) continue;
+            JSONObject tags = node.optJSONObject("tags");
+            if (tags == null) continue;
+            String number = tags.optString("addr:housenumber", "").trim();
+            if (!number.isEmpty()) return number;
+        }
+        return "";
     }
 
     /** لافتة رأسية على أطول واجهة للمبنى، مع اسم المنشأة أو رقمها وفئة النشاط. */
