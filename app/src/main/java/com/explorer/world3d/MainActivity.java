@@ -159,8 +159,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
         if (code == KeyEvent.KEYCODE_BUTTON_B) { if (pressed) attackOrHeal(); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_L1) { renderer.game.guardRequested = down; return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_R1) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.dodgeRequested = true; } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed) cycleGameCamera(); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) {
             if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } });
@@ -664,7 +662,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if (System.currentTimeMillis()-lastHudRefresh>250 && renderer!=null) {
                 lastHudRefresh=System.currentTimeMillis();
                 int hp=renderer.game.health;
-                healthHud.setText("♥ "+hp+" / 100"+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
+                healthHud.setText("♥ "+hp+" / 100     ⚡ "+(int)renderer.game.stamina+" / 100"+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
                 healthHud.setTextColor(hp>60?0xff65e58b:hp>25?0xffffc857:0xffff5555);
                 miniMap.invalidate();
             }

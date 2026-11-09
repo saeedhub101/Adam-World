@@ -728,11 +728,11 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         for (Game.Agent a : g.agents) {
             if (Math.hypot(a.x - g.camX, a.z - g.camZ) > 350) continue;
             if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, a.cr, a.cg, a.cb, a.sp * a.dir, 0f);
-            else drawPerson(a.x, Terrain.h(a.x, a.z), a.z, a.yaw, a.ph, a.humanType, a.hostile, a.knockedOut);
+            else drawPerson(a.x,Terrain.h(a.x,a.z),a.z,a.yaw,a.ph,a.humanType,a.hostile,a.knockedOut,a.state,a.stateTime,a.hitFlash);
         }
         if (spawned) {
             drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.altitude, 0.75f, 0.22f, 0.17f, g.cv, g.sx);
-            if (!g.driving) drawKid(g.px, g.py + g.jumpHeight, g.pz, g.pyaw, g.phase, g.swingAmp, g.attackSeconds);
+            if (!g.driving) drawKid(g.px,g.py+g.jumpHeight,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash);
         }
     }
 
@@ -876,7 +876,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     /** اللاعب: نسخة طفولية من الشخصية الإجرائية نفسها مع مفاصل ووجه وملابس مولّدة. */
-    private void drawKid(float x,float y,float z,float yaw,float ph,float amp,float attack) {
+    private void drawKid(float x,float y,float z,float yaw,float ph,float amp,float attack,int pose,float poseTime,float guard,float hurt) {
         if(humanRigModels==null||humanRigModels.length==0)return;
         Mesh[] rig=humanRigModels[0];
         float swing=(float)Math.sin(ph)*amp*.58f;
@@ -884,6 +884,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         Matrix.setIdentityM(base,0);
         Matrix.translateM(base,0,x,y+bob,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
+        float fall=pose==2?Math.min(1f,poseTime/.25f):pose==3?1f:pose==4?Math.max(0f,1f-poseTime/.55f):0f;
+        Matrix.translateM(base,0,0f,.82f*fall,0f); Matrix.rotateM(base,0,-82f*fall,0f,0f,1f); Matrix.translateM(base,0,0f,-.82f*fall,0f);
         Matrix.scaleM(base,0,.86f,.86f,.86f);
         drawHumanPart(rig[0],0,1.08f,0,0,0,0,0,1,1,1);
         drawHumanPart(rig[1],0,1.60f,0,0,0,0,0,1.10f,1.10f,1.10f);
@@ -895,6 +897,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         for(int side=-1;side<=1;side+=2) {
             float leg=(side<0?swing:-swing)*57.29578f;
             float arm=(side<0?-swing:swing)*42f;
+            if(guard>.05f)arm=side>0?-72f*guard:-58f*guard;
+            if(hurt>0f)arm=side>0?65f:-55f;
+            if(fall>.05f)arm=side>0?-65f:55f;
             if (attack > 0f && side > 0) arm = -105f * Math.min(1f, attack / 0.16f);
             drawHumanPart(rig[3],side*.21f,1.32f,0,arm,side*.075f,-.15f,0,1,1,1);
             drawHumanPart(rig[4],side*.29f,1.00f,0,arm*.42f,side*.012f,-.12f,.01f,1,1,1);
@@ -921,7 +926,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         mesh.draw();
     }
 
-    private void drawPerson(float x,float y,float z,float yaw,float phase,int variant,boolean hostile,boolean knockedOut) {
+    private void drawPerson(float x,float y,float z,float yaw,float phase,int variant,boolean hostile,boolean knockedOut,int state,float stateTime,float hitFlash) {
         if(humanRigModels==null||humanRigModels.length==0)return;
         int id=(variant%humanRigModels.length+humanRigModels.length)%humanRigModels.length;
         Mesh[] rig=humanRigModels[id];
@@ -930,7 +935,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         Matrix.setIdentityM(base,0);
         Matrix.translateM(base,0,x,y+bob,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
-        if (knockedOut) Matrix.rotateM(base,0,88f,1f,0f,0f);
+        float down=knockedOut||state==3?1f:state==4?Math.max(0f,1f-stateTime):0f;
+        Matrix.translateM(base,0,0f,.82f*down,0f); Matrix.rotateM(base,0,-82f*down,0f,0f,1f); Matrix.translateM(base,0,0f,-.82f*down,0f);
+        if(hitFlash>0f)GLES20.glUniform3f(uTint,1f,.55f,.45f);
         drawHumanPart(rig[0],0,1.08f,0,0,0,0,0,1,1,1);
         drawHumanPart(rig[1],0,1.58f,0,0,0,0,0,1,1,1);
         drawHumanPart(rig[2],0,1.69f,-.018f,0,0,0,0,1,1,1);
@@ -941,7 +948,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         for(int side=-1;side<=1;side+=2) {
             float legAngle=(side<0?swing:-swing)*57.29578f;
             float armAngle=(side<0?-swing:swing)*42f;
-            if (hostile && side > 0) armAngle = (float)Math.sin(phase*2.5f)*24f - 62f;
+            if(hostile&&side>0)armAngle=(float)Math.sin(phase*2.5f)*24f-62f;
+            if(state==2)armAngle=(side>0?-42f:38f)+(float)Math.sin(phase*2f)*18f;
+            if(down>.05f)armAngle=side>0?-18f:22f;
             drawHumanPart(rig[3],side*.21f,1.32f,0,armAngle,side*.075f,-.15f,0,1,1,1);
             drawHumanPart(rig[4],side*.29f,1.00f,0,armAngle*.42f,side*.012f,-.12f,.01f,1,1,1);
             drawHumanPart(rig[5],side*.115f,.78f,0,legAngle,0,-.16f,0,1,1,1);
@@ -952,4 +961,5 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             drawHumanPart(rig[15],side*.31f,.78f,.02f,armAngle*.42f,0,0,0,1,1,1);
         }
         drawHumanPart(rig[9],0,1.535f,.137f,0,0,0,0,1,1,1);
+        GLES20.glUniform3f(uTint,1f,1f,1f);
     }}

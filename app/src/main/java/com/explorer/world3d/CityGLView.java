@@ -10,6 +10,7 @@ import android.view.ScaleGestureDetector;
 public class CityGLView extends GLSurfaceView {
     final CityRenderer renderer;
     private int lookId = -1;
+    private boolean triggerDodgeDown;
     private float lx, ly;
     private final ScaleGestureDetector scaleDetector;
 
@@ -64,9 +65,8 @@ public class CityGLView extends GLSurfaceView {
 
             float gas = trigger(e, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS);
             float brake = trigger(e, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE);
-            if (Math.abs(moveY) < 0.12f && Math.max(gas, brake) > 0.12f) {
-                moveY = brake > gas ? brake : -gas;
-            }
+            if(renderer.game.driving){if(Math.abs(moveY)<.12f&&Math.max(gas,brake)>.12f)moveY=brake>gas?brake:-gas;renderer.game.guardRequested=false;}
+            else {renderer.game.guardRequested=brake>.18f;boolean dodgeNow=gas>.72f;if(dodgeNow&&!triggerDodgeDown)renderer.game.dodgeRequested=true;triggerDodgeDown=dodgeNow;}
             renderer.game.sx = moveX;
             renderer.game.sy = -moveY;
 
