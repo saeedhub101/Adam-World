@@ -123,12 +123,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (dialog.getWindow() != null) dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, dp(560));
     }
     private void showControlsSettings() {
-        String controls = "التحكم المعتمد — نمط GTA V\n\n"
-                + "المشي: العصا اليسرى للحركة، L3 للجري، A للقفز، العصا اليمنى للكاميرا.\n"
-                + "السيارة: L2 تسارع للأمام، R2 فرامل/رجوع، العصا اليسرى للتوجيه، A فرامل اليد، B البوق.\n"
-                + "LB/RB: النظر جانبياً أثناء الضغط. R3: النظر للخلف. X: تغيير منظور الكاميرا.\n"
-                + "Y: ركوب/خروج. View/SELECT: الخريطة. Menu/START: الإيقاف المؤقت.";
-        new AlertDialog.Builder(this).setTitle("إعدادات التحكم").setMessage(controls).setPositiveButton("إغلاق", null).show();
+        // Keep the controller help free of on-screen action names and button labels.
+        new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
+                .setMessage("يتم التحكم أثناء اللعب باستخدام يد التحكم الخارجية فقط. لا تظهر أسماء الأزرار أو تعليمات الحركات على شاشة اللعب.")
+                .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
         if (isFinishing() || (pauseDialog != null && pauseDialog.isShowing())) return;
