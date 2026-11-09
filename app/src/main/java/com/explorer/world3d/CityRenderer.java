@@ -788,8 +788,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         }
         if (spawned) {
             drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.py - Terrain.h(g.cx, g.cz), 0.75f, 0.22f, 0.17f, g.cv, g.sx,
-                    g.vehicleBumpOffset, g.vehicleBumpRoll + g.vehicleWheelBodyRoll,
-                    g.vehicleBumpPitch + g.vehicleWheelBodyPitch,
+                    g.vehicleBumpOffset, g.vehicleBumpRoll + g.vehicleWheelBodyRoll + g.aircraftRoll,
+                    g.vehicleBumpPitch + g.vehicleWheelBodyPitch + g.aircraftPitch,
                     g.vehicleWheelFL - g.vehicleWheelBodyLift, g.vehicleWheelFR - g.vehicleWheelBodyLift,
                     g.vehicleWheelRL - g.vehicleWheelBodyLift, g.vehicleWheelRR - g.vehicleWheelBodyLift);
             if (!g.driving) drawKid(g.px,g.py+g.jumpHeight,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash);
