@@ -26,7 +26,6 @@ on:
 permissions:
   contents: write
 
-# Only the newest requested release matters. Do not queue obsolete releases.
 concurrency:
   group: adam-world-android-release
   cancel-in-progress: false
@@ -80,11 +79,13 @@ jobs:
           ADAM_WORLD_KEYSTORE_BASE64: ${{ secrets.ADAM_WORLD_KEYSTORE_BASE64 }}
           ADAM_WORLD_KEYSTORE_PASSWORD: ${{ secrets.ADAM_WORLD_KEYSTORE_PASSWORD }}
           ADAM_WORLD_KEY_ALIAS: ${{ secrets.ADAM_WORLD_KEY_ALIAS }}
+          ADAM_WORLD_KEY_PASSWORD: ${{ secrets.ADAM_WORLD_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           : "${ADAM_WORLD_KEYSTORE_BASE64:?Missing ADAM_WORLD_KEYSTORE_BASE64}"
           : "${ADAM_WORLD_KEYSTORE_PASSWORD:?Missing ADAM_WORLD_KEYSTORE_PASSWORD}"
           : "${ADAM_WORLD_KEY_ALIAS:?Missing ADAM_WORLD_KEY_ALIAS}"
+          : "${ADAM_WORLD_KEY_PASSWORD:?Missing ADAM_WORLD_KEY_PASSWORD}"
           KEYSTORE="$RUNNER_TEMP/adam-world-release.jks"
           printf '%s' "$ADAM_WORLD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
           echo "ADAM_WORLD_KEYSTORE_FILE=$KEYSTORE" >> "$GITHUB_ENV"
@@ -102,6 +103,7 @@ jobs:
         env:
           ADAM_WORLD_KEYSTORE_PASSWORD: ${{ secrets.ADAM_WORLD_KEYSTORE_PASSWORD }}
           ADAM_WORLD_KEY_ALIAS: ${{ secrets.ADAM_WORLD_KEY_ALIAS }}
+          ADAM_WORLD_KEY_PASSWORD: ${{ secrets.ADAM_WORLD_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           gradle --no-daemon -PVERSION_CODE="$VERSION_CODE" assembleRelease bundleRelease
