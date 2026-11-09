@@ -161,10 +161,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (code == KeyEvent.KEYCODE_BUTTON_B) { if (pressed && !renderer.game.driving) runOnGl(new Runnable() { @Override public void run() { renderer.game.kickRequested = true; } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed && !renderer.game.driving) runOnGl(new Runnable() { @Override public void run() { renderer.game.punchRequested = true; } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_Y) {
-            if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } });
-            return true;
-        }
         if (code == KeyEvent.KEYCODE_BUTTON_L1) { if (!renderer.game.driving) renderer.game.guardRequested = down; else renderer.game.cameraLookOffset = down ? -0.95f : 0f; return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_R1) { renderer.game.cameraLookOffset = down ? 0.95f : 0f; return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_L2 || code == KeyEvent.KEYCODE_BUTTON_R2) {
@@ -173,8 +169,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if (renderer.game.driving) renderer.game.sy = (padL2 ? 1f : 0f) - (padR2 ? 1f : 0f);
             return true;
         }
+        if (code == KeyEvent.KEYCODE_BUTTON_L2) { if (!renderer.game.driving) renderer.game.guardRequested = down; return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_R2) { if (!renderer.game.driving && pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.dodgeRequested = true; } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_THUMBL) { renderer.game.sprint = down; return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_THUMBR) { renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f; return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_THUMBR) {
+            if (!renderer.game.driving && pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.dodgeRequested = true; } });
+            else renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f;
+            return true;
+        }
         if (code == KeyEvent.KEYCODE_BUTTON_SELECT) { if (pressed) showMapDialog(false); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_START || code == KeyEvent.KEYCODE_BUTTON_MODE) { if (pressed) showPauseMenu(); return true; }
         if (code == KeyEvent.KEYCODE_ENTER || code == KeyEvent.KEYCODE_DPAD_CENTER) {
@@ -303,70 +305,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         tp.setMargins(dp(8), dp(8), dp(8), 0);
         root.addView(top, tp);
 
-        // اختيار منظور الكاميرا والتقريب/الإبعاد
-        HorizontalScrollView cameraScroll = new HorizontalScrollView(this);
-        cameraScroll.setHorizontalScrollBarEnabled(false);
-        LinearLayout cameraBar = new LinearLayout(this);
-        cameraBar.setOrientation(LinearLayout.HORIZONTAL);
-        cameraBar.setPadding(dp(5), dp(4), dp(5), dp(4));
-        cameraBar.setBackgroundColor(0xB80A101A);
-        for (int i = 0; i < CAMERA_PRESETS.length; i++) {
-            final String preset = CAMERA_PRESETS[i];
-            Button cameraButton = btn(CAMERA_LABELS[i]);
-            cameraButton.setOnClickListener(new View.OnClickListener() {
-                @Override public void onClick(View v) {
-                    glView.queueEvent(new Runnable() {
-                        @Override public void run() { renderer.game.setCameraPreset(preset); }
-                    });
-                }
-            });
-            cameraBar.addView(cameraButton);
-        }
-        Button zoomOut = btn("−");
-        zoomOut.setTextSize(22);
-        zoomOut.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) {
-                glView.queueEvent(new Runnable() {
-                    @Override public void run() { renderer.game.zoom(1.28f); }
-                });
-            }
-        });
-        cameraBar.addView(zoomOut);
-        Button zoomIn = btn("+");
-        zoomIn.setTextSize(22);
-        zoomIn.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) {
-                glView.queueEvent(new Runnable() {
-                    @Override public void run() { renderer.game.zoom(0.78f); }
-                });
-            }
-        });
-        cameraBar.addView(zoomIn);
-        Button basement = btn("كشف تحت الأرض");
-        basement.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) {
-                glView.queueEvent(new Runnable() {
-                    @Override public void run() {
-                        renderer.toggleUndergroundCutaway();
-                        final boolean enabled = renderer.undergroundCutaway;
-                        runOnUiThread(new Runnable() {
-                            @Override public void run() {
-                                basement.setText(enabled ? "إظهار الأرض" : "كشف تحت الأرض");
-                                Toast.makeText(MainActivity.this, enabled
-                                        ? "وضع كشف الطوابق تحت الأرض" : "تمت إعادة إظهار التضاريس", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
-                });
-            }
-        });
-        cameraBar.addView(basement);
-        cameraScroll.addView(cameraBar);
-        FrameLayout.LayoutParams cameraParams = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        cameraParams.setMargins(dp(150), 0, dp(90), dp(18));
-        root.addView(cameraScroll, cameraParams);
-
         // العصا
         JoystickView js = new JoystickView(this);
         js.setListener(new JoystickView.Listener() {
@@ -375,119 +313,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         FrameLayout.LayoutParams jp = new FrameLayout.LayoutParams(dp(150), dp(150), Gravity.BOTTOM | Gravity.START);
         jp.setMargins(dp(20), 0, 0, dp(30));
         root.addView(js, jp);
-
-        // أزرار الفعل
-        LinearLayout acts = new LinearLayout(this);
-        acts.setOrientation(LinearLayout.VERTICAL);
-        acts.setGravity(Gravity.CENTER_HORIZONTAL);
-        Button sprint = btn("🏃");
-        Button jump = btn("قفز");
-        jump.setOnTouchListener(new View.OnTouchListener() {
-            @Override public boolean onTouch(View v, MotionEvent e) {
-                if (e.getActionMasked() == MotionEvent.ACTION_DOWN && !renderer.game.driving)
-                    runOnGl(new Runnable() { @Override public void run() { renderer.game.jumpRequested = true; } });
-                return true;
-            }
-        });
-        Button punch = btn("👊 لكمة");
-        Button kick = btn("🦵 ركلة");
-        punch.setOnTouchListener(new View.OnTouchListener() {
-            @Override public boolean onTouch(View v, MotionEvent e) {
-                if (e.getActionMasked() == MotionEvent.ACTION_DOWN && !renderer.game.driving)
-                    runOnGl(new Runnable() { @Override public void run() { renderer.game.punchRequested = true; } });
-                return true;
-            }
-        });
-        kick.setOnTouchListener(new View.OnTouchListener() {
-            @Override public boolean onTouch(View v, MotionEvent e) {
-                if (e.getActionMasked() == MotionEvent.ACTION_DOWN && !renderer.game.driving)
-                    runOnGl(new Runnable() { @Override public void run() { renderer.game.kickRequested = true; } });
-                return true;
-            }
-        });
-        Button guard = btn("🛡 صد");
-        guard.setOnTouchListener(new View.OnTouchListener() {
-            @Override public boolean onTouch(View v, MotionEvent e) {
-                int a=e.getActionMasked();
-                if(a==MotionEvent.ACTION_DOWN) renderer.game.guardRequested=true;
-                else if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_CANCEL) renderer.game.guardRequested=false;
-                return true;
-            }
-        });
-        Button dodge = btn("مراوغة");
-        dodge.setOnClickListener(v -> runOnGl(new Runnable() { @Override public void run() { renderer.game.dodgeRequested=true; } }));
-        Button mapAction = btn("الخريطة");
-        mapAction.setOnClickListener(v -> showMapDialog(false));
-        Button pauseAction = btn("Ⅱ");
-        pauseAction.setOnClickListener(v -> showPauseMenu());
-        Button cameraBack = btn("نظر للخلف");
-        cameraBack.setOnTouchListener(new View.OnTouchListener() {
-            @Override public boolean onTouch(View v, MotionEvent e) {
-                int action=e.getActionMasked();
-                final float offset = action==MotionEvent.ACTION_DOWN ? (float)Math.PI : 0f;
-                if(action==MotionEvent.ACTION_DOWN || action==MotionEvent.ACTION_UP || action==MotionEvent.ACTION_CANCEL)
-                    runOnGl(new Runnable() { @Override public void run() { renderer.game.cameraLookOffset=offset; } });
-                return true;
-            }
-        });
-        sprint.setTextSize(26);
-        sprint.setOnTouchListener(new View.OnTouchListener() {
-            @Override public boolean onTouch(View v, MotionEvent e) {
-                int a = e.getActionMasked();
-                if (a == MotionEvent.ACTION_DOWN) renderer.game.sprint = true;
-                else if (a == MotionEvent.ACTION_UP || a == MotionEvent.ACTION_CANCEL) renderer.game.sprint = false;
-                return true;
-            }
-        });
-        Button liftUp = btn("⬆");
-        liftUp.setOnTouchListener(new View.OnTouchListener() {
-            @Override public boolean onTouch(View v, MotionEvent e) {
-                int a=e.getActionMasked();
-                if(a==MotionEvent.ACTION_DOWN) renderer.game.liftInput=1f;
-                else if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_CANCEL) renderer.game.liftInput=0f;
-                return true;
-            }
-        });
-        Button liftDown = btn("⬇");
-        liftDown.setOnTouchListener(new View.OnTouchListener() {
-            @Override public boolean onTouch(View v, MotionEvent e) {
-                int a=e.getActionMasked();
-                if(a==MotionEvent.ACTION_DOWN) renderer.game.liftInput=-1f;
-                else if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_CANCEL) renderer.game.liftInput=0f;
-                return true;
-            }
-        });
-        Button vehicleType = btn("نوع المركبة");
-        vehicleType.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) {
-                glView.queueEvent(new Runnable() { @Override public void run() { renderer.cycleVehicleType(); } });
-            }
-        });
-        Button car = btn("🚗");
-        car.setTextSize(26);
-        car.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) {
-                glView.queueEvent(new Runnable() { @Override public void run() { renderer.toggleCar(); } });
-            }
-        });
-        LinearLayout.LayoutParams ab = new LinearLayout.LayoutParams(dp(72), dp(72));
-        ab.setMargins(0, dp(10), 0, 0);
-        acts.addView(sprint, ab);
-        acts.addView(jump, new LinearLayout.LayoutParams(dp(72), dp(44)));
-        acts.addView(punch, new LinearLayout.LayoutParams(dp(88), dp(44)));
-        acts.addView(kick, new LinearLayout.LayoutParams(dp(88), dp(44)));
-        acts.addView(guard, new LinearLayout.LayoutParams(dp(72), dp(44)));
-        acts.addView(dodge, new LinearLayout.LayoutParams(dp(72), dp(44)));
-        acts.addView(cameraBack, new LinearLayout.LayoutParams(dp(84), dp(44)));
-        acts.addView(mapAction, new LinearLayout.LayoutParams(dp(84), dp(44)));
-        acts.addView(pauseAction, new LinearLayout.LayoutParams(dp(72), dp(44)));
-        acts.addView(car, ab);
-        acts.addView(vehicleType, new LinearLayout.LayoutParams(dp(96), dp(48)));
-        acts.addView(liftUp, new LinearLayout.LayoutParams(dp(72), dp(44)));
-        acts.addView(liftDown, new LinearLayout.LayoutParams(dp(72), dp(44)));
-        FrameLayout.LayoutParams ap = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.END);
-        ap.setMargins(0, 0, dp(20), dp(30));
-        root.addView(acts, ap);
 
         hud = new TextView(this);
         hud.setTextColor(Color.WHITE);
