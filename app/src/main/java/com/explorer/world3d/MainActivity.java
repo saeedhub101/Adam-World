@@ -213,6 +213,30 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
     }
 
+    private Button touchAction(String label, final Runnable press, final Runnable release) {
+        Button b = btn(label);
+        b.setTextSize(12);
+        b.setMinHeight(dp(46));
+        b.setBackgroundColor(0xB91B2634);
+        b.setOnTouchListener(new View.OnTouchListener() {
+            @Override public boolean onTouch(View v, MotionEvent e) {
+                if (e.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    if (press != null) press.run();
+                    v.setAlpha(0.72f);
+                    return true;
+                }
+                if (e.getActionMasked() == MotionEvent.ACTION_UP
+                        || e.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                    if (release != null) release.run();
+                    v.setAlpha(1f);
+                    return true;
+                }
+                return true;
+            }
+        });
+        return b;
+    }
+
     private Button btn(String t) {
         Button b = new Button(this);
         b.setText(t);
@@ -316,6 +340,62 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         FrameLayout.LayoutParams jp = new FrameLayout.LayoutParams(dp(150), dp(150), Gravity.BOTTOM | Gravity.START);
         jp.setMargins(dp(20), 0, 0, dp(30));
         root.addView(js, jp);
+
+        // Mobile action pad: actions reuse the exact Game requests used by the gamepad.
+        LinearLayout actionPad = new LinearLayout(this);
+        actionPad.setOrientation(LinearLayout.VERTICAL);
+        actionPad.setGravity(Gravity.CENTER);
+        actionPad.setPadding(dp(4), dp(4), dp(4), dp(4));
+        actionPad.setBackgroundColor(0x30000000);
+        FrameLayout.LayoutParams actionParams = new FrameLayout.LayoutParams(
+                dp(174), ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.END);
+        actionParams.setMargins(0, 0, dp(10), dp(22));
+        root.addView(actionPad, actionParams);
+
+        LinearLayout combatRow = new LinearLayout(this);
+        combatRow.setGravity(Gravity.CENTER);
+        Button jumpTouch = touchAction("قفز", () -> runOnGl(() -> {
+            if (!renderer.game.driving) renderer.game.jumpRequested = true;
+        }), null);
+        Button punchTouch = touchAction("لكم", () -> runOnGl(() -> {
+            if (!renderer.game.driving) renderer.game.punchRequested = true;
+        }), null);
+        combatRow.addView(jumpTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        combatRow.addView(punchTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        actionPad.addView(combatRow);
+
+        LinearLayout combatRow2 = new LinearLayout(this);
+        combatRow2.setGravity(Gravity.CENTER);
+        Button kickTouch = touchAction("ركل", () -> runOnGl(() -> {
+            if (!renderer.game.driving) renderer.game.kickRequested = true;
+        }), null);
+        Button guardTouch = touchAction("صدّ", () -> runOnGl(() -> renderer.game.guardRequested = true),
+                () -> runOnGl(() -> renderer.game.guardRequested = false));
+        combatRow2.addView(kickTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        combatRow2.addView(guardTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        actionPad.addView(combatRow2);
+
+        LinearLayout vehicleRow = new LinearLayout(this);
+        vehicleRow.setGravity(Gravity.CENTER);
+        Button vehicleTouch = touchAction("دخول / خروج", () -> runOnGl(() -> renderer.toggleCar()), null);
+        Button vehicleTypeTouch = touchAction("نوع المركبة", () -> runOnGl(() -> renderer.cycleVehicleType()), null);
+        vehicleRow.addView(vehicleTouch, new LinearLayout.LayoutParams(0, dp(46), 1.45f));
+        vehicleRow.addView(vehicleTypeTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        actionPad.addView(vehicleRow);
+
+        LinearLayout flightRow = new LinearLayout(this);
+        flightRow.setGravity(Gravity.CENTER);
+        Button climbTouch = touchAction("صعود ▲", () -> runOnGl(() -> {
+            if (renderer.game.driving && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
+                    || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE)) renderer.game.liftInput = 1f;
+        }), () -> runOnGl(() -> renderer.game.liftInput = 0f));
+        Button descendTouch = touchAction("هبوط ▼", () -> runOnGl(() -> {
+            if (renderer.game.driving && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
+                    || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE)) renderer.game.liftInput = -1f;
+        }), () -> runOnGl(() -> renderer.game.liftInput = 0f));
+        flightRow.addView(climbTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightRow.addView(descendTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        actionPad.addView(flightRow);
 
         hud = new TextView(this);
         hud.setTextColor(Color.WHITE);
