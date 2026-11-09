@@ -66,7 +66,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private final String[] CAMERA_LABELS = {"شارع", "قريب", "مرتفع", "درون"};
     private final String[] CAMERA_PRESETS = {"street", "near", "high", "drone"};
 
-    private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density + 0.5f); }
+    private int dp(int v) { return dp((float) v); }
+    private int dp(float v) { return (int) (v * getResources().getDisplayMetrics().density + 0.5f); }
     private void updateRemoteMovement() {
         if (renderer == null) return;
         renderer.game.sx = (keyRight ? 1f : 0f) - (keyLeft ? 1f : 0f);

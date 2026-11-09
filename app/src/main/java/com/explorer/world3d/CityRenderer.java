@@ -138,6 +138,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private boolean started, needSpawn, spawned, spawnTimeoutNotified;
     private float lookDx, lookDy;
     private volatile float gamepadLookX, gamepadLookY;
+    private volatile float lookSensitivity = 1f;
     public volatile int timeIdx = 0;
     private int environmentTimeIdx = -1;
     public volatile boolean undergroundCutaway = false;
@@ -190,6 +191,10 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
 
     public synchronized void addLook(float dx, float dy) { lookDx += dx; lookDy += dy; }
+
+    public void setLookSensitivity(float sensitivity) {
+        if (Float.isFinite(sensitivity)) lookSensitivity = Math.max(0.35f, Math.min(2.0f, sensitivity));
+    }
 
     public void setGamepadLook(float x, float y) {
         gamepadLookX = Math.max(-1f, Math.min(1f, x));
@@ -550,9 +555,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
         float ldx, ldy;
         synchronized (this) { ldx = lookDx; ldy = lookDy; lookDx = 0; lookDy = 0; }
-        if (ldx != 0 || ldy != 0) game.look(ldx, ldy);
+        if (ldx != 0 || ldy != 0) game.look(ldx * lookSensitivity, ldy * lookSensitivity);
         float gx = gamepadLookX, gy = gamepadLookY;
-        if (gx != 0f || gy != 0f) game.look(gx * dt * 260f, gy * dt * 260f);
+        if (gx != 0f || gy != 0f) game.look(gx * dt * 260f * lookSensitivity, gy * dt * 260f * lookSensitivity);
 
         TileData td;
         int ups = 0;
