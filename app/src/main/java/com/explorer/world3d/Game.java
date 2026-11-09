@@ -14,6 +14,10 @@ final class Game {
         Tile tile;
         float off, s, sp, ph, x, z, yaw;
         int dir = 1;
+        int health = 100;
+        boolean hostile, knockedOut;
+        long lastAttackMs;
+        float stunSeconds, knockdownSeconds;
         float cr, cg, cb;
     }
 
@@ -25,6 +29,11 @@ final class Game {
     int vehicleType = ProceduralVehicleModels.SEDAN;
     float altitude;
     volatile float liftInput;
+    volatile boolean paused, attackRequested, jumpRequested, handbrake;
+    volatile float cameraLookOffset;
+    float jumpVelocity, jumpHeight, attackSeconds;
+    long lastPlayerAttackMs;
+    int comboStep;
     float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
     long lastLookMs;
     volatile float sx, sy;
@@ -42,7 +51,10 @@ final class Game {
     }
 
     void reset() {
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; health = 100; dead = false; lastDamageMs = deathStartedMs = 0L; agents.clear();
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; health = 100; dead = false;
+        paused = attackRequested = jumpRequested = handbrake = false; cameraLookOffset = 0f;
+        jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
+        lastPlayerAttackMs = lastDamageMs = deathStartedMs = 0L; agents.clear();
     }
 
     float focusX() { return driving ? cx : px; }
@@ -69,6 +81,8 @@ final class Game {
     }
 
     void update(float dt, World w) {
+        if (paused) return;
+        dt = clamp(dt, 0f, 0.05f);
         long now = System.currentTimeMillis();
         if (dead) {
             sx = sy = 0f;
@@ -76,7 +90,38 @@ final class Game {
             updateCamera(dt);
             return;
         }
-        if (health > 0 && health < 100 && now - lastDamageMs >= 3500L) health = Math.min(100, health + Math.max(1, (int)(dt * 12f)));
+        if (health > 0 && health < 100 && now - lastDamageMs >= 5000L)
+            health = Math.min(100, health + Math.max(1, (int)(dt * 8f)));
+        attackSeconds = Math.max(0f, attackSeconds - dt);
+        if (jumpRequested && !driving && jumpHeight <= 0.001f && !dead) jumpVelocity = 5.1f;
+        jumpRequested = false;
+        if (jumpHeight > 0f || jumpVelocity > 0f) {
+            jumpHeight += jumpVelocity * dt;
+            jumpVelocity -= 13.8f * dt;
+            if (jumpHeight <= 0f) { jumpHeight = 0f; jumpVelocity = 0f; }
+        }
+        if (attackRequested) {
+            attackRequested = false;
+            if (!driving && !dead && now - lastPlayerAttackMs >= 420L) {
+                lastPlayerAttackMs = now;
+                comboStep = (comboStep + 1) % 3;
+                attackSeconds = 0.38f;
+                float range = comboStep == 2 ? 2.35f : 1.95f;
+                float damage = comboStep == 2 ? 48f : 32f;
+                float fx = (float)Math.sin(pyaw), fz = (float)Math.cos(pyaw);
+                Agent target = null; float best = range;
+                for (Agent a : agents) if (!a.car && !a.knockedOut) {
+                    float dx=a.x-px, dz=a.z-pz, d=(float)Math.hypot(dx,dz);
+                    float facing=(dx*fx+dz*fz)/(d+0.0001f);
+                    if (d < best && facing > 0.10f) { best=d; target=a; }
+                }
+                if (target != null) {
+                    target.health = Math.max(0, target.health-(int)damage);
+                    target.hostile = true; target.stunSeconds = 0.42f;
+                    if (target.health == 0) { target.knockedOut = true; target.hostile = false; target.knockdownSeconds = 18f; target.sp = 0f; }
+                }
+            }
+        }
         float jx = sx, jy = sy;
         float mag = Math.min(1f, (float) Math.hypot(jx, jy));
         if (!driving) {
@@ -128,18 +173,34 @@ final class Game {
         for (int i = agents.size() - 1; i >= 0; i--) {
             Agent a = agents.get(i);
             if (a.tile.dead) { agents.remove(i); continue; }
-            a.s += a.dir * a.sp * dt;
-            if (a.s > a.path.total) { a.s = a.path.total; a.dir = -1; }
-            else if (a.s < 0) { a.s = 0; a.dir = 1; }
-            a.path.posAt(a.s, a.car ? a.off * a.dir : a.off, tmp);
-            a.x = tmp[0]; a.z = tmp[1];
-            a.yaw = (float) Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
+            if (!a.hostile && !a.knockedOut) {
+                a.s += a.dir * a.sp * dt;
+                if (a.s > a.path.total) { a.s = a.path.total; a.dir = -1; }
+                else if (a.s < 0) { a.s = 0; a.dir = 1; }
+                a.path.posAt(a.s, a.car ? a.off * a.dir : a.off, tmp);
+                a.x = tmp[0]; a.z = tmp[1];
+                a.yaw = (float) Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
+            }
             if (!a.car) {
-                a.ph += a.sp * dt * 2.2f;
-                if (!driving && Math.hypot(a.x - px, a.z - pz) < 0.8f && now - lastDamageMs > 1200L) {
-                    health = Math.max(0, health - 12);
-                    lastDamageMs = now;
-                    if (health == 0) { dead = true; deathStartedMs = now; }
+                if (a.knockedOut) {
+                    a.knockdownSeconds = Math.max(0f, a.knockdownSeconds-dt);
+                    if (a.knockdownSeconds == 0f) { a.knockedOut=false; a.health=55; a.hostile=false; a.sp=1.0f; a.stunSeconds=1.2f; }
+                } else if (a.hostile && !driving) {
+                    a.stunSeconds = Math.max(0f, a.stunSeconds-dt);
+                    float dx=px-a.x, dz=pz-a.z, d=(float)Math.hypot(dx,dz);
+                    if (d < 9f && d > 0.001f && a.stunSeconds <= 0f) {
+                        float step=Math.min(2.0f*dt, Math.max(0f,d-0.82f));
+                        float nx=a.x+dx/d*step, nz=a.z+dz/d*step;
+                        if (!w.blocked(nx,nz,0.38f)) { a.x=nx; a.z=nz; }
+                        a.yaw=(float)Math.atan2(dx,dz);
+                    }
+                    if (d < 1.15f && now-a.lastAttackMs>1350L && now-lastDamageMs>700L) {
+                        a.lastAttackMs=now; health=Math.max(0,health-9); lastDamageMs=now;
+                        if (health==0) { dead=true; deathStartedMs=now; sx=sy=0f; }
+                    }
+                    a.ph += dt*4.2f;
+                } else {
+                    a.ph += a.sp * dt * 2.2f;
                 }
             }
         }
