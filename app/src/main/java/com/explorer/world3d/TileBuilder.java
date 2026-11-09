@@ -1775,6 +1775,31 @@ final class TileBuilder {
             ribbonOffset(cx, cz, width, pavementY, td.bufs[B_SIDEWALK],
                     1f, 8f, 0.78f, 0.77f, 0.72f);
 
+            // The complete sidewalk deck is a walkable low step, not a collision wall.
+            // This also lets wheel suspension follow the real deck even when its curb
+            // edge is vertical instead of bevelled.
+            Footprint sidewalkSurface = new Footprint();
+            sidewalkSurface.xs = new float[count * 2];
+            sidewalkSurface.zs = new float[count * 2];
+            sidewalkSurface.minx = sidewalkSurface.minz = Float.POSITIVE_INFINITY;
+            sidewalkSurface.maxx = sidewalkSurface.maxz = Float.NEGATIVE_INFINITY;
+            for (int i = 0; i < count; i++) {
+                float[] edge = new float[4];
+                path.posAt(sidewalkStart + (sidewalkEnd - sidewalkStart) * i / (count - 1f), side * inner, edge);
+                sidewalkSurface.xs[i] = edge[0]; sidewalkSurface.zs[i] = edge[1];
+                path.posAt(sidewalkStart + (sidewalkEnd - sidewalkStart) * i / (count - 1f), side * (inner + width), edge);
+                sidewalkSurface.xs[count * 2 - 1 - i] = edge[0];
+                sidewalkSurface.zs[count * 2 - 1 - i] = edge[1];
+            }
+            for (int i = 0; i < sidewalkSurface.xs.length; i++) {
+                sidewalkSurface.minx = Math.min(sidewalkSurface.minx, sidewalkSurface.xs[i]);
+                sidewalkSurface.maxx = Math.max(sidewalkSurface.maxx, sidewalkSurface.xs[i]);
+                sidewalkSurface.minz = Math.min(sidewalkSurface.minz, sidewalkSurface.zs[i]);
+                sidewalkSurface.maxz = Math.max(sidewalkSurface.maxz, sidewalkSurface.zs[i]);
+            }
+            sidewalkSurface.obstacleHeight = kerbRise;
+            Collision.add(td.grid, sidewalkSurface);
+
             // A 65 cm bevel gives both tyres and the character a continuous ramp.
             // It replaces the old vertical concrete face at the carriageway edge.
             float rampWidth = 0.65f;

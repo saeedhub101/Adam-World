@@ -382,6 +382,10 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             if (blocked(x, z, 0.5f)) { x = g.cx - rx * 2.6f; z = g.cz - rz * 2.6f; }
             if (blocked(x, z, 0.5f)) { x = g.cx; z = g.cz; }
             g.px = x; g.pz = z; g.pyaw = g.cyaw; g.driving = false; g.cv = 0; g.altitude = 0f; g.liftInput = 0f;
+            g.vehicleBumpAmplitude = g.vehicleBumpTime = g.vehicleBumpOffset = g.vehicleBumpRoll = g.vehicleBumpPitch = 0f;
+            g.vehicleWheelFL = g.vehicleWheelFR = g.vehicleWheelRL = g.vehicleWheelRR = 0f;
+            g.vehicleWheelBodyLift = g.vehicleWheelBodyRoll = g.vehicleWheelBodyPitch = 0f;
+            g.vehicleFrontStepContact = g.vehicleRearStepContact = false;
         }
     }
 

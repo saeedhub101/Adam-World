@@ -238,8 +238,8 @@ final class Game {
                 // curb/island, then the chassis follows the averaged spring travel.
                 if (w instanceof CityRenderer) {
                     CityRenderer city = (CityRenderer) w;
-                    float rx = -fz, rz = fx;
-                    float halfWidth = vehicleType == ProceduralVehicleModels.BUS ? 0.91f : 0.91f;
+                    float rx = fz, rz = -fx; // local vehicle-right axis in world coordinates
+                    float halfWidth = 0.91f;
                     float halfLength = vehicleType == ProceduralVehicleModels.BUS ? 2.85f
                             : vehicleType == ProceduralVehicleModels.SUV ? 1.52f
                             : vehicleType == ProceduralVehicleModels.PICKUP ? 1.65f
@@ -276,7 +276,6 @@ final class Game {
                     vehicleFrontStepContact = frontContact;
                     vehicleRearStepContact = rearContact;
                 }
-            }
             }
             px = cx; pz = cz;
             float ground = (w instanceof CityRenderer && !aircraft)
