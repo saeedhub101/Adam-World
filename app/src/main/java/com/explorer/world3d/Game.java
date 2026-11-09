@@ -157,12 +157,14 @@ final class Game {
         for (int i = agents.size() - 1; i >= 0; i--) {
             Agent a = agents.get(i);
             if (a.tile.dead) { agents.remove(i); continue; }
-            a.s += a.dir * a.sp * dt;
-            if (a.s > a.path.total) { a.s = a.path.total; a.dir = -1; }
-            else if (a.s < 0) { a.s = 0; a.dir = 1; }
-            a.path.posAt(a.s, a.car ? a.off * a.dir : a.off, tmp);
-            a.x = tmp[0]; a.z = tmp[1];
-            a.yaw = (float) Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
+            if (!a.hostile && !a.knockedOut) {
+                a.s += a.dir * a.sp * dt;
+                if (a.s > a.path.total) { a.s = a.path.total; a.dir = -1; }
+                else if (a.s < 0) { a.s = 0; a.dir = 1; }
+                a.path.posAt(a.s, a.car ? a.off * a.dir : a.off, tmp);
+                a.x = tmp[0]; a.z = tmp[1];
+                a.yaw = (float) Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
+            }
             if (!a.car) {
                 a.ph += a.sp * dt * 2.2f;
                 if (a.stunSeconds > 0f) a.stunSeconds = Math.max(0f, a.stunSeconds-dt);
