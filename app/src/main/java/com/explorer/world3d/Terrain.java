@@ -99,8 +99,8 @@ final class Terrain {
         if (!enabled) return;
         int tx = (int) Math.floor(gx(lon) / 256.0), ty = (int) Math.floor(gy(lat) / 256.0);
         long k = key(tx, ty);
-        if (dem.containsKey(k)) return;
         synchronized (Terrain.class) {
+            if (dem.containsKey(k)) return;
             if (dem.containsKey(k)) return;
             File f = cacheDir == null ? null : new File(cacheDir, "d_" + Z + "_" + tx + "_" + ty + ".png");
             boolean tabarbourSource = isTabarbour(Geo.lat0, Geo.lon0);
