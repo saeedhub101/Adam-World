@@ -20,7 +20,11 @@
 - **Reused:** existing `Game` request/state fields and `CityRenderer.toggleCar()/cycleVehicleType()`; no parallel gameplay system was introduced.
 - **Earlier signed release:** `adam-world-v431` completed successfully (APK 4,116,025 bytes; AAB 4,087,241 bytes), but its workflow run was triggered by commit `47926867f71349af7bfae9cd8675792590e21306`, before the dedicated throttle/brake commits. The release tag was also pointing at a later `main` commit than the one that triggered the build, so v431 is not claimed to contain the new aircraft throttle controls.
 - **Release workflow correction:** the GitHub Release action now pins `target_commitish` to `${{ github.sha }}` so the published tag identifies the exact source commit used for that run. The follow-up release for commit `d57ae97175b7fea41be39f7401fb589390d0cd27` is building separately.
-- **Still in progress:** this delivery does not yet provide airport/hangar spawn points, a modeled runway with takeoff/landing ground roll, or full flight instruments/autopilot. The current aircraft can be selected and summoned through the existing nearby-vehicle system; airplane lift is gated by speed, but it is not yet a complete runway-based flight simulation. These are explicitly not claimed as completed.
+- **Flight-school implementation added on `main`:** a dedicated isolated training-airfield scene with a 920 m runway, threshold/centerline/aiming markings, runway edge lights, taxiway, apron, open-front hangar, terminal, control tower, fuel island and marked helicopter pad. Map streaming is suspended while active; returning restores the exact previous geographic position and offline-city source.
+- **Fixed-wing flight model:** persistent engine throttle, runway acceleration and braking, steering, elevator/pitch, speed-gated takeoff, aerodynamic lift, climb/descent, stall warning, touchdown, landing-gear state and hard-landing damage response. The airplane has an animated propeller and visible retractable landing gear.
+- **Helicopter flight model:** rotor-power/collective control, stable hover baseline, vertical climb/descent, forward/reverse movement, yaw and bank response.
+- **Controls:** contextual touch controls expose throttle increase/decrease, pitch/collective, brake and landing gear; gamepad triggers adjust engine power, D-pad controls pitch/collective, and A applies airplane braking. Flight HUD reports speed, altitude, throttle, gear and runway/airborne/stall state.
+- **Scope note:** this is a dedicated in-game training airfield, not a claim that real-world airport buildings/runways have been imported into every city. The regular city map remains unchanged and can be resumed at the saved location.
 
 ## Delivery stages
 
@@ -43,9 +47,9 @@
 - Ensure aircraft can be summoned at a safe, clear spawn point and are not presented as merely decorative models.
 
 ### Stage 4 — Helicopter and airplane flight controls
-- Provide touch controls for throttle, braking/reverse, steering, climb, and descent; use aircraft-specific layouts and hide irrelevant combat controls.
-- Helicopter: vertical takeoff/landing, hover, yaw, forward/backward flight, altitude limits.
-- Airplane: ground acceleration, takeoff only at suitable speed, pitch/climb/descent, steering, landing and safe deceleration.
+- Provide touch controls for throttle adjustment, braking, steering, elevator/collective, and landing gear; use aircraft-specific layouts and hide irrelevant combat controls.
+- Helicopter: rotor power, collective, vertical takeoff/landing, hover, yaw, forward/backward flight, altitude limits.
+- Airplane: runway ground roll, speed-gated takeoff, aerodynamic lift/stall, pitch/climb/descent, steering, landing gear, braking and touchdown response.
 - Keep the existing gamepad flight mapping coherent with touch mapping.
 
 ### Stage 5 — Integration and release
@@ -57,7 +61,7 @@
 1. A phone-only player can move, sprint, jump, punch, kick, guard, dodge, summon/enter/exit vehicles without a gamepad.
 2. Camera drag and movement joystick work simultaneously with touch actions.
 3. On-foot and in-vehicle HUDs show only relevant controls.
-4. Helicopter and airplane are selectable, summonable, controllable, and landable; the controls are usable on both touch and gamepad.
+4. Helicopter and airplane are selectable and controllable in the dedicated flight-school airfield; fixed-wing takeoff, flight, landing gear, braking and touchdown, plus helicopter hover and vertical flight, are implemented for touch and gamepad.
 5. Existing gamepad controls continue to work.
 6. All repository work is committed directly to `main`; no new branch is created.
 

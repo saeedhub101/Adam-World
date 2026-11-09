@@ -64,6 +64,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private long lastHudRefresh;
     private LinearLayout touchActionPad, touchCombatRow, touchFlightRow;
     private Button touchVehicleButton, touchVehicleTypeButton, touchSprintButton, touchDodgeButton;
+    private Button flightSchoolButton, returnCityButton, touchGearButton, touchFlightUpButton, touchFlightDownButton;
 
 
     private int dp(int v) { return dp((float) v); }
@@ -120,7 +121,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("على الهاتف: العصا اليسرى للحركة، واسحب على مساحة اللعب لتحريك الكاميرا، واستخدم أزرار القفز واللكم والركل والصد والركض والمراوغة. زر المركبة للاستدعاء والدخول والخروج، ومن قائمة المركبات اختر الهليكوبتر أو الطائرة. أثناء الطيران استخدم العصا للتوجيه، وأزرار الدفع والفرملة والصعود والهبوط. على التلفاز: استخدم يد التحكم؛ العصا اليسرى للحركة أو قيادة المركبة، والعصا اليمنى للكاميرا، وأزرار A/B/X/Y للحركات والتفاعل.")
+                .setMessage("على الهاتف: العصا اليسرى للحركة، واسحب على مساحة اللعب لتحريك الكاميرا، واستخدم أزرار القفز واللكم والركل والصد والركض والمراوغة. زر المركبة للاستدعاء والدخول والخروج، ومن قائمة المركبات اختر الهليكوبتر أو الطائرة. في مطار التدريب: زد الدفع حتى سرعة الإقلاع، ارفع مقدمة الطائرة، ثم اخفضها تدريجياً للهبوط. استخدم المكابح والعجلات؛ والهليكوبتر تتحكم بارتفاعها من أزرار الصعود والهبوط. زر العودة يعيدك إلى موقعك السابق. على التلفاز: استخدم يد التحكم؛ العصا اليسرى للحركة أو قيادة المركبة، والعصا اليمنى للكاميرا، وأزرار A/B/X/Y للحركات والتفاعل.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
@@ -160,7 +161,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (code == KeyEvent.KEYCODE_DPAD_RIGHT || code == KeyEvent.KEYCODE_D) { keyRight = down; updateRemoteMovement(); return true; }
         if (renderer == null) return super.dispatchKeyEvent(event);
         if (code == KeyEvent.KEYCODE_BUTTON_A) {
-            if (renderer.game.driving) renderer.game.handbrake = down;
+            if (renderer.game.driving) {
+                if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) renderer.game.brakeRequested = down;
+                else renderer.game.handbrake = down;
+            }
             else if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.jumpRequested = true; } });
             return true;
         }
@@ -177,7 +181,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             padL2 = code == KeyEvent.KEYCODE_BUTTON_L2 ? down : padL2;
             padR2 = code == KeyEvent.KEYCODE_BUTTON_R2 ? down : padR2;
             if (renderer.game.driving) {
-                renderer.game.sy = (padL2 ? 1f : 0f) - (padR2 ? 1f : 0f);
+                if (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE)
+                    renderer.game.throttleInput = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
+                else renderer.game.sy = (padL2 ? 1f : 0f) - (padR2 ? 1f : 0f);
             } else {
                 renderer.game.guardRequested = padL2;
                 if (code == KeyEvent.KEYCODE_BUTTON_R2 && pressed)
@@ -326,6 +332,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         Button garage = btn("المركبات");
         garage.setOnClickListener(v -> showVehicleSelector());
         chips.addView(garage);
+        flightSchoolButton = btn("مطار الطيران");
+        flightSchoolButton.setOnClickListener(v -> runOnGl(() -> renderer.enterFlightSchool()));
+        chips.addView(flightSchoolButton);
+        returnCityButton = btn("عودة للمدينة");
+        returnCityButton.setVisibility(View.GONE);
+        returnCityButton.setOnClickListener(v -> runOnGl(() -> renderer.leaveFlightSchool()));
+        chips.addView(returnCityButton);
         Button localAmman = btn("عمّان محلي");
         localAmman.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { teleportOfflineAmman(); }
@@ -432,26 +445,36 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         flightRow.setGravity(Gravity.CENTER);
         LinearLayout flightThrottleRow = new LinearLayout(this);
         flightThrottleRow.setGravity(Gravity.CENTER);
-        Button throttleTouch = touchAction("دفع ▲", () -> runOnGl(() -> {
+        Button throttleUpTouch = touchAction("زيادة الدفع ▲", () -> runOnGl(() -> {
             if (isAircraftDriven()) renderer.game.throttleInput = 1f;
         }), () -> runOnGl(() -> renderer.game.throttleInput = 0f));
-        Button brakeTouch = touchAction("فرملة ▼", () -> runOnGl(() -> {
+        Button throttleDownTouch = touchAction("تقليل الدفع ▼", () -> runOnGl(() -> {
             if (isAircraftDriven()) renderer.game.throttleInput = -1f;
         }), () -> runOnGl(() -> renderer.game.throttleInput = 0f));
-        flightThrottleRow.addView(throttleTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        flightThrottleRow.addView(brakeTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightThrottleRow.addView(throttleUpTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightThrottleRow.addView(throttleDownTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
         flightRow.addView(flightThrottleRow);
-        LinearLayout flightAltitudeRow = new LinearLayout(this);
-        flightAltitudeRow.setGravity(Gravity.CENTER);
-        Button climbTouch = touchAction("صعود ▲", () -> runOnGl(() -> {
+        LinearLayout flightPitchRow = new LinearLayout(this);
+        flightPitchRow.setGravity(Gravity.CENTER);
+        touchFlightUpButton = touchAction("رفع المقدمة ▲", () -> runOnGl(() -> {
             if (isAircraftDriven()) renderer.game.liftInput = 1f;
         }), () -> runOnGl(() -> renderer.game.liftInput = 0f));
-        Button descendTouch = touchAction("هبوط ▼", () -> runOnGl(() -> {
+        touchFlightDownButton = touchAction("خفض المقدمة ▼", () -> runOnGl(() -> {
             if (isAircraftDriven()) renderer.game.liftInput = -1f;
         }), () -> runOnGl(() -> renderer.game.liftInput = 0f));
-        flightAltitudeRow.addView(climbTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        flightAltitudeRow.addView(descendTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        flightRow.addView(flightAltitudeRow);
+        flightPitchRow.addView(touchFlightUpButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightPitchRow.addView(touchFlightDownButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightRow.addView(flightPitchRow);
+        LinearLayout flightUtilityRow = new LinearLayout(this);
+        flightUtilityRow.setGravity(Gravity.CENTER);
+        Button brakeTouch = touchAction("مكابح", () -> runOnGl(() -> renderer.game.brakeRequested = true),
+                () -> runOnGl(() -> renderer.game.brakeRequested = false));
+        touchGearButton = btn("العجلات: مفتوحة");
+        touchGearButton.setTextSize(12);
+        touchGearButton.setOnClickListener(v -> runOnGl(() -> renderer.toggleAircraftGear()));
+        flightUtilityRow.addView(brakeTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightUtilityRow.addView(touchGearButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightRow.addView(flightUtilityRow);
         actionPad.addView(flightRow);
         touchFlightRow = flightRow;
 
@@ -546,8 +569,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (renderer != null) {
             renderer.game.sprint = false;
             renderer.game.guardRequested = false;
+            renderer.game.brakeRequested = false;
             renderer.game.liftInput = 0f;
             renderer.game.throttleInput = 0f;
+            renderer.game.brakeRequested = false;
         }
         glView.onPause();
         super.onPause();
@@ -649,8 +674,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     }
 
     private void updateTouchActionVisibility() {
-        if (touchActionPad == null || renderer == null
-                || !getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) return;
+        if (renderer == null) return;
+        boolean flightSchool = renderer.isFlightSchoolMode();
+        if (flightSchoolButton != null) flightSchoolButton.setVisibility(flightSchool ? View.GONE : View.VISIBLE);
+        if (returnCityButton != null) returnCityButton.setVisibility(flightSchool ? View.VISIBLE : View.GONE);
+        if (touchActionPad == null || !getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) return;
         boolean driving = renderer.game.driving;
         boolean aircraft = driving && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
                 || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE);
@@ -669,6 +697,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (touchVehicleButton != null) touchVehicleButton.setText(driving ? "خروج من المركبة" : "استدعاء / دخول");
         if (touchVehicleTypeButton != null) touchVehicleTypeButton.setVisibility(driving ? View.GONE : View.VISIBLE);
         if (touchFlightRow != null) touchFlightRow.setVisibility(aircraft ? View.VISIBLE : View.GONE);
+        boolean airplane = aircraft && renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE;
+        if (touchGearButton != null) {
+            touchGearButton.setVisibility(airplane ? View.VISIBLE : View.GONE);
+            touchGearButton.setText(renderer.game.landingGearDown ? "العجلات: مفتوحة" : "العجلات: مطوية");
+        }
+        if (touchFlightUpButton != null) touchFlightUpButton.setText(airplane ? "رفع المقدمة ▲" : "صعود ▲");
+        if (touchFlightDownButton != null) touchFlightDownButton.setText(airplane ? "خفض المقدمة ▼" : "هبوط ▼");
         if (touchActionPad != null) touchActionPad.setVisibility(View.VISIBLE);
     }
 

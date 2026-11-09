@@ -123,7 +123,10 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private int uVP, uModel, uCam, uTint, uMatParams, uTex, uEmis, uSunDir, uSunCol, uAmb, uFog, uFogN, uFogF, uEmisK, uTop, uHor, uWater, uDecal, uTime, uPbr, uGlass, uNormalMap, uRoughMap, uMetalMap, uEnvMap;
     private Textures tex;
     private ProceduralMaterialMaps vehicleMaps;
-    private Mesh cube, groundMesh, skyQuad, seaMesh;
+    private Mesh cube, groundMesh, skyQuad, seaMesh, flightSchoolMesh;
+    private boolean flightSchoolMode, savedOfflineAmman;
+    private String savedOfflineCitySlug;
+    private double savedCityLat, savedCityLon;
     private Mesh[] vehicleModels;
     private AssetMeshLoader.Model[] importedVehicleModels;
     private Mesh[] vehicleGlassModels;
@@ -275,6 +278,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         tex = new Textures();
         vehicleMaps = advancedShader ? ProceduralMaterialMaps.create() : null;
         cube = makeCube();
+        flightSchoolMesh = Airfield.build();
         vehicleModels = ProceduralVehicleModels.buildAll();
         // Prefer build-time converted real meshes; procedural meshes remain a safe fallback.
         importedVehicleModels = new AssetMeshLoader.Model[ProceduralVehicleModels.COUNT];
@@ -356,6 +360,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     private void teleportInternal(double lat, double lon, boolean offline, String offlineCity) {
+        flightSchoolMode = false;
+        loader.havePlayer = true;
         loader.gen++;
         loader.cancelCurrentLoad();
         Terrain.cancelPending();
@@ -375,13 +381,83 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         beginSpawn();
     }
 
+    /** Enter a self-contained flight-school scene while preserving the current city session. */
+    public void enterFlightSchool() {
+        if (flightSchoolMode || !spawned) return;
+        savedCityLat = Geo.latOf(game.focusZ());
+        savedCityLon = Geo.lonOf(game.focusX());
+        savedOfflineAmman = loader.offlineAmman;
+        savedOfflineCitySlug = loader.offlineManila ? "manila" : loader.offlineCitySlug;
+        flightSchoolMode = true;
+        loader.havePlayer = false;
+        loader.gen++;
+        loader.cancelCurrentLoad();
+        loader.ready.clear(); loader.requested.clear(); loader.failedAt.clear();
+        for (Tile tile : tiles.values()) tile.release();
+        tiles.clear();
+        for (Mesh mesh : terrain.values()) mesh.release();
+        terrain.clear();
+        Terrain.reset();
+        loader.offlineAmman = false; loader.offlineManila = false; loader.offlineCitySlug = null;
+        Geo.setOrigin(0.0, 0.0);
+        if (playerVehicleType != ProceduralVehicleModels.HELICOPTER
+                && playerVehicleType != ProceduralVehicleModels.AIRPLANE) playerVehicleType = ProceduralVehicleModels.AIRPLANE;
+        spawnFlightSchoolVehicle(true);
+        L.onLoading(false, "");
+        L.onToast("مطار التدريب جاهز — الطائرة على المدرج، والهليكوبتر على منصة H");
+    }
+
+    /** Restore the exact city coordinates and offline dataset used before the flight session. */
+    public void leaveFlightSchool() {
+        if (!flightSchoolMode) return;
+        double lat = savedCityLat, lon = savedCityLon;
+        boolean offline = savedOfflineAmman;
+        String slug = savedOfflineCitySlug;
+        flightSchoolMode = false;
+        teleportInternal(lat, lon, offline, slug);
+    }
+
+    public boolean isFlightSchoolMode() { return flightSchoolMode; }
+
+    private void spawnFlightSchoolVehicle(boolean enter) {
+        Game g = game;
+        g.reset();
+        g.vehicleType = playerVehicleType;
+        if (playerVehicleType == ProceduralVehicleModels.HELICOPTER) {
+            g.cx = g.px = -125f; g.cz = g.pz = -105f; g.engineThrottle = 0.52f;
+        } else if (playerVehicleType == ProceduralVehicleModels.AIRPLANE) {
+            g.cx = g.px = 0f; g.cz = g.pz = -390f; g.engineThrottle = 0f;
+        } else {
+            g.cx = g.px = 165f; g.cz = g.pz = -35f;
+        }
+        g.py = 0f; g.pyaw = g.cyaw = 0f;
+        g.driving = enter; g.landingGearDown = true; g.aircraftOnGround = true;
+        g.camYaw = 0f; g.camPitch = 0.30f; g.camDistance = 25f; g.snapCamera();
+        spawned = true; needSpawn = false; spawnTimeoutNotified = false;
+    }
+
+    public void toggleAircraftGear() {
+        if (!game.driving || game.vehicleType != ProceduralVehicleModels.AIRPLANE) return;
+        game.landingGearDown = !game.landingGearDown;
+        L.onToast(game.landingGearDown ? "عجلات الهبوط مفتوحة" : "عجلات الهبوط مطوية");
+    }
+
     public void toggleCar() {
         Game g = game;
         if (!spawned) return;
+        if (flightSchoolMode) {
+            if (g.driving) {
+                boolean aircraft = g.vehicleType == ProceduralVehicleModels.HELICOPTER || g.vehicleType == ProceduralVehicleModels.AIRPLANE;
+                if (aircraft && (g.altitude > 1f || Math.abs(g.cv) > 3f)) { L.onToast("أوقف المركبة واهبط قبل الخروج"); return; }
+                g.driving = false; g.cv = 0f; g.engineThrottle = g.vehicleType == ProceduralVehicleModels.HELICOPTER ? 0.52f : 0f;
+                g.px = g.cx + 3.2f; g.pz = g.cz; g.py = 0f;
+            } else spawnFlightSchoolVehicle(true);
+            return;
+        }
         if (!g.driving) {
             float d = (float) Math.hypot(g.px - g.cx, g.pz - g.cz);
             if (d < 8f) {
-                g.driving = true; g.cv = 0; g.vehicleType = playerVehicleType; g.altitude = 0f; g.liftInput = g.throttleInput = 0f; g.aircraftPitch = g.aircraftRoll = 0f;
+                g.driving = true; g.cv = 0; g.vehicleType = playerVehicleType; g.altitude = 0f; g.liftInput = g.throttleInput = 0f; g.brakeRequested = false; g.engineThrottle = playerVehicleType == ProceduralVehicleModels.HELICOPTER ? 0.52f : 0f; g.aircraftVerticalSpeed = 0f; g.aircraftOnGround = true; g.aircraftDamage = 0f; g.landingGearDown = true; g.aircraftPitch = g.aircraftRoll = 0f;
                 L.onToast("قيادة: العصا للتسارع والتوجيه");
             } else {
                 float fx = (float) Math.sin(g.pyaw), fz = (float) Math.cos(g.pyaw);
@@ -398,7 +474,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             float x = g.cx + rx * 2.6f, z = g.cz + rz * 2.6f;
             if (blocked(x, z, 0.5f)) { x = g.cx - rx * 2.6f; z = g.cz - rz * 2.6f; }
             if (blocked(x, z, 0.5f)) { x = g.cx; z = g.cz; }
-            g.px = x; g.pz = z; g.pyaw = g.cyaw; g.driving = false; g.cv = 0; g.altitude = 0f; g.liftInput = g.throttleInput = 0f; g.aircraftPitch = g.aircraftRoll = 0f;
+            g.px = x; g.pz = z; g.pyaw = g.cyaw; g.driving = false; g.cv = 0; g.altitude = 0f; g.liftInput = g.throttleInput = 0f; g.brakeRequested = false; g.engineThrottle = 0f; g.aircraftVerticalSpeed = 0f; g.aircraftOnGround = true; g.aircraftPitch = g.aircraftRoll = 0f;
             g.vehicleBumpAmplitude = g.vehicleBumpTime = g.vehicleBumpOffset = g.vehicleBumpRoll = g.vehicleBumpPitch = 0f;
             g.vehicleWheelFL = g.vehicleWheelFR = g.vehicleWheelRL = g.vehicleWheelRR = 0f;
             g.vehicleWheelBodyLift = g.vehicleWheelBodyRoll = g.vehicleWheelBodyPitch = 0f;
@@ -408,18 +484,20 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
     /** Ground height excluding raised walkable curbs; used by wheel suspension. */
     public float baseHeightAt(float x, float z) {
+        if (flightSchoolMode) return 0f;
         if (loader.offlineManila) return 0f;
         float lm = Landmarks.heightAt(x, z);
         return Float.isNaN(lm) ? Terrain.h(x, z) : lm;
     }
 
     @Override public float heightAt(float x, float z) {
+        if (flightSchoolMode) return 0f;
         return baseHeightAt(x, z) + lowObstacleHeightAt(x, z);
     }
 
     /** يبني مربعات الأرض من الارتفاعات الحقيقية حول اللاعب ويحذف البعيد منها. */
     private void updateTerrain(int ptx, int ptz) {
-        if (loader.offlineManila || !Terrain.enabled || !Terrain.baseSet) return;
+        if (flightSchoolMode || loader.offlineManila || !Terrain.enabled || !Terrain.baseSet) return;
         Iterator<Map.Entry<Long, Mesh>> it = terrain.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Long, Mesh> en = it.next();
@@ -458,6 +536,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
     /** Low curb/median surface used for step-up movement and vehicle suspension. */
     public float lowObstacleHeightAt(float x, float z) {
+        if (flightSchoolMode) return 0f;
         int ix = Geo.tileX(x), iz = Geo.tileZ(z);
         float h = 0f;
         for (int di = -1; di <= 1; di++) {
@@ -474,6 +553,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     public boolean blockedAtHeight(float x, float z, float r, float clearance) {
+        if (flightSchoolMode) return false;
         return hit(x, z, clearance) || hit(x + r, z, clearance) || hit(x - r, z, clearance)
                 || hit(x, z + r, clearance) || hit(x, z - r, clearance);
     }
@@ -610,6 +690,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             game.look(smoothGamepadLookX * dt * 235f * lookSensitivity,
                     smoothGamepadLookY * dt * 235f * lookSensitivity);
 
+        if (!flightSchoolMode) {
         TileData td;
         int ups = 0;
         long uploadDeadline = System.nanoTime() + 7000000L;
@@ -653,12 +734,25 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             }
         }
 
+        } else {
+            loader.havePlayer = false;
+        }
+
         if (spawned) {
             game.update(dt, this);
-            if (nowMs - lastAgentMs > 700) { lastAgentMs = nowMs; spawnAgents(); }
+            if (!flightSchoolMode && nowMs - lastAgentMs > 700) { lastAgentMs = nowMs; spawnAgents(); }
             if (nowMs - lastHudMs > 200) {
                 lastHudMs = nowMs;
-                L.onHud(game.driving ? Math.round(Math.abs(game.cv) * 3.6f) + " كم/س" : "");
+                if (flightSchoolMode && game.driving && (game.vehicleType == ProceduralVehicleModels.HELICOPTER || game.vehicleType == ProceduralVehicleModels.AIRPLANE)) {
+                    String phase = game.vehicleType == ProceduralVehicleModels.HELICOPTER
+                            ? (game.altitude < 0.5f ? "على المنصة" : "في الجو")
+                            : (game.aircraftStall ? "تحذير: سرعة منخفضة" : game.aircraftOnGround ? "على المدرج" : "في الجو");
+                    L.onHud((game.vehicleType == ProceduralVehicleModels.HELICOPTER ? "هليكوبتر" : "طائرة")
+                            + " | " + phase + " | " + Math.round(Math.abs(game.cv) * 3.6f) + " كم/س"
+                            + " | ارتفاع " + Math.round(game.altitude) + " م"
+                            + " | دفع " + Math.round(game.engineThrottle * 100f) + "%"
+                            + (game.vehicleType == ProceduralVehicleModels.AIRPLANE ? (game.landingGearDown ? " | العجلات مفتوحة" : " | العجلات مطوية") : ""));
+                } else L.onHud(game.driving ? Math.round(Math.abs(game.cv) * 3.6f) + " كم/س" : "");
             }
         }
 
@@ -721,17 +815,18 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform1f(uEmisK, 0f);
         float step = 13.3333f;
         Matrix.setIdentityM(tmp, 0);
-        float farY = Terrain.baseSet ? Terrain.seaY() - 300f : -0.02f;
+        float farY = flightSchoolMode ? -0.02f : Terrain.baseSet ? Terrain.seaY() - 300f : -0.02f;
         Matrix.translateM(tmp, 0, Math.round(g.camX / step) * step, farY, Math.round(g.camZ / step) * step);
         GLES20.glUniformMatrix4fv(uModel, 1, false, tmp, 0);
         groundMesh.draw();
         GLES20.glUniformMatrix4fv(uModel, 1, false, ident, 0);
-        if (!undergroundCutaway) {
+        if (flightSchoolMode && flightSchoolMesh != null) drawMesh(flightSchoolMesh, tex.white, tex.black, 0f);
+        if (!flightSchoolMode && !undergroundCutaway) {
             for (Mesh m : terrain.values()) m.draw();
         }
 
         // المربعات
-        for (Tile t : tiles.values()) {
+        if (!flightSchoolMode) for (Tile t : tiles.values()) {
             if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > 1750) continue;
             drawMesh(t.meshes[TileBuilder.B_SIDEWALK], tex.sidewalk, tex.black, 0f);
             drawMesh(t.meshes[TileBuilder.B_ROADN], tex.roadN, tex.black, 0f);
@@ -747,7 +842,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         bindTex(tex.white, tex.black);
         GLES20.glUniform1f(uEmisK, 0f);
         boolean coast = false;
-        for (Tile t : tiles.values()) {
+        if (!flightSchoolMode) for (Tile t : tiles.values()) {
             if (t.hasCoast) coast = true;
             if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > 1750) continue;
             if (t.meshes[TileBuilder.B_WATER] != null) t.meshes[TileBuilder.B_WATER].draw();
@@ -766,7 +861,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
         GLES20.glDepthMask(false);
         GLES20.glUniform1f(uDecal, 1f);
-        for (Tile t : tiles.values()) {
+        if (!flightSchoolMode) for (Tile t : tiles.values()) {
             if (t.decalMeshes.isEmpty()) continue;
             if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > 850) continue;
             for (int page = 0; page < t.decalMeshes.size(); page++) {
@@ -851,6 +946,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             drawVehicleGlass(type);
             if(type==ProceduralVehicleModels.TANK) drawTankTracks(speed);
             if(type==ProceduralVehicleModels.HELICOPTER) drawHelicopterRotor();
+            if(type==ProceduralVehicleModels.AIRPLANE) { drawAirplanePropeller(); if (game.landingGearDown) drawAirplaneLandingGear(); }
             if(type!=ProceduralVehicleModels.TANK && type!=ProceduralVehicleModels.HELICOPTER && type!=ProceduralVehicleModels.AIRPLANE) drawVehicleWheels(type,speed,steering,wheelFL,wheelFR,wheelRL,wheelRR);
         }
     }
@@ -929,6 +1025,26 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
     }
 
+    private void drawAirplanePropeller() {
+        float angle = (float)((System.nanoTime() * 1.0e-9 * (180f + Math.abs(game.cv) * 55f)) % 360f);
+        drawVehiclePart(0f, 0.84f, 3.58f, angle, 0f, 0f, 1f, 0.12f, 1.65f, 0.12f, .16f, .17f, .18f);
+        drawVehiclePart(0f, 0.84f, 3.58f, angle + 90f, 0f, 0f, 1f, 0.12f, 1.65f, 0.12f, .16f, .17f, .18f);
+        GLES20.glUniformMatrix4fv(uModel, 1, false, base, 0);
+    }
+
+    private void drawAirplaneLandingGear() {
+        float[][] positions = {{-1.12f, .34f, -.45f}, {1.12f, .34f, -.45f}, {0f, .32f, 2.15f}};
+        for (float[] p : positions) {
+            drawVehiclePart(p[0], p[1] + .20f, p[2], 0f, 1f, 0f, 0f, .10f, .42f, .10f, .30f, .31f, .32f);
+            System.arraycopy(base, 0, wheelMatrix, 0, 16);
+            Matrix.translateM(wheelMatrix, 0, p[0], p[1], p[2]);
+            Matrix.scaleM(wheelMatrix, 0, .62f, .62f, .62f);
+            GLES20.glUniformMatrix4fv(uModel, 1, false, wheelMatrix, 0);
+            wheelMesh.draw();
+        }
+        GLES20.glUniformMatrix4fv(uModel, 1, false, base, 0);
+    }
+
     private void drawHelicopterRotor() {
         float angle=(float)((System.nanoTime()*1.0e-9*900.0)%360.0);
         drawVehiclePart(0,1.55f,0,angle,0f,1f,0f,7.4f,.045f,.18f,.13f,.15f,.13f);
@@ -948,10 +1064,14 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
     /** اختيار مباشر لنوع المركبة من واجهة الهاتف. */
     public void selectVehicleType(int type) {
-        if (game.driving) { L.onToast("اخرج من المركبة أولاً لتغيير النوع"); return; }
         if (type < 0 || type >= ProceduralVehicleModels.COUNT) return;
+        if (game.driving) {
+            if (!flightSchoolMode || Math.abs(game.cv) > 1f || game.altitude > 0.8f) { L.onToast("أوقف المركبة واهبط قبل تغيير النوع"); return; }
+            game.driving = false;
+        }
         playerVehicleType = type;
-        L.onToast("المركبة المحددة: " + ProceduralVehicleModels.name(playerVehicleType) + " — اضغط استدعاء / دخول");
+        if (flightSchoolMode) { spawnFlightSchoolVehicle(true); L.onToast("تم تجهيز " + ProceduralVehicleModels.name(type) + " في المطار"); }
+        else L.onToast("المركبة المحددة: " + ProceduralVehicleModels.name(playerVehicleType) + " — اضغط استدعاء / دخول");
     }
 
     /** اللاعب: نسخة طفولية من الشخصية الإجرائية نفسها مع مفاصل ووجه وملابس مولّدة. */

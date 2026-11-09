@@ -30,6 +30,9 @@ final class Game {
     int vehicleType = ProceduralVehicleModels.SEDAN;
     float altitude, aircraftPitch, aircraftRoll;
     volatile float liftInput, throttleInput;
+    volatile boolean brakeRequested;
+    float engineThrottle, aircraftVerticalSpeed, aircraftDamage;
+    boolean landingGearDown = true, aircraftOnGround = true, aircraftStall;
     volatile boolean paused, attackRequested, punchRequested, kickRequested, jumpRequested, handbrake, guardRequested, dodgeRequested;
     volatile float stamina = 100f;
     float dodgeSeconds, dodgeX, dodgeZ;
@@ -67,8 +70,9 @@ final class Game {
     }
 
     void reset() {
-        aircraftPitch = aircraftRoll = 0f;
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = 0; camYaw = 0; health = 100; dead = false;
+        aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
+        engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = 0; brakeRequested = false; camYaw = 0; health = 100; dead = false;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
@@ -91,6 +95,132 @@ final class Game {
         camYaw -= dx * 0.006f;
         camPitch = clamp(camPitch - dy * 0.004f, 0.05f, 1.3f);
         lastLookMs = System.currentTimeMillis();
+    }
+
+    private void updateGroundVehicle(float dt, World w, float jx, float jy) {
+        if (jy > 0.1f) cv += jy * 14f * dt;
+        else if (jy < -0.1f) cv += jy * (cv > 0 ? 24f : 8f) * dt;
+        else cv -= Math.signum(cv) * Math.min(Math.abs(cv), 5f * dt);
+        if (handbrake) cv -= Math.signum(cv) * Math.min(Math.abs(cv), 18f * dt);
+        cv = clamp(cv, -8f, 32f);
+        cyaw -= jx * 1.7f * dt * clamp(cv / 8f, -1f, 1f);
+        float fx = (float) Math.sin(cyaw), fz = (float) Math.cos(cyaw);
+        float nx = cx + fx * cv * dt, nz = cz + fz * cv * dt;
+        float vehicleProbe = vehicleType == ProceduralVehicleModels.BUS ? 3.0f
+                : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 0.95f : 1.55f;
+        float vehicleRadius = vehicleType == ProceduralVehicleModels.BUS ? 1.05f
+                : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 0.38f : 0.72f;
+        boolean blockedVehicle = (w instanceof CityRenderer)
+                ? ((CityRenderer) w).blockedAtHeight(nx + fx * vehicleProbe, nz + fz * vehicleProbe, vehicleRadius, 0.58f)
+                || ((CityRenderer) w).blockedAtHeight(nx - fx * vehicleProbe, nz - fz * vehicleProbe, vehicleRadius, 0.58f)
+                || ((CityRenderer) w).blockedAtHeight(nx, nz, vehicleRadius, 0.58f)
+                : w.blocked(nx + fx * vehicleProbe, nz + fz * vehicleProbe, vehicleRadius)
+                || w.blocked(nx - fx * vehicleProbe, nz - fz * vehicleProbe, vehicleRadius)
+                || w.blocked(nx, nz, vehicleRadius);
+        if (blockedVehicle) cv = -cv * 0.25f;
+        else { cx = nx; cz = nz; }
+        if (w instanceof CityRenderer) {
+            CityRenderer city = (CityRenderer) w;
+            float rx = fz, rz = -fx, halfWidth = 0.91f;
+            float halfLength = vehicleType == ProceduralVehicleModels.BUS ? 2.85f
+                    : vehicleType == ProceduralVehicleModels.SUV ? 1.52f
+                    : vehicleType == ProceduralVehicleModels.PICKUP ? 1.65f
+                    : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 1.45f : 1.38f;
+            float fl = city.lowObstacleHeightAt(cx + fx * halfLength - rx * halfWidth, cz + fz * halfLength - rz * halfWidth);
+            float fr = city.lowObstacleHeightAt(cx + fx * halfLength + rx * halfWidth, cz + fz * halfLength + rz * halfWidth);
+            float rl = city.lowObstacleHeightAt(cx - fx * halfLength - rx * halfWidth, cz - fz * halfLength - rz * halfWidth);
+            float rr = city.lowObstacleHeightAt(cx - fx * halfLength + rx * halfWidth, cz - fz * halfLength + rz * halfWidth);
+            float spring = Math.min(1f, dt * 18f);
+            vehicleWheelFL += (fl - vehicleWheelFL) * spring; vehicleWheelFR += (fr - vehicleWheelFR) * spring;
+            vehicleWheelRL += (rl - vehicleWheelRL) * spring; vehicleWheelRR += (rr - vehicleWheelRR) * spring;
+            vehicleWheelBodyLift = (vehicleWheelFL + vehicleWheelFR + vehicleWheelRL + vehicleWheelRR) * 0.25f;
+            float front = (vehicleWheelFL + vehicleWheelFR) * 0.5f, rear = (vehicleWheelRL + vehicleWheelRR) * 0.5f;
+            float left = (vehicleWheelFL + vehicleWheelRL) * 0.5f, right = (vehicleWheelFR + vehicleWheelRR) * 0.5f;
+            vehicleWheelBodyPitch = (float) Math.toDegrees(Math.atan2(front - rear, halfLength * 2f));
+            vehicleWheelBodyRoll = (float) Math.toDegrees(Math.atan2(left - right, halfWidth * 2f));
+            float frontStep = Math.max(fl, fr), rearStep = Math.max(rl, rr);
+            boolean frontContact = frontStep > 0.015f, rearContact = rearStep > 0.015f;
+            float impactSpeed = Math.min(0.16f, 0.055f + Math.abs(cv) * 0.003f);
+            if (frontContact != vehicleFrontStepContact) {
+                float edge = Math.max(frontStep, Math.max(vehicleWheelFL, vehicleWheelFR));
+                vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.min(1.25f, edge / 0.18f));
+                vehicleBumpTime = 0f; vehicleBumpSide = Math.signum(fl - fr);
+            }
+            if (rearContact != vehicleRearStepContact) {
+                float edge = Math.max(rearStep, Math.max(vehicleWheelRL, vehicleWheelRR));
+                vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.min(1.25f, edge / 0.18f));
+                vehicleBumpTime = 0f; vehicleBumpSide = Math.signum(rl - rr);
+            }
+            vehicleFrontStepContact = frontContact; vehicleRearStepContact = rearContact;
+        }
+    }
+
+    private void updateAircraft(float dt, float jx, float jy) {
+        boolean helicopter = vehicleType == ProceduralVehicleModels.HELICOPTER;
+        engineThrottle = clamp(engineThrottle + throttleInput * 0.48f * dt, 0f, 1f);
+        float targetRoll = -clamp(jx, -1f, 1f) * (helicopter ? 11f : 27f);
+        float pitchCommand = liftInput != 0f ? liftInput : (helicopter ? jy : -jy);
+        float targetPitch = helicopter ? clamp(jy, -1f, 1f) * 9f : -clamp(pitchCommand, -1f, 1f) * 15f;
+        aircraftPitch += (targetPitch - aircraftPitch) * Math.min(1f, dt * (helicopter ? 3.2f : 2.6f));
+        aircraftRoll += (targetRoll - aircraftRoll) * Math.min(1f, dt * 3.6f);
+
+        if (helicopter) {
+            cv += jy * 13f * dt;
+            cv -= Math.signum(cv) * Math.min(Math.abs(cv), 4.2f * dt);
+            cv = clamp(cv, -25f, 48f);
+            cyaw -= jx * 0.92f * dt;
+            aircraftVerticalSpeed += (engineThrottle * 19f - 9.81f + liftInput * 10.5f
+                    - aircraftVerticalSpeed * 0.72f) * dt;
+            aircraftVerticalSpeed = clamp(aircraftVerticalSpeed, -13f, 13f);
+            altitude += aircraftVerticalSpeed * dt;
+            if (altitude <= 0f) {
+                altitude = 0f;
+                if (aircraftVerticalSpeed < 0f) aircraftVerticalSpeed = 0f;
+                aircraftOnGround = true;
+            } else aircraftOnGround = false;
+            aircraftStall = false;
+        } else {
+            cv += engineThrottle * 20f * dt;
+            float drag = aircraftOnGround ? 1.25f + cv * 0.045f : 1.8f + cv * 0.025f;
+            cv -= drag * dt;
+            if (brakeRequested) cv -= (aircraftOnGround ? 28f : 5.5f) * dt;
+            cv = clamp(cv, 0f, 92f);
+            float turnRate = aircraftOnGround ? 0.42f : 0.52f * clamp(cv / 30f, 0.25f, 1.45f);
+            cyaw -= jx * turnRate * dt;
+            if (aircraftOnGround) {
+                if (!brakeRequested && cv >= 32f && aircraftPitch < -5.5f) {
+                    aircraftOnGround = false;
+                    aircraftVerticalSpeed = 1.2f;
+                } else {
+                    altitude = 0f;
+                    aircraftVerticalSpeed = 0f;
+                }
+            }
+            if (!aircraftOnGround) {
+                float pitchLift = clamp(-aircraftPitch / 15f, -0.8f, 1.15f);
+                float speedRatio = cv / 36f;
+                float lift = 9.81f * speedRatio * speedRatio * (1f + 0.72f * pitchLift);
+                aircraftStall = cv < 24f;
+                if (aircraftStall) lift *= 0.48f;
+                aircraftVerticalSpeed += (lift - 9.81f - aircraftVerticalSpeed * 0.58f) * dt;
+                aircraftVerticalSpeed = clamp(aircraftVerticalSpeed, -22f, 20f);
+                altitude += aircraftVerticalSpeed * dt;
+                if (altitude <= 0f) {
+                    float touchdownSpeed = cv;
+                    altitude = 0f; aircraftVerticalSpeed = 0f; aircraftOnGround = true;
+                    if (!landingGearDown || touchdownSpeed > 58f) aircraftDamage = Math.min(100f, aircraftDamage + 32f);
+                    else if (touchdownSpeed > 46f) aircraftDamage = Math.min(100f, aircraftDamage + 8f);
+                    cv *= landingGearDown ? 0.88f : 0.70f;
+                    aircraftPitch = Math.max(0f, aircraftPitch);
+                }
+            }
+        }
+        float fx = (float) Math.sin(cyaw), fz = (float) Math.cos(cyaw);
+        cx += fx * cv * dt; cz += fz * cv * dt;
+        if (aircraftDamage >= 100f) {
+            engineThrottle = Math.min(engineThrottle, 0.12f);
+            cv *= Math.max(0f, 1f - dt * 0.35f);
+        }
     }
 
     void update(float dt, World w) {
@@ -168,8 +298,6 @@ final class Game {
             }
         }
         float jx = sx, jy = sy;
-        if (driving && (vehicleType == ProceduralVehicleModels.HELICOPTER
-                || vehicleType == ProceduralVehicleModels.AIRPLANE) && throttleInput != 0f) jy = throttleInput;
         if(playerPose==2||playerPose==3||playerPose==4){jx=0f;jy=0f;}
         float mag = Math.min(1f, (float) Math.hypot(jx, jy));
         if (!driving) {
@@ -201,93 +329,8 @@ final class Game {
             py += (w.heightAt(px, pz) - py) * Math.min(1f, dt * 10f);
         } else {
             boolean aircraft = vehicleType == ProceduralVehicleModels.HELICOPTER || vehicleType == ProceduralVehicleModels.AIRPLANE;
-            if (jy > 0.1f) cv += jy * (aircraft ? 24f : 14f) * dt;
-            else if (jy < -0.1f) cv += jy * (cv > 0 ? (aircraft ? 30f : 24f) : 8f) * dt;
-            else cv -= Math.signum(cv) * Math.min(Math.abs(cv), (aircraft ? 3f : 5f) * dt);
-            if (handbrake && !aircraft) cv -= Math.signum(cv) * Math.min(Math.abs(cv), 18f * dt);
-            cv = clamp(cv, aircraft ? -12f : -8f, aircraft ? (vehicleType == ProceduralVehicleModels.AIRPLANE ? 90f : 48f) : 32f);
-            cyaw -= jx * (aircraft ? 0.85f : 1.7f) * dt * clamp(cv / 8f, -1f, 1f);
-            float fx = (float) Math.sin(cyaw), fz = (float) Math.cos(cyaw);
-            float nx = cx + fx * cv * dt, nz = cz + fz * cv * dt;
-            if (aircraft) {
-                float liftRate = vehicleType == ProceduralVehicleModels.HELICOPTER ? 10f : 5f;
-                if (vehicleType == ProceduralVehicleModels.HELICOPTER || cv > 13f) altitude += liftInput * liftRate * dt;
-                if (vehicleType == ProceduralVehicleModels.AIRPLANE && cv < 9f && altitude > 0f) altitude -= 3.5f * dt;
-                altitude = clamp(altitude, 0f, vehicleType == ProceduralVehicleModels.HELICOPTER ? 260f : 700f);
-                // Aircraft body attitude follows climb input, forward speed and bank.
-                float targetPitch = vehicleType == ProceduralVehicleModels.AIRPLANE
-                        ? (cv > 13f ? -liftInput * 13f : 0f)
-                        : clamp(jy, -1f, 1f) * 7f;
-                float targetRoll = -clamp(jx, -1f, 1f) * (vehicleType == ProceduralVehicleModels.AIRPLANE ? 18f : 9f);
-                float attitudeBlend = Math.min(1f, dt * 3.8f);
-                aircraftPitch += (targetPitch - aircraftPitch) * attitudeBlend;
-                aircraftRoll += (targetRoll - aircraftRoll) * attitudeBlend;
-                cx = nx; cz = nz;
-            } else {
-                // Match the collision probes to the actual vehicle footprint. The
-                // previous 2.1 m front/rear probes made narrow sidewalks feel like walls.
-                float vehicleProbe = vehicleType == ProceduralVehicleModels.BUS ? 3.0f
-                        : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 0.95f : 1.55f;
-                float vehicleRadius = vehicleType == ProceduralVehicleModels.BUS ? 1.05f
-                        : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 0.38f : 0.72f;
-                float stepClearance = 0.58f;
-                boolean blockedVehicle = (w instanceof CityRenderer)
-                        ? ((CityRenderer) w).blockedAtHeight(nx + fx * vehicleProbe, nz + fz * vehicleProbe, vehicleRadius, stepClearance)
-                        || ((CityRenderer) w).blockedAtHeight(nx - fx * vehicleProbe, nz - fz * vehicleProbe, vehicleRadius, stepClearance)
-                        || ((CityRenderer) w).blockedAtHeight(nx, nz, vehicleRadius, stepClearance)
-                        : w.blocked(nx + fx * vehicleProbe, nz + fz * vehicleProbe, vehicleRadius)
-                        || w.blocked(nx - fx * vehicleProbe, nz - fz * vehicleProbe, vehicleRadius)
-                        || w.blocked(nx, nz, vehicleRadius);
-                if (blockedVehicle) cv = -cv * 0.25f;
-                else { cx = nx; cz = nz; }
-
-                // Four independent wheel contact patches. Each wheel rises over a
-                // curb/island, then the chassis follows the averaged spring travel.
-                if (w instanceof CityRenderer) {
-                    CityRenderer city = (CityRenderer) w;
-                    float rx = fz, rz = -fx; // local vehicle-right axis in world coordinates
-                    float halfWidth = 0.91f;
-                    float halfLength = vehicleType == ProceduralVehicleModels.BUS ? 2.85f
-                            : vehicleType == ProceduralVehicleModels.SUV ? 1.52f
-                            : vehicleType == ProceduralVehicleModels.PICKUP ? 1.65f
-                            : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 1.45f : 1.38f;
-                    float frontLeft = city.lowObstacleHeightAt(cx + fx * halfLength - rx * halfWidth, cz + fz * halfLength - rz * halfWidth);
-                    float frontRight = city.lowObstacleHeightAt(cx + fx * halfLength + rx * halfWidth, cz + fz * halfLength + rz * halfWidth);
-                    float rearLeft = city.lowObstacleHeightAt(cx - fx * halfLength - rx * halfWidth, cz - fz * halfLength - rz * halfWidth);
-                    float rearRight = city.lowObstacleHeightAt(cx - fx * halfLength + rx * halfWidth, cz - fz * halfLength + rz * halfWidth);
-                    float spring = Math.min(1f, dt * 18f);
-                    vehicleWheelFL += (frontLeft - vehicleWheelFL) * spring;
-                    vehicleWheelFR += (frontRight - vehicleWheelFR) * spring;
-                    vehicleWheelRL += (rearLeft - vehicleWheelRL) * spring;
-                    vehicleWheelRR += (rearRight - vehicleWheelRR) * spring;
-                    vehicleWheelBodyLift = (vehicleWheelFL + vehicleWheelFR + vehicleWheelRL + vehicleWheelRR) * 0.25f;
-                    float frontAverage = (vehicleWheelFL + vehicleWheelFR) * 0.5f;
-                    float rearAverage = (vehicleWheelRL + vehicleWheelRR) * 0.5f;
-                    float leftAverage = (vehicleWheelFL + vehicleWheelRL) * 0.5f;
-                    float rightAverage = (vehicleWheelFR + vehicleWheelRR) * 0.5f;
-                    vehicleWheelBodyPitch = (float) Math.toDegrees(Math.atan2(frontAverage - rearAverage, halfLength * 2f));
-                    vehicleWheelBodyRoll = (float) Math.toDegrees(Math.atan2(leftAverage - rightAverage, halfWidth * 2f));
-                    float frontStep = Math.max(frontLeft, frontRight), rearStep = Math.max(rearLeft, rearRight);
-                    boolean frontContact = frontStep > 0.015f, rearContact = rearStep > 0.015f;
-                    float impactSpeed = Math.min(0.16f, 0.055f + Math.abs(cv) * 0.003f);
-                    // Trigger a short jolt both when the axle climbs onto the edge
-                    // and when it drops back to the roadway.
-                    if (frontContact != vehicleFrontStepContact) {
-                        float frontEdge = Math.max(frontStep, Math.max(vehicleWheelFL, vehicleWheelFR));
-                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.min(1.25f, frontEdge / 0.18f));
-                        vehicleBumpTime = 0f;
-                        vehicleBumpSide = Math.signum(frontLeft - frontRight);
-                    }
-                    if (rearContact != vehicleRearStepContact) {
-                        float rearEdge = Math.max(rearStep, Math.max(vehicleWheelRL, vehicleWheelRR));
-                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.min(1.25f, rearEdge / 0.18f));
-                        vehicleBumpTime = 0f;
-                        vehicleBumpSide = Math.signum(rearLeft - rearRight);
-                    }
-                    vehicleFrontStepContact = frontContact;
-                    vehicleRearStepContact = rearContact;
-                }
-            }
+            if (aircraft) updateAircraft(dt, jx, jy);
+            else updateGroundVehicle(dt, w, jx, jy);
             px = cx; pz = cz;
             float ground = (w instanceof CityRenderer && !aircraft)
                     ? ((CityRenderer) w).baseHeightAt(cx, cz) + vehicleWheelBodyLift
@@ -362,7 +405,9 @@ final class Game {
 
     private void updateCamera(float dt) {
         float tx = focusX(), tz = focusZ();
-        float dist = camDistance * (driving ? 1.6f : 1f), th = driving ? 1.6f : 1.55f;
+        boolean aircraft = driving && (vehicleType == ProceduralVehicleModels.HELICOPTER || vehicleType == ProceduralVehicleModels.AIRPLANE);
+        float dist = camDistance * (driving ? (aircraft ? 2.15f : 1.6f) : 1f), th = driving ? (aircraft ? 3.0f : 1.6f) : 1.55f;
+        if (aircraft && altitude > 80f) dist = Math.max(dist, camDistance * 2.8f);
         float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);
         float effectiveYaw = camYaw + cameraLookOffset;
         float dx = tx - (float) Math.sin(effectiveYaw) * dist * cp;
