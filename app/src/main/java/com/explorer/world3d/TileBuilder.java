@@ -1872,8 +1872,27 @@ final class TileBuilder {
         String kind = (tg(tags, "median") + " " + tg(tags, "divider") + " " + tg(tags, "separator")).toLowerCase(java.util.Locale.US);
         boolean grass = kind.contains("grass") || kind.contains("green"); float r = grass ? 0.38f : 0.66f, g = grass ? 0.52f : 0.66f, b = grass ? 0.29f : 0.63f;
         float[] a = new float[4], c = new float[4];
-        for (float s = 0; s < path.total - 1; s += 7f) { float e = Math.min(path.total, s + 7f); path.posAt(s, 0, a); path.posAt(e, 0, c); drawMarkingQuad(td,a[0],a[1],c[0],c[1],roadYOffset+0.16f,w,r,g,b);
-            for (int side : new int[]{-1,1}) { path.posAt(s,side*w*0.5f,a); path.posAt(e,side*w*0.5f,c); drawMarkingQuad(td,a[0],a[1],c[0],c[1],roadYOffset+0.24f,0.18f,0.48f,0.49f,0.47f); }
+        for (float s = 0; s < path.total - 1; s += 7f) {
+            float e = Math.min(path.total, s + 7f);
+            path.posAt(s, 0, a); path.posAt(e, 0, c);
+            drawMarkingQuad(td,a[0],a[1],c[0],c[1],roadYOffset+0.16f,w,r,g,b);
+            // A mapped raised median is a traversable low step, not a solid barrier.
+            float[] m0 = new float[4], m1 = new float[4], m2 = new float[4], m3 = new float[4];
+            path.posAt(s,-w*0.5f,m0); path.posAt(e,-w*0.5f,m1);
+            path.posAt(e,w*0.5f,m2); path.posAt(s,w*0.5f,m3);
+            Footprint medianStep = new Footprint();
+            medianStep.xs = new float[]{m0[0],m1[0],m2[0],m3[0]};
+            medianStep.zs = new float[]{m0[1],m1[1],m2[1],m3[1]};
+            medianStep.minx = Math.min(Math.min(m0[0],m1[0]),Math.min(m2[0],m3[0]));
+            medianStep.maxx = Math.max(Math.max(m0[0],m1[0]),Math.max(m2[0],m3[0]));
+            medianStep.minz = Math.min(Math.min(m0[1],m1[1]),Math.min(m2[1],m3[1]));
+            medianStep.maxz = Math.max(Math.max(m0[1],m1[1]),Math.max(m2[1],m3[1]));
+            medianStep.obstacleHeight = 0.16f;
+            Collision.add(td.grid, medianStep);
+            for (int side : new int[]{-1,1}) {
+                path.posAt(s,side*w*0.5f,a); path.posAt(e,side*w*0.5f,c);
+                drawMarkingQuad(td,a[0],a[1],c[0],c[1],roadYOffset+0.24f,0.18f,0.48f,0.49f,0.47f);
+            }
         }
     }
     private static void addBusLaneMarking(TileData td, RoadPath path, float roadYOffset, boolean fullBusway) {
