@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Canvas;
@@ -230,11 +231,18 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
     }
 
+    private void loadWeaponState(){
+        SharedPreferences p=getSharedPreferences("adam_world_weapons",MODE_PRIVATE);Game g=renderer.game;g.cash=p.getInt("cash",g.cash);
+        for(int i=0;i<WeaponSystem.NAME.length;i++){g.ownedWeapons[i]=p.getBoolean("owned_"+i,g.ownedWeapons[i]);g.reserveAmmo[i]=p.getInt("reserve_"+i,g.reserveAmmo[i]);g.weaponMagazines[i]=p.getInt("magazine_"+i,g.weaponMagazines[i]);}
+        int selected=p.getInt("equipped",0);if(selected<0||selected>=g.ownedWeapons.length||!g.ownedWeapons[selected])selected=0;g.equippedWeapon=selected;g.magazineAmmo=g.weaponMagazines[selected]>0?g.weaponMagazines[selected]:WeaponSystem.MAGAZINE[selected];
+    }
+    private void saveWeaponState(){if(renderer==null)return;Game g=renderer.game;g.weaponMagazines[g.equippedWeapon]=g.magazineAmmo;SharedPreferences.Editor e=getSharedPreferences("adam_world_weapons",MODE_PRIVATE).edit().putInt("cash",g.cash).putInt("equipped",g.equippedWeapon);for(int i=0;i<WeaponSystem.NAME.length;i++)e.putBoolean("owned_"+i,g.ownedWeapons[i]).putInt("reserve_"+i,g.reserveAmmo[i]).putInt("magazine_"+i,g.weaponMagazines[i]);e.apply();}
+
     private void showWeaponShop(){
         final String[] items=new String[WeaponSystem.NAME.length+1];
         for(int i=0;i<WeaponSystem.NAME.length;i++)items[i]=WeaponSystem.NAME[i]+(renderer.game.ownedWeapons[i]?" — مملوك":" — $"+WeaponSystem.PRICE[i]);
         items[items.length-1]="شراء ذخيرة للسلاح الحالي";
-        new AlertDialog.Builder(this).setTitle("متجر الأسلحة · الرصيد $"+renderer.game.cash).setItems(items,(d,which)->runOnGl(()->{Game game=renderer.game;if(which==items.length-1){if(game.buyAmmo())onToast("تم شراء الذخيرة");else onToast("الرصيد غير كافٍ");}else if(game.ownedWeapons[which]){game.equipWeapon(which);onToast("تم تجهيز "+WeaponSystem.NAME[which]);}else if(game.purchaseWeapon(which))onToast("تم شراء "+WeaponSystem.NAME[which]);else onToast("الرصيد غير كافٍ");})).setNegativeButton("إغلاق",null).show();
+        new AlertDialog.Builder(this).setTitle("متجر الأسلحة · الرصيد $"+renderer.game.cash).setItems(items,(d,which)->runOnGl(()->{Game game=renderer.game;if(which==items.length-1){if(game.buyAmmo())onToast("تم شراء الذخيرة");else onToast("الرصيد غير كافٍ");}else if(game.ownedWeapons[which]){game.equipWeapon(which);onToast("تم تجهيز "+WeaponSystem.NAME[which]);}else if(game.purchaseWeapon(which))onToast("تم شراء "+WeaponSystem.NAME[which]);else onToast("الرصيد غير كافٍ");saveWeaponState();})).setNegativeButton("إغلاق",null).show();
     }
 
     private void showVehicleSelector() {
@@ -290,6 +298,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.setBackgroundColor(Color.BLACK);
 
         renderer = new CityRenderer(this, this);
+        loadWeaponState();
         hornTone = new ToneGenerator(AudioManager.STREAM_MUSIC, 75);
         glView = new CityGLView(this, renderer);
         root.addView(glView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -582,6 +591,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     @Override protected void onPause() {
         // Never leave held touch actions latched when Android interrupts the activity.
         if (renderer != null) {
+            saveWeaponState();
             renderer.game.sprint = false;
             renderer.game.guardRequested = false;
             renderer.game.brakeRequested = false;
