@@ -29,8 +29,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
-import android.media.AudioManager;
-import android.media.ToneGenerator;
+import android.widget.SeekBar;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -58,7 +57,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private Button timeBtn;
     private boolean keyUp, keyDown, keyLeft, keyRight;
     private AlertDialog pauseDialog;
-    private ToneGenerator hornTone;
     private boolean padL2, padR2, padCameraModifier;
     private TextView healthHud;
     private MiniMapView miniMap;
@@ -88,17 +86,51 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showGameSettings() {
         final String[] options = {"الصوت", "جودة الرسومات", "حساسية الكاميرا", "إعدادات التحكم", "إغلاق"};
         new AlertDialog.Builder(this).setTitle("إعدادات Adam World").setItems(options, (d, which) -> {
-            if (which == 0) new AlertDialog.Builder(this).setTitle("الصوت").setItems(new String[]{"تشغيل الصوت", "كتم الصوت"}, (x,v) -> Toast.makeText(this, v==0?"تم تشغيل الصوت":"تم كتم الصوت", Toast.LENGTH_SHORT).show()).show();
+            if (which == 0) showAudioSettings();
             else if (which == 1) new AlertDialog.Builder(this).setTitle("جودة الرسومات").setItems(new String[]{"تلقائي", "عالية", "متوازنة", "موفرة للطاقة"}, (x,v) -> Toast.makeText(this,"سيتم تطبيق إعداد الجودة في إصدار إعدادات الرسومات",Toast.LENGTH_SHORT).show()).show();
             else if (which == 2) new AlertDialog.Builder(this).setTitle("حساسية الكاميرا").setItems(new String[]{"منخفضة", "متوسطة", "عالية"}, (x,v) -> renderer.setLookSensitivity(v==0?0.65f:v==1?1f:1.45f)).show();
             else if (which == 3) showControlsSettings();
         }).show();
     }
     private void playHorn() {
-        try {
-            if (hornTone == null) hornTone = new ToneGenerator(AudioManager.STREAM_MUSIC, 75);
-            hornTone.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 280);
-        } catch (Exception ignored) { }
+        if (renderer != null) renderer.playHorn();
+    }
+
+    private void showAudioSettings() {
+        final SharedPreferences prefs = getSharedPreferences("adam_world_audio", MODE_PRIVATE);
+        final boolean enabled = prefs.getBoolean("enabled", true);
+        final LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setPadding(dp(22), dp(12), dp(22), dp(8));
+        final SeekBar[] bars = new SeekBar[4];
+        final String[] names = {"الصوت العام", "صوت المحرك والمركبات", "الرياح وحركة الشوارع", "المؤثرات والخطوات"};
+        final String[] keys = {"master", "engine", "ambience", "effects"};
+        for (int i = 0; i < bars.length; i++) {
+            TextView label = new TextView(this);
+            label.setText(names[i]);
+            label.setTextColor(Color.WHITE);
+            panel.addView(label);
+            SeekBar bar = new SeekBar(this);
+            bar.setMax(100);
+            bar.setProgress(prefs.getInt(keys[i], i == 0 ? 82 : i == 1 ? 90 : i == 2 ? 55 : 85));
+            bars[i] = bar;
+            panel.addView(bar);
+        }
+        new AlertDialog.Builder(this).setTitle("إعدادات الصوت")
+                .setMultiChoiceItems(new String[]{"تشغيل جميع أصوات اللعبة"}, new boolean[]{enabled},
+                        (dialog, which, checked) -> {
+                            prefs.edit().putBoolean("enabled", checked).apply();
+                            renderer.setAudioEnabled(checked);
+                        })
+                .setView(panel)
+                .setPositiveButton("حفظ", (dialog, which) -> {
+                    prefs.edit().putInt("master", bars[0].getProgress())
+                            .putInt("engine", bars[1].getProgress())
+                            .putInt("ambience", bars[2].getProgress())
+                            .putInt("effects", bars[3].getProgress()).apply();
+                    renderer.setAudioVolumes(bars[0].getProgress()/100f, bars[1].getProgress()/100f,
+                            bars[2].getProgress()/100f, bars[3].getProgress()/100f);
+                }).setNegativeButton("إغلاق", null).show();
     }
     private void showMapDialog(final boolean returnToPauseMenu) {
         double lat = renderer.game.driving ? Geo.latOf(renderer.game.cz) : Geo.latOf(renderer.game.pz);
@@ -304,8 +336,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.setBackgroundColor(Color.BLACK);
 
         renderer = new CityRenderer(this, this);
+        SharedPreferences audioPrefs = getSharedPreferences("adam_world_audio", MODE_PRIVATE);
+        renderer.setAudioEnabled(audioPrefs.getBoolean("enabled", true));
+        renderer.setAudioVolumes(audioPrefs.getInt("master", 82)/100f, audioPrefs.getInt("engine", 90)/100f,
+                audioPrefs.getInt("ambience", 55)/100f, audioPrefs.getInt("effects", 85)/100f);
         loadWeaponState();
-        hornTone = new ToneGenerator(AudioManager.STREAM_MUSIC, 75);
         glView = new CityGLView(this, renderer);
         root.addView(glView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -574,7 +609,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
     }
 
-    @Override protected void onResume() { super.onResume(); glView.onResume(); UpdateManager.resumePendingInstall(this); }
+    @Override protected void onResume() {
+        super.onResume();
+        if (renderer != null) renderer.resumeAudio();
+        glView.onResume();
+        UpdateManager.resumePendingInstall(this);
+    }
 
     @Override public void onTrimMemory(int level) {
         super.onTrimMemory(level);
@@ -599,6 +639,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         padL2 = padR2 = padCameraModifier = false;
         keyUp = keyDown = keyLeft = keyRight = false;
         if (renderer != null) {
+            renderer.pauseAudio();
             saveWeaponState();
             renderer.game.sprint = false;
             renderer.game.guardRequested = false;
@@ -612,7 +653,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         glView.onPause();
         super.onPause();
     }
-    @Override protected void onDestroy() { renderer.shutdown(); super.onDestroy(); }
+    @Override protected void onDestroy() { if (renderer != null) renderer.shutdown(); super.onDestroy(); }
 
     private void teleport(final double lat, final double lon) {
         runOnUiThread(new Runnable() { @Override public void run() { loading.setVisibility(View.VISIBLE); } });
