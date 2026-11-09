@@ -1700,7 +1700,7 @@ final class TileBuilder {
                                          String highway, float roadYOffset) {
         if (path == null || path.total < 2f) return;
         String both = tg(tags, "sidewalk").toLowerCase(java.util.Locale.US);
-        boolean urban = highway.matches("motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service|road");
+        boolean urban = highway.matches("primary|secondary|tertiary|unclassified|residential|living_street|service|road");
         for (int side : new int[]{-1, 1}) {
             String sideName = side < 0 ? "right" : "left";
             String sideTag = tg(tags, "sidewalk:" + sideName).toLowerCase(java.util.Locale.US);
@@ -1723,7 +1723,7 @@ final class TileBuilder {
                 path.posAt(distance, side * inner, p); ix[i] = p[0]; iz[i] = p[1];
                 path.posAt(distance, side * (inner + width), p); ox[i] = p[0]; oz[i] = p[1];
             }
-            ribbonOffset(cx, cz, width, roadYOffset + 0.20f, td.bufs[B_SIDEWALK),
+            ribbonOffset(cx, cz, width, roadYOffset + 0.20f, td.bufs[B_SIDEWALK],
                     1f, 8f, 0.78f, 0.77f, 0.72f);
             float[] curbX = new float[count], curbZ = new float[count];
             for (int i = 0; i < count; i++) {
