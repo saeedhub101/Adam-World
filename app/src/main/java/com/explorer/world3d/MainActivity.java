@@ -161,7 +161,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (code == KeyEvent.KEYCODE_BUTTON_B) { if (pressed && !renderer.game.driving) runOnGl(new Runnable() { @Override public void run() { renderer.game.kickRequested = true; } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed && !renderer.game.driving) runOnGl(new Runnable() { @Override public void run() { renderer.game.punchRequested = true; } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_X) return true;
         if (code == KeyEvent.KEYCODE_BUTTON_Y) {
             if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } });
             return true;
@@ -392,10 +391,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         });
         Button punch = btn("👊 لكمة");
         Button kick = btn("🦵 ركلة");
-        attack.setOnTouchListener(new View.OnTouchListener() {
+        punch.setOnTouchListener(new View.OnTouchListener() {
             @Override public boolean onTouch(View v, MotionEvent e) {
                 if (e.getActionMasked() == MotionEvent.ACTION_DOWN && !renderer.game.driving)
-                    runOnGl(new Runnable() { @Override public void run() { renderer.game.attackRequested = true; } });
+                    runOnGl(new Runnable() { @Override public void run() { renderer.game.punchRequested = true; } });
                 return true;
             }
         });
