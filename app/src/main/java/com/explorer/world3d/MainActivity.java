@@ -547,6 +547,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             renderer.game.sprint = false;
             renderer.game.guardRequested = false;
             renderer.game.liftInput = 0f;
+            renderer.game.throttleInput = 0f;
         }
         glView.onPause();
         super.onPause();
