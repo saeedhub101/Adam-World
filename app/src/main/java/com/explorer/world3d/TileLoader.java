@@ -147,6 +147,21 @@ final class TileLoader extends Thread {
         bundledCityManifest = null;
     }
 
+    /** Keep only nearby transient loader state; disk cache remains untouched. */
+    void retainAround(int centerX, int centerZ, int radius) {
+        for (Long key : requested) {
+            int x = (int) (key >> 32), z = (int) (long) key;
+            if (Math.abs(x - centerX) > radius || Math.abs(z - centerZ) > radius) requested.remove(key);
+        }
+        for (Long key : failedAt.keySet()) {
+            int x = (int) (key >> 32), z = (int) (long) key;
+            if (Math.abs(x - centerX) > radius || Math.abs(z - centerZ) > radius) failedAt.remove(key);
+        }
+        for (TileData td : ready) {
+            if (Math.abs(td.ix - centerX) > radius || Math.abs(td.iz - centerZ) > radius) ready.remove(td);
+        }
+    }
+
     void resetOfflineShardState() {
         // These references are volatile; avoid blocking the GL thread on a network-held monitor.
         offlineCells = null;
