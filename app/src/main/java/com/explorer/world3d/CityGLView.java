@@ -62,13 +62,11 @@ public class CityGLView extends GLSurfaceView {
             float moveX = stick(firstActive(rawX, hatX));
             float moveY = stick(firstActive(rawY, hatY));
 
-            float gas = trigger(e, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS);
-            float brake = trigger(e, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE);
-            if (Math.abs(moveY) < 0.12f && Math.max(gas, brake) > 0.12f) {
-                moveY = brake > gas ? brake : -gas;
-            }
+            // GTA-style mapping requested: LT/L2 accelerates; RT/R2 brakes and reverses.
+            float gas = trigger(e, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE);
+            float brake = trigger(e, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS);
             renderer.game.sx = moveX;
-            renderer.game.sy = -moveY;
+            renderer.game.sy = renderer.game.driving ? (gas - brake) : -moveY;
 
             float lookX = stick(firstActive(e.getAxisValue(MotionEvent.AXIS_RX),
                     e.getAxisValue(MotionEvent.AXIS_Z)));

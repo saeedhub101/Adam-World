@@ -597,7 +597,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             }
         }
 
-        if (spawned) {
+        if (spawned && !game.paused) {
             game.update(dt, this);
             if (nowMs - lastAgentMs > 700) { lastAgentMs = nowMs; spawnAgents(); }
             if (nowMs - lastHudMs > 200) {

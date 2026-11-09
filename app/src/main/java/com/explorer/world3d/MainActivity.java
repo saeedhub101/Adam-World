@@ -2,6 +2,7 @@ package com.explorer.world3d;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -23,6 +24,10 @@ import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.webkit.WebView;
+import android.webkit.WebSettings;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -50,6 +55,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private Button timeBtn;
     private boolean keyUp, keyDown, keyLeft, keyRight;
     private int gamepadCameraPreset;
+    private AlertDialog pauseDialog;
+    private ToneGenerator hornTone;
+    private boolean padL2, padR2;
     private final String[] CAMERA_LABELS = {"شارع", "قريب", "مرتفع", "درون"};
     private final String[] CAMERA_PRESETS = {"street", "near", "high", "drone"};
 
@@ -60,86 +68,109 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         renderer.game.sy = (keyUp ? 1f : 0f) - (keyDown ? 1f : 0f);
     }
 
-    private void gamepadAction(final int action) {
-        if (glView == null || renderer == null) return;
-        glView.queueEvent(new Runnable() {
-            @Override public void run() {
-                switch (action) {
-                    case 0: renderer.toggleCar(); break; // X: ركوب/خروج
-                    case 1: renderer.game.setCameraPreset(CAMERA_PRESETS[gamepadCameraPreset]); break;
-                    case 2: renderer.game.zoom(0.82f); break;
-                    case 3: renderer.game.zoom(1.22f); break;
-                    case 4: renderer.toggleUndergroundCutaway(); break;
-                    case 5: renderer.timeIdx = (renderer.timeIdx + 1) % TIME_ICONS.length; break;
-                }
-            }
-        });
+    private void runOnGl(final Runnable action) { if (glView != null) glView.queueEvent(action); }
+    private void setGamePaused(final boolean paused) {
+        runOnGl(new Runnable() { @Override public void run() { renderer.game.paused = paused; } });
     }
-
+    private void cycleGameCamera() {
+        gamepadCameraPreset = (gamepadCameraPreset + 1) % CAMERA_PRESETS.length;
+        final String preset = CAMERA_PRESETS[gamepadCameraPreset];
+        runOnGl(new Runnable() { @Override public void run() { renderer.game.setCameraPreset(preset); } });
+    }
+    private void playHorn() {
+        try {
+            if (hornTone == null) hornTone = new ToneGenerator(AudioManager.STREAM_MUSIC, 75);
+            hornTone.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 280);
+        } catch (Exception ignored) { }
+    }
+    private void showMapDialog(final boolean returnToPauseMenu) {
+        double lat = renderer.game.driving ? Geo.latOf(renderer.game.cz) : Geo.latOf(renderer.game.pz);
+        double lon = renderer.game.driving ? Geo.lonOf(renderer.game.cx) : Geo.lonOf(renderer.game.px);
+        double west = lon - 0.006, east = lon + 0.006, south = lat - 0.004, north = lat + 0.004;
+        String mapUrl = "https://www.openstreetmap.org/export/embed.html?bbox=" + west + "%2C" + south + "%2C" + east + "%2C" + north
+                + "&layer=mapnik&marker=" + lat + "%2C" + lon;
+        WebView map = new WebView(this);
+        map.setBackgroundColor(Color.WHITE);
+        WebSettings settings = map.getSettings();
+        settings.setJavaScriptEnabled(false);
+        settings.setDomStorageEnabled(false);
+        map.loadDataWithBaseURL("https://www.openstreetmap.org/",
+                "<html><body style='margin:0'><iframe width='100%' height='100%' frameborder='0' scrolling='no' src='" + mapUrl
+                        + "'></iframe></body></html>", "text/html", "UTF-8", null);
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("خريطة Adam World").setView(map)
+                .setNegativeButton("إغلاق", null).create();
+        dialog.setOnDismissListener(d -> { map.destroy(); if (returnToPauseMenu && !isFinishing()) showPauseMenu(); });
+        dialog.show();
+        if (dialog.getWindow() != null) dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, dp(560));
+    }
+    private void showControlsSettings() {
+        String controls = "التحكم المعتمد — نمط GTA V\n\n"
+                + "المشي: العصا اليسرى للحركة، L3 للجري، A للقفز، العصا اليمنى للكاميرا.\n"
+                + "السيارة: L2 تسارع للأمام، R2 فرامل/رجوع، العصا اليسرى للتوجيه، A فرامل اليد، B البوق.\n"
+                + "LB/RB: النظر جانبياً أثناء الضغط. R3: النظر للخلف. X: تغيير منظور الكاميرا.\n"
+                + "Y: ركوب/خروج. View/SELECT: الخريطة. Menu/START: الإيقاف المؤقت.";
+        new AlertDialog.Builder(this).setTitle("إعدادات التحكم").setMessage(controls).setPositiveButton("إغلاق", null).show();
+    }
+    private void showPauseMenu() {
+        if (isFinishing() || (pauseDialog != null && pauseDialog.isShowing())) return;
+        setGamePaused(true);
+        final String[] items = {"متابعة اللعبة", "الخريطة", "إعدادات التحكم", "إنهاء اللعبة"};
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("إيقاف مؤقت").setItems(items, (d, which) -> {
+            if (which == 0) setGamePaused(false);
+            else if (which == 1) { d.dismiss(); showMapDialog(true); }
+            else if (which == 2) showControlsSettings();
+            else if (which == 3) { setGamePaused(false); finish(); }
+        }).create();
+        dialog.setOnCancelListener(d -> setGamePaused(false));
+        pauseDialog = dialog;
+        dialog.show();
+    }
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         int code = event.getKeyCode();
         boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
         boolean pressed = down && event.getRepeatCount() == 0;
-        if (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_W) {
-            keyUp = down; updateRemoteMovement(); return true;
-        }
-        if (code == KeyEvent.KEYCODE_DPAD_DOWN || code == KeyEvent.KEYCODE_S) {
-            keyDown = down; updateRemoteMovement(); return true;
-        }
-        if (code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_A) {
-            keyLeft = down; updateRemoteMovement(); return true;
-        }
-        if (code == KeyEvent.KEYCODE_DPAD_RIGHT || code == KeyEvent.KEYCODE_D) {
-            keyRight = down; updateRemoteMovement(); return true;
-        }
-
-        // خريطة موحدة لأزرار يد التحكم: كل زر له وظيفة واضحة.
-        if (code == KeyEvent.KEYCODE_BUTTON_X) {
-            if (pressed) gamepadAction(0);
+        if (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_W) { keyUp = down; updateRemoteMovement(); return true; }
+        if (code == KeyEvent.KEYCODE_DPAD_DOWN || code == KeyEvent.KEYCODE_S) { keyDown = down; updateRemoteMovement(); return true; }
+        if (code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_A) { keyLeft = down; updateRemoteMovement(); return true; }
+        if (code == KeyEvent.KEYCODE_DPAD_RIGHT || code == KeyEvent.KEYCODE_D) { keyRight = down; updateRemoteMovement(); return true; }
+        if (renderer == null) return super.dispatchKeyEvent(event);
+        if (code == KeyEvent.KEYCODE_BUTTON_A) {
+            if (renderer.game.driving) renderer.game.handbrake = down;
+            else if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.jumpRequested = true; } });
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_A || code == KeyEvent.KEYCODE_BUTTON_B
-                || code == KeyEvent.KEYCODE_SHIFT_LEFT) {
-            renderer.game.sprint = down;
+        if (code == KeyEvent.KEYCODE_BUTTON_B) {
+            if (pressed && renderer.game.driving) playHorn();
+            else if (pressed) Toast.makeText(this, "لا يوجد هدف اشتباك قريب", Toast.LENGTH_SHORT).show();
             return true;
         }
+        if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed) cycleGameCamera(); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) {
-            if (pressed) {
-                gamepadCameraPreset = (gamepadCameraPreset + 1) % CAMERA_PRESETS.length;
-                gamepadAction(1);
-            }
+            if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } });
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_L1 || code == KeyEvent.KEYCODE_BUTTON_L2) {
-            if (pressed) gamepadAction(2);
+        if (code == KeyEvent.KEYCODE_BUTTON_L1) { renderer.game.cameraLookOffset = down ? -0.95f : 0f; return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_R1) { renderer.game.cameraLookOffset = down ? 0.95f : 0f; return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_L2 || code == KeyEvent.KEYCODE_BUTTON_R2) {
+            padL2 = code == KeyEvent.KEYCODE_BUTTON_L2 ? down : padL2;
+            padR2 = code == KeyEvent.KEYCODE_BUTTON_R2 ? down : padR2;
+            if (renderer.game.driving) renderer.game.sy = (padL2 ? 1f : 0f) - (padR2 ? 1f : 0f);
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_R1 || code == KeyEvent.KEYCODE_BUTTON_R2) {
-            if (pressed) gamepadAction(3);
-            return true;
-        }
-        if (code == KeyEvent.KEYCODE_BUTTON_SELECT) {
-            if (pressed) gamepadAction(4);
-            return true;
-        }
-        if (code == KeyEvent.KEYCODE_BUTTON_START) {
-            if (pressed) gamepadAction(5);
-            return true;
-        }
-        if (code == KeyEvent.KEYCODE_BUTTON_THUMBL || code == KeyEvent.KEYCODE_BUTTON_THUMBR) {
-            if (pressed) {
-                if (code == KeyEvent.KEYCODE_BUTTON_THUMBL) gamepadAction(0);
-                else gamepadAction(1);
-            }
-            return true;
-        }
+        if (code == KeyEvent.KEYCODE_BUTTON_THUMBL) { renderer.game.sprint = down; return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_THUMBR) { renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f; return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_SELECT) { if (pressed) showMapDialog(false); return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_START || code == KeyEvent.KEYCODE_BUTTON_MODE) { if (pressed) showPauseMenu(); return true; }
         if (code == KeyEvent.KEYCODE_ENTER || code == KeyEvent.KEYCODE_DPAD_CENTER) {
-            if (pressed) gamepadAction(0);
+            if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } });
             return true;
         }
         return super.dispatchKeyEvent(event);
     }
-
+    @Override public void onBackPressed() {
+        if (pauseDialog != null && pauseDialog.isShowing()) { pauseDialog.dismiss(); setGamePaused(false); }
+        else showPauseMenu();
+    }
 
     private Button btn(String t) {
         Button b = new Button(this);
@@ -162,6 +193,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.setBackgroundColor(Color.BLACK);
 
         renderer = new CityRenderer(this, this);
+        hornTone = new ToneGenerator(AudioManager.STREAM_MUSIC, 75);
         glView = new CityGLView(this, renderer);
         root.addView(glView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 

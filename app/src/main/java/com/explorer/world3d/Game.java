@@ -19,6 +19,9 @@ final class Game {
 
     float py, px, pz, pyaw, cx, cz, cyaw, cv, phase, swingAmp;
     boolean driving;
+    volatile boolean paused, jumpRequested, handbrake;
+    volatile float cameraLookOffset;
+    float jumpHeight, jumpVelocity;
     int vehicleType = ProceduralVehicleModels.SEDAN;
     float altitude;
     volatile float liftInput;
@@ -39,7 +42,7 @@ final class Game {
     }
 
     void reset() {
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; agents.clear();
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; paused = false; jumpRequested = false; handbrake = false; cameraLookOffset = 0f; jumpHeight = 0f; jumpVelocity = 0f; agents.clear();
     }
 
     float focusX() { return driving ? cx : px; }
@@ -66,6 +69,7 @@ final class Game {
     }
 
     void update(float dt, World w) {
+        if (paused) return;
         float jx = sx, jy = sy;
         float mag = Math.min(1f, (float) Math.hypot(jx, jy));
         if (!driving) {
@@ -86,10 +90,18 @@ final class Game {
                 phase += speed * dt * 1.7f;
                 swingAmp = 0.8f * Math.min(1f, speed / 4f);
             } else swingAmp = 0;
-            py += (w.heightAt(px, pz) - py) * Math.min(1f, dt * 10f);
+            float ground = w.heightAt(px, pz);
+            if (jumpRequested && jumpHeight <= 0.02f) jumpVelocity = 5.2f;
+            jumpRequested = false;
+            jumpVelocity -= 14f * dt;
+            jumpHeight += jumpVelocity * dt;
+            if (jumpHeight < 0f) { jumpHeight = 0f; jumpVelocity = 0f; }
+            py = ground + jumpHeight;
         } else {
             boolean aircraft = vehicleType == ProceduralVehicleModels.HELICOPTER || vehicleType == ProceduralVehicleModels.AIRPLANE;
-            if (jy > 0.1f) cv += jy * (aircraft ? 24f : 14f) * dt;
+            if (handbrake && !aircraft) {
+                cv -= Math.signum(cv) * Math.min(Math.abs(cv), 18f * dt);
+            } else if (jy > 0.1f) cv += jy * (aircraft ? 24f : 14f) * dt;
             else if (jy < -0.1f) cv += jy * (cv > 0 ? (aircraft ? 30f : 24f) : 8f) * dt;
             else cv -= Math.signum(cv) * Math.min(Math.abs(cv), (aircraft ? 3f : 5f) * dt);
             cv = clamp(cv, aircraft ? -12f : -8f, aircraft ? (vehicleType == ProceduralVehicleModels.AIRPLANE ? 90f : 48f) : 32f);
@@ -133,8 +145,9 @@ final class Game {
         float tx = focusX(), tz = focusZ();
         float dist = camDistance * (driving ? 1.6f : 1f), th = driving ? 1.6f : 1.55f;
         float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);
-        float dx = tx - (float) Math.sin(camYaw) * dist * cp;
-        float dz = tz - (float) Math.cos(camYaw) * dist * cp;
+        float viewYaw = camYaw + cameraLookOffset;
+        float dx = tx - (float) Math.sin(viewYaw) * dist * cp;
+        float dz = tz - (float) Math.cos(viewYaw) * dist * cp;
         float dy = Math.max(py + 0.6f, py + th + dist * sp);
         float k = 1f - (float) Math.exp(-dt * 14f);
         camX += (dx - camX) * k; camY += (dy - camY) * k; camZ += (dz - camZ) * k;
@@ -144,6 +157,7 @@ final class Game {
     void snapCamera() {
         float tx = focusX(), tz = focusZ();
         float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);
-        camX = tx - (float) Math.sin(camYaw) * camDistance * cp; camZ = tz - (float) Math.cos(camYaw) * camDistance * cp; camY = py + 1.55f + camDistance * sp;
+        float viewYaw = camYaw + cameraLookOffset;
+        camX = tx - (float) Math.sin(viewYaw) * camDistance * cp; camZ = tz - (float) Math.cos(viewYaw) * camDistance * cp; camY = py + 1.55f + camDistance * sp;
     }
 }
