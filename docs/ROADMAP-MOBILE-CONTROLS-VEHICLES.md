@@ -18,7 +18,7 @@
 - **Implemented:** gamepad D-pad up/down controls aircraft climb/descent (R1 camera-zoom modifier retains priority); aircraft body pitch and bank now respond to flight input and steering, with attitude reset on vehicle entry/exit.
 - **Implemented:** direct vehicle garage selection for all 10 model types (including helicopter and airplane), available from the top navigation on touch and TV, plus the compact touch action pad.
 - **Reused:** existing `Game` request/state fields and `CityRenderer.toggleCar()/cycleVehicleType()`; no parallel gameplay system was introduced.
-- **Still in progress:** flight handling needs refinement (especially airplane pitch/takeoff/landing and dedicated throttle controls), vehicle spawn/selection needs a clearer garage flow, and end-to-end build/release confirmation is pending. Existing type cycling already includes helicopter and airplane, but no dedicated airport/hangar placement has been established by this change.
+- **Still in progress:** flight physics still need a full airplane runway/takeoff/landing envelope and a dedicated throttle/flight-instrument presentation; aircraft spawn placement is currently the existing nearby vehicle summon behavior, not a dedicated airport/hangar. End-to-end build/release confirmation is pending.
 
 ## Delivery stages
 
