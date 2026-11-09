@@ -62,6 +62,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private TextView healthHud;
     private MiniMapView miniMap;
     private long lastHudRefresh;
+    private LinearLayout touchActionPad, touchCombatRow, touchFlightRow;
+    private Button touchVehicleButton, touchVehicleTypeButton, touchSprintButton, touchDodgeButton;
+
 
     private int dp(int v) { return dp((float) v); }
     private int dp(float v) { return (int) (v * getResources().getDisplayMetrics().density + 0.5f); }
@@ -350,7 +353,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         FrameLayout.LayoutParams actionParams = new FrameLayout.LayoutParams(
                 dp(174), ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.END);
         actionParams.setMargins(0, 0, dp(10), dp(22));
-        root.addView(actionPad, actionParams);
+        touchActionPad = actionPad;
+        if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) {
+            root.addView(actionPad, actionParams);
+        } else {
+            actionPad.setVisibility(View.GONE);
+        }
 
         LinearLayout combatRow = new LinearLayout(this);
         combatRow.setGravity(Gravity.CENTER);
@@ -374,11 +382,25 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         combatRow2.addView(kickTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
         combatRow2.addView(guardTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
         actionPad.addView(combatRow2);
+        touchCombatRow = actionPad;
+
+        LinearLayout runRow = new LinearLayout(this);
+        runRow.setGravity(Gravity.CENTER);
+        touchSprintButton = touchAction("ركض", () -> runOnGl(() -> renderer.game.sprint = true),
+                () -> runOnGl(() -> renderer.game.sprint = false));
+        touchDodgeButton = touchAction("مراوغة", () -> runOnGl(() -> {
+            if (!renderer.game.driving) renderer.game.dodgeRequested = true;
+        }), null);
+        runRow.addView(touchSprintButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        runRow.addView(touchDodgeButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        actionPad.addView(runRow);
 
         LinearLayout vehicleRow = new LinearLayout(this);
         vehicleRow.setGravity(Gravity.CENTER);
         Button vehicleTouch = touchAction("دخول / خروج", () -> runOnGl(() -> renderer.toggleCar()), null);
         Button vehicleTypeTouch = touchAction("نوع المركبة", () -> runOnGl(() -> renderer.cycleVehicleType()), null);
+        touchVehicleButton = vehicleTouch;
+        touchVehicleTypeButton = vehicleTypeTouch;
         vehicleRow.addView(vehicleTouch, new LinearLayout.LayoutParams(0, dp(46), 1.45f));
         vehicleRow.addView(vehicleTypeTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
         actionPad.addView(vehicleRow);
@@ -396,6 +418,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         flightRow.addView(climbTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
         flightRow.addView(descendTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
         actionPad.addView(flightRow);
+        touchFlightRow = flightRow;
 
         hud = new TextView(this);
         hud.setTextColor(Color.WHITE);
@@ -574,9 +597,34 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         });
     }
 
+    private void updateTouchActionVisibility() {
+        if (touchActionPad == null || renderer == null
+                || !getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) return;
+        boolean driving = renderer.game.driving;
+        boolean aircraft = driving && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
+                || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE);
+        if (touchCombatRow != null) {
+            for (int i = 0; i < touchCombatRow.getChildCount(); i++) {
+                View child = touchCombatRow.getChildAt(i);
+                if (child instanceof LinearLayout) {
+                    for (int j = 0; j < ((LinearLayout) child).getChildCount(); j++) {
+                        ((LinearLayout) child).getChildAt(j).setVisibility(driving ? View.GONE : View.VISIBLE);
+                    }
+                }
+            }
+        }
+        if (touchSprintButton != null) touchSprintButton.setVisibility(driving ? View.GONE : View.VISIBLE);
+        if (touchDodgeButton != null) touchDodgeButton.setVisibility(driving ? View.GONE : View.VISIBLE);
+        if (touchVehicleButton != null) touchVehicleButton.setText(driving ? "خروج من المركبة" : "استدعاء / دخول");
+        if (touchVehicleTypeButton != null) touchVehicleTypeButton.setVisibility(driving ? View.GONE : View.VISIBLE);
+        if (touchFlightRow != null) touchFlightRow.setVisibility(aircraft ? View.VISIBLE : View.GONE);
+        if (touchActionPad != null) touchActionPad.setVisibility(View.VISIBLE);
+    }
+
     @Override public void onHud(final String s) {
         runOnUiThread(new Runnable() { @Override public void run() {
             hud.setText(s);
+            updateTouchActionVisibility();
             if (System.currentTimeMillis()-lastHudRefresh>250 && renderer!=null) {
                 lastHudRefresh=System.currentTimeMillis();
                 int hp=renderer.game.health;
