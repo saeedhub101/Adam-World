@@ -19,6 +19,9 @@ final class Game {
 
     float py, px, pz, pyaw, cx, cz, cyaw, cv, phase, swingAmp;
     boolean driving;
+    volatile int health = 100;
+    volatile boolean dead;
+    long lastDamageMs, deathStartedMs;
     int vehicleType = ProceduralVehicleModels.SEDAN;
     float altitude;
     volatile float liftInput;
@@ -39,7 +42,7 @@ final class Game {
     }
 
     void reset() {
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; agents.clear();
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; health = 100; dead = false; lastDamageMs = deathStartedMs = 0L; agents.clear();
     }
 
     float focusX() { return driving ? cx : px; }
@@ -66,6 +69,14 @@ final class Game {
     }
 
     void update(float dt, World w) {
+        long now = System.currentTimeMillis();
+        if (dead) {
+            sx = sy = 0f;
+            if (now - deathStartedMs >= 4500L) { dead = false; health = 50; px = cx; pz = cz; cv = 0f; altitude = 0f; }
+            updateCamera(dt);
+            return;
+        }
+        if (health > 0 && health < 100 && now - lastDamageMs >= 3500L) health = Math.min(100, health + Math.max(1, (int)(dt * 12f)));
         float jx = sx, jy = sy;
         float mag = Math.min(1f, (float) Math.hypot(jx, jy));
         if (!driving) {
@@ -123,7 +134,14 @@ final class Game {
             a.path.posAt(a.s, a.car ? a.off * a.dir : a.off, tmp);
             a.x = tmp[0]; a.z = tmp[1];
             a.yaw = (float) Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
-            if (!a.car) a.ph += a.sp * dt * 2.2f;
+            if (!a.car) {
+                a.ph += a.sp * dt * 2.2f;
+                if (!driving && Math.hypot(a.x - px, a.z - pz) < 0.8f && now - lastDamageMs > 1200L) {
+                    health = Math.max(0, health - 12);
+                    lastDamageMs = now;
+                    if (health == 0) { dead = true; deathStartedMs = now; }
+                }
+            }
         }
 
         updateCamera(dt);
