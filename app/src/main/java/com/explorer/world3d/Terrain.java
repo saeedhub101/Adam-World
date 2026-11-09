@@ -9,7 +9,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /** تضاريس حقيقية من بلاطات الارتفاع المفتوحة (Terrarium) بدون مفتاح. الارتفاعات نسبية لنقطة البداية. */
 final class Terrain {
@@ -17,7 +18,15 @@ final class Terrain {
 
     static final int Z = 14;
     private static final double NPIX = (double) (1 << Z) * 256.0;
-    private static final ConcurrentHashMap<Long, float[]> dem = new ConcurrentHashMap<>();
+    // DEM tiles are decoded float arrays (~256 KiB each). Keep a strict access-ordered
+    // working set instead of retaining every location visited during a long session.
+    private static final int DEM_CACHE_MAX_TILES = 12;
+    private static final LinkedHashMap<Long, float[]> dem =
+            new LinkedHashMap<Long, float[]>(16, 0.75f, true) {
+                @Override protected boolean removeEldestEntry(Map.Entry<Long, float[]> eldest) {
+                    return size() > DEM_CACHE_MAX_TILES;
+                }
+            };
     private static volatile File cacheDir;
     private static volatile Decoder decoder;
     private static volatile AssetManager assets;
@@ -43,7 +52,11 @@ final class Terrain {
         if (c != null) c.disconnect();
     }
 
-    static void reset() { cancelPending(); enabled = false; baseSet = false; flat = false; demFails = 0; base = 0f; }
+    static void reset() {
+        cancelPending();
+        synchronized (Terrain.class) { dem.clear(); }
+        enabled = false; baseSet = false; flat = false; demFails = 0; base = 0f;
+    }
 
     /** Terrain is enabled for Amman and the dedicated Tabarbour play area. */
     static boolean isAmman(double lat, double lon) {
@@ -79,7 +92,7 @@ final class Terrain {
     private static long key(int tx, int ty) { return (((long) tx) << 32) | (ty & 0xffffffffL); }
 
     static boolean has(double lat, double lon) {
-        return dem.containsKey(key((int) Math.floor(gx(lon) / 256.0), (int) Math.floor(gy(lat) / 256.0)));
+         synchronized (Terrain.class) { return dem.containsKey(key((int) Math.floor(gx(lon) / 256.0), (int) Math.floor(gy(lat) / 256.0))); }
     }
 
     static void ensure(double lat, double lon) throws IOException {
@@ -171,7 +184,7 @@ final class Terrain {
     }
 
     private static float pix(int px, int py) {
-        float[] t = dem.get(key(px >> 8, py >> 8));
+        float[] t; synchronized (Terrain.class) { t = dem.get(key(px >> 8, py >> 8)); }
         return t == null ? Float.NaN : t[(py & 255) * 256 + (px & 255)];
     }
 
