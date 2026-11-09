@@ -29,7 +29,7 @@ final class Game {
     long lastDamageMs, deathStartedMs;
     int vehicleType = ProceduralVehicleModels.SEDAN;
     float altitude, aircraftPitch, aircraftRoll;
-    volatile float liftInput;
+    volatile float liftInput, throttleInput;
     volatile boolean paused, attackRequested, punchRequested, kickRequested, jumpRequested, handbrake, guardRequested, dodgeRequested;
     volatile float stamina = 100f;
     float dodgeSeconds, dodgeX, dodgeZ;
@@ -68,7 +68,7 @@ final class Game {
 
     void reset() {
         aircraftPitch = aircraftRoll = 0f;
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; health = 100; dead = false;
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = 0; camYaw = 0; health = 100; dead = false;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
@@ -168,6 +168,8 @@ final class Game {
             }
         }
         float jx = sx, jy = sy;
+        if (driving && (vehicleType == ProceduralVehicleModels.HELICOPTER
+                || vehicleType == ProceduralVehicleModels.AIRPLANE) && throttleInput != 0f) jy = throttleInput;
         if(playerPose==2||playerPose==3||playerPose==4){jx=0f;jy=0f;}
         float mag = Math.min(1f, (float) Math.hypot(jx, jy));
         if (!driving) {
