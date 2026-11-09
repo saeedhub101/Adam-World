@@ -169,9 +169,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_B) { if (pressed && !renderer.game.driving) runOnGl(new Runnable() { @Override public void run() { renderer.game.kickRequested = true; } }); return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed && !renderer.game.driving) runOnGl(new Runnable() { @Override public void run() { renderer.game.punchRequested = true; } }); return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed && !renderer.game.driving) runOnGl(() -> renderer.game.reloadRequested = true); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_L1) { if (!renderer.game.driving) renderer.game.guardRequested = down; else renderer.game.cameraLookOffset = down ? -0.95f : 0f; return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_L1) { if (!renderer.game.driving) renderer.game.weaponAimHeld = down; else renderer.game.cameraLookOffset = down ? -0.95f : 0f; return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_R1) {
             padCameraModifier = down;
             if (!down) renderer.game.cameraZoomInput = 0f;
@@ -185,9 +185,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     renderer.game.throttleInput = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
                 else renderer.game.sy = (padL2 ? 1f : 0f) - (padR2 ? 1f : 0f);
             } else {
-                renderer.game.guardRequested = padL2;
-                if (code == KeyEvent.KEYCODE_BUTTON_R2 && pressed)
-                    runOnGl(new Runnable() { @Override public void run() { renderer.game.dodgeRequested = true; } });
+                renderer.game.guardRequested = false;
+                renderer.game.weaponAimHeld = padL2;
+                renderer.game.weaponFireHeld = padR2;
             }
             return true;
         }
@@ -228,6 +228,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             c.save(); c.rotate((float)Math.toDegrees(renderer.game.driving?renderer.game.cyaw:renderer.game.pyaw),cx,cy); c.drawPath(arrow,p); c.restore();
             p.setColor(Color.WHITE); p.setTextSize(dp(9)); c.drawText("MAP",cx-dp(11),h-dp(7),p);
         }
+    }
+
+    private void showWeaponShop(){
+        final String[] items=new String[WeaponSystem.NAME.length+1];
+        for(int i=0;i<WeaponSystem.NAME.length;i++)items[i]=WeaponSystem.NAME[i]+(renderer.game.ownedWeapons[i]?" — مملوك":" — $"+WeaponSystem.PRICE[i]);
+        items[items.length-1]="شراء ذخيرة للسلاح الحالي";
+        new AlertDialog.Builder(this).setTitle("متجر الأسلحة · الرصيد $"+renderer.game.cash).setItems(items,(d,which)->runOnGl(()->{Game game=renderer.game;if(which==items.length-1){if(game.buyAmmo())onToast("تم شراء الذخيرة");else onToast("الرصيد غير كافٍ");}else if(game.ownedWeapons[which]){game.equipWeapon(which);onToast("تم تجهيز "+WeaponSystem.NAME[which]);}else if(game.purchaseWeapon(which))onToast("تم شراء "+WeaponSystem.NAME[which]);else onToast("الرصيد غير كافٍ");})).setNegativeButton("إغلاق",null).show();
     }
 
     private void showVehicleSelector() {
@@ -427,6 +434,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         runRow.addView(touchSprintButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
         runRow.addView(touchDodgeButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
         combatControls.addView(runRow);
+        LinearLayout weaponRow=new LinearLayout(this); weaponRow.setGravity(Gravity.CENTER);
+        Button aimTouch=touchAction("تصويب",()->runOnGl(()->renderer.game.weaponAimHeld=true),()->runOnGl(()->renderer.game.weaponAimHeld=false));
+        Button fireTouch=touchAction("إطلاق",()->runOnGl(()->renderer.game.weaponFireHeld=true),()->runOnGl(()->renderer.game.weaponFireHeld=false));
+        weaponRow.addView(aimTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); weaponRow.addView(fireTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); combatControls.addView(weaponRow);
+        LinearLayout weaponRow2=new LinearLayout(this); weaponRow2.setGravity(Gravity.CENTER);
+        weaponRow2.addView(touchAction("تلقيم",()->runOnGl(()->renderer.game.reloadRequested=true),null),new LinearLayout.LayoutParams(0,dp(44),1f));
+        weaponRow2.addView(touchAction("تبديل",()->runOnGl(()->renderer.game.cycleWeapon()),null),new LinearLayout.LayoutParams(0,dp(44),1f));
+        weaponRow2.addView(touchAction("متجر الأسلحة",()->showWeaponShop(),null),new LinearLayout.LayoutParams(0,dp(44),1.35f)); combatControls.addView(weaponRow2);
         touchCombatRow = combatControls;
         actionPad.addView(combatControls);
 
@@ -572,6 +587,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             renderer.game.brakeRequested = false;
             renderer.game.liftInput = 0f;
             renderer.game.throttleInput = 0f;
+            renderer.game.weaponFireHeld = false;
+            renderer.game.weaponAimHeld = false;
             renderer.game.brakeRequested = false;
         }
         glView.onPause();
@@ -715,6 +732,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 lastHudRefresh=System.currentTimeMillis();
                 int hp=renderer.game.health;
                 healthHud.setText("♥ "+hp+" / 100     ⚡ "+(int)renderer.game.stamina+" / 100"+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
+                hud.setText(s+"\n🔫 "+WeaponSystem.NAME[renderer.game.equippedWeapon]+"  "+renderer.game.magazineAmmo+" / "+renderer.game.reserveAmmo[renderer.game.equippedWeapon]+"   $"+renderer.game.cash);
                 healthHud.setTextColor(hp>60?0xff65e58b:hp>25?0xffffc857:0xffff5555);
                 miniMap.invalidate();
             }
