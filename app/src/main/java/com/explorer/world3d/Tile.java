@@ -124,5 +124,9 @@ final class Tile {
         for (Integer texture : decalTextures) if (texture != null && texture != 0)
             GLES20.glDeleteTextures(1, new int[]{texture}, 0);
         decalTextures.clear();
+        // Collision and path data are CPU-side tile payloads too. Drop them as
+        // soon as the tile leaves the active world; live agents are removed by renderer.
+        grid.clear();
+        paths.clear();
     }
 }
