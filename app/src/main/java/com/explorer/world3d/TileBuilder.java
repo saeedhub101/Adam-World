@@ -1794,6 +1794,17 @@ final class TileBuilder {
                         a[0], baseA, a[1], b[0], baseB, b[1],
                         c[0], topC, c[1], d[0], topD, d[1],
                         0.58f, 0.59f, 0.56f);
+                // Keep a low-step footprint for physics/suspension. Movement uses
+                // step clearance, so even a vertical curb of this height is passable.
+                Footprint curbStep = new Footprint();
+                curbStep.xs = new float[]{a[0], b[0], c[0], d[0]};
+                curbStep.zs = new float[]{a[1], b[1], c[1], d[1]};
+                curbStep.minx = Math.min(Math.min(a[0], b[0]), Math.min(c[0], d[0]));
+                curbStep.maxx = Math.max(Math.max(a[0], b[0]), Math.max(c[0], d[0]));
+                curbStep.minz = Math.min(Math.min(a[1], b[1]), Math.min(c[1], d[1]));
+                curbStep.maxz = Math.max(Math.max(a[1], b[1]), Math.max(c[1], d[1]));
+                curbStep.obstacleHeight = kerbRise;
+                Collision.add(td.grid, curbStep);
             }
         }
     }
@@ -1837,6 +1848,7 @@ final class TileBuilder {
             islandObstacle.minx = Math.min(islandObstacle.minx, xs[i]); islandObstacle.maxx = Math.max(islandObstacle.maxx, xs[i]);
             islandObstacle.minz = Math.min(islandObstacle.minz, zs[i]); islandObstacle.maxz = Math.max(islandObstacle.maxz, zs[i]);
         }
+        islandObstacle.obstacleHeight = 0.30f; // Raised island: step-over height, not a blocking wall.
         Collision.add(td.grid, islandObstacle);
         GeoBuf fill = td.bufs[B_SIDEWALK];
         for (int i = 0; i + 2 < triangles.length; i += 3) {

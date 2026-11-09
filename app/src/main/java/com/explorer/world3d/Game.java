@@ -38,6 +38,10 @@ final class Game {
     int playerPose;
     volatile float cameraLookOffset;
     float jumpVelocity, jumpHeight, attackSeconds;
+    // Damped suspension response when wheels climb/drop over curbs and islands.
+    float vehicleBumpAmplitude, vehicleBumpTime, vehicleBumpOffset, vehicleBumpRoll, vehicleBumpPitch;
+    float vehicleBumpSide;
+    boolean vehicleFrontStepContact, vehicleRearStepContact;
     int attackType;
     long lastPlayerAttackMs;
     int comboStep;
@@ -63,6 +67,8 @@ final class Game {
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
+        vehicleBumpAmplitude = vehicleBumpTime = vehicleBumpOffset = vehicleBumpRoll = vehicleBumpPitch = vehicleBumpSide = 0f;
+        vehicleFrontStepContact = vehicleRearStepContact = false;
         lastPlayerAttackMs = lastDamageMs = deathStartedMs = 0L; agents.clear();
     }
 
@@ -174,10 +180,13 @@ final class Game {
                 float speed = (sprint ? 8.5f : 4.6f) * mag;
                 if (dodgeSeconds > 0f) { dx = dodgeX; dz = dodgeZ; speed = 12.5f; }
                 float nx = px + dx * speed * dt, nz = pz + dz * speed * dt;
-                float jumpClearance = Math.max(0f, jumpHeight - 0.18f);
-                boolean blockedAhead = (w instanceof CityRenderer) ? ((CityRenderer) w).blockedAtHeight(nx, nz, 0.45f, jumpClearance) : w.blocked(nx, nz, 0.45f);
-                boolean blockedX = (w instanceof CityRenderer) ? ((CityRenderer) w).blockedAtHeight(nx, pz, 0.45f, jumpClearance) : w.blocked(nx, pz, 0.45f);
-                boolean blockedZ = (w instanceof CityRenderer) ? ((CityRenderer) w).blockedAtHeight(px, nz, 0.45f, jumpClearance) : w.blocked(px, nz, 0.45f);
+                // Low curbs and traffic islands are step-up surfaces, not walls.
+                // Keep tall building footprints solid while allowing normal walking
+                // across street/sidewalk edges even without a ramp mesh.
+                float stepClearance = Math.max(0.58f, jumpHeight - 0.18f);
+                boolean blockedAhead = (w instanceof CityRenderer) ? ((CityRenderer) w).blockedAtHeight(nx, nz, 0.45f, stepClearance) : w.blocked(nx, nz, 0.45f);
+                boolean blockedX = (w instanceof CityRenderer) ? ((CityRenderer) w).blockedAtHeight(nx, pz, 0.45f, stepClearance) : w.blocked(nx, pz, 0.45f);
+                boolean blockedZ = (w instanceof CityRenderer) ? ((CityRenderer) w).blockedAtHeight(px, nz, 0.45f, stepClearance) : w.blocked(px, nz, 0.45f);
                 if (!blockedAhead) { px = nx; pz = nz; }
                 else if (!blockedX) px = nx;
                 else if (!blockedZ) pz = nz;
@@ -209,11 +218,47 @@ final class Game {
                         : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 0.95f : 1.55f;
                 float vehicleRadius = vehicleType == ProceduralVehicleModels.BUS ? 1.05f
                         : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 0.38f : 0.72f;
-                boolean blockedVehicle = w.blocked(nx + fx * vehicleProbe, nz + fz * vehicleProbe, vehicleRadius)
+                float stepClearance = 0.58f;
+                boolean blockedVehicle = (w instanceof CityRenderer)
+                        ? ((CityRenderer) w).blockedAtHeight(nx + fx * vehicleProbe, nz + fz * vehicleProbe, vehicleRadius, stepClearance)
+                        || ((CityRenderer) w).blockedAtHeight(nx - fx * vehicleProbe, nz - fz * vehicleProbe, vehicleRadius, stepClearance)
+                        || ((CityRenderer) w).blockedAtHeight(nx, nz, vehicleRadius, stepClearance)
+                        : w.blocked(nx + fx * vehicleProbe, nz + fz * vehicleProbe, vehicleRadius)
                         || w.blocked(nx - fx * vehicleProbe, nz - fz * vehicleProbe, vehicleRadius)
                         || w.blocked(nx, nz, vehicleRadius);
                 if (blockedVehicle) cv = -cv * 0.25f;
                 else { cx = nx; cz = nz; }
+
+                // Sample the four wheel contact patches. A front/rear axle entering
+                // a raised curb or island triggers a damped body jolt; the rear axle
+                // produces its own delayed response as it climbs and drops.
+                if (w instanceof CityRenderer) {
+                    CityRenderer city = (CityRenderer) w;
+                    float rx = -fz, rz = fx;
+                    float halfWidth = vehicleType == ProceduralVehicleModels.BUS ? 1.05f : 0.78f;
+                    float frontStep = Math.max(
+                            city.lowObstacleHeightAt(cx + fx * vehicleProbe + rx * halfWidth, cz + fz * vehicleProbe + rz * halfWidth),
+                            city.lowObstacleHeightAt(cx + fx * vehicleProbe - rx * halfWidth, cz + fz * vehicleProbe - rz * halfWidth));
+                    float rearStep = Math.max(
+                            city.lowObstacleHeightAt(cx - fx * vehicleProbe + rx * halfWidth, cz - fz * vehicleProbe + rz * halfWidth),
+                            city.lowObstacleHeightAt(cx - fx * vehicleProbe - rx * halfWidth, cz - fz * vehicleProbe - rz * halfWidth));
+                    boolean frontContact = frontStep > 0.015f;
+                    boolean rearContact = rearStep > 0.015f;
+                    float impactSpeed = Math.min(0.22f, 0.085f + Math.abs(cv) * 0.0045f);
+                    if (frontContact && !vehicleFrontStepContact) {
+                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.max(0.45f, frontStep / 0.12f));
+                        vehicleBumpTime = 0f;
+                        vehicleBumpSide = frontStep;
+                    }
+                    if (rearContact && !vehicleRearStepContact) {
+                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.max(0.45f, rearStep / 0.12f));
+                        vehicleBumpTime = 0f;
+                        vehicleBumpSide = rearStep;
+                    }
+                    vehicleFrontStepContact = frontContact;
+                    vehicleRearStepContact = rearContact;
+                }
+            }
             }
             px = cx; pz = cz;
             float ground = w.heightAt(cx, cz);
@@ -221,6 +266,23 @@ final class Game {
             if (System.currentTimeMillis() - lastLookMs > 2500) {
                 camYaw += angDiff(camYaw, cyaw) * Math.min(1f, dt * 2.5f);
             }
+        }
+
+        // Spring-damper body motion: quick vertical rebound, subtle pitch and roll,
+        // then a smooth return to neutral after each wheel crosses a raised edge.
+        if (vehicleBumpAmplitude > 0.001f) {
+            vehicleBumpTime += dt;
+            float envelope = (float) Math.exp(-4.2f * vehicleBumpTime);
+            float wave = (float) Math.sin(24f * vehicleBumpTime);
+            vehicleBumpOffset = vehicleBumpAmplitude * envelope * wave;
+            vehicleBumpPitch = vehicleBumpAmplitude * 95f * envelope * (float) Math.sin(19f * vehicleBumpTime);
+            vehicleBumpRoll = vehicleBumpAmplitude * 75f * envelope * (float) Math.sin(22f * vehicleBumpTime + vehicleBumpSide);
+            if (vehicleBumpTime > 1.15f) {
+                vehicleBumpAmplitude = vehicleBumpOffset = vehicleBumpRoll = vehicleBumpPitch = 0f;
+            }
+        } else {
+            vehicleBumpOffset = vehicleBumpRoll = vehicleBumpPitch = 0f;
+            vehicleBumpTime = 0f;
         }
 
         for (int i = agents.size() - 1; i >= 0; i--) {

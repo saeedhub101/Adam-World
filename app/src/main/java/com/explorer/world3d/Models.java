@@ -96,4 +96,17 @@ final class Collision {
         }
         return false;
     }
+
+    /** Highest low step/curb surface at this point; tall buildings are excluded. */
+    static float lowObstacleHeightAt(HashMap<Long, ArrayList<Footprint>> grid, float x, float z, float maxStep) {
+        ArrayList<Footprint> l = grid.get(ck((int) Math.floor(x / CELL), (int) Math.floor(z / CELL)));
+        if (l == null) return 0f;
+        float highest = 0f;
+        for (Footprint f : l) {
+            if (f.obstacleHeight <= 0f || f.obstacleHeight > maxStep) continue;
+            if (x < f.minx || x > f.maxx || z < f.minz || z > f.maxz) continue;
+            if (Poly.contains(f.xs, f.zs, x, z)) highest = Math.max(highest, f.obstacleHeight);
+        }
+        return highest;
+    }
 }

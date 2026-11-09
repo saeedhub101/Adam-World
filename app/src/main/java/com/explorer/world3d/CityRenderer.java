@@ -388,7 +388,10 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     @Override public float heightAt(float x, float z) {
         if (loader.offlineManila) return 0f;
         float lm = Landmarks.heightAt(x, z);
-        return Float.isNaN(lm) ? Terrain.h(x, z) : lm;
+        float baseHeight = Float.isNaN(lm) ? Terrain.h(x, z) : lm;
+        // Characters and vehicle chassis follow low walkable curbs/islands instead
+        // of sinking into their raised mesh.
+        return baseHeight + lowObstacleHeightAt(x, z);
     }
 
     /** يبني مربعات الأرض من الارتفاعات الحقيقية حول اللاعب ويحذف البعيد منها. */
@@ -428,6 +431,19 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             }
         }
         return false;
+    }
+
+    /** Low curb/median surface used for step-up movement and vehicle suspension. */
+    public float lowObstacleHeightAt(float x, float z) {
+        int ix = Geo.tileX(x), iz = Geo.tileZ(z);
+        float h = 0f;
+        for (int di = -1; di <= 1; di++) {
+            for (int dj = -1; dj <= 1; dj++) {
+                Tile t = tiles.get(Geo.key(ix + di, iz + dj));
+                if (t != null) h = Math.max(h, Collision.lowObstacleHeightAt(t.grid, x, z, 0.55f));
+            }
+        }
+        return h;
     }
 
     @Override public boolean blocked(float x, float z, float r) {
@@ -737,11 +753,12 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform1f(uEmisK, 0f);
         for (Game.Agent a : g.agents) {
             if (Math.hypot(a.x - g.camX, a.z - g.camZ) > 350) continue;
-            if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, a.cr, a.cg, a.cb, a.sp * a.dir, 0f);
+            if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, a.cr, a.cg, a.cb, a.sp * a.dir, 0f, 0f, 0f, 0f);
             else drawPerson(a.x,Terrain.h(a.x,a.z),a.z,a.yaw,a.ph,a.humanType,a.hostile,a.knockedOut,a.state,a.stateTime,a.hitFlash);
         }
         if (spawned) {
-            drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.altitude, 0.75f, 0.22f, 0.17f, g.cv, g.sx);
+            drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.altitude, 0.75f, 0.22f, 0.17f, g.cv, g.sx,
+                    g.vehicleBumpOffset, g.vehicleBumpRoll, g.vehicleBumpPitch);
             if (!g.driving) drawKid(g.px,g.py+g.jumpHeight,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash);
         }
     }
@@ -770,7 +787,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
     }
 
-    private void drawVehicle(float x,float z,float yaw,int type,float yOffset,float cr,float cg,float cb,float speed,float steering) {
+    private void drawVehicle(float x,float z,float yaw,int type,float yOffset,float cr,float cg,float cb,float speed,float steering,
+                             float suspensionY,float suspensionRoll,float suspensionPitch) {
         if(vehicleModels==null || type<0 || type>=vehicleModels.length || vehicleModels[type]==null) return;
         float length=(type==ProceduralVehicleModels.AIRPLANE?7.0f:type==ProceduralVehicleModels.BUS?8.3f:5.0f);
         float sy=(float)Math.sin(yaw), cy=(float)Math.cos(yaw);
@@ -778,9 +796,10 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         float hb=Terrain.h(x-sy*length*.42f,z-cy*length*.42f);
         float pitch=-(float)Math.toDegrees(Math.atan2(hf-hb,length*.84f));
         Matrix.setIdentityM(base,0);
-        Matrix.translateM(base,0,x,(hf+hb)*.5f+yOffset,z);
+        Matrix.translateM(base,0,x,(hf+hb)*.5f+yOffset+suspensionY,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
-        Matrix.rotateM(base,0,pitch,1f,0f,0f);
+        Matrix.rotateM(base,0,pitch+suspensionPitch,1f,0f,0f);
+        Matrix.rotateM(base,0,suspensionRoll,0f,0f,1f);
         GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
         // اللون يظل في رؤوس الشبكة؛ التلوين هنا يستخدم فقط كتعديل خفيف للطلاء.
         GLES20.glUniform3f(uTint,.70f+cr*.30f,.70f+cg*.30f,.70f+cb*.30f);
