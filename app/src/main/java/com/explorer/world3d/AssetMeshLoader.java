@@ -13,8 +13,10 @@ import java.nio.ByteOrder;
  * GLB asset is shipped in the application.
  */
 final class AssetMeshLoader {
-    private static final int MAGIC = 0x314d5741; // "AWM1" in little endian
-    private static final int FLOATS_PER_VERTEX = 9; // position, normal, RGB
+    private static final int MAGIC_V1 = 0x314d5741; // "AWM1" in little endian
+    private static final int MAGIC_V2 = 0x324d5741; // "AWM2" in little endian
+    private static final int FLOATS_PER_VERTEX_V1 = 9; // position, normal, RGB
+    private static final int FLOATS_PER_VERTEX_V2 = 11; // position, normal, UV, RGB
     private AssetMeshLoader() {}
 
     static Mesh load(Context context, String assetPath) {
@@ -26,16 +28,21 @@ final class AssetMeshLoader {
             byte[] raw = out.toByteArray();
             if (raw.length < 8) return null;
             ByteBuffer data = ByteBuffer.wrap(raw).order(ByteOrder.LITTLE_ENDIAN);
-            if (data.getInt() != MAGIC) return null;
+             int magic = data.getInt();
+            int floatsPerVertex = magic == MAGIC_V2 ? FLOATS_PER_VERTEX_V2
+                    : magic == MAGIC_V1 ? FLOATS_PER_VERTEX_V1 : 0;
+            if (floatsPerVertex == 0) return null;
             int vertices = data.getInt();
             if (vertices < 3 || vertices > 1_500_000
-                    || data.remaining() != vertices * FLOATS_PER_VERTEX * 4) return null;
+                    || data.remaining() != vertices * floatsPerVertex * 4) return null;
             GeoBuf mesh = new GeoBuf();
             for (int i = 0; i < vertices; i++) {
                 float x = data.getFloat(), y = data.getFloat(), z = data.getFloat();
                 float nx = data.getFloat(), ny = data.getFloat(), nz = data.getFloat();
+                float u = floatsPerVertex == FLOATS_PER_VERTEX_V2 ? data.getFloat() : .5f;
+                float v = floatsPerVertex == FLOATS_PER_VERTEX_V2 ? data.getFloat() : .5f;
                 float r = data.getFloat(), g = data.getFloat(), b = data.getFloat();
-                mesh.vn(x, y, z, nx, ny, nz, .5f, .5f, r, g, b);
+                mesh.vn(x, y, z, nx, ny, nz, u, v, r, g, b);
             }
             return Mesh.from(mesh);
         } catch (Exception ignored) {

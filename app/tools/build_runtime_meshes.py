@@ -2,7 +2,7 @@
 """Build-time GLB -> Adam World Mesh converter.
 
 Downloads only the existing repository's individually catalogued CC0-1.0 vehicle
-sources, converts their transformed geometry/material colors to AWM1, and writes
+sources, converts their transformed geometry, UVs, and material colors to AWM2, and writes
 only the custom binary format into Android assets. Source GLBs stay in a temporary
 directory and are never packaged or required by the Android runtime.
 """
@@ -126,15 +126,22 @@ def vertex_normals(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
 
 def convert(raw: bytes, target_length: float, fallback):
     meshes = scene_meshes(raw)
-    all_vertices, all_normals, all_colors, all_faces = [], [], [], []
+    all_vertices, all_normals, all_uvs, all_colors, all_faces = [], [], [], [], []
     offset = 0
     for mesh in meshes:
         vertices = np.asarray(mesh.vertices, dtype=np.float32)
         faces = np.asarray(mesh.faces, dtype=np.int64)
         normals = vertex_normals(vertices, faces)
         colors = color_for(mesh, fallback)
+        uv = getattr(mesh.visual, "uv", None)
+        if uv is None or len(uv) != len(vertices):
+            uv = np.zeros((len(vertices), 2), dtype=np.float32)
+        else:
+            uv = np.asarray(uv, dtype=np.float32)
+            uv = np.nan_to_num(uv, nan=0.0, posinf=0.0, neginf=0.0)
         all_vertices.append(vertices)
         all_normals.append(normals)
+        all_uvs.append(uv)
         all_colors.append(colors)
         all_faces.append(faces + offset)
         offset += len(vertices)
@@ -163,8 +170,9 @@ def convert(raw: bytes, target_length: float, fallback):
     normals /= np.maximum(np.linalg.norm(normals, axis=1, keepdims=True), 1e-8)
 
     # Expand indexed triangles, preserving normals and each source material's color.
+    uv_by_vertex = np.concatenate(all_uvs, axis=0)
     colors_by_vertex = np.concatenate(all_colors, axis=0)
-    expanded = np.empty((len(faces) * 3, 9), dtype=np.float32)
+    expanded = np.empty((len(faces) * 3, 11), dtype=np.float32)
     cursor = 0
     for face in faces:
         for vertex_index in face:
@@ -173,7 +181,8 @@ def convert(raw: bytes, target_length: float, fallback):
                 color = color[0]
             expanded[cursor, 0:3] = vertices[vertex_index]
             expanded[cursor, 3:6] = normals[vertex_index]
-            expanded[cursor, 6:9] = np.clip(color[:3], 0.0, 1.0)
+            expanded[cursor, 6:8] = uv_by_vertex[vertex_index]
+            expanded[cursor, 8:11] = np.clip(color[:3], 0.0, 1.0)
             cursor += 1
     return expanded
 
@@ -187,7 +196,7 @@ def main():
             raw = fetch(item["url"])
             vertices = convert(raw, item["length"], item["fallback"])
             with destination.open("wb") as stream:
-                stream.write(b"AWM1")
+                stream.write(b"AWM2")
                 stream.write(struct.pack("<I", len(vertices)))
                 stream.write(vertices.astype("<f4", copy=False).tobytes())
             print(f"AWM_BUILT {name} vertices={len(vertices)} bytes={destination.stat().st_size}", flush=True)
