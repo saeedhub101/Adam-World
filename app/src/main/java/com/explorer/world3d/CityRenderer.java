@@ -124,7 +124,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private Textures tex;
     private ProceduralMaterialMaps vehicleMaps;
     private Mesh cube, groundMesh, skyQuad, seaMesh, flightSchoolMesh;
-    private boolean flightSchoolMode, savedOfflineAmman;
+    private volatile boolean flightSchoolMode;
+    private boolean savedOfflineAmman;
     private String savedOfflineCitySlug;
     private double savedCityLat, savedCityLon;
     private Mesh[] vehicleModels;
@@ -753,7 +754,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                             + " | " + phase + " | " + Math.round(Math.abs(game.cv) * 3.6f) + " كم/س"
                             + " | ارتفاع " + Math.round(game.altitude) + " م"
                             + " | دفع " + Math.round(game.engineThrottle * 100f) + "%"
-                            + (game.vehicleType == ProceduralVehicleModels.AIRPLANE ? (game.landingGearDown ? " | العجلات مفتوحة" : " | العجلات مطوية") : ""));
+                            + (game.vehicleType == ProceduralVehicleModels.AIRPLANE ? (game.landingGearDown ? " | العجلات مفتوحة" : " | العجلات مطوية") + (game.aircraftDamage > 0f ? " | ضرر " + Math.round(game.aircraftDamage) + "%" : "") : ""));
                 } else L.onHud(game.driving ? Math.round(Math.abs(game.cv) * 3.6f) + " كم/س" : "");
             }
         }
@@ -817,7 +818,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform1f(uEmisK, 0f);
         float step = 13.3333f;
         Matrix.setIdentityM(tmp, 0);
-        float farY = flightSchoolMode ? -0.02f : Terrain.baseSet ? Terrain.seaY() - 300f : -0.02f;
+        float farY = flightSchoolMode ? -0.15f : Terrain.baseSet ? Terrain.seaY() - 300f : -0.02f;
         Matrix.translateM(tmp, 0, Math.round(g.camX / step) * step, farY, Math.round(g.camZ / step) * step);
         GLES20.glUniformMatrix4fv(uModel, 1, false, tmp, 0);
         groundMesh.draw();

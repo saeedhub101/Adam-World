@@ -56,11 +56,15 @@ final class Airfield {
         surface(b, -136f, -111f, -114f, -109f, 0.11f, .96f, .96f, .92f);
         b.box(100f, 2.2f, -45f, 8f, 4.4f, 5f, .76f, .76f, .70f);
         b.box(100f, 5f, -45f, 2f, 1.2f, 2f, .85f, .13f, .08f);
-        return Mesh.from(b);
+        Mesh mesh = Mesh.from(b);
+        b.releaseStorage();
+        return mesh;
     }
 
     private static void surface(GeoBuf b, float x0, float z0, float x1, float z1, float y,
                                float r, float g, float blue) {
+        if (x1 < x0) { float t = x0; x0 = x1; x1 = t; }
+        if (z1 < z0) { float t = z0; z0 = z1; z1 = t; }
         b.quad(x0, y, z0, x0, y, z1, x1, y, z1, x1, y, z0, r, g, blue);
     }
 
