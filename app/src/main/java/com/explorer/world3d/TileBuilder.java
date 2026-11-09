@@ -95,7 +95,7 @@ final class TileBuilder {
         }
         Hg hg = new Hg(xMin, xMax, zMin, zMax, 5f);
 
-        ArrayList<float[]> trees = new ArrayList<>(), lamps = new ArrayList<>();
+        ArrayList<float[]> trees = new ArrayList<>(), lamps = new ArrayList<>(), crossings = new ArrayList<>();
         int bcount = 0;
         ArrayList<float[][]> parentFootprints = new ArrayList<>();
         Random rng = new Random(ix * 73856093L ^ iz * 19349663L);
@@ -116,6 +116,8 @@ final class TileBuilder {
                 if (tg(tags, "natural").equals("tree") && trees.size() < 260) trees.add(new float[]{x, z});
                 else if (tg(tags, "highway").equals("street_lamp") && lamps.size() < 60) lamps.add(new float[]{x, z});
                 else if (tg(tags,"highway").equals("traffic_signals") || tg(tags,"crossing").equals("traffic_signals")) addTrafficSignal(td,x,z);
+                else if (tg(tags, "highway").equals("crossing") || tg(tags, "crossing").matches("zebra|marked|uncontrolled|traffic_signals"))
+                    crossings.add(new float[]{x, z});
                 else if (poiCategory(tags) > 0) addPoi(td, x, z, poiName(tags), poiCategory(tags), Terrain.h(x, z) + 2.8f);
                 else if (!tg(tags, "addr:housenumber").isEmpty())
                     addPoi(td, x, z, "رقم " + tg(tags, "addr:housenumber"), 10, Terrain.h(x, z) + 2.8f);
@@ -389,6 +391,31 @@ final class TileBuilder {
                     float x = mnx + rng.nextFloat() * (mxx - mnx), z = mnz + rng.nextFloat() * (mxz - mnz);
                     if (Poly.contains(P[0], P[1], x, z)) { trees.add(new float[]{x, z}); nt--; }
                 }
+            }
+        }
+
+        // Paint zebra crossings from mapped crossing nodes, aligned to the nearest real road.
+        for (float[] crossing : crossings) {
+            RoadPath nearest = null;
+            float nearestS = 0f, nearestDistance = Float.POSITIVE_INFINITY;
+            float[] point = new float[4];
+            for (RoadPath candidate : td.paths) {
+                if (!candidate.veh || candidate.w < 4f) continue;
+                for (float distance = 0f; distance <= candidate.total; distance += 2f) {
+                    candidate.posAt(distance, 0f, point);
+                    float d = (float)Math.hypot(point[0] - crossing[0], point[1] - crossing[1]);
+                    if (d < nearestDistance) { nearestDistance = d; nearest = candidate; nearestS = distance; }
+                }
+            }
+            if (nearest == null || nearestDistance > Math.max(5f, nearest.w * 0.5f + 2f)) continue;
+            float half = Math.max(1.7f, Math.min(3.2f, nearest.w * 0.42f));
+            for (float offset = -3.2f; offset <= 3.2f; offset += 0.88f) {
+                float distance = Math.max(0f, Math.min(nearest.total, nearestS + offset));
+                float[] a = new float[4], b = new float[4];
+                nearest.posAt(distance, -half, a);
+                nearest.posAt(distance, half, b);
+                drawMarkingQuad(td, a[0], a[1], b[0], b[1], 0.30f,
+                        0.46f, 0.94f, 0.94f, 0.91f);
             }
         }
 
@@ -1666,7 +1693,8 @@ final class TileBuilder {
                     addTabarbourSpeedBumps(roadBuf, px, pz, w, roadSeed);
                 }
             } else {
-                ribbonOffset(px, pz, w, yOffset, td.bufs[B_SIDEWALK], w / 2f, 2f, rr, rg, rb);
+                GeoBuf narrowRoad = veh ? td.bufs[B_ROADN] : td.bufs[B_SIDEWALK];
+                ribbonOffset(px, pz, w, yOffset, narrowRoad, w / 2f, 2f, rr, rg, rb);
             }
             RoadPath rp = new RoadPath(px, pz, w, veh);
             rp.name = name;
