@@ -14,12 +14,16 @@ final class Game {
         Tile tile;
         float off, s, sp, ph, x, z, yaw;
         int dir = 1;
+        int health = 35;
         float cr, cg, cb;
     }
 
     float py, px, pz, pyaw, cx, cz, cyaw, cv, phase, swingAmp;
     boolean driving;
-    volatile boolean paused, jumpRequested, handbrake;
+    volatile boolean paused, jumpRequested, handbrake, attackRequested;
+    volatile int health=100;
+    volatile boolean dead;
+    long lastDamageMs, lastAttackMs, lastHealMs;
     volatile float cameraLookOffset;
     float jumpHeight, jumpVelocity;
     int vehicleType = ProceduralVehicleModels.SEDAN;
@@ -42,7 +46,7 @@ final class Game {
     }
 
     void reset() {
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; paused = false; jumpRequested = false; handbrake = false; cameraLookOffset = 0f; jumpHeight = 0f; jumpVelocity = 0f; agents.clear();
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; paused = false; jumpRequested = false; handbrake = false; attackRequested = false; health=100; dead=false; lastDamageMs=lastAttackMs=lastHealMs=0L; cameraLookOffset = 0f; jumpHeight = 0f; jumpVelocity = 0f; agents.clear();
     }
 
     float focusX() { return driving ? cx : px; }
@@ -70,6 +74,11 @@ final class Game {
 
     void update(float dt, World w) {
         if (paused) return;
+        if (dead) { sx=sy=0f; return; }
+        if (attackRequested && System.currentTimeMillis()-lastAttackMs>650) {
+            lastAttackMs=System.currentTimeMillis(); attackRequested=false;
+            for (Agent a:agents) if(!a.car && Math.hypot(a.x-px,a.z-pz)<2.2f) { a.health-=20; break; }
+        } else attackRequested=false;
         float jx = sx, jy = sy;
         float mag = Math.min(1f, (float) Math.hypot(jx, jy));
         if (!driving) {
@@ -128,7 +137,7 @@ final class Game {
 
         for (int i = agents.size() - 1; i >= 0; i--) {
             Agent a = agents.get(i);
-            if (a.tile.dead) { agents.remove(i); continue; }
+            if (a.tile.dead || a.health<=0) { agents.remove(i); continue; }
             a.s += a.dir * a.sp * dt;
             if (a.s > a.path.total) { a.s = a.path.total; a.dir = -1; }
             else if (a.s < 0) { a.s = 0; a.dir = 1; }
@@ -136,11 +145,18 @@ final class Game {
             a.x = tmp[0]; a.z = tmp[1];
             a.yaw = (float) Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
             if (!a.car) a.ph += a.sp * dt * 2.2f;
+            if (!driving && !a.car && Math.hypot(a.x-px,a.z-pz)<0.85f && System.currentTimeMillis()-lastDamageMs>1800) { health=Math.max(0,health-8); lastDamageMs=System.currentTimeMillis(); if(health==0) dead=true; }
         }
 
         updateCamera(dt);
     }
 
+    void heal() {
+        long now=System.currentTimeMillis();
+        if(dead || now-lastHealMs<12000L) return;
+        health=Math.min(100,health+45); lastHealMs=now;
+    }
+    void revive() { dead=false; health=65; sx=sy=0; jumpHeight=jumpVelocity=0; }
     private void updateCamera(float dt) {
         float tx = focusX(), tz = focusZ();
         float dist = camDistance * (driving ? 1.6f : 1f), th = driving ? 1.6f : 1.55f;

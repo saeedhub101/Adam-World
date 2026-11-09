@@ -6,6 +6,8 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -58,6 +60,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private AlertDialog pauseDialog;
     private ToneGenerator hornTone;
     private boolean padL2, padR2;
+    private TextView healthHud;
+    private MiniMapView miniMap;
+    private long lastHudRefresh;
     private final String[] CAMERA_LABELS = {"شارع", "قريب", "مرتفع", "درون"};
     private final String[] CAMERA_PRESETS = {"street", "near", "high", "drone"};
 
@@ -76,6 +81,19 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         gamepadCameraPreset = (gamepadCameraPreset + 1) % CAMERA_PRESETS.length;
         final String preset = CAMERA_PRESETS[gamepadCameraPreset];
         runOnGl(new Runnable() { @Override public void run() { renderer.game.setCameraPreset(preset); } });
+    }
+    private void attackOrHeal() {
+        if (renderer.game.driving) { playHorn(); return; }
+        runOnGl(new Runnable() { @Override public void run() { renderer.game.attackRequested = true; } });
+    }
+    private void showGameSettings() {
+        final String[] options = {"الصوت", "جودة الرسومات", "حساسية الكاميرا", "إعدادات التحكم", "إغلاق"};
+        new AlertDialog.Builder(this).setTitle("إعدادات Adam World").setItems(options, (d, which) -> {
+            if (which == 0) new AlertDialog.Builder(this).setTitle("الصوت").setItems(new String[]{"تشغيل الصوت", "كتم الصوت"}, (x,v) -> Toast.makeText(this, v==0?"تم تشغيل الصوت":"تم كتم الصوت", Toast.LENGTH_SHORT).show()).show();
+            else if (which == 1) new AlertDialog.Builder(this).setTitle("جودة الرسومات").setItems(new String[]{"تلقائي", "عالية", "متوازنة", "موفرة للطاقة"}, (x,v) -> Toast.makeText(this,"سيتم تطبيق إعداد الجودة في إصدار إعدادات الرسومات",Toast.LENGTH_SHORT).show()).show();
+            else if (which == 2) new AlertDialog.Builder(this).setTitle("حساسية الكاميرا").setItems(new String[]{"منخفضة", "متوسطة", "عالية"}, (x,v) -> renderer.setLookSensitivity(v==0?0.65f:v==1?1f:1.45f)).show();
+            else if (which == 3) showControlsSettings();
+        }).show();
     }
     private void playHorn() {
         try {
@@ -114,11 +132,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showPauseMenu() {
         if (isFinishing() || (pauseDialog != null && pauseDialog.isShowing())) return;
         setGamePaused(true);
-        final String[] items = {"متابعة اللعبة", "الخريطة", "إعدادات التحكم", "إنهاء اللعبة"};
+        final String[] items = {"متابعة اللعبة", "الخريطة", "إعدادات اللعبة", "إنهاء اللعبة"};
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle("إيقاف مؤقت").setItems(items, (d, which) -> {
             if (which == 0) setGamePaused(false);
             else if (which == 1) { d.dismiss(); showMapDialog(true); }
-            else if (which == 2) showControlsSettings();
+            else if (which == 2) showGameSettings();
             else if (which == 3) { setGamePaused(false); finish(); }
         }).create();
         dialog.setOnCancelListener(d -> setGamePaused(false));
@@ -139,11 +157,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             else if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.jumpRequested = true; } });
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_B) {
-            if (pressed && renderer.game.driving) playHorn();
-            else if (pressed) Toast.makeText(this, "لا يوجد هدف اشتباك قريب", Toast.LENGTH_SHORT).show();
-            return true;
-        }
+        if (code == KeyEvent.KEYCODE_BUTTON_B) { if (pressed) attackOrHeal(); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed) cycleGameCamera(); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) {
             if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } });
@@ -170,6 +184,26 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     @Override public void onBackPressed() {
         if (pauseDialog != null && pauseDialog.isShowing()) { pauseDialog.dismiss(); setGamePaused(false); }
         else showPauseMenu();
+    }
+
+    private final class MiniMapView extends View {
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        MiniMapView(Context c) { super(c); setLayerType(View.LAYER_TYPE_SOFTWARE,null); }
+        @Override protected void onDraw(Canvas c) {
+            super.onDraw(c);
+            float w=getWidth(), h=getHeight(), cx=w/2f, cy=h/2f, rad=Math.min(w,h)*.47f;
+            p.setColor(0xd91a2028); c.drawCircle(cx,cy,rad,p);
+            c.save(); android.graphics.Path clip=new android.graphics.Path(); clip.addCircle(cx,cy,rad,android.graphics.Path.Direction.CW); c.clipPath(clip);
+            p.setColor(0xff56616b); p.setStrokeWidth(dp(5)); p.setStyle(Paint.Style.STROKE);
+            for(int i=-2;i<=2;i++){ c.drawLine(cx+i*dp(27),cy-rad,cx+i*dp(27),cy+rad,p); c.drawLine(cx-rad,cy+i*dp(27),cx+rad,cy+i*dp(27),p); }
+            p.setColor(0xffd4d9df); p.setStrokeWidth(dp(1.4f)); c.drawLine(cx,cy-rad*.72f,cx,cy-rad*.9f,p); p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.WHITE); p.setTextSize(dp(10)); c.drawText("N",cx-dp(3),cy-rad*.76f,p);
+            c.restore();
+            p.setColor(0xff38d978); android.graphics.Path arrow=new android.graphics.Path();
+            arrow.moveTo(cx,cy-dp(12)); arrow.lineTo(cx-dp(8),cy+dp(8)); arrow.lineTo(cx,cy+dp(4)); arrow.lineTo(cx+dp(8),cy+dp(8)); arrow.close();
+            c.save(); c.rotate((float)Math.toDegrees(renderer.game.driving?renderer.game.cyaw:renderer.game.pyaw),cx,cy); c.drawPath(arrow,p); c.restore();
+            p.setColor(Color.WHITE); p.setTextSize(dp(9)); c.drawText("MAP",cx-dp(11),h-dp(7),p);
+        }
     }
 
     private Button btn(String t) {
@@ -404,6 +438,32 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         hp.setMargins(0, 0, dp(24), dp(190));
         root.addView(hud, hp);
 
+        healthHud = new TextView(this);
+        healthHud.setTextColor(0xff65e58b);
+        healthHud.setTextSize(16);
+        healthHud.setShadowLayer(4,0,0,Color.BLACK);
+        healthHud.setText("♥ 100 / 100");
+        FrameLayout.LayoutParams healthParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
+        healthParams.setMargins(0, dp(112), dp(18), 0);
+        root.addView(healthHud, healthParams);
+
+        miniMap = new MiniMapView(this);
+        FrameLayout.LayoutParams miniParams = new FrameLayout.LayoutParams(dp(142), dp(142), Gravity.TOP | Gravity.START);
+        miniParams.setMargins(dp(14), dp(112), 0, 0);
+        root.addView(miniMap, miniParams);
+
+        Button heal = btn("✚ علاج");
+        heal.setOnClickListener(v -> { glView.queueEvent(() -> renderer.game.heal()); Toast.makeText(this,"استخدم آدم العلاج المتاح",Toast.LENGTH_SHORT).show(); });
+        FrameLayout.LayoutParams healParams = new FrameLayout.LayoutParams(dp(92), dp(44), Gravity.BOTTOM | Gravity.END);
+        healParams.setMargins(0,0,dp(22),dp(220));
+        root.addView(heal,healParams);
+
+        Button settings = btn("⚙");
+        settings.setOnClickListener(v -> showGameSettings());
+        FrameLayout.LayoutParams settingsParams = new FrameLayout.LayoutParams(dp(48),dp(44),Gravity.TOP | Gravity.END);
+        settingsParams.setMargins(0,dp(8),dp(8),0);
+        root.addView(settings,settingsParams);
+
         TextView credit = new TextView(this);
         credit.setText("© مساهمو OpenStreetMap · الارتفاعات: Mapzen/AWS Terrain Tiles");
         credit.setTextColor(0xc0ffffff);
@@ -553,7 +613,16 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     }
 
     @Override public void onHud(final String s) {
-        runOnUiThread(new Runnable() { @Override public void run() { hud.setText(s); } });
+        runOnUiThread(new Runnable() { @Override public void run() {
+            hud.setText(s);
+            if (System.currentTimeMillis()-lastHudRefresh>250 && renderer!=null) {
+                lastHudRefresh=System.currentTimeMillis();
+                int hp=renderer.game.health;
+                healthHud.setText("♥ "+hp+" / 100"+(renderer.game.dead?"  — متوفى":""));
+                healthHud.setTextColor(hp>60?0xff65e58b:hp>25?0xffffc857:0xffff5555);
+                miniMap.invalidate();
+            }
+        }});
     }
 
     @Override public void onToast(final String s) {
