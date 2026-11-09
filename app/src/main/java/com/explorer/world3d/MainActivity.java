@@ -158,6 +158,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_B) { if (pressed) attackOrHeal(); return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_L1) { renderer.game.guardRequested = down; return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_R1) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.dodgeRequested = true; } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed) cycleGameCamera(); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) {
             if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } });
@@ -395,6 +398,17 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 return true;
             }
         });
+        Button guard = btn("دفاع");
+        guard.setOnTouchListener(new View.OnTouchListener() {
+            @Override public boolean onTouch(View v, MotionEvent e) {
+                int a=e.getActionMasked();
+                if(a==MotionEvent.ACTION_DOWN) renderer.game.guardRequested=true;
+                else if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_CANCEL) renderer.game.guardRequested=false;
+                return true;
+            }
+        });
+        Button dodge = btn("مراوغة");
+        dodge.setOnClickListener(v -> runOnGl(new Runnable() { @Override public void run() { renderer.game.dodgeRequested=true; } }));
         Button mapAction = btn("الخريطة");
         mapAction.setOnClickListener(v -> showMapDialog(false));
         Button pauseAction = btn("Ⅱ");
@@ -454,6 +468,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         acts.addView(sprint, ab);
         acts.addView(jump, new LinearLayout.LayoutParams(dp(72), dp(44)));
         acts.addView(attack, new LinearLayout.LayoutParams(dp(72), dp(44)));
+        acts.addView(guard, new LinearLayout.LayoutParams(dp(72), dp(44)));
+        acts.addView(dodge, new LinearLayout.LayoutParams(dp(72), dp(44)));
         acts.addView(cameraBack, new LinearLayout.LayoutParams(dp(84), dp(44)));
         acts.addView(mapAction, new LinearLayout.LayoutParams(dp(84), dp(44)));
         acts.addView(pauseAction, new LinearLayout.LayoutParams(dp(72), dp(44)));

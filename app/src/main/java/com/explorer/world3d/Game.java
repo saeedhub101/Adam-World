@@ -29,7 +29,10 @@ final class Game {
     int vehicleType = ProceduralVehicleModels.SEDAN;
     float altitude;
     volatile float liftInput;
-    volatile boolean paused, attackRequested, jumpRequested, handbrake;
+    volatile boolean paused, attackRequested, jumpRequested, handbrake, guardRequested, dodgeRequested;
+    volatile float stamina = 100f;
+    float dodgeSeconds, dodgeX, dodgeZ;
+    long lastDodgeMs;
     volatile float cameraLookOffset;
     float jumpVelocity, jumpHeight, attackSeconds;
     long lastPlayerAttackMs;
@@ -52,7 +55,8 @@ final class Game {
 
     void reset() {
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = 0; camYaw = 0; health = 100; dead = false;
-        paused = attackRequested = jumpRequested = handbrake = false; cameraLookOffset = 0f;
+        paused = attackRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f;
+        stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
         lastPlayerAttackMs = lastDamageMs = deathStartedMs = 0L; agents.clear();
     }
@@ -93,6 +97,23 @@ final class Game {
         if (health > 0 && health < 100 && now - lastDamageMs >= 5000L)
             health = Math.min(100, health + Math.max(1, (int)(dt * 8f)));
         attackSeconds = Math.max(0f, attackSeconds - dt);
+        dodgeSeconds = Math.max(0f, dodgeSeconds - dt);
+        if (!guardRequested && dodgeSeconds <= 0f) stamina = Math.min(100f, stamina + 18f * dt);
+        if (dodgeRequested) {
+            dodgeRequested = false;
+            if (!driving && !dead && stamina >= 24f && now - lastDodgeMs >= 650L) {
+                lastDodgeMs = now; stamina -= 24f; dodgeSeconds = 0.34f;
+                float side = sx < -0.15f ? -1f : sx > 0.15f ? 1f : 0f;
+                float forward = sy < -0.15f ? -1f : 1f;
+                float fx = (float)Math.sin(camYaw), fz = (float)Math.cos(camYaw);
+                float rx = -(float)Math.cos(camYaw), rz = (float)Math.sin(camYaw);
+                float dx = fx * forward + rx * side, dz = fz * forward + rz * side;
+                float len = Math.max(0.001f, (float)Math.hypot(dx,dz));
+                dodgeX = dx / len; dodgeZ = dz / len;
+            }
+        }
+        if (guardRequested && !driving) stamina = Math.max(0f, stamina - 12f * dt);
+        if (stamina <= 0f) guardRequested = false;
         if (jumpRequested && !driving && jumpHeight <= 0.001f && !dead) jumpVelocity = 5.1f;
         jumpRequested = false;
         if (jumpHeight > 0f || jumpVelocity > 0f) {
@@ -134,6 +155,7 @@ final class Game {
                 if (dl < 1e-5f) dl = 1;
                 dx /= dl; dz /= dl;
                 float speed = (sprint ? 8.5f : 4.6f) * mag;
+                if (dodgeSeconds > 0f) { dx = dodgeX; dz = dodgeZ; speed = 12.5f; }
                 float nx = px + dx * speed * dt, nz = pz + dz * speed * dt;
                 if (!w.blocked(nx, nz, 0.45f)) { px = nx; pz = nz; }
                 else if (!w.blocked(nx, pz, 0.45f)) px = nx;
@@ -196,7 +218,13 @@ final class Game {
                         a.yaw=(float)Math.atan2(dx,dz);
                     }
                     if (d < 1.15f && now-a.lastAttackMs>1350L && now-lastDamageMs>700L) {
-                        a.lastAttackMs=now; health=Math.max(0,health-9); lastDamageMs=now;
+                        a.lastAttackMs=now;
+                        if (dodgeSeconds > 0f) { /* تفادي ناجح: لا ضرر خلال اندفاع المراوغة */ }
+                        else {
+                            int incoming = guardRequested && stamina > 0f ? 3 : 9;
+                            if (guardRequested && stamina > 0f) stamina = Math.max(0f, stamina - 16f);
+                            health=Math.max(0,health-incoming); lastDamageMs=now;
+                        }
                         if (health==0) { dead=true; deathStartedMs=now; sx=sy=0f; }
                     }
                     a.ph += dt*4.2f;
