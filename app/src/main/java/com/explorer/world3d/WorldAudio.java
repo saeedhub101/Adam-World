@@ -26,17 +26,25 @@ final class WorldAudio {
     private long noiseState = 0x1234abcdL;
 
     WorldAudio() {
-        int min = AudioTrack.getMinBufferSize(RATE, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT);
-        int buffer = Math.max(FRAMES * 4 * 4, min * 2);
-        track = new AudioTrack.Builder()
-                .setAudioAttributes(new AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_GAME)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
-                .setAudioFormat(new AudioFormat.Builder().setSampleRate(RATE)
-                        .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
-                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
-                .setBufferSizeInBytes(buffer).setTransferMode(AudioTrack.MODE_STREAM).build();
-        track.play();
+        AudioTrack created = null;
+        try {
+            int min = AudioTrack.getMinBufferSize(RATE, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+            int buffer = Math.max(FRAMES * 4 * 4, Math.max(FRAMES * 4, min) * 2);
+            created = new AudioTrack.Builder()
+                    .setAudioAttributes(new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_GAME)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+                    .setAudioFormat(new AudioFormat.Builder().setSampleRate(RATE)
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
+                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
+                    .setBufferSizeInBytes(buffer).setTransferMode(AudioTrack.MODE_STREAM).build();
+            if (created.getState() == AudioTrack.STATE_INITIALIZED) created.play();
+            else { created.release(); created = null; }
+        } catch (RuntimeException audioUnavailable) {
+            if (created != null) { try { created.release(); } catch (Exception ignored) { } }
+            created = null;
+        }
+        track = created;
         thread = new Thread(this::render, "AdamWorld-Audio");
         thread.setPriority(Thread.NORM_PRIORITY - 1);
         thread.start();
@@ -128,8 +136,13 @@ final class WorldAudio {
                 out[i * 2 + 1] = sample(right);
             }
             if (track != null && track.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) {
-                int written = track.write(out, 0, out.length);
-                if (written < 0) { try { Thread.sleep(20); } catch (InterruptedException ignored) { } }
+                try {
+                    int written = track.write(out, 0, out.length);
+                    if (written < 0) { try { Thread.sleep(20); } catch (InterruptedException ignored) { } }
+                } catch (RuntimeException audioWriteFailure) {
+                    try { track.pause(); } catch (Exception ignored) { }
+                    try { Thread.sleep(40); } catch (InterruptedException ignored) { }
+                }
             } else {
                 try { Thread.sleep(30); } catch (InterruptedException ignored) { }
             }
