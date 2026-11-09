@@ -1,0 +1,70 @@
+name: Rebuild Amman local stream and publish Android release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tools/build_amman_stream_shards.py"
+      - ".github/workflows/amman-stream-rebuild.yml"
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: adam-world-main-writers
+  cancel-in-progress: false
+
+jobs:
+  rebuild-amman:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout only the already-imported Amman source and current stream
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+          filter: blob:none
+          sparse-checkout: |
+            /tools/build_amman_stream_shards.py
+            /data/full-city-imports/amman/
+            /data/offline-world/amman/
+            /data/offline-city-stream/amman/
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install stream geometry dependencies
+        run: python -m pip install --disable-pip-version-check shapely ijson
+
+      - name: Rebuild Amman runtime shards from committed local imports
+        run: |
+          set -euo pipefail
+          python tools/build_amman_stream_shards.py
+
+      - name: Publish regenerated Amman stream to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- data/offline-city-stream/amman/
+          if git diff --cached --quiet; then
+            echo "Amman stream already matches its imported sources."
+          else
+            git commit -m "Rebuild Amman local stream with schools and road metadata"
+            for attempt in 1 2 3 4 5; do
+              git fetch origin main
+              if ! git merge-base --is-ancestor origin/main HEAD; then git rebase origin/main; fi
+              if git push origin HEAD:main; then break; fi
+              if [ "$attempt" -eq 5 ]; then echo "::error::Could not publish Amman stream"; exit 1; fi
+              sleep "$((attempt * 5))"
+            done
+          fi
+          gh workflow run android-release.yml --ref main
