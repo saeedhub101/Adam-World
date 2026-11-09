@@ -120,7 +120,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("على الهاتف: العصا اليسرى للحركة، واسحب على مساحة اللعب لتحريك الكاميرا، واستخدم أزرار القفز واللكم والركل والصد والركض والمراوغة. زر المركبة للاستدعاء والدخول والخروج، ومن قائمة المركبات اختر الهليكوبتر أو الطائرة. أثناء الطيران استخدم العصا للتوجيه والتقدم وأزرار الصعود والهبوط. على التلفاز: استخدم يد التحكم؛ العصا اليسرى للحركة أو قيادة المركبة، والعصا اليمنى للكاميرا، وأزرار A/B/X/Y للحركات والتفاعل.")
+                .setMessage("على الهاتف: العصا اليسرى للحركة، واسحب على مساحة اللعب لتحريك الكاميرا، واستخدم أزرار القفز واللكم والركل والصد والركض والمراوغة. زر المركبة للاستدعاء والدخول والخروج، ومن قائمة المركبات اختر الهليكوبتر أو الطائرة. أثناء الطيران استخدم العصا للتوجيه، وأزرار الدفع والفرملة والصعود والهبوط. على التلفاز: استخدم يد التحكم؛ العصا اليسرى للحركة أو قيادة المركبة، والعصا اليمنى للكاميرا، وأزرار A/B/X/Y للحركات والتفاعل.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
@@ -428,17 +428,30 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         actionPad.addView(vehicleRow);
 
         LinearLayout flightRow = new LinearLayout(this);
+        flightRow.setOrientation(LinearLayout.VERTICAL);
         flightRow.setGravity(Gravity.CENTER);
+        LinearLayout flightThrottleRow = new LinearLayout(this);
+        flightThrottleRow.setGravity(Gravity.CENTER);
+        Button throttleTouch = touchAction("دفع ▲", () -> runOnGl(() -> {
+            if (isAircraftDriven()) renderer.game.throttleInput = 1f;
+        }), () -> runOnGl(() -> renderer.game.throttleInput = 0f));
+        Button brakeTouch = touchAction("فرملة ▼", () -> runOnGl(() -> {
+            if (isAircraftDriven()) renderer.game.throttleInput = -1f;
+        }), () -> runOnGl(() -> renderer.game.throttleInput = 0f));
+        flightThrottleRow.addView(throttleTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightThrottleRow.addView(brakeTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightRow.addView(flightThrottleRow);
+        LinearLayout flightAltitudeRow = new LinearLayout(this);
+        flightAltitudeRow.setGravity(Gravity.CENTER);
         Button climbTouch = touchAction("صعود ▲", () -> runOnGl(() -> {
-            if (renderer.game.driving && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
-                    || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE)) renderer.game.liftInput = 1f;
+            if (isAircraftDriven()) renderer.game.liftInput = 1f;
         }), () -> runOnGl(() -> renderer.game.liftInput = 0f));
         Button descendTouch = touchAction("هبوط ▼", () -> runOnGl(() -> {
-            if (renderer.game.driving && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
-                    || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE)) renderer.game.liftInput = -1f;
+            if (isAircraftDriven()) renderer.game.liftInput = -1f;
         }), () -> runOnGl(() -> renderer.game.liftInput = 0f));
-        flightRow.addView(climbTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        flightRow.addView(descendTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightAltitudeRow.addView(climbTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightAltitudeRow.addView(descendTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightRow.addView(flightAltitudeRow);
         actionPad.addView(flightRow);
         touchFlightRow = flightRow;
 
@@ -626,6 +639,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 loading.setVisibility(show ? View.VISIBLE : View.GONE);
             }
         });
+    }
+
+    private boolean isAircraftDriven() {
+        return renderer != null && renderer.game.driving
+                && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
+                || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE);
     }
 
     private void updateTouchActionVisibility() {
