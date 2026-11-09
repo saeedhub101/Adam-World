@@ -166,11 +166,15 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (code == KeyEvent.KEYCODE_BUTTON_L2 || code == KeyEvent.KEYCODE_BUTTON_R2) {
             padL2 = code == KeyEvent.KEYCODE_BUTTON_L2 ? down : padL2;
             padR2 = code == KeyEvent.KEYCODE_BUTTON_R2 ? down : padR2;
-            if (renderer.game.driving) renderer.game.sy = (padL2 ? 1f : 0f) - (padR2 ? 1f : 0f);
+            if (renderer.game.driving) {
+                renderer.game.sy = (padL2 ? 1f : 0f) - (padR2 ? 1f : 0f);
+            } else {
+                renderer.game.guardRequested = padL2;
+                if (code == KeyEvent.KEYCODE_BUTTON_R2 && pressed)
+                    runOnGl(new Runnable() { @Override public void run() { renderer.game.dodgeRequested = true; } });
+            }
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_L2) { if (!renderer.game.driving) renderer.game.guardRequested = down; return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_R2) { if (!renderer.game.driving && pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.dodgeRequested = true; } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_THUMBL) { renderer.game.sprint = down; return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_THUMBR) {
             if (!renderer.game.driving && pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.dodgeRequested = true; } });
