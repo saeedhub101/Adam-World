@@ -323,6 +323,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         HorizontalScrollView hs = new HorizontalScrollView(this);
         hs.setHorizontalScrollBarEnabled(false);
         LinearLayout chips = new LinearLayout(this);
+        Button garage = btn("المركبات");
+        garage.setOnClickListener(v -> showVehicleSelector());
+        chips.addView(garage);
         Button localAmman = btn("عمّان محلي");
         localAmman.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { teleportOfflineAmman(); }
