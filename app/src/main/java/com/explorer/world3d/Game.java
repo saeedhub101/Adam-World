@@ -215,7 +215,7 @@ final class Game {
                 // Aircraft body attitude follows climb input, forward speed and bank.
                 float targetPitch = vehicleType == ProceduralVehicleModels.AIRPLANE
                         ? (cv > 13f ? -liftInput * 13f : 0f)
-                        : -clamp(jy, -1f, 1f) * 7f;
+                        : clamp(jy, -1f, 1f) * 7f;
                 float targetRoll = -clamp(jx, -1f, 1f) * (vehicleType == ProceduralVehicleModels.AIRPLANE ? 18f : 9f);
                 float attitudeBlend = Math.min(1f, dt * 3.8f);
                 aircraftPitch += (targetPitch - aircraftPitch) * attitudeBlend;
