@@ -1742,12 +1742,18 @@ final class TileBuilder {
         if(path==null||path.total<6f)return; float off=fullBusway?0f:path.w*0.5f-1.65f;
         for(float s=3f;s<path.total-2f;s+=12f){float[] a=new float[4],b=new float[4];path.posAt(s,off,a);path.posAt(Math.min(path.total,s+5f),off,b);drawMarkingQuad(td,a[0],a[1],b[0],b[1],roadYOffset+0.06f,0.42f,0.08f,0.48f,0.72f);}
     }
-    private static void addParkingLotBays(TileData td,float[] px,float[] pz){
+    private static void addParkingLotBays(TileData td, float[] px, float[] pz) {
         float minX=Float.POSITIVE_INFINITY,maxX=Float.NEGATIVE_INFINITY,minZ=Float.POSITIVE_INFINITY,maxZ=Float.NEGATIVE_INFINITY;
         for(int i=0;i<px.length;i++){minX=Math.min(minX,px[i]);maxX=Math.max(maxX,px[i]);minZ=Math.min(minZ,pz[i]);maxZ=Math.max(maxZ,pz[i]);}
-        for(float z=minZ+1.5f;z<maxZ-1f;z+=5.2f)for(float x=minX+1f;x<maxX-1f;x+=2.7f){float x1=Math.min(maxX-0.5f,x+2.5f),mid=(x+x1)*0.5f;if(Poly.contains(px,pz,mid,z)&&Poly.contains(px,pz,mid,Math.min(maxZ,z+4.5f)))drawMarkingQuad(td,x,z,x1,z,0.25f,0.10f,0.94f,0.94f,0.90f);}
+        for(float z=minZ+1.5f;z<maxZ-1f;z+=5.2f) for(float x=minX+1f;x<maxX-1f;x+=2.7f) {
+            float x1=Math.min(maxX-0.5f,x+2.5f),z1=Math.min(maxZ,z+4.5f),mid=(x+x1)*0.5f;
+            if(Poly.contains(px,pz,mid,z)&&Poly.contains(px,pz,mid,z1)) {
+                drawMarkingQuad(td,x,z,x1,z,0.25f,0.10f,0.94f,0.94f,0.90f);
+                drawMarkingQuad(td,x,z,x,z1,0.25f,0.10f,0.94f,0.94f,0.90f);
+                drawMarkingQuad(td,x1,z,x1,z1,0.25f,0.10f,0.94f,0.94f,0.90f);
+            }
+        }
     }
-
     /** Draw source-driven lane dividers and mapped curbside parking-bay markings. */
     private static void addRoadMarkings(TileData td, RoadPath path, JSONObject tags,
                                         String highway, float roadYOffset, float width) {
@@ -1802,6 +1808,18 @@ final class TileBuilder {
             }
             for (int lane = 0; lane < Math.min(4, Math.round(backwardLanes)); lane++) {
                 float offset = bw * (lane + 0.5f) / backwardLanes;
+                for (float distance = 28f + lane * 5f; distance < path.total - 8f; distance += 58f)
+                    drawRoadArrow(td, path, distance, offset, roadYOffset, true);
+            }
+        } else if (!oneWay && lanes >= 2 && width >= 5.5f) {
+            int eachSide = Math.max(1, lanes / 2);
+            for (int lane = 0; lane < Math.min(4, eachSide); lane++) {
+                float offset = -width * 0.5f + width * (lane + 0.5f) / lanes;
+                for (float distance = 28f + lane * 5f; distance < path.total - 8f; distance += 58f)
+                    drawRoadArrow(td, path, distance, offset, roadYOffset, false);
+            }
+            for (int lane = 0; lane < Math.min(4, eachSide); lane++) {
+                float offset = width * (lane + 0.5f) / lanes;
                 for (float distance = 28f + lane * 5f; distance < path.total - 8f; distance += 58f)
                     drawRoadArrow(td, path, distance, offset, roadYOffset, true);
             }
