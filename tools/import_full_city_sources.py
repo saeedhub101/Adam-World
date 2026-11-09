@@ -1,4 +1,4 @@
-import argparse,json,pathlib,subprocess,sys,os,tempfile,hashlib,urllib.request
+import argparse,json,pathlib,subprocess,sys,os,tempfile,hashlib,urllib.request,time
 from datetime import datetime,timezone
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 BASE=ROOT/"data/full-city-imports"
@@ -22,7 +22,23 @@ def checkpoint(paths,slug):
  subprocess.run(["git","config","user.name","github-actions[bot]"],cwd=ROOT,check=True)
  subprocess.run(["git","config","user.email","41898282+github-actions[bot]@users.noreply.github.com"],cwd=ROOT,check=True)
  subprocess.run(["git","commit","-m","Checkpoint full city data "+slug],cwd=ROOT,check=True)
- subprocess.run(["git","push","origin","HEAD:main"],cwd=ROOT,check=True)
+ # A concurrent workflow may have advanced main. Rebase and retry; never create a branch.
+ last_error=""
+ for attempt in range(1,6):
+  subprocess.run(["git","fetch","origin","main"],cwd=ROOT,check=True)
+  rb=subprocess.run(["git","rebase","origin/main"],cwd=ROOT,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+  if rb.returncode:
+   subprocess.run(["git","rebase","--abort"],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+   last_error=rb.stdout
+   time.sleep(attempt*2)
+   continue
+  push=subprocess.run(["git","push","origin","HEAD:main"],cwd=ROOT,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+  if push.returncode==0:
+   print("CHECKPOINT PUSHED",slug,flush=True)
+   return
+  last_error=push.stdout
+  time.sleep(attempt*3)
+ raise RuntimeError("checkpoint push failed after retries: "+last_error)
 def main():
  ap=argparse.ArgumentParser();ap.add_argument("--city");ap.add_argument("--refresh",action="store_true");a=ap.parse_args()
  cities=[a.city] if a.city else list(CITIES);failed=[]
@@ -36,8 +52,12 @@ def main():
    from shapely.ops import unary_union
    # Resolve exact administrative polygon before treating any download as full-city data.
    bd=folder/"01_admin_boundary";bd.mkdir(parents=True,exist_ok=True);bp=bd/"division-area-candidates.geojson"
-   if a.refresh or not bp.exists():
-    subprocess.run(["overturemaps","download",f"--bbox={w},{s},{e},{n}","-f","geojson","--type=division_area","-o",str(bp)],cwd=ROOT,check=True,timeout=1800)
+   if not bp.exists():
+    try:
+     subprocess.run(["overturemaps","download",f"--bbox={w},{s},{e},{n}","-f","geojson","--type=division_area","-o",str(bp)],cwd=ROOT,check=True,timeout=1800)
+    except Exception as boundary_error:
+     print("BOUNDARY FAILED; city layers require a verified clipping boundary and will resume next run",slug,str(boundary_error),flush=True)
+     failed.append(slug);continue
    saved.append(bp);raw=json.loads(bp.read_text());matches=[]
    for f in raw.get("features",[]):
     p=f.get("properties") or {};names=p.get("names") or {};nm=str(names.get("primary") or p.get("name") or "").casefold()
@@ -70,13 +90,20 @@ def main():
        parts=manifest.get("parts",[])
        if parts and all((layer_dir/p["file"]).is_file() and (layer_dir/p["file"]).stat().st_size==p["bytes"] for p in parts):
         print("SKIP COMPLETE",slug,typ,len(parts),"parts",flush=True);continue
+     # Imports are append-only and resumable. --refresh is retained for CLI
+     # compatibility but never deletes verified parts or resets checkpoints.
      if a.refresh:
-      for old in layer_dir.glob("part-*.geojson"):old.unlink(missing_ok=True)
-      manifest={"status":"partial","source":"Overture Maps","source_type":typ,"parts":[]}
-     elif not manifest:
+      print("REFRESH requested: preserving all verified parts; fetching only incomplete layers",slug,typ,flush=True)
+     if not manifest:
       manifest={"status":"partial","source":"Overture Maps","source_type":typ,"parts":[]}
      tmp=layer_dir/"download.raw.geojson"
-     subprocess.run(["overturemaps","download",f"--bbox={w},{s},{e},{n}","-f","geojson","--type="+typ,"-o",str(tmp)],cwd=ROOT,check=True,timeout=3600)
+     try:
+      subprocess.run(["overturemaps","download",f"--bbox={w},{s},{e},{n}","-f","geojson","--type="+typ,"-o",str(tmp)],cwd=ROOT,check=True,timeout=3600)
+     except Exception as layer_error:
+      manifest.update({"status":"partial","last_error":str(layer_error),"last_attempt_at":datetime.now(timezone.utc).isoformat()})
+      save(manifest_path,json.dumps(manifest,indent=2).encode());checkpoint([manifest_path],slug)
+      print("LAYER FAILED; continuing to next source layer",slug,typ,str(layer_error),flush=True)
+      continue
      # Overture CLI may report “No data found” and exit successfully without creating an output file.
      # Treat that as a verified empty layer, not a city-wide import failure.
      if not tmp.exists():
@@ -102,6 +129,7 @@ def main():
       print("SAVED PART",slug,typ,filename,entry["features"],entry["bytes"],flush=True)
       checkpoint([outpart,manifest_path],slug)
       part_features=[];part_size=0
+     layer_processing_error=None
      try:
       with tmp.open("rb") as stream:
        for feature in json_items(stream,"features.item",use_float=True):
@@ -124,7 +152,14 @@ def main():
           print("REJECT FEATURE",slug,typ,type(feature_error).__name__,str(feature_error)[:240],flush=True)
          continue
       flush_part()
+     except Exception as layer_error:
+      layer_processing_error=layer_error
+      print("LAYER PROCESSING FAILED; preserving written parts and continuing",slug,typ,str(layer_error),flush=True)
      finally:tmp.unlink(missing_ok=True)
+     if layer_processing_error:
+      manifest["status"]="partial";manifest["last_error"]=str(layer_processing_error);manifest["last_attempt_at"]=datetime.now(timezone.utc).isoformat()
+      save(manifest_path,json.dumps(manifest,indent=2).encode());checkpoint([manifest_path],slug)
+      continue
      manifest["feature_count"]=sum(p["features"] for p in manifest["parts"]);manifest["raw_feature_count"]=raw_feature_count;manifest["matched_feature_count"]=matched_feature_count;manifest["rejected_feature_count"]=serialization_or_geometry_errors
      if matched_feature_count>0 and manifest["feature_count"]==0:
       manifest["status"]="partial";manifest["empty_reason"]="matched_features_not_written";save(manifest_path,json.dumps(manifest,indent=2).encode());checkpoint([manifest_path],slug)
