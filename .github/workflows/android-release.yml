@@ -64,11 +64,16 @@ jobs:
         with:
           gradle-version: "8.5"
 
+      - name: Set up Python for model conversion
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Convert licensed vehicle models to Adam World binary meshes
         run: |
           set -euo pipefail
-          python3 -m pip install --disable-pip-version-check --no-input numpy trimesh
-          python3 app/tools/build_runtime_meshes.py
+          python -m pip install --disable-pip-version-check --no-input numpy trimesh
+          python app/tools/build_runtime_meshes.py
 
       - name: Prepare signing and calculate release version
         env:

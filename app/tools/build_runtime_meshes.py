@@ -76,23 +76,34 @@ def scene_meshes(raw: bytes):
 
 def color_for(mesh, fallback):
     count = len(mesh.vertices)
+    base = np.repeat(np.asarray(fallback, dtype=np.float32)[None, :], count, axis=0)
     try:
         visual = mesh.visual
-        if getattr(visual, "kind", None) == "vertex":
+        kind = getattr(visual, "kind", None)
+        if kind == "vertex":
             colors = np.asarray(visual.vertex_colors, dtype=np.float32)[:, :3] / 255.0
             if len(colors) == count:
                 return colors
-        if getattr(visual, "kind", None) == "face":
-            face = np.asarray(visual.face_colors, dtype=np.float32)[:, :3] / 255.0
-            return np.repeat(face[:, None, :], 3, axis=1)
+        if kind == "face":
+            face_colors = np.asarray(visual.face_colors, dtype=np.float32)[:, :3] / 255.0
+            sums = np.zeros((count, 3), dtype=np.float32)
+            weights = np.zeros((count, 1), dtype=np.float32)
+            for face_index, face in enumerate(mesh.faces):
+                sums[face] += face_colors[face_index]
+                weights[face] += 1.0
+            mask = weights[:, 0] > 0
+            base[mask] = sums[mask] / weights[mask]
+            return base
         material = getattr(visual, "material", None)
         factor = getattr(material, "baseColorFactor", None)
         if factor is not None and len(factor) >= 3:
-            c = np.asarray(factor[:3], dtype=np.float32) / 255.0
-            return np.repeat(c[None, :], count, axis=0)
+            c = np.asarray(factor[:3], dtype=np.float32)
+            if float(c.max()) > 1.0:
+                c /= 255.0
+            return np.repeat(np.clip(c, 0.0, 1.0)[None, :], count, axis=0)
     except Exception:
         pass
-    return np.repeat(np.asarray(fallback, dtype=np.float32)[None, :], count, axis=0)
+    return base
 
 
 def convert(raw: bytes, target_length: float, fallback):
@@ -104,9 +115,6 @@ def convert(raw: bytes, target_length: float, fallback):
         faces = np.asarray(mesh.faces, dtype=np.int64)
         normals = np.asarray(mesh.vertex_normals, dtype=np.float32)
         colors = color_for(mesh, fallback)
-        if colors.shape[0] == len(faces) and colors.ndim == 3:
-            colors = np.repeat(colors, 1, axis=0)
-            # Face colors are expanded after indexing below.
         if normals.shape != vertices.shape:
             normals = np.tile(np.array([[0, 1, 0]], dtype=np.float32), (len(vertices), 1))
         all_vertices.append(vertices)
