@@ -17,7 +17,8 @@ final class WorldAudio {
     private volatile float master = 0.82f, engineVolume = 0.9f, ambienceVolume = 0.55f, effectsVolume = 0.85f;
     private volatile boolean driving, helicopter, airplane, moving;
     private volatile float speed, throttle, wind, traffic, trafficPan, playerPan;
-    private volatile boolean horn;
+    private volatile int hornSamples;
+    private double hornPhase;
     private volatile int transientEffect;
     private AudioTrack track;
     private final Thread thread;
@@ -68,7 +69,7 @@ final class WorldAudio {
         playerPan = 0f;
     }
 
-    void playHorn() { horn = true; }
+    void playHorn() { hornSamples = RATE / 4; }
     void playEffect(int effect) { transientEffect = effect; }
     void setEnabled(boolean value) { enabled = value; }
     void setVolumes(float masterValue, float engine, float ambience, float effects) {
@@ -84,7 +85,7 @@ final class WorldAudio {
         while (running) {
             boolean audible = enabled;
             for (int i = 0; i < FRAMES; i++) {
-                double engine = 0, rotor = 0, ambience = 0, fx = 0;
+                double engine = 0, rotor = 0, ambience = 0, fx = 0, trafficSound = 0;
                 float localSpeed = speed;
                 if (audible && driving) {
                     double rpm = 48.0 + localSpeed * 150.0 + throttle * 42.0;
@@ -106,7 +107,7 @@ final class WorldAudio {
                     ambience += Math.sin(windPhase) * (0.006 + wind * 0.018);
                     if (traffic > 0.01f) {
                         trafficPhase += 2.0 * Math.PI * (62.0 + traffic * 95.0) / RATE;
-                        ambience += (Math.sin(trafficPhase) * 0.10 + Math.sin(trafficPhase * 2.2) * 0.035)
+                        trafficSound = (Math.sin(trafficPhase) * 0.10 + Math.sin(trafficPhase * 2.2) * 0.035)
                                 * traffic * ambienceVolume;
                     }
                     if (moving && !driving) {
@@ -114,18 +115,15 @@ final class WorldAudio {
                         double step = Math.pow(Math.max(0, Math.sin(stepPhase)), 18);
                         ambience += step * 0.10 * effectsVolume;
                     }
-                    if (horn) {
-                        fx = (Math.sin(2.0 * Math.PI * 440.0 * i / RATE)
-                                + Math.sin(2.0 * Math.PI * 554.0 * i / RATE)) * 0.18;
-                        if (i == FRAMES - 1) horn = false;
+                    if (hornSamples > 0) {
+                        hornPhase += 2.0 * Math.PI * 440.0 / RATE;
+                        fx = (Math.sin(hornPhase) + Math.sin(hornPhase * 1.26)) * 0.18;
+                        hornSamples--;
                     }
                 }
                 double base = audible ? (engine * engineVolume + rotor * engineVolume + ambience + fx) * master : 0;
-                double left = base, right = base;
-                if (traffic > 0.01f) {
-                    left += Math.max(0, -trafficPan) * 0.035 * traffic * master;
-                    right += Math.max(0, trafficPan) * 0.035 * traffic * master;
-                }
+                double left = base + trafficSound * (trafficPan > 0 ? 1.0 - trafficPan * 0.75 : 1.0) * master;
+                double right = base + trafficSound * (trafficPan < 0 ? 1.0 + trafficPan * 0.75 : 1.0) * master;
                 out[i * 2] = sample(left);
                 out[i * 2 + 1] = sample(right);
             }
