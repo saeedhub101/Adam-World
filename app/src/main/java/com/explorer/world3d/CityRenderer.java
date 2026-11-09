@@ -448,7 +448,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         if (flightSchoolMode) {
             if (g.driving) {
                 boolean aircraft = g.vehicleType == ProceduralVehicleModels.HELICOPTER || g.vehicleType == ProceduralVehicleModels.AIRPLANE;
-                if (aircraft && (g.altitude > 1f || Math.abs(g.cv) > 3f)) { L.onToast("أوقف المركبة واهبط قبل الخروج"); return; }
+                if (Math.abs(g.cv) > 3f || g.altitude > 1f) { L.onToast("أوقف المركبة واهبط قبل الخروج"); return; }
                 g.driving = false; g.cv = 0f; g.engineThrottle = g.vehicleType == ProceduralVehicleModels.HELICOPTER ? 0.52f : 0f;
                 g.px = g.cx + 3.2f; g.pz = g.cz; g.py = 0f;
             } else spawnFlightSchoolVehicle(true);
@@ -470,6 +470,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                 L.onToast(ok ? "تم استدعاء السيارة، اضغط 🚗 للركوب" : "لا توجد مساحة لاستدعاء السيارة");
             }
         } else {
+            boolean aircraft = g.vehicleType == ProceduralVehicleModels.HELICOPTER || g.vehicleType == ProceduralVehicleModels.AIRPLANE;
+            if (aircraft && (g.altitude > 1f || Math.abs(g.cv) > 3f)) { L.onToast("لا يمكنك الخروج من الطائرة أثناء الحركة أو الطيران"); return; }
             float rx = -(float) Math.cos(g.cyaw), rz = (float) Math.sin(g.cyaw);
             float x = g.cx + rx * 2.6f, z = g.cz + rz * 2.6f;
             if (blocked(x, z, 0.5f)) { x = g.cx - rx * 2.6f; z = g.cz - rz * 2.6f; }

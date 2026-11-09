@@ -23,7 +23,7 @@
 - **Flight-school implementation added on `main`:** a dedicated isolated training-airfield scene with a 920 m runway, threshold/centerline/aiming markings, runway edge lights, taxiway, apron, open-front hangar, terminal, control tower, fuel island and marked helicopter pad. Map streaming is suspended while active; returning restores the exact previous geographic position and offline-city source.
 - **Fixed-wing flight model:** persistent engine throttle, runway acceleration and braking, steering, elevator/pitch, speed-gated takeoff, aerodynamic lift, climb/descent, stall warning, touchdown, landing-gear state and hard-landing damage response. The airplane has an animated propeller and visible retractable landing gear.
 - **Helicopter flight model:** rotor-power/collective control, stable hover baseline, vertical climb/descent, forward/reverse movement, yaw and bank response.
-- **Controls:** contextual touch controls expose throttle increase/decrease, pitch/collective, brake and landing gear; gamepad triggers adjust engine power, D-pad controls pitch/collective, and A applies airplane braking. Flight HUD reports speed, altitude, throttle, gear and runway/airborne/stall state.
+- **Controls:** contextual touch controls expose throttle increase/decrease, pitch/collective, brake and landing gear; gamepad triggers adjust engine power, D-pad controls pitch/collective, A brakes and B toggles airplane landing gear. Flight HUD reports speed, altitude, throttle, gear and runway/airborne/stall state.
 - **Scope note:** this is a dedicated in-game training airfield, not a claim that real-world airport buildings/runways have been imported into every city. The regular city map remains unchanged and can be resumed at the saved location.
 
 ## Delivery stages

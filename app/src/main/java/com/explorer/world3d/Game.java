@@ -77,6 +77,7 @@ final class Game {
     }
 
     void reset() {
+        sx = sy = 0f; sprint = false;
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = 0; brakeRequested = false; camYaw = 0; health = 100; dead = false;

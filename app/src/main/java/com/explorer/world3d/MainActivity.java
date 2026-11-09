@@ -65,7 +65,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private long lastHudRefresh;
     private LinearLayout touchActionPad, touchCombatRow, touchFlightRow;
     private Button touchVehicleButton, touchVehicleTypeButton, touchSprintButton, touchDodgeButton;
-    private Button flightSchoolButton, returnCityButton, touchGearButton, touchFlightUpButton, touchFlightDownButton;
+    private Button flightSchoolButton, returnCityButton, touchGearButton, touchFlightUpButton, touchFlightDownButton, touchBrakeButton;
+    private LinearLayout touchFlightUtilityRow;
 
 
     private int dp(int v) { return dp((float) v); }
@@ -169,7 +170,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             else if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.jumpRequested = true; } });
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_B) { if (pressed && !renderer.game.driving) runOnGl(new Runnable() { @Override public void run() { renderer.game.kickRequested = true; } }); return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_B) {
+            if (pressed && renderer.game.driving && renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE)
+                runOnGl(() -> renderer.toggleAircraftGear());
+            else if (pressed && !renderer.game.driving) runOnGl(() -> renderer.game.kickRequested = true);
+            return true;
+        }
         if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed && !renderer.game.driving) runOnGl(() -> renderer.game.reloadRequested = true); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_L1) { if (!renderer.game.driving) renderer.game.weaponAimHeld = down; else renderer.game.cameraLookOffset = down ? -0.95f : 0f; return true; }
@@ -489,16 +495,16 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         flightPitchRow.addView(touchFlightUpButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
         flightPitchRow.addView(touchFlightDownButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
         flightRow.addView(flightPitchRow);
-        LinearLayout flightUtilityRow = new LinearLayout(this);
-        flightUtilityRow.setGravity(Gravity.CENTER);
-        Button brakeTouch = touchAction("مكابح", () -> runOnGl(() -> renderer.game.brakeRequested = true),
+        touchFlightUtilityRow = new LinearLayout(this);
+        touchFlightUtilityRow.setGravity(Gravity.CENTER);
+        touchBrakeButton = touchAction("مكابح", () -> runOnGl(() -> renderer.game.brakeRequested = true),
                 () -> runOnGl(() -> renderer.game.brakeRequested = false));
         touchGearButton = btn("العجلات: مفتوحة");
         touchGearButton.setTextSize(12);
         touchGearButton.setOnClickListener(v -> runOnGl(() -> renderer.toggleAircraftGear()));
-        flightUtilityRow.addView(brakeTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        flightUtilityRow.addView(touchGearButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        flightRow.addView(flightUtilityRow);
+        touchFlightUtilityRow.addView(touchBrakeButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        touchFlightUtilityRow.addView(touchGearButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        flightRow.addView(touchFlightUtilityRow);
         actionPad.addView(flightRow);
         touchFlightRow = flightRow;
 
@@ -589,7 +595,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
     }
     @Override protected void onPause() {
-        // Never leave held touch actions latched when Android interrupts the activity.
+        // Never leave held touch/gamepad actions latched when Android interrupts the activity.
+        padL2 = padR2 = padCameraModifier = false;
+        keyUp = keyDown = keyLeft = keyRight = false;
         if (renderer != null) {
             saveWeaponState();
             renderer.game.sprint = false;
@@ -729,6 +737,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             touchGearButton.setVisibility(airplane ? View.VISIBLE : View.GONE);
             touchGearButton.setText(renderer.game.landingGearDown ? "العجلات: مفتوحة" : "العجلات: مطوية");
         }
+        if (touchBrakeButton != null) touchBrakeButton.setVisibility(airplane ? View.VISIBLE : View.GONE);
+        if (touchFlightUtilityRow != null) touchFlightUtilityRow.setVisibility(airplane ? View.VISIBLE : View.GONE);
         if (touchFlightUpButton != null) touchFlightUpButton.setText(airplane ? "رفع المقدمة ▲" : "صعود ▲");
         if (touchFlightDownButton != null) touchFlightDownButton.setText(airplane ? "خفض المقدمة ▼" : "هبوط ▼");
         if (touchActionPad != null) touchActionPad.setVisibility(View.VISIBLE);
