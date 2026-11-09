@@ -1,0 +1,62 @@
+name: Import missing city source data
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/import_full_city_sources.py"
+      - ".github/workflows/import-full-city-sources.yml"
+  workflow_dispatch:
+    inputs:
+      city:
+        description: "Optional city slug; leave empty to resume all cities"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adam-world-source-import-main
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install import tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install overturemaps ijson shapely
+
+      - name: Resume missing source layers and checkpoint every data part
+        env:
+          REQUESTED_CITY: ${{ inputs.city }}
+        run: |
+          set -euo pipefail
+          if [ -n "${REQUESTED_CITY}" ]; then
+            python tools/import_full_city_sources.py --city "${REQUESTED_CITY}"
+          else
+            python tools/import_full_city_sources.py
+          fi
+
+      - name: Report committed import state
+        if: always()
+        run: |
+          echo "Source files are checkpointed under data/full-city-imports/<city>/<layer>/."
+          echo "Completed layers are skipped on the next run; incomplete layers resume from verified parts."
+          git status --short
