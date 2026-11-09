@@ -887,7 +887,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                     g.vehicleBumpPitch + g.vehicleWheelBodyPitch + g.aircraftPitch,
                     g.vehicleWheelFL - g.vehicleWheelBodyLift, g.vehicleWheelFR - g.vehicleWheelBodyLift,
                     g.vehicleWheelRL - g.vehicleWheelBodyLift, g.vehicleWheelRR - g.vehicleWheelBodyLift);
-            if (!g.driving) drawKid(g.px,g.py+g.jumpHeight,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash);
+            if (!g.driving) drawKid(g.px,g.py+g.jumpHeight,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash,g.equippedWeapon);
         }
     }
 
@@ -1075,7 +1075,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     /** اللاعب: نسخة طفولية من الشخصية الإجرائية نفسها مع مفاصل ووجه وملابس مولّدة. */
-    private void drawKid(float x,float y,float z,float yaw,float ph,float amp,float attack,int attackType,int pose,float poseTime,float guard,float hurt) {
+    private void drawKid(float x,float y,float z,float yaw,float ph,float amp,float attack,int attackType,int pose,float poseTime,float guard,float hurt,int weaponId) {
         if(humanRigModels==null||humanRigModels.length==0)return;
         Mesh[] rig=humanRigModels[0];
         float swing=(float)Math.sin(ph)*amp*.58f;
@@ -1110,6 +1110,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             drawHumanPart(rig[8],side*.052f,1.645f,.127f,0,0,0,0,1,1,1);
             drawHumanPart(rig[12],side*.052f,1.667f,.137f,0,0,0,0,1,1,1);
             drawHumanPart(rig[15],side*.31f,.78f,.02f,arm*.42f,0,0,0,1,1,1);
+            if(side>0&&weaponId>=0&&weaponId<WeaponSystem.NAME.length)drawHumanPart(cube,.39f,.91f,.19f,arm*.42f,0,0,0,weaponId==0?.20f:weaponId==3?.22f:.34f,.075f,weaponId==4?.10f:.055f);
         }
         drawHumanPart(rig[9],0,1.555f,.137f,0,0,0,0,1,1,1);
     }
