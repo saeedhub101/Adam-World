@@ -385,13 +385,15 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         }
     }
 
-    @Override public float heightAt(float x, float z) {
+    /** Ground height excluding raised walkable curbs; used by wheel suspension. */
+    public float baseHeightAt(float x, float z) {
         if (loader.offlineManila) return 0f;
         float lm = Landmarks.heightAt(x, z);
-        float baseHeight = Float.isNaN(lm) ? Terrain.h(x, z) : lm;
-        // Characters and vehicle chassis follow low walkable curbs/islands instead
-        // of sinking into their raised mesh.
-        return baseHeight + lowObstacleHeightAt(x, z);
+        return Float.isNaN(lm) ? Terrain.h(x, z) : lm;
+    }
+
+    @Override public float heightAt(float x, float z) {
+        return baseHeightAt(x, z) + lowObstacleHeightAt(x, z);
     }
 
     /** يبني مربعات الأرض من الارتفاعات الحقيقية حول اللاعب ويحذف البعيد منها. */
@@ -753,12 +755,15 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform1f(uEmisK, 0f);
         for (Game.Agent a : g.agents) {
             if (Math.hypot(a.x - g.camX, a.z - g.camZ) > 350) continue;
-            if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, a.cr, a.cg, a.cb, a.sp * a.dir, 0f, 0f, 0f, 0f);
+            if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, a.cr, a.cg, a.cb, a.sp * a.dir, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
             else drawPerson(a.x,Terrain.h(a.x,a.z),a.z,a.yaw,a.ph,a.humanType,a.hostile,a.knockedOut,a.state,a.stateTime,a.hitFlash);
         }
         if (spawned) {
             drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.py - Terrain.h(g.cx, g.cz), 0.75f, 0.22f, 0.17f, g.cv, g.sx,
-                    g.vehicleBumpOffset, g.vehicleBumpRoll, g.vehicleBumpPitch);
+                    g.vehicleBumpOffset, g.vehicleBumpRoll + g.vehicleWheelBodyRoll,
+                    g.vehicleBumpPitch + g.vehicleWheelBodyPitch,
+                    g.vehicleWheelFL - g.vehicleWheelBodyLift, g.vehicleWheelFR - g.vehicleWheelBodyLift,
+                    g.vehicleWheelRL - g.vehicleWheelBodyLift, g.vehicleWheelRR - g.vehicleWheelBodyLift);
             if (!g.driving) drawKid(g.px,g.py+g.jumpHeight,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash);
         }
     }
@@ -788,7 +793,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     private void drawVehicle(float x,float z,float yaw,int type,float yOffset,float cr,float cg,float cb,float speed,float steering,
-                             float suspensionY,float suspensionRoll,float suspensionPitch) {
+                             float suspensionY,float suspensionRoll,float suspensionPitch,
+                             float wheelFL,float wheelFR,float wheelRL,float wheelRR) {
         if(vehicleModels==null || type<0 || type>=vehicleModels.length || vehicleModels[type]==null) return;
         float length=(type==ProceduralVehicleModels.AIRPLANE?7.0f:type==ProceduralVehicleModels.BUS?8.3f:5.0f);
         float sy=(float)Math.sin(yaw), cy=(float)Math.cos(yaw);
@@ -812,7 +818,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         drawVehicleGlass(type);
         if(type==ProceduralVehicleModels.TANK) drawTankTracks(speed);
         if(type==ProceduralVehicleModels.HELICOPTER) drawHelicopterRotor();
-        if(type!=ProceduralVehicleModels.TANK && type!=ProceduralVehicleModels.HELICOPTER && type!=ProceduralVehicleModels.AIRPLANE) drawVehicleWheels(type,speed,steering);
+        if(type!=ProceduralVehicleModels.TANK && type!=ProceduralVehicleModels.HELICOPTER && type!=ProceduralVehicleModels.AIRPLANE) drawVehicleWheels(type,speed,steering,wheelFL,wheelFR,wheelRL,wheelRR);
     }
 
     private void drawVehicleGlass(int type) {
@@ -830,7 +836,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glDisable(GLES20.GL_BLEND);
     }
 
-    private void drawVehicleWheels(int type,float speed,float steering) {
+    private void drawVehicleWheels(int type,float speed,float steering,float wheelFL,float wheelFR,float wheelRL,float wheelRR) {
         if(wheelMesh==null) return;
         if(type==ProceduralVehicleModels.BICYCLE || type==ProceduralVehicleModels.MOTORBIKE) {
             float radius=type==ProceduralVehicleModels.BICYCLE?.34f:.43f;
@@ -838,7 +844,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             float angle=(float)(System.nanoTime()*1.0e-9*speed/radius);
             for(int axle=-1;axle<=1;axle+=2) {
                 System.arraycopy(base,0,wheelMatrix,0,16);
-                Matrix.translateM(wheelMatrix,0,0,radius,axle*half);
+                float wheelStep = axle > 0 ? (wheelFL + wheelFR) * 0.5f : (wheelRL + wheelRR) * 0.5f;
+                Matrix.translateM(wheelMatrix,0,0,radius + wheelStep - (wheelFL + wheelFR + wheelRL + wheelRR) * 0.25f,axle*half);
                 if(axle>0) Matrix.rotateM(wheelMatrix,0,steering*24f,0f,1f,0f);
                 Matrix.rotateM(wheelMatrix,0,(float)Math.toDegrees(angle),1f,0f,0f);
                 Matrix.scaleM(wheelMatrix,0,.50f,radius/.32f,radius/.32f);
@@ -852,7 +859,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         float wheelAngle=(float)(System.nanoTime()*1.0e-9*speed/.32f);
         for(int side=-1;side<=1;side+=2) for(int axle=-1;axle<=1;axle+=2) {
             System.arraycopy(base,0,wheelMatrix,0,16);
-            Matrix.translateM(wheelMatrix,0,side*.91f,.42f,axle*halfZ);
+            float wheelStep = axle > 0 ? (side < 0 ? wheelFL : wheelFR) : (side < 0 ? wheelRL : wheelRR);
+            Matrix.translateM(wheelMatrix,0,side*.91f,.42f+wheelStep,axle*halfZ);
             if(axle>0) Matrix.rotateM(wheelMatrix,0,steering*27f,0f,1f,0f);
             Matrix.rotateM(wheelMatrix,0,(float)Math.toDegrees(wheelAngle),1f,0f,0f);
             GLES20.glUniformMatrix4fv(uModel,1,false,wheelMatrix,0);

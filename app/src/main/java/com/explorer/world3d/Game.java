@@ -42,6 +42,9 @@ final class Game {
     float vehicleBumpAmplitude, vehicleBumpTime, vehicleBumpOffset, vehicleBumpRoll, vehicleBumpPitch;
     float vehicleBumpSide;
     boolean vehicleFrontStepContact, vehicleRearStepContact;
+    // Smoothed independent wheel travel over kerbs/raised islands.
+    float vehicleWheelFL, vehicleWheelFR, vehicleWheelRL, vehicleWheelRR;
+    float vehicleWheelBodyLift, vehicleWheelBodyRoll, vehicleWheelBodyPitch;
     int attackType;
     long lastPlayerAttackMs;
     int comboStep;
@@ -69,6 +72,8 @@ final class Game {
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
         vehicleBumpAmplitude = vehicleBumpTime = vehicleBumpOffset = vehicleBumpRoll = vehicleBumpPitch = vehicleBumpSide = 0f;
         vehicleFrontStepContact = vehicleRearStepContact = false;
+        vehicleWheelFL = vehicleWheelFR = vehicleWheelRL = vehicleWheelRR = 0f;
+        vehicleWheelBodyLift = vehicleWheelBodyRoll = vehicleWheelBodyPitch = 0f;
         lastPlayerAttackMs = lastDamageMs = deathStartedMs = 0L; agents.clear();
     }
 
@@ -229,29 +234,42 @@ final class Game {
                 if (blockedVehicle) cv = -cv * 0.25f;
                 else { cx = nx; cz = nz; }
 
-                // Sample the four wheel contact patches. A front/rear axle entering
-                // a raised curb or island triggers a damped body jolt; the rear axle
-                // produces its own delayed response as it climbs and drops.
+                // Four independent wheel contact patches. Each wheel rises over a
+                // curb/island, then the chassis follows the averaged spring travel.
                 if (w instanceof CityRenderer) {
                     CityRenderer city = (CityRenderer) w;
                     float rx = -fz, rz = fx;
-                    float halfWidth = vehicleType == ProceduralVehicleModels.BUS ? 1.05f : 0.78f;
-                    float frontLeft = city.lowObstacleHeightAt(cx + fx * vehicleProbe + rx * halfWidth, cz + fz * vehicleProbe + rz * halfWidth);
-                    float frontRight = city.lowObstacleHeightAt(cx + fx * vehicleProbe - rx * halfWidth, cz + fz * vehicleProbe - rz * halfWidth);
-                    float rearLeft = city.lowObstacleHeightAt(cx - fx * vehicleProbe + rx * halfWidth, cz - fz * vehicleProbe + rz * halfWidth);
-                    float rearRight = city.lowObstacleHeightAt(cx - fx * vehicleProbe - rx * halfWidth, cz - fz * vehicleProbe - rz * halfWidth);
-                    float frontStep = Math.max(frontLeft, frontRight);
-                    float rearStep = Math.max(rearLeft, rearRight);
-                    boolean frontContact = frontStep > 0.015f;
-                    boolean rearContact = rearStep > 0.015f;
-                    float impactSpeed = Math.min(0.22f, 0.085f + Math.abs(cv) * 0.0045f);
+                    float halfWidth = vehicleType == ProceduralVehicleModels.BUS ? 0.91f : 0.91f;
+                    float halfLength = vehicleType == ProceduralVehicleModels.BUS ? 2.85f
+                            : vehicleType == ProceduralVehicleModels.SUV ? 1.52f
+                            : vehicleType == ProceduralVehicleModels.PICKUP ? 1.65f
+                            : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 1.45f : 1.38f;
+                    float frontLeft = city.lowObstacleHeightAt(cx + fx * halfLength - rx * halfWidth, cz + fz * halfLength - rz * halfWidth);
+                    float frontRight = city.lowObstacleHeightAt(cx + fx * halfLength + rx * halfWidth, cz + fz * halfLength + rz * halfWidth);
+                    float rearLeft = city.lowObstacleHeightAt(cx - fx * halfLength - rx * halfWidth, cz - fz * halfLength - rz * halfWidth);
+                    float rearRight = city.lowObstacleHeightAt(cx - fx * halfLength + rx * halfWidth, cz - fz * halfLength + rz * halfWidth);
+                    float spring = Math.min(1f, dt * 18f);
+                    vehicleWheelFL += (frontLeft - vehicleWheelFL) * spring;
+                    vehicleWheelFR += (frontRight - vehicleWheelFR) * spring;
+                    vehicleWheelRL += (rearLeft - vehicleWheelRL) * spring;
+                    vehicleWheelRR += (rearRight - vehicleWheelRR) * spring;
+                    vehicleWheelBodyLift = (vehicleWheelFL + vehicleWheelFR + vehicleWheelRL + vehicleWheelRR) * 0.25f;
+                    float frontAverage = (vehicleWheelFL + vehicleWheelFR) * 0.5f;
+                    float rearAverage = (vehicleWheelRL + vehicleWheelRR) * 0.5f;
+                    float leftAverage = (vehicleWheelFL + vehicleWheelRL) * 0.5f;
+                    float rightAverage = (vehicleWheelFR + vehicleWheelRR) * 0.5f;
+                    vehicleWheelBodyPitch = (float) Math.toDegrees(Math.atan2(frontAverage - rearAverage, halfLength * 2f));
+                    vehicleWheelBodyRoll = (float) Math.toDegrees(Math.atan2(leftAverage - rightAverage, halfWidth * 2f));
+                    float frontStep = Math.max(frontLeft, frontRight), rearStep = Math.max(rearLeft, rearRight);
+                    boolean frontContact = frontStep > 0.015f, rearContact = rearStep > 0.015f;
+                    float impactSpeed = Math.min(0.16f, 0.055f + Math.abs(cv) * 0.003f);
                     if (frontContact && !vehicleFrontStepContact) {
-                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.max(0.45f, Math.min(1.5f, frontStep / 0.18f)));
+                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.min(1.25f, frontStep / 0.18f));
                         vehicleBumpTime = 0f;
                         vehicleBumpSide = Math.signum(frontLeft - frontRight);
                     }
                     if (rearContact && !vehicleRearStepContact) {
-                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.max(0.45f, Math.min(1.5f, rearStep / 0.18f)));
+                        vehicleBumpAmplitude = Math.max(vehicleBumpAmplitude, impactSpeed * Math.min(1.25f, rearStep / 0.18f));
                         vehicleBumpTime = 0f;
                         vehicleBumpSide = Math.signum(rearLeft - rearRight);
                     }
@@ -261,7 +279,9 @@ final class Game {
             }
             }
             px = cx; pz = cz;
-            float ground = w.heightAt(cx, cz);
+            float ground = (w instanceof CityRenderer && !aircraft)
+                    ? ((CityRenderer) w).baseHeightAt(cx, cz) + vehicleWheelBodyLift
+                    : w.heightAt(cx, cz);
             py += (ground + altitude - py) * Math.min(1f, dt * (aircraft ? 4f : 10f));
             if (System.currentTimeMillis() - lastLookMs > 2500) {
                 camYaw += angDiff(camYaw, cyaw) * Math.min(1f, dt * 2.5f);
