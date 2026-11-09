@@ -1803,7 +1803,7 @@ final class TileBuilder {
                 curbStep.maxx = Math.max(Math.max(a[0], b[0]), Math.max(c[0], d[0]));
                 curbStep.minz = Math.min(Math.min(a[1], b[1]), Math.min(c[1], d[1]));
                 curbStep.maxz = Math.max(Math.max(a[1], b[1]), Math.max(c[1], d[1]));
-                curbStep.obstacleHeight = kerbRise;
+                curbStep.obstacleHeight = pavementY;
                 Collision.add(td.grid, curbStep);
             }
         }
@@ -1887,7 +1887,7 @@ final class TileBuilder {
             medianStep.maxx = Math.max(Math.max(m0[0],m1[0]),Math.max(m2[0],m3[0]));
             medianStep.minz = Math.min(Math.min(m0[1],m1[1]),Math.min(m2[1],m3[1]));
             medianStep.maxz = Math.max(Math.max(m0[1],m1[1]),Math.max(m2[1],m3[1]));
-            medianStep.obstacleHeight = 0.16f;
+            medianStep.obstacleHeight = roadYOffset + 0.16f;
             Collision.add(td.grid, medianStep);
             for (int side : new int[]{-1,1}) {
                 path.posAt(s,side*w*0.5f,a); path.posAt(e,side*w*0.5f,c);
