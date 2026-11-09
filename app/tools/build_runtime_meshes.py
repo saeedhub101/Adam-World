@@ -106,6 +106,24 @@ def color_for(mesh, fallback):
     return base
 
 
+def vertex_normals(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
+    """Compute stable area-weighted vertex normals without optional SciPy."""
+    normals = np.zeros_like(vertices, dtype=np.float32)
+    triangles = vertices[faces]
+    face_normals = np.cross(
+        triangles[:, 1] - triangles[:, 0],
+        triangles[:, 2] - triangles[:, 0],
+    ).astype(np.float32, copy=False)
+    np.add.at(normals, faces[:, 0], face_normals)
+    np.add.at(normals, faces[:, 1], face_normals)
+    np.add.at(normals, faces[:, 2], face_normals)
+    lengths = np.linalg.norm(normals, axis=1, keepdims=True)
+    invalid = (~np.isfinite(lengths[:, 0])) | (lengths[:, 0] < 1e-8)
+    normals = normals / np.maximum(lengths, 1e-8)
+    normals[invalid] = (0.0, 1.0, 0.0)
+    return np.nan_to_num(normals, nan=0.0, posinf=0.0, neginf=0.0)
+
+
 def convert(raw: bytes, target_length: float, fallback):
     meshes = scene_meshes(raw)
     all_vertices, all_normals, all_colors, all_faces = [], [], [], []
@@ -113,10 +131,8 @@ def convert(raw: bytes, target_length: float, fallback):
     for mesh in meshes:
         vertices = np.asarray(mesh.vertices, dtype=np.float32)
         faces = np.asarray(mesh.faces, dtype=np.int64)
-        normals = np.asarray(mesh.vertex_normals, dtype=np.float32)
+        normals = vertex_normals(vertices, faces)
         colors = color_for(mesh, fallback)
-        if normals.shape != vertices.shape:
-            normals = np.tile(np.array([[0, 1, 0]], dtype=np.float32), (len(vertices), 1))
         all_vertices.append(vertices)
         all_normals.append(normals)
         all_colors.append(colors)
