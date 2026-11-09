@@ -1734,6 +1734,7 @@ final class TileBuilder {
             String sideTag = tg(tags, "sidewalk:" + sideName).toLowerCase(java.util.Locale.US);
             String presence = sideTag.isEmpty() ? both : sideTag;
             if (presence.matches("no|none|separate|0")) continue;
+            if (sideTag.isEmpty() && (both.equals("left") && side < 0 || both.equals("right") && side > 0)) continue;
             if (presence.isEmpty() && !urban) continue;
             float width = measure(tg(tags, "sidewalk:" + sideName + ":width"));
             if (!(width >= 0.7f && width <= 12f)) width = measure(tg(tags, "sidewalk:width"));
@@ -1753,18 +1754,22 @@ final class TileBuilder {
             }
             ribbonOffset(cx, cz, width, roadYOffset + 0.20f, td.bufs[B_SIDEWALK],
                     1f, 8f, 0.78f, 0.77f, 0.72f);
+            String kerbType = (tg(tags, "kerb") + " " + tg(tags, "curb")).toLowerCase(java.util.Locale.US);
+            float kerbRise = measure(tg(tags, "kerb:height"));
+            if (!(kerbRise >= 0.05f && kerbRise <= 0.40f)) kerbRise = 0.10f;
+            if (kerbType.matches(".*(flush|lowered|rolled).*")) kerbRise = Math.min(0.06f, kerbRise);
             float[] curbX = new float[count], curbZ = new float[count];
             for (int i = 0; i < count; i++) {
                 path.posAt(path.total * i / (count - 1f), side * (inner + 0.10f), p);
                 curbX[i] = p[0]; curbZ[i] = p[1];
             }
-            ribbonOffset(curbX, curbZ, 0.20f, roadYOffset + 0.30f, td.bufs[B_SIDEWALK],
+            ribbonOffset(curbX, curbZ, 0.20f, roadYOffset + 0.20f + kerbRise, td.bufs[B_SIDEWALK],
                     1f, 2f, 0.58f, 0.59f, 0.56f);
             for (int i = 0; i + 1 < count; i++) {
                 float baseA = Terrain.h(ix[i], iz[i]) + roadYOffset;
                 float baseB = Terrain.h(ix[i + 1], iz[i + 1]) + roadYOffset;
-                float topA = Terrain.h(ix[i], iz[i]) + roadYOffset + 0.30f;
-                float topB = Terrain.h(ix[i + 1], iz[i + 1]) + roadYOffset + 0.30f;
+                float topA = Terrain.h(ix[i], iz[i]) + roadYOffset + 0.20f + kerbRise;
+                float topB = Terrain.h(ix[i + 1], iz[i + 1]) + roadYOffset + 0.20f + kerbRise;
                 facadeQuad(td.bufs[B_SIDEWALK], ix[i], baseA, iz[i], ix[i + 1], baseB, iz[i + 1],
                         ix[i + 1], topB, iz[i + 1], ix[i], topA, iz[i],
                         0.48f, 0.49f, 0.46f);
