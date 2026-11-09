@@ -694,24 +694,35 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                     smoothGamepadLookY * dt * 235f * lookSensitivity);
 
         if (!flightSchoolMode) {
+        int ptx = Geo.tileX(game.focusX()), ptz = Geo.tileZ(game.focusZ());
         TileData td;
         int ups = 0;
         long uploadDeadline = System.nanoTime() + 7000000L;
+        // Upload at most one nearby tile per frame. Discard obsolete worker
+        // results instead of uploading geometry from places the player has left.
         while (ups < 1 && System.nanoTime() < uploadDeadline && (td = loader.ready.poll()) != null) {
             if (td.gen != loader.gen) continue;
+            if (Math.abs(td.ix - ptx) > KEEP_R + 1 || Math.abs(td.iz - ptz) > KEEP_R + 1) {
+                loader.requested.remove(Geo.key(td.ix, td.iz));
+                continue;
+            }
             uploadTile(td);
             ups++;
         }
-
-        int ptx = Geo.tileX(game.focusX()), ptz = Geo.tileZ(game.focusZ());
         loader.ptx = ptx; loader.ptz = ptz;
 
-        if (nowMs - lastUnload > 1000) {
+        if (nowMs - lastUnload > 250) {
             lastUnload = nowMs;
+            // Prune stale CPU-side work as the player moves; retain one extra
+            // ring for forward streaming so nearby buildings are ready before arrival.
+            loader.retainAround(ptx, ptz, KEEP_R + 1);
             Iterator<Map.Entry<Long, Tile>> it = tiles.entrySet().iterator();
             while (it.hasNext()) {
                 Tile t = it.next().getValue();
                 if (Math.abs(t.ix - ptx) > KEEP_R || Math.abs(t.iz - ptz) > KEEP_R) {
+                    // Agents hold RoadPath/Tile references; release those first.
+                    Iterator<Game.Agent> agents = game.agents.iterator();
+                    while (agents.hasNext()) if (agents.next().tile == t) agents.remove();
                     t.release();
                     it.remove();
                     loader.requested.remove(t.key);
