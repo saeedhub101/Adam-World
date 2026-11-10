@@ -388,6 +388,59 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         return super.dispatchKeyEvent(event);
     }
 
+
+    // Android TV / Bluetooth / USB gamepads: left stick moves, right stick looks.
+    // While LB is held, the right stick selects a weapon instead of rotating the camera.
+    @Override public boolean onGenericMotionEvent(android.view.MotionEvent event) {
+        if (renderer == null || event.getActionMasked() != android.view.MotionEvent.ACTION_MOVE
+                || (event.getSource() & android.view.InputDevice.SOURCE_JOYSTICK)
+                != android.view.InputDevice.SOURCE_JOYSTICK) {
+            return super.onGenericMotionEvent(event);
+        }
+        android.view.InputDevice device = event.getDevice();
+        float lx = event.getAxisValue(android.view.MotionEvent.AXIS_X);
+        float ly = event.getAxisValue(android.view.MotionEvent.AXIS_Y);
+        float rx = event.getAxisValue(android.view.MotionEvent.AXIS_RX);
+        float ry = event.getAxisValue(android.view.MotionEvent.AXIS_RY);
+        if (device != null) {
+            if (Math.abs(rx) < 0.08f && Math.abs(ry) < 0.08f) {
+                rx = event.getAxisValue(android.view.MotionEvent.AXIS_Z);
+                ry = event.getAxisValue(android.view.MotionEvent.AXIS_RZ);
+            }
+        }
+        final float dead = 0.16f;
+        lx = applyStickDeadZone(lx, dead);
+        ly = applyStickDeadZone(ly, dead);
+        rx = applyStickDeadZone(rx, dead);
+        ry = applyStickDeadZone(ry, dead);
+        renderer.game.sx = lx;
+        renderer.game.sy = ly;
+        if (weaponWheelOpen && weaponWheelView != null) {
+            if (Math.abs(rx) > 0.01f || Math.abs(ry) > 0.01f) {
+                final float wx = rx, wy = ry;
+                runOnUiThread(() -> weaponWheelView.selectDirection(wx, wy));
+            }
+            renderer.setGamepadLook(0f, 0f);
+        } else {
+            renderer.setGamepadLook(rx, ry);
+        }
+        return true;
+    }
+
+    private static float applyStickDeadZone(float value, float deadZone) {
+        float magnitude = Math.abs(value);
+        if (magnitude <= deadZone) return 0f;
+        return Math.copySign(Math.min(1f, (magnitude - deadZone) / (1f - deadZone)), value);
+    }
+
+    @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BUTTON_START || keyCode == KeyEvent.KEYCODE_BUTTON_MODE) {
+            if (event.getRepeatCount() == 0) showPauseMenu();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
     @Override public void onBackPressed() {
         if (pauseDialog != null && pauseDialog.isShowing()) { pauseDialog.dismiss(); setGamePaused(false); }
         else showPauseMenu();
