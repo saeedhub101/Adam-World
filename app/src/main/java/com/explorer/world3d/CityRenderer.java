@@ -26,10 +26,11 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     static final int KEEP_R = 1; // Keep only a 3×3 GPU tile window; the loader prefetches the next ring.
     private static final String VS =
             "uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam;\n"
-            + "attribute vec3 aPos; attribute vec3 aNor; attribute vec2 aUV; attribute vec3 aCol;\n"
+            + "attribute vec3 aPos; attribute vec3 aNor; attribute vec2 aUV; attribute vec3 aCol; attribute vec4 aJoints; attribute vec4 aWeights;\n"
+            + "uniform mat4 uBones[24]; uniform float uSkinning;\n"
             + "varying vec2 vUV; varying vec3 vCol; varying vec3 vNor; varying float vDist; varying vec3 vWorld; varying vec3 vRel;\n"
-            + "void main(){ vec4 wp=uModel*vec4(aPos,1.0); gl_Position=uVP*wp; vUV=aUV; vCol=aCol;\n"
-            + " vNor=(uModel*vec4(aNor,0.0)).xyz; vDist=length(wp.xyz-uCam); vWorld=wp.xyz; vRel=wp.xyz-uCam; }";
+            + "void main(){ mat4 skin=mat4(1.0); if(uSkinning>0.5){ skin=uBones[int(aJoints.x)]*aWeights.x+uBones[int(aJoints.y)]*aWeights.y+uBones[int(aJoints.z)]*aWeights.z+uBones[int(aJoints.w)]*aWeights.w; } vec4 lp=skin*vec4(aPos,1.0); vec4 wp=uModel*lp; gl_Position=uVP*wp; vUV=aUV; vCol=aCol;\n"
+            + " vNor=(uModel*skin*vec4(aNor,0.0)).xyz; vDist=length(wp.xyz-uCam); vWorld=wp.xyz; vRel=wp.xyz-uCam; }";
     private static final String FS =
             "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n"
             + "uniform sampler2D uTex; uniform sampler2D uEmis; uniform sampler2D uNormalMap; uniform sampler2D uRoughMap; uniform sampler2D uMetalMap; uniform samplerCube uEnvMap; uniform vec3 uTint; uniform vec3 uCam;\n"
@@ -120,7 +121,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private final TileLoader loader;
     private final HashMap<Long, Tile> tiles = new HashMap<>();
     private int prog, skyProg;
-    private int uVP, uModel, uCam, uTint, uMatParams, uTex, uEmis, uSunDir, uSunCol, uAmb, uFog, uFogN, uFogF, uEmisK, uTop, uHor, uWater, uDecal, uTime, uPbr, uGlass, uNormalMap, uRoughMap, uMetalMap, uEnvMap;
+    private int uVP, uModel, uCam, uTint, uMatParams, uTex, uEmis, uSkinning, uBones, uSunDir, uSunCol, uAmb, uFog, uFogN, uFogF, uEmisK, uTop, uHor, uWater, uDecal, uTime, uPbr, uGlass, uNormalMap, uRoughMap, uMetalMap, uEnvMap;
     private Textures tex;
     private ProceduralMaterialMaps vehicleMaps;
     private Mesh cube, groundMesh, skyQuad, seaMesh, flightSchoolMesh, rocketMesh, guidedRocketMesh;
@@ -134,6 +135,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private Mesh wheelMesh;
     private final float[] wheelMatrix = new float[16];
     private Mesh[][] humanRigModels;
+    private SkinnedAssetLoader.Asset playerCharacterAsset;
+    private long lastCharacterAnimationNanos;
     private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN;
     private final HashMap<Long, Mesh> terrain = new HashMap<>();
     private final float[] proj = new float[16], view = new float[16], vp = new float[16];
@@ -274,7 +277,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glDisable(GLES20.GL_CULL_FACE);
         try {
-            prog = link(VS, FS, new String[]{"aPos", "aNor", "aUV", "aCol"});
+            prog = link(VS, FS, new String[]{"aPos", "aNor", "aUV", "aCol", "aJoints", "aWeights"});
             advancedShader = true;
         } catch (RuntimeException incompatiblePbrShader) {
             Log.w("AdamWorldGL", "PBR shader unavailable; using GLES 2.0 compatible renderer", incompatiblePbrShader);
@@ -286,6 +289,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         uCam = GLES20.glGetUniformLocation(prog, "uCam");
         uTint = GLES20.glGetUniformLocation(prog, "uTint");
         uMatParams = GLES20.glGetUniformLocation(prog, "uMatParams");
+        uSkinning = GLES20.glGetUniformLocation(prog, "uSkinning");
+        uBones = GLES20.glGetUniformLocation(prog, "uBones[0]");
         uTex = GLES20.glGetUniformLocation(prog, "uTex");
         uEmis = GLES20.glGetUniformLocation(prog, "uEmis");
         uSunDir = GLES20.glGetUniformLocation(prog, "uSunDir");
@@ -318,6 +323,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         vehicleModels = ProceduralVehicleModels.buildAll();
         // Prefer build-time converted real meshes; procedural meshes remain a safe fallback.
         importedVehicleModels = new AssetMeshLoader.Model[ProceduralVehicleModels.COUNT];
+        playerCharacterAsset = SkinnedAssetLoader.load(ctx, "models/runtime/characters/adam.awmesh5");
         importedVehicleModels[ProceduralVehicleModels.SEDAN] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/sedan.awmesh");
         importedVehicleModels[ProceduralVehicleModels.PICKUP] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/pickup.awmesh");
         importedVehicleModels[ProceduralVehicleModels.BUS] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/city-bus.awmesh");
@@ -854,6 +860,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         Matrix.multiplyMM(vp, 0, proj, 0, view, 0);
 
         GLES20.glUseProgram(prog);
+        GLES20.glUniform1f(uSkinning, 0f);
         for (int i = 0; i < 4; i++) GLES20.glEnableVertexAttribArray(i);
         GLES20.glUniformMatrix4fv(uVP, 1, false, vp, 0);
         GLES20.glUniform3f(uCam, g.camX, g.camY, g.camZ);
@@ -1216,8 +1223,36 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         else L.onToast("المركبة المحددة: " + ProceduralVehicleModels.name(playerVehicleType) + " — اضغط استدعاء / دخول");
     }
 
+    /** Imported, skinned player path. The procedural rig remains a safe fallback until an AWM5 pack is installed. */
+    private void drawImportedKid(float x,float y,float z,float yaw) {
+        SkeletalAnimationRuntime.Animator animator=playerCharacterAsset.animator;
+        float movement=Math.max(Math.abs(game.sx),Math.abs(game.sy));
+        String wanted=game.jumpHeight>0.12f?"jump":game.sprint&&movement>.08f?"run":movement>.08f?"walk":"idle";
+        int clip=animator.findClip(wanted);
+        if(clip<0) clip=animator.findClip("idle");
+        if(clip>=0 && animator.current!=clip) animator.play(clip,.18f,true);
+        long now=System.nanoTime();
+        float dt=lastCharacterAnimationNanos==0L?0f:(now-lastCharacterAnimationNanos)*1.0e-9f;
+        lastCharacterAnimationNanos=now;
+        animator.update(dt);
+        Matrix.setIdentityM(base,0);
+        Matrix.translateM(base,0,x,y,z);
+        Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
+        Matrix.scaleM(base,0,.86f,.86f,.86f);
+        GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
+        GLES20.glUniformMatrix4fv(uBones,animator.boneCount(),false,animator.skinMatrices(),0);
+        GLES20.glUniform1f(uSkinning,1f);
+        GLES20.glUniform1f(uPbr,0f);
+        GLES20.glUniform1f(uGlass,0f);
+        GLES20.glUniform3f(uTint,1f,1f,1f);
+        bindTex(tex.white,tex.black);
+        playerCharacterAsset.mesh.draw();
+        GLES20.glUniform1f(uSkinning,0f);
+    }
+
     /** اللاعب: نسخة طفولية من الشخصية الإجرائية نفسها مع مفاصل ووجه وملابس مولّدة. */
     private void drawKid(float x,float y,float z,float yaw,float ph,float amp,float attack,int attackType,int pose,float poseTime,float guard,float hurt,int weaponId,boolean aiming,float recoil,float muzzleFlash,float reloadSeconds,float reloadDuration) {
+        if(playerCharacterAsset!=null){drawImportedKid(x,y,z,yaw);return;}
         if(humanRigModels==null||humanRigModels.length==0)return;
         Mesh[] rig=humanRigModels[0];
         float swing=(float)Math.sin(ph)*amp*.58f;
