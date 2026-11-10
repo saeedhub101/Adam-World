@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 final class TileLoader extends Thread {
     interface ErrorCallback { void onError(); }
 
-    static final int LOAD_R = 1;   // 3×3 tiles: lower startup memory; expand as the player moves
+    static final int LOAD_R = 2;   // 5×5 prioritized look-ahead; only two completed CPU tiles may wait for upload
     static final String[] SERVERS = {
             "https://overpass-api.de/api/interpreter",
             "https://overpass.kumi.systems/api/interpreter",
