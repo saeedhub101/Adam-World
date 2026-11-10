@@ -59,7 +59,7 @@ final class Game {
     int attackType;
     long lastPlayerAttackMs, lastComboMs;
     volatile boolean weaponFireHeld, weaponAimHeld, reloadRequested;
-    int equippedWeapon=0, cash=2500, magazineAmmo=12;
+    int equippedWeapon=0, cash=100000, magazineAmmo=12;
     final boolean[] ownedWeapons={true,false,false,false,false,false,false};
     final int[] reserveAmmo={48,0,0,0,0,0,0};
     final int[] weaponMagazines={12,0,0,0,0,0,0};
