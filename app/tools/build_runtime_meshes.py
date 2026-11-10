@@ -69,7 +69,7 @@ ASSETS = {
         "fallback": (0.72, 0.08, 0.06),
         "target_faces": 8000,
         "texture_size": 512,
-        "max_bytes": 2200000,
+        "max_bytes": 4000000,
     },
 }
 
