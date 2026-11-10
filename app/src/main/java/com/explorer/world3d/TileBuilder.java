@@ -164,8 +164,26 @@ final class TileBuilder {
             String leisure = tg(tags, "leisure"), landuse = tg(tags, "landuse"), natural = tg(tags, "natural");
             String amenity = tg(tags, "amenity");
             String waterway = tg(tags, "waterway");
+            String aeroway = tg(tags, "aeroway");
 
-            if (natural.equals("coastline")) {
+            if (!aeroway.isEmpty()) {
+                float[][] airportArea = clean(xs, zs);
+                float airportColorR = aeroway.equals("runway") ? 0.20f : aeroway.equals("taxiway") ? 0.27f : 0.34f;
+                float airportColorG = aeroway.equals("runway") ? 0.21f : aeroway.equals("taxiway") ? 0.28f : 0.35f;
+                float airportColorB = aeroway.equals("runway") ? 0.23f : aeroway.equals("taxiway") ? 0.30f : 0.36f;
+                if (airportArea != null && Math.abs(Poly.area(airportArea[0], airportArea[1])) > 12f
+                        && overlaps(airportArea, xMin, xMax, zMin, zMax)) {
+                    float surfaceY = aeroway.equals("runway") || aeroway.equals("taxiway") ? 0.12f : 0.16f;
+                    fillCells(td.bufs[B_ROADN], airportArea[0], airportArea[1], xMin, xMax, zMin, zMax,
+                            3f, hg, Float.NaN, surfaceY, airportColorR, airportColorG, airportColorB, id);
+                } else if (aeroway.matches("runway|taxiway|taxilane|helipad")) {
+                    float width = aeroway.equals("runway") ? 45f : aeroway.equals("taxiway") ? 18f : 8f;
+                    float mappedWidth = metricMeasure(tg(tags, "width"));
+                    if (mappedWidth > 2f && mappedWidth < 120f) width = mappedWidth;
+                    addClippedRibbon(td, xs, zs, width, 0.14f, td.bufs[B_ROADN],
+                            airportColorR, airportColorG, airportColorB);
+                }
+            } else if (natural.equals("coastline")) {
                 td.hasCoast = true;
                 addCoastSand(td, xs, zs, xMin, xMax, zMin, zMax);
             } else if (!bld.isEmpty() && !bld.equals("no")) {
