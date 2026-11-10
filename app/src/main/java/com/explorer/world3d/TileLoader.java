@@ -244,7 +244,7 @@ final class TileLoader extends Thread {
         if (json == null) {
             String bb = String.format(Locale.US, "(%.6f,%.6f,%.6f,%.6f)", south, west, north, east);
             String q = "[out:json][timeout:60];("
-                    + "way[\"building\"]" + bb + ";way[\"highway\"]" + bb + ";"
+                    + "way[\"building\"]" + bb + ";way[\"highway\"]" + bb + ";way[\"aeroway\"]" + bb + ";"
                     + "way[\"leisure\"~\"park|garden|pitch|playground\"]" + bb + ";"
                     + "way[\"landuse\"~\"grass|forest|recreation_ground|village_green|meadow|sand|farmland|orchard|vineyard|cemetery\"]" + bb + ";"
                     + "way[\"natural\"~\"water|wood|scrub|beach|sand|dune|wetland|heath|grassland|coastline\"]" + bb + ";"
