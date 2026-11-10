@@ -1485,7 +1485,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         Matrix.setIdentityM(base,0);
         Matrix.translateM(base,0,x,y,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
-        Matrix.scaleM(base,0,1.52f,1.52f,1.52f);
+        Matrix.scaleM(base,0,3.04f,3.04f,3.04f);
         GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
         GLES20.glUniformMatrix4fv(uBones,animator.boneCount(),false,animator.skinMatrices(),0);
         GLES20.glUniform1f(uSkinning,1f);
@@ -1509,7 +1509,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
         float fall=pose==2?Math.min(1f,poseTime/.25f):pose==3?1f:pose==4?Math.max(0f,1f-poseTime/.55f):0f;
         Matrix.translateM(base,0,0f,.82f*fall,0f); Matrix.rotateM(base,0,-82f*fall,0f,0f,1f); Matrix.translateM(base,0,0f,-.82f*fall,0f);
-        Matrix.scaleM(base,0,1.25f,1.25f,1.25f);
+        Matrix.scaleM(base,0,2.50f,2.50f,2.50f);
         float attackDuration = attackType == 3 ? .62f : .42f;
         float attackPhase = attack > 0f ? Math.max(0f,Math.min(1f,1f-attack/attackDuration)) : 0f;
         float attackPulse = attack > 0f ? (float)Math.sin(attackPhase*Math.PI) : 0f;
