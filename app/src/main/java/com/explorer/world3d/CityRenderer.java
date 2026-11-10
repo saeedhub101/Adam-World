@@ -580,6 +580,27 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         }
         if (!g.driving) {
             float d = (float) Math.hypot(g.px - g.cx, g.pz - g.cz);
+            Game.Agent nearestTrafficCar = null;
+            float nearestTrafficDistance = 8f;
+            for (Game.Agent agent : g.agents) {
+                if (!agent.car || agent.knockedOut) continue;
+                float distance = (float)Math.hypot(g.px - agent.x, g.pz - agent.z);
+                if (distance < nearestTrafficDistance) {
+                    nearestTrafficDistance = distance;
+                    nearestTrafficCar = agent;
+                }
+            }
+            if (nearestTrafficCar != null && nearestTrafficDistance < d) {
+                g.cx = nearestTrafficCar.x; g.cz = nearestTrafficCar.z; g.cyaw = nearestTrafficCar.yaw;
+                g.cv = nearestTrafficCar.sp * nearestTrafficCar.dir;
+                g.vehicleType = nearestTrafficCar.vehicleType;
+                playerVehicleType = nearestTrafficCar.vehicleType;
+                g.driving = true; g.altitude = 0f; g.engineThrottle = 0f;
+                g.aircraftVerticalSpeed = 0f; g.aircraftOnGround = true; g.landingGearDown = true;
+                g.agents.remove(nearestTrafficCar);
+                L.onToast("تم ركوب سيارة الشارع");
+                return;
+            }
             if (d < 8f) {
                 g.driving = true; g.cv = 0; g.vehicleType = playerVehicleType; g.altitude = 0f; g.liftInput = g.throttleInput = 0f; g.brakeRequested = false; g.engineThrottle = playerVehicleType == ProceduralVehicleModels.HELICOPTER ? 0.52f : 0f; g.aircraftVerticalSpeed = 0f; g.aircraftOnGround = true; g.aircraftDamage = 0f; g.landingGearDown = true; g.aircraftPitch = g.aircraftRoll = 0f;
                 L.onToast("قيادة: العصا للتسارع والتوجيه");
