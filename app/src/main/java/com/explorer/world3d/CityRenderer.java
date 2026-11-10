@@ -311,7 +311,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         tex = new Textures();
         vehicleMaps = advancedShader ? ProceduralMaterialMaps.create() : null;
         cube = makeCube();
-        // Airports are streamed from real city aeroway data; no detached training scene is allocated.
+        if (flightSchoolMesh != null) flightSchoolMesh.release();
+        flightSchoolMesh = Mesh.from(Airfield.build());
+        // The former runway/apron/terminal scene is reused as an airport overlay at real airport coordinates.
         vehicleModels = ProceduralVehicleModels.buildAll();
         // Prefer build-time converted real meshes; procedural meshes remain a safe fallback.
         importedVehicleModels = new AssetMeshLoader.Model[ProceduralVehicleModels.COUNT];
@@ -647,9 +649,29 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         if (bestScore == Float.MAX_VALUE) return false;
 
         game.reset();
-        game.px = bestX; game.pz = bestZ; game.pyaw = bestYaw; game.camYaw = bestYaw;
-        game.cx = bestCarX; game.cz = bestCarZ; game.cyaw = bestYaw;
-        game.py = heightAt(game.px, game.pz);
+        if (airportVisit) {
+            // Spawn directly on the reused runway so the player can take off immediately.
+            game.vehicleType = ProceduralVehicleModels.AIRPLANE;
+            playerVehicleType = ProceduralVehicleModels.AIRPLANE;
+            game.px = game.cx = 0f;
+            game.pz = game.cz = -390f;
+            game.py = 0f;
+            game.pyaw = game.cyaw = 0f;
+            game.cv = 0f;
+            game.altitude = 0f;
+            game.engineThrottle = 0f;
+            game.aircraftVerticalSpeed = 0f;
+            game.aircraftOnGround = true;
+            game.landingGearDown = true;
+            game.driving = true;
+            game.camYaw = 0f;
+            game.camPitch = 0.30f;
+            game.camDistance = 25f;
+        } else {
+            game.px = bestX; game.pz = bestZ; game.pyaw = bestYaw; game.camYaw = bestYaw;
+            game.cx = bestCarX; game.cz = bestCarZ; game.cyaw = bestYaw;
+            game.py = heightAt(game.px, game.pz);
+        }
         game.snapCamera();
         needSpawn = false;
         spawned = true;
@@ -862,7 +884,6 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniformMatrix4fv(uModel, 1, false, tmp, 0);
         groundMesh.draw();
         GLES20.glUniformMatrix4fv(uModel, 1, false, ident, 0);
-        if (flightSchoolMode && flightSchoolMesh != null) drawMesh(flightSchoolMesh, tex.white, tex.black, 0f);
         if (!flightSchoolMode && !undergroundCutaway) {
             for (Mesh m : terrain.values()) m.draw();
         }
@@ -877,6 +898,13 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             drawMesh(t.meshes[TileBuilder.B_FACADE], tex.facade, tex.facadeEm, em);
             drawMesh(t.meshes[TileBuilder.B_GLASS], tex.glass, tex.glassEm, em);
             drawMesh(t.meshes[TileBuilder.B_SIGN], tex.sign, tex.sign, 1f);
+        }
+        // Reuse the complete former flight-school runway, taxiway, apron, hangar,
+        // terminal and helipad at the selected airport's geographic origin.
+        // The city tile stream remains active beneath/around this local airport scene.
+        if (airportVisit && flightSchoolMesh != null) {
+            GLES20.glUniformMatrix4fv(uModel, 1, false, ident, 0);
+            drawMesh(flightSchoolMesh, tex.white, tex.black, 0f);
         }
 
         // الماء: بحر (إن وُجد ساحل) + أنهار وبحيرات، بمظلل يعكس السماء
