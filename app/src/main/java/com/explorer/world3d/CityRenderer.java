@@ -148,6 +148,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private boolean started, needSpawn, spawned, spawnTimeoutNotified;
     private float lookDx, lookDy;
     private volatile float gamepadLookX, gamepadLookY;
+    private volatile boolean gamepadZoomModifier;
     private float smoothGamepadLookX, smoothGamepadLookY;
     private volatile float lookSensitivity = 1f;
     public volatile int timeIdx = 0;
@@ -237,6 +238,10 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     public void setLookSensitivity(float sensitivity) {
         if (Float.isFinite(sensitivity)) lookSensitivity = Math.max(0.35f, Math.min(2.0f, sensitivity));
     }
+
+    public void setGamepadZoomModifier(boolean enabled) { gamepadZoomModifier = enabled; if (!enabled) game.cameraZoomInput = 0f; }
+
+    public boolean isGamepadZoomModifier() { return gamepadZoomModifier; }
 
     public void setGamepadLook(float x, float y) {
         gamepadLookX = Math.max(-1f, Math.min(1f, x));
