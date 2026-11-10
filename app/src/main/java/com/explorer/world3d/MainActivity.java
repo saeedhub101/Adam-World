@@ -400,10 +400,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.addView(glView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         weaponWheelView = new WeaponWheelView(this);
         weaponWheelView.setGame(renderer.game);
-        weaponWheelView.setListener(id -> runOnGl(() -> {
-            renderer.game.equipWeapon(id);
-            runOnUiThread(this::saveWeaponState);
-        }));
+        weaponWheelView.setListener(id -> {
+            weaponWheelOpen = false;
+            runOnGl(() -> {
+                renderer.game.equipWeapon(id);
+                runOnUiThread(this::saveWeaponState);
+            });
+        });
         FrameLayout.LayoutParams wheelParams = new FrameLayout.LayoutParams(dp(320), dp(320), Gravity.CENTER);
         root.addView(weaponWheelView, wheelParams);
 
@@ -557,7 +560,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         weaponRow.addView(aimTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); weaponRow.addView(fireTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); combatControls.addView(weaponRow);
         LinearLayout weaponRow2=new LinearLayout(this); weaponRow2.setGravity(Gravity.CENTER);
         weaponRow2.addView(touchAction("تلقيم",()->runOnGl(()->renderer.game.reloadRequested=true),null),new LinearLayout.LayoutParams(0,dp(44),1f));
-        weaponRow2.addView(touchAction("تبديل",()->runOnGl(()->renderer.game.cycleWeapon()),null),new LinearLayout.LayoutParams(0,dp(44),1f));
+        weaponRow2.addView(touchAction("عجلة السلاح",()->{weaponWheelOpen=true;weaponWheelView.showWheel();},null),new LinearLayout.LayoutParams(0,dp(44),1f));
         weaponRow2.addView(touchAction("متجر الأسلحة",()->showWeaponShop(),null),new LinearLayout.LayoutParams(0,dp(44),1.35f)); combatControls.addView(weaponRow2);
         touchCombatRow = combatControls;
         actionPad.addView(combatControls);
