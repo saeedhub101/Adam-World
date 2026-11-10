@@ -655,7 +655,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             playerVehicleType = ProceduralVehicleModels.AIRPLANE;
             game.px = game.cx = 0f;
             game.pz = game.cz = -390f;
-            game.py = 0f;
+            game.py = baseHeightAt(0f, -390f);
             game.pyaw = game.cyaw = 0f;
             game.cv = 0f;
             game.altitude = 0f;
@@ -903,8 +903,11 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         // terminal and helipad at the selected airport's geographic origin.
         // The city tile stream remains active beneath/around this local airport scene.
         if (airportVisit && flightSchoolMesh != null) {
-            GLES20.glUniformMatrix4fv(uModel, 1, false, ident, 0);
+            Matrix.setIdentityM(tmp, 0);
+            Matrix.translateM(tmp, 0, 0f, baseHeightAt(0f, -390f), 0f);
+            GLES20.glUniformMatrix4fv(uModel, 1, false, tmp, 0);
             drawMesh(flightSchoolMesh, tex.white, tex.black, 0f);
+            GLES20.glUniformMatrix4fv(uModel, 1, false, ident, 0);
         }
 
         // الماء: بحر (إن وُجد ساحل) + أنهار وبحيرات، بمظلل يعكس السماء
