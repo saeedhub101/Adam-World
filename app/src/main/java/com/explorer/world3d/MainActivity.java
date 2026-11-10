@@ -333,37 +333,21 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
 
-        // Face buttons: GTA defaults on foot; contextual vehicle equivalents.
+        // Xbox/GTA on-foot layout: A jump, B melee, X reload, Y enter/exit vehicle.
+        // Sprint is assigned to left-stick click (L3), never to the A face button.
         if (code == KeyEvent.KEYCODE_BUTTON_A) {
-            if (!game.driving) {
-                game.jogging = down;
-                if (pressed) {
-                    long now = System.currentTimeMillis();
-                    if (game.lastSprintTapMs > 0L && now - game.lastSprintTapMs <= 430L) game.sprint = true;
-                    else game.sprint = false;
-                    game.lastSprintTapMs = now;
-                }
-            } else if (aircraft && pressed) {
-                // GTA aircraft A action: fire the aerial weapon. No aircraft weapon system exists yet.
-                // Keep this unconsumed only after an explicit future weapon implementation.
-            } else {
-                // GTA vehicle A is duck; no seated-player duck animation exists in this build.
-            }
+            if (!game.driving && pressed) runOnGl(() -> game.jumpRequested = true);
+            else if (game.driving) game.handbrake = down;
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_B) {
-            if (game.driving && pressed) {
-                game.cinematicCamera = !game.cinematicCamera;
-            } else if (!game.driving && pressed) {
-                int weapon = Math.max(0, Math.min(game.equippedWeapon, WeaponSystem.MAGAZINE.length - 1));
-                if (game.weaponAimHeld || game.magazineAmmo < WeaponSystem.MAGAZINE[weapon])
-                    runOnGl(() -> game.reloadRequested = true);
-                else runOnGl(() -> game.punchRequested = true);
-            }
+            if (game.driving && pressed) game.cinematicCamera = !game.cinematicCamera;
+            else if (!game.driving && pressed) runOnGl(() -> game.punchRequested = true);
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_X) {
-            if (!game.driving && pressed) runOnGl(() -> game.jumpRequested = true);
+            if (!game.driving && pressed) runOnGl(() -> game.reloadRequested = true);
+            else if (game.driving && pressed) playHorn();
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) {
@@ -421,13 +405,16 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_THUMBL) {
-            if (pressed && game.driving && game.vehicleType == ProceduralVehicleModels.AIRPLANE)
+            if (!game.driving) {
+                game.sprint = down;
+                game.jogging = down;
+            } else if (pressed && game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
                 runOnGl(() -> renderer.toggleAircraftGear());
-            else if (pressed && game.driving && !aircraft) playHorn();
-            else if (pressed && !game.driving) game.stealthMode = !game.stealthMode;
+            } else if (pressed && !aircraft) playHorn();
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_THUMBR) {
+            // Hold R3 to look behind; release restores the normal chase camera.
             game.cameraLookOffset = down ? (float)Math.PI : 0f;
             return true;
         }
