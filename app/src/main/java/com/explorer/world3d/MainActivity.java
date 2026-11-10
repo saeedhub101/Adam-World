@@ -1007,7 +1007,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.addView(miniMap, miniParams);
 
         aimReticle = new AimReticleView(this);
-        FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(dp(42),dp(42),Gravity.CENTER);
+        FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(dp(76),dp(76),Gravity.CENTER);
         root.addView(aimReticle,reticleParams);
 
         Button settings = btn("⚙");
