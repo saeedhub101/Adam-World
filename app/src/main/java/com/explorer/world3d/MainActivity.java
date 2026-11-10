@@ -406,6 +406,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             rx = event.getAxisValue(android.view.MotionEvent.AXIS_Z);
             ry = event.getAxisValue(android.view.MotionEvent.AXIS_RZ);
         }
+        final float dead = 0.16f;
+        lx = applyStickDeadZone(lx, dead);
+        ly = applyStickDeadZone(ly, dead);
+        rx = applyStickDeadZone(rx, dead);
+        ry = applyStickDeadZone(ry, dead);
+        renderer.game.sx = lx;
+        renderer.game.sy = ly;
         boolean hasLeftTrigger = device != null
                 && (device.getMotionRange(android.view.MotionEvent.AXIS_LTRIGGER, event.getSource()) != null
                 || device.getMotionRange(android.view.MotionEvent.AXIS_BRAKE, event.getSource()) != null);
@@ -435,13 +442,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 renderer.game.weaponFireHeld = padR2;
             }
         }
-        final float dead = 0.16f;
-        lx = applyStickDeadZone(lx, dead);
-        ly = applyStickDeadZone(ly, dead);
-        rx = applyStickDeadZone(rx, dead);
-        ry = applyStickDeadZone(ry, dead);
-        renderer.game.sx = lx;
-        renderer.game.sy = ly;
         if (weaponWheelOpen && weaponWheelView != null) {
             if (Math.abs(rx) > 0.01f || Math.abs(ry) > 0.01f) {
                 weaponWheelView.selectDirection(rx, ry);
