@@ -37,7 +37,7 @@ final class ProjectileSystem {
     }
 
     static void update(Game g,float dt,Game.World world){
-        for(int i=g.blasts.size()-1;i>=0;i--){Game.Blast b=g.blasts.get(i);b.life-=dt;if(b.life<=0)g.blasts.remove(i);}
+        for(int i=g.blasts.size()-1;i>=0;i--){Blast b=g.blasts.get(i);b.life-=dt;if(b.life<=0)g.blasts.remove(i);}
         for(int i=g.rockets.size()-1;i>=0;i--){
             Rocket r=g.rockets.get(i);r.age+=dt;
             float speed=(float)Math.sqrt(r.vx*r.vx+r.vy*r.vy+r.vz*r.vz);
