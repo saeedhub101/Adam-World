@@ -460,7 +460,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             float w=getWidth(), h=getHeight(), cx=w*.5f, cy=h*.5f;
             float px=renderer.game.driving?renderer.game.cx:renderer.game.px;
             float pz=renderer.game.driving?renderer.game.cz:renderer.game.pz;
-            float scale=Math.min(w,h)/560f*zoom;
+            float scale=Math.min(w,h)/1400f*zoom;
             float ox=cx+panX, oy=cy+panY;
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(dp(1));
