@@ -34,7 +34,12 @@ final class RocketModel {
         // Warhead nose tip and dark optical seeker aperture.
         addRing(b,.78f,.064f,.805f,.052f,.74f,.76f,.78f);
         addRing(b,.805f,.052f,.835f,.031f,.16f,.18f,.20f);
-        addRing(b,.835f,.031f,.855f,.024f,.08f,.18f,.23f);\n        if(guided){\n            addRing(b,.70f,.084f,.725f,.080f,.13f,.17f,.20f);\n            addRing(b,.725f,.080f,.744f,.075f,.74f,.48f,.12f);\n            addRing(b,.744f,.075f,.758f,.067f,.12f,.14f,.16f);\n        }
+        addRing(b,.835f,.031f,.855f,.024f,.08f,.18f,.23f);
+        if(guided){
+            addRing(b,.70f,.084f,.725f,.080f,.13f,.17f,.20f);
+            addRing(b,.725f,.080f,.744f,.075f,.74f,.48f,.12f);
+            addRing(b,.744f,.075f,.758f,.067f,.12f,.14f,.16f);
+        }
         // Tail collar, nozzle lip and recessed exhaust throat.
         addRing(b,-.88f,.073f,-.91f,.086f,.31f,.33f,.35f);
         addRing(b,-.91f,.086f,-.95f,.073f,.55f,.57f,.59f);
