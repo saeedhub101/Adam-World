@@ -873,11 +873,15 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
     }
 
     private void spawnAgents() {
-        final int maxAgents = 24, targetCars = 12, targetPedestrians = 12;
+        final int targetCars = 12, targetPedestrians = 12;
+        int policeUnits=0;
+        for(Game.Agent old:game.agents)if(old.car){if(old.policeUnit)policeUnits++;}
+        final boolean dispatchPolice=game.wantedLevel>policeUnits;
+        final int maxAgents=game.wantedLevel>0?30:24;
         if (game.agents.size() >= maxAgents || tiles.isEmpty()) return;
         int cars = 0, pedestrians = 0;
         for (Game.Agent old : game.agents) { if (old.car) cars++; else pedestrians++; }
-        boolean wantCar = cars < targetCars && (pedestrians >= targetPedestrians || rng.nextFloat() < 0.68f);
+        boolean wantCar = dispatchPolice || (cars < targetCars && (pedestrians >= targetPedestrians || rng.nextFloat() < 0.68f));
         ArrayList<Tile> list = new ArrayList<>(tiles.values());
         RoadPath path = null; Tile tile = null; float s = 0f;
         float[] point = new float[4];
@@ -891,13 +895,13 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             float candidateS = 7f + rng.nextFloat() * Math.max(1f, candidate.total - 14f);
             candidate.posAt(candidateS, 0f, point);
             float distance = (float)Math.hypot(point[0] - fx, point[1] - fz);
-            if (distance < 8f || distance > 125f) continue;
+            if (distance < (dispatchPolice?22f:8f) || distance > (dispatchPolice?92f:125f)) continue;
             boolean occupied = false; float gapMin = wantCar ? 9f : 3.2f;
             for (Game.Agent old : game.agents) { if (Math.hypot(old.x-point[0],old.z-point[1]) < gapMin) { occupied=true; break; } }
             if (occupied) continue;
             path = candidate; tile = candidateTile; s = candidateS;
         }
-        if (path == null && wantCar) {
+        if (path == null && wantCar && !dispatchPolice) {
             wantCar = false;
             for (int attempt = 0; attempt < 100 && path == null; attempt++) {
                 Tile candidateTile = list.get(rng.nextInt(list.size()));
@@ -917,16 +921,17 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         Game.Agent agent = new Game.Agent();
         agent.path=path; agent.tile=tile; agent.s=s; agent.dir=rng.nextBoolean()?1:-1; agent.car=wantCar;
         if (agent.car) {
+            agent.policeUnit=dispatchPolice;
             int[] types={ProceduralVehicleModels.SEDAN,ProceduralVehicleModels.SUV,ProceduralVehicleModels.PICKUP,ProceduralVehicleModels.BUS,ProceduralVehicleModels.POLICE,ProceduralVehicleModels.MOTORBIKE};
-            agent.vehicleType=types[rng.nextInt(types.length)];
-            agent.parked=rng.nextFloat()<0.34f; agent.driverPresent=!agent.parked;
+            agent.vehicleType=dispatchPolice?ProceduralVehicleModels.POLICE:types[rng.nextInt(types.length)];
+            agent.parked=!dispatchPolice && rng.nextFloat()<0.34f; agent.driverPresent=!agent.parked;
             float side=agent.dir;
             agent.off=agent.parked?path.w*0.5f+1.25f:Math.min(1.65f,path.w*0.23f);
-            agent.cruiseSpeed=6.5f+rng.nextFloat()*7.5f; agent.sp=agent.parked?0f:agent.cruiseSpeed;
+            agent.cruiseSpeed=dispatchPolice?15.5f+rng.nextFloat()*3.5f:6.5f+rng.nextFloat()*7.5f; agent.sp=agent.parked?0f:agent.cruiseSpeed;
             path.posAt(agent.s,agent.off*agent.dir,point); agent.x=point[0]; agent.z=point[1];
             agent.yaw=(float)Math.atan2(point[2]*agent.dir,point[3]*agent.dir);
             float[][] colors={{.93f,.94f,.95f},{.17f,.24f,.31f},{.50f,.55f,.55f},{.95f,.77f,.06f},{.16f,.50f,.74f},{.83f,.33f,.08f},{.15f,.68f,.38f},{.08f,.08f,.09f}};
-            float[] color=colors[rng.nextInt(colors.length)]; agent.cr=color[0]; agent.cg=color[1]; agent.cb=color[2];
+            float[] color=dispatchPolice?new float[]{.90f,.94f,1f}:colors[rng.nextInt(colors.length)]; agent.cr=color[0]; agent.cg=color[1]; agent.cb=color[2];
         } else {
             agent.humanType=rng.nextInt(6);
             float side=rng.nextBoolean()?1f:-1f;
@@ -1050,7 +1055,10 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                             + " | ارتفاع " + Math.round(game.altitude) + " م"
                             + " | دفع " + Math.round(game.engineThrottle * 100f) + "%"
                             + (game.vehicleType == ProceduralVehicleModels.AIRPLANE ? (game.landingGearDown ? " | العجلات مفتوحة" : " | العجلات مطوية") + (game.aircraftDamage > 0f ? " | ضرر " + Math.round(game.aircraftDamage) + "%" : "") : ""));
-                } else L.onHud(game.driving ? Math.round(Math.abs(game.cv) * 3.6f) + " كم/س" : "");
+                } else {
+                    String wanted=game.wantedLevel>0?"  |  مطاردة "+"★".repeat(game.wantedLevel):"";
+                    L.onHud((game.driving ? Math.round(Math.abs(game.cv) * 3.6f) + " كم/س" : "")+wanted);
+                }
             }
         }
 

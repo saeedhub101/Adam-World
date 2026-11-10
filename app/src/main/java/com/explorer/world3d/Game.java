@@ -8,6 +8,7 @@ final class Game {
 
     static final class Agent {
         boolean car;
+        boolean policeUnit;
         boolean parked, trafficStopped, driverPresent = true;
         float cruiseSpeed;
         long stopStartedMs, lastHornMs;
@@ -33,6 +34,8 @@ final class Game {
     volatile int health = 100;
     volatile boolean dead;
     long lastDamageMs, deathStartedMs;
+    int wantedLevel;
+    long lastCrimeMs, nextWantedDecayMs;
     int vehicleType = ProceduralVehicleModels.SEDAN;
     float altitude, aircraftPitch, aircraftRoll;
     volatile float liftInput, throttleInput, rudderInput;
@@ -110,7 +113,14 @@ final class Game {
         vehicleFrontStepContact = vehicleRearStepContact = false;
         vehicleWheelFL = vehicleWheelFR = vehicleWheelRL = vehicleWheelRR = 0f;
         vehicleWheelBodyLift = vehicleWheelBodyRoll = vehicleWheelBodyPitch = 0f;
-        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; explosionEventCount=0L; agents.clear(); rockets.clear(); blasts.clear();
+        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; wantedLevel=0; lastCrimeMs=nextWantedDecayMs=0L; explosionEventCount=0L; agents.clear(); rockets.clear(); blasts.clear();
+    }
+
+    void reportCrime(int severity) {
+        long now=System.currentTimeMillis();
+        wantedLevel=clamp(wantedLevel+Math.max(1,severity),0,5);
+        lastCrimeMs=now;
+        nextWantedDecayMs=now+30000L;
     }
 
     float focusX() { return driving ? cx : px; }
@@ -276,6 +286,13 @@ final class Game {
             camDistance = clamp(camDistance * zoomFactor, 3.2f, 180f);
         }
         long now = System.currentTimeMillis();
+        if(wantedLevel>0 && now-lastCrimeMs>30000L && now>=nextWantedDecayMs){
+            boolean policeNearby=false;
+            float targetX=focusX(),targetZ=focusZ();
+            for(Agent unit:agents)if(unit.policeUnit&&!unit.knockedOut&&Math.hypot(unit.x-targetX,unit.z-targetZ)<58f){policeNearby=true;break;}
+            if(!policeNearby){wantedLevel=Math.max(0,wantedLevel-1);nextWantedDecayMs=now+10000L;}
+            else nextWantedDecayMs=now+5000L;
+        }
         if (sprint && lastSprintTapMs > 0L && now - lastSprintTapMs > 430L) sprint = false;
         if (dead) {
             sx = sy = 0f;
@@ -348,6 +365,7 @@ final class Game {
                     if (d < best && facing > (kick ? -0.08f : 0.28f)) { best=d; target=a; }
                 }
                 if (target != null) {
+                    reportCrime(1);
                     float dx=target.x-px, dz=target.z-pz, len=Math.max(0.001f,(float)Math.hypot(dx,dz));
                     target.health = Math.max(0, target.health-damage);
                     target.hostile = true; target.state=1; target.stateTime=0f;
@@ -414,7 +432,19 @@ final class Game {
             if (a.tile.dead) { agents.remove(i); continue; }
             if (a.car) {
                 a.hitFlash = Math.max(0f, a.hitFlash - dt);
-                if (a.knockedOut || a.parked) {
+                if(a.policeUnit && wantedLevel>0 && !a.knockedOut){
+                    float tx=focusX(),tz=focusZ(),dx=tx-a.x,dz=tz-a.z;
+                    float distance=(float)Math.hypot(dx,dz);
+                    float desiredYaw=(float)Math.atan2(dx,dz);
+                    a.yaw+=angDiff(a.yaw,desiredYaw)*Math.min(1f,dt*2.6f);
+                    a.sp=Math.min(23f,Math.max(a.sp, a.cruiseSpeed)+dt*5f);
+                    if(distance>4.2f){
+                        float step=Math.min(distance-3.2f,a.sp*dt);
+                        float nx=a.x+(float)Math.sin(a.yaw)*step,nz=a.z+(float)Math.cos(a.yaw)*step;
+                        if(!w.blocked(nx,nz,1.05f)){a.x=nx;a.z=nz;}
+                        else {a.yaw+=0.85f*dt; a.sp=Math.max(5f,a.sp*0.72f);}
+                    }else a.sp=0f;
+                } else if (a.knockedOut || a.parked) {
                     a.sp = 0f;
                 } else {
                     if (!driving && !a.trafficStopped) {
@@ -494,6 +524,7 @@ final class Game {
         if(id<0||id>=WeaponSystem.NAME.length||now-lastWeaponShotMs<WeaponSystem.FIRE_INTERVAL_MS[id])return;
         if(magazineAmmo<=0){reloadWeapon();return;}
         lastWeaponShotMs=now;magazineAmmo--;weaponMagazines[id]=magazineAmmo;
+        reportCrime(id>=5?2:1);
         weaponRecoil=1f; muzzleFlashSeconds=1f;
         if(id>=5){ ProjectileSystem.launch(this,id); return; }
 
