@@ -686,6 +686,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         if (flightSchoolMode) return 0f;
         if (loader.offlineManila) return 0f;
         float lm = Landmarks.heightAt(x, z);
+        if (!Terrain.covers(Geo.latOf(z), Geo.lonOf(x))) return Float.isNaN(lm) ? 0f : lm;
         return Float.isNaN(lm) ? Terrain.h(x, z) : lm;
     }
 
@@ -696,8 +697,20 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
 
     /** يبني مربعات الأرض من الارتفاعات الحقيقية حول اللاعب ويحذف البعيد منها. */
     private void updateTerrain(int ptx, int ptz) {
-        if (flightSchoolMode || loader.offlineManila || !Terrain.enabled || !Terrain.baseSet) return;
-        // Terrain height-grid generation is dispatched to a single worker; the GL thread only uploads one completed VBO.
+        boolean terrainAllowed = !flightSchoolMode && !loader.offlineManila && Terrain.baseSet
+                && Terrain.covers(Geo.latOf(game.focusZ()), Geo.lonOf(game.focusX()));
+        if (!terrainAllowed) {
+            // Once the player leaves Amman/Tabarbour, release every terrain VBO
+            // and discard pending terrain jobs instead of continuing DEM work
+            // indefinitely in the distant world.
+            if (!terrain.isEmpty() || !terrainBuilding.isEmpty() || !terrainReady.isEmpty()) {
+                resetTerrainJobs();
+                for (Mesh mesh : terrain.values()) if (mesh != null) mesh.release();
+                terrain.clear();
+            }
+            return;
+        }
+        // The camera's useful ground horizon is covered by a 3x3 terrain window.
         long terrainNow = System.currentTimeMillis();
         if (terrainNow - lastTerrainBuildMs < 350L || terrainBuilding.size() >= 1) return;
         Iterator<Map.Entry<Long, Mesh>> it = terrain.entrySet().iterator();
@@ -705,11 +718,11 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             Map.Entry<Long, Mesh> en = it.next();
             long k = en.getKey();
             int kx = (int) (k >> 32), kz = (int) k;
-            if (Math.abs(kx - ptx) > 3 || Math.abs(kz - ptz) > 3) { en.getValue().release(); it.remove(); }
+            if (Math.abs(kx - ptx) > 1 || Math.abs(kz - ptz) > 1) { en.getValue().release(); it.remove(); }
         }
         int bx = 0, bz = 0, bd = Integer.MAX_VALUE;
-        for (int dx = -2; dx <= 2; dx++) {
-            for (int dz = -2; dz <= 2; dz++) {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
                 int ix = ptx + dx, iz = ptz + dz;
                 long candidateKey = Geo.key(ix, iz);
                 if (terrain.containsKey(candidateKey) || terrainBuilding.contains(candidateKey)) continue;
