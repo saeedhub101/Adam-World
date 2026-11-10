@@ -463,14 +463,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (mapOpen && fullMapView != null) {
             if (nx != padHatX && nx != 0f) fullMapView.panBy(nx < 0f ? dp(72) : -dp(72), 0f);
             if (ny != padHatY && ny != 0f) fullMapView.panBy(0f, ny < 0f ? dp(72) : -dp(72));
+        } else if (weaponWheelOpen && weaponWheelView != null) {
+            renderer.game.cameraZoomInput = 0f;
+            if (nx != padHatX && nx != 0f) weaponWheelView.moveSelection(nx > 0f ? 1 : -1);
+            if (ny != padHatY && ny != 0f) weaponWheelView.moveSelection(ny < 0f ? 1 : -1);
         } else {
             renderer.game.cameraZoomInput = ny == 0f ? 0f : (ny < 0f ? 1f : -1f);
-            if (nx != padHatX && nx != 0f) {
-                if (weaponWheelOpen && weaponWheelView != null) weaponWheelView.moveSelection(nx > 0f ? 1 : -1);
-                else if (!renderer.game.driving) cycleEquippedWeapon(nx > 0f ? 1 : -1);
-            }
-            if (weaponWheelOpen && weaponWheelView != null && ny != padHatY && ny != 0f)
-                weaponWheelView.moveSelection(ny < 0f ? 1 : -1);
+            if (nx != padHatX && nx != 0f && !renderer.game.driving)
+                cycleEquippedWeapon(nx > 0f ? 1 : -1);
         }
         padHatX = nx; padHatY = ny;
     }
