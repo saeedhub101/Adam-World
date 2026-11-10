@@ -79,7 +79,7 @@ final class WorldAudio {
     }
 
     void playHorn() { hornSamples = RATE / 4; }
-    void playEffect(int effect) { effectType = Math.max(0, Math.min(4, effect)); effectSamples = RATE / (effectType == 4 ? 7 : 11); }
+    void playEffect(int effect) { effectType = Math.max(0, Math.min(6, effect)); effectSamples = RATE / (effectType == 6 ? 3 : effectType == 5 ? 2 : effectType == 4 ? 7 : 11); }
     void setEnabled(boolean value) { enabled = value; }
     void setVolumes(float masterValue, float engine, float ambience, float effects) {
         master = clamp(masterValue); engineVolume = clamp(engine);
@@ -141,9 +141,9 @@ final class WorldAudio {
                     }
                     if (effectSamples > 0) {
                         double decay = effectSamples / (double)(RATE / (effectType == 4 ? 7 : 11));
-                        effectPhase += 2.0 * Math.PI * (effectType == 4 ? 78.0 : 115.0 + effectType * 34.0) / RATE;
+                        effectPhase += 2.0 * Math.PI * (effectType == 6 ? 54.0 : effectType == 5 ? 72.0 + decay * 110.0 : effectType == 4 ? 78.0 : 115.0 + effectType * 34.0) / RATE;
                         double noise = noise();
-                        double crack = Math.sin(effectPhase) * (effectType == 3 ? 0.42 : 0.30);
+                        double crack = Math.sin(effectPhase) * (effectType == 6 ? 0.58 : effectType == 5 ? 0.46 : effectType == 3 ? 0.42 : 0.30);
                         fx += (noise * 0.48 + crack) * decay * effectsVolume;
                         effectSamples--;
                     }
