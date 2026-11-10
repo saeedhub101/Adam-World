@@ -101,12 +101,31 @@ def simplify_visual_mesh(mesh: trimesh.Trimesh, target_faces: int) -> trimesh.Tr
                 vertex_colors = vertex_colors * 255.0
             vertex_colors = np.clip(vertex_colors, 0, 255).astype(np.uint8)
 
-    simplified = mesh.simplify_quadric_decimation(face_count=target_faces, aggression=4)
+    original_vertices = np.asarray(mesh.vertices, dtype=np.float64)
+    current = mesh
+    current_to_original = np.arange(len(mesh.vertices), dtype=np.int64)
+    previous_faces = len(current.faces)
+    # Quadric simplification can stop early on disconnected vehicle shells.
+    # Re-run on the intermediate mesh with a stronger target until the budget is met.
+    for attempt in range(5):
+        if len(current.faces) <= target_faces:
+            break
+        next_target = max(target_faces, int(len(current.faces) * 0.52))
+        candidate = current.simplify_quadric_decimation(face_count=next_target, aggression=10)
+        if len(candidate.vertices) < 3 or len(candidate.faces) < 1:
+            raise ValueError("quadric decimation returned empty geometry")
+        if len(candidate.faces) >= len(current.faces):
+            break
+        nearest_current = cKDTree(np.asarray(current.vertices, dtype=np.float64)).query(
+            np.asarray(candidate.vertices, dtype=np.float64), k=1, workers=-1
+        )[1]
+        current_to_original = current_to_original[nearest_current]
+        current = candidate
+        print(f"AWM_DECIMATION_PASS pass={attempt+1} faces={len(current.faces)}", flush=True)
+    simplified = current
+    nearest = current_to_original
     if len(simplified.vertices) < 3 or len(simplified.faces) < 1:
         raise ValueError("quadric decimation returned empty geometry")
-    nearest = cKDTree(np.asarray(mesh.vertices, dtype=np.float64)).query(
-        np.asarray(simplified.vertices, dtype=np.float64), k=1, workers=-1
-    )[1]
     if uv is not None and len(uv) == len(mesh.vertices):
         simplified.visual = trimesh.visual.TextureVisuals(
             uv=np.asarray(uv, dtype=np.float32)[nearest], material=material
