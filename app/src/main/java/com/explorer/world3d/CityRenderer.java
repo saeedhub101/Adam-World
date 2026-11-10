@@ -311,7 +311,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         tex = new Textures();
         vehicleMaps = advancedShader ? ProceduralMaterialMaps.create() : null;
         cube = makeCube();
-        flightSchoolMesh = Airfield.build();
+        // Airports are streamed from real city aeroway data; no detached training scene is allocated.
         vehicleModels = ProceduralVehicleModels.buildAll();
         // Prefer build-time converted real meshes; procedural meshes remain a safe fallback.
         importedVehicleModels = new AssetMeshLoader.Model[ProceduralVehicleModels.COUNT];
