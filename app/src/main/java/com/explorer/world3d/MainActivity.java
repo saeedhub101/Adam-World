@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -88,12 +89,23 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         runOnGl(new Runnable() { @Override public void run() { renderer.game.punchRequested = true; } });
     }
     private void showGameSettings() {
-        final String[] options = {"الصوت", "جودة الرسومات", "حساسية الكاميرا", "إعدادات التحكم", "إغلاق"};
+        final String[] options = {"اختيار المدينة / الموقع", "اختيار المركبة", "المطارات", "الخريطة الكبيرة",
+                "الصوت", "جودة الرسومات", "حساسية الكاميرا", "إعدادات التحكم", "التحقق من التحديثات", "إغلاق"};
         new AlertDialog.Builder(this).setTitle("إعدادات Adam World").setItems(options, (d, which) -> {
-            if (which == 0) showAudioSettings();
-            else if (which == 1) new AlertDialog.Builder(this).setTitle("جودة الرسومات").setItems(new String[]{"تلقائي", "عالية", "متوازنة", "موفرة للطاقة"}, (x,v) -> Toast.makeText(this,"سيتم تطبيق إعداد الجودة في إصدار إعدادات الرسومات",Toast.LENGTH_SHORT).show()).show();
-            else if (which == 2) new AlertDialog.Builder(this).setTitle("حساسية الكاميرا").setItems(new String[]{"منخفضة", "متوسطة", "عالية"}, (x,v) -> renderer.setLookSensitivity(v==0?0.65f:v==1?1f:1.45f)).show();
-            else if (which == 3) showControlsSettings();
+            if (which == 0) showCitySelector();
+            else if (which == 1) showVehicleSelector();
+            else if (which == 2) showAirportSelector();
+            else if (which == 3) showMapDialog(false);
+            else if (which == 4) showAudioSettings();
+            else if (which == 5) new AlertDialog.Builder(this).setTitle("جودة الرسومات")
+                    .setItems(new String[]{"عالية", "متوازنة", "موفرة للطاقة"}, (x,v) -> {
+                        renderer.setGraphicsQuality(v);
+                        getSharedPreferences("adam_world_settings", MODE_PRIVATE).edit().putInt("graphics_quality",v).apply();
+                    }).show();
+            else if (which == 6) new AlertDialog.Builder(this).setTitle("حساسية الكاميرا")
+                    .setItems(new String[]{"منخفضة", "متوسطة", "عالية"}, (x,v) -> renderer.setLookSensitivity(v==0?0.65f:v==1?1f:1.45f)).show();
+            else if (which == 7) showControlsSettings();
+            else if (which == 8) UpdateManager.check(MainActivity.this, true);
         }).show();
     }
     private void playHorn() {
@@ -141,124 +153,185 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 }).setNegativeButton("إغلاق", null).show();
     }
     private void showMapDialog(final boolean returnToPauseMenu) {
-        double lat = renderer.game.driving ? Geo.latOf(renderer.game.cz) : Geo.latOf(renderer.game.pz);
-        double lon = renderer.game.driving ? Geo.lonOf(renderer.game.cx) : Geo.lonOf(renderer.game.px);
-        double west = lon - 0.006, east = lon + 0.006, south = lat - 0.004, north = lat + 0.004;
-        String mapUrl = "https://www.openstreetmap.org/export/embed.html?bbox=" + west + "%2C" + south + "%2C" + east + "%2C" + north
-                + "&layer=mapnik&marker=" + lat + "%2C" + lon;
-        WebView map = new WebView(this);
-        map.setBackgroundColor(Color.WHITE);
-        WebSettings settings = map.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setLoadWithOverviewMode(true);
-        settings.setUseWideViewPort(true);
-        map.loadUrl(mapUrl);
-        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("خريطة Adam World").setView(map)
+        if (renderer == null) return;
+        if (!returnToPauseMenu) setGamePaused(true);
+        FullMapView map = new FullMapView(this);
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("الخريطة").setView(map)
                 .setNegativeButton("إغلاق", null).create();
-        dialog.setOnDismissListener(d -> { map.destroy(); if (returnToPauseMenu && !isFinishing()) showPauseMenu(); });
+        dialog.setOnDismissListener(d -> {
+            if (returnToPauseMenu && !isFinishing()) showPauseMenu();
+            else setGamePaused(false);
+        });
         dialog.show();
-        if (dialog.getWindow() != null) dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, dp(560));
+        if (dialog.getWindow() != null) dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+    }
+
+    private void showCitySelector() {
+        final String[] names = new String[CITIES.length + 6];
+        names[0] = "البيت — طبربور (محلي)";
+        names[1] = "عمّان — بيانات محلية";
+        names[2] = "مانيلا — بيانات محلية";
+        names[3] = "مطار عمّان المدني — ماركا";
+        names[4] = "مطار الملكة علياء الدولي";
+        names[5] = "بحث عن مدينة أو مكان";
+        for (int i=0;i<CITIES.length;i++) names[i+6] = (String)CITIES[i][0];
+        new AlertDialog.Builder(this).setTitle("اختيار المدينة / الموقع").setItems(names,(d,which)->{
+            if(which==0) teleportOfflineTabarbour();
+            else if(which==1) teleportOfflineAmman();
+            else if(which==2) teleportOfflineManila();
+            else if(which==3) runOnGl(()->renderer.enterAirport(31.9726,35.9916));
+            else if(which==4) runOnGl(()->renderer.enterAirport(31.7226,35.9932));
+            else if(which==5) showSearchDialog();
+            else { Object[] city=CITIES[which-6]; teleport((Double)city[1],(Double)city[2]); }
+        }).show();
+    }
+
+    private void showSearchDialog() {
+        final EditText field = new EditText(this);
+        field.setSingleLine(true);
+        field.setHint("اسم المدينة أو المكان");
+        field.setTextColor(Color.WHITE);
+        field.setHintTextColor(0xffaab4c0);
+        field.setPadding(dp(12),dp(8),dp(12),dp(8));
+        field.setBackgroundColor(0xff263442);
+        new AlertDialog.Builder(this).setTitle("البحث عن موقع").setView(field)
+                .setPositiveButton("انتقال",(d,w)->{
+                    query = field;
+                    search();
+                }).setNegativeButton("إلغاء",null).show();
+    }
+
+    private void showAirportSelector() {
+        new AlertDialog.Builder(this).setTitle("اختيار المطار")
+                .setItems(new String[]{"مطار عمّان المدني — ماركا","مطار الملكة علياء الدولي"},(d,w)->{
+                    if(w==0) runOnGl(()->renderer.enterAirport(31.9726,35.9916));
+                    else runOnGl(()->renderer.enterAirport(31.7226,35.9932));
+                }).show();
     }
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("على الهاتف: العصا اليسرى للحركة، واسحب على مساحة اللعب لتحريك الكاميرا، واستخدم أزرار القفز واللكم والركل والصد والركض والمراوغة. زر المركبة للاستدعاء والدخول والخروج، ومن قائمة المركبات اختر الهليكوبتر أو الطائرة. في مطار التدريب: زد الدفع حتى سرعة الإقلاع، ارفع مقدمة الطائرة، ثم اخفضها تدريجياً للهبوط. استخدم المكابح والعجلات؛ والهليكوبتر تتحكم بارتفاعها من أزرار الصعود والهبوط. زر العودة يعيدك إلى موقعك السابق. على التلفاز: استخدم يد التحكم؛ العصا اليسرى للحركة أو قيادة المركبة، والعصا اليمنى للكاميرا، وأزرار A/B/X/Y للحركات والتفاعل.")
+                .setMessage("على الهاتف: العصا اليسرى للحركة، واسحب على مساحة اللعب لتحريك الكاميرا، واستخدم أزرار القفز واللكم والركل والصد والركض والمراوغة. زر المركبة للاستدعاء والدخول والخروج، ومن قائمة المركبات اختر الهليكوبتر أو الطائرة. في مطار التدريب: زد الدفع حتى سرعة الإقلاع، ارفع مقدمة الطائرة، ثم اخفضها تدريجياً للهبوط. استخدم المكابح والعجلات؛ والهليكوبتر تتحكم بارتفاعها من أزرار الصعود والهبوط. زر العودة يعيدك إلى موقعك السابق. على التلفاز (توزيع قريب من GTA): العصا اليسرى للحركة أو التوجيه، واليمنى للكاميرا. اضغط مطولاً LB/L1 لعجلة السلاح، واختر بالعصا اليمنى أو الأسهم ثم اترك الزر للتأكيد. LT/L2 للتصويب أو الفرامل، RT/R2 للإطلاق أو التسارع، A للقفز أو فرامل اليد، B للركل أو النظر للخلف، X للتلقيم أو البوق، Y للدخول والخروج، RB/R1 للصد أو فرامل اليد، L3 للركض، R3 للمراوغة، الأسهم أعلى/أسفل للزووم، والأسهم يمين/يسار لتبديل السلاح، وView للخريطة وMenu للإيقاف.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
         if (isFinishing() || (pauseDialog != null && pauseDialog.isShowing())) return;
         setGamePaused(true);
-        final String[] items = {"متابعة اللعبة", "الخريطة", "إعدادات اللعبة", "متجر الأسلحة", "إنهاء اللعبة"};
+        final String[] items = {"متابعة اللعبة", "الخريطة الكبيرة", "اختيار المدينة / الموقع", "اختيار المركبة",
+                "إعدادات اللعبة", "متجر الأسلحة", "إنهاء اللعبة"};
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle("إيقاف مؤقت").setItems(items, (d, which) -> {
             if (which == 0) setGamePaused(false);
             else if (which == 1) { d.dismiss(); showMapDialog(true); }
-            else if (which == 2) showGameSettings();
-            else if (which == 3) { d.dismiss(); showWeaponShop(); }
-            else if (which == 4) { setGamePaused(false); finish(); }
+            else if (which == 2) showCitySelector();
+            else if (which == 3) showVehicleSelector();
+            else if (which == 4) showGameSettings();
+            else if (which == 5) { d.dismiss(); showWeaponShop(); }
+            else if (which == 6) { setGamePaused(false); finish(); }
         }).create();
         dialog.setOnCancelListener(d -> setGamePaused(false));
         pauseDialog = dialog;
         dialog.show();
     }
-    @Override public boolean dispatchKeyEvent(KeyEvent event) {
-        int code = event.getKeyCode();
-        boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
-        boolean pressed = down && event.getRepeatCount() == 0;
-        if (weaponWheelOpen && down && pressed && (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_RIGHT
-                || code == KeyEvent.KEYCODE_DPAD_DOWN || code == KeyEvent.KEYCODE_DPAD_LEFT)) {
-            weaponWheelView.moveSelection((code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_RIGHT) ? 1 : -1);
-            return true;
-        }
-        if (padCameraModifier && (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN)) {
-            if (renderer != null) renderer.game.cameraZoomInput = down
-                    ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
-            return true;
-        }
-        if (renderer != null && renderer.game.driving
-                && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
-                || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE)
-                && (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN)) {
-            renderer.game.liftInput = down
-                    ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
-            return true;
-        }
-        if (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_W) { keyUp = down; updateRemoteMovement(); return true; }
-        if (code == KeyEvent.KEYCODE_DPAD_DOWN || code == KeyEvent.KEYCODE_S) { keyDown = down; updateRemoteMovement(); return true; }
-        if (code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_A) { keyLeft = down; updateRemoteMovement(); return true; }
-        if (code == KeyEvent.KEYCODE_DPAD_RIGHT || code == KeyEvent.KEYCODE_D) { keyRight = down; updateRemoteMovement(); return true; }
-        if (renderer == null) return super.dispatchKeyEvent(event);
-        if (code == KeyEvent.KEYCODE_BUTTON_A) {
-            if (renderer.game.driving) {
-                if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) renderer.game.brakeRequested = down;
-                else renderer.game.handbrake = down;
+    private void cycleEquippedWeapon(final int direction) {
+        runOnGl(() -> {
+            Game g = renderer.game;
+            int selected = g.equippedWeapon;
+            for (int n=0;n<WeaponSystem.NAME.length;n++) {
+                selected = (selected + direction + WeaponSystem.NAME.length) % WeaponSystem.NAME.length;
+                if (g.ownedWeapons[selected]) break;
             }
-            else if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.jumpRequested = true; } });
+            g.equipWeapon(selected);
+            runOnUiThread(this::saveWeaponState);
+        });
+    }
+
+    @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        final int code = event.getKeyCode();
+        final boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
+        final boolean pressed = down && event.getRepeatCount() == 0;
+        if (renderer == null) return super.dispatchKeyEvent(event);
+        if (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN) {
+            if (weaponWheelOpen && pressed) {
+                weaponWheelView.moveSelection(code == KeyEvent.KEYCODE_DPAD_UP ? 1 : -1);
+                return true;
+            }
+            if (renderer.game.driving && (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE
+                    || renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER))
+                renderer.game.liftInput = down ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
+            else renderer.game.cameraZoomInput = down ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            if (pressed) {
+                int direction = code == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1;
+                if (weaponWheelOpen) weaponWheelView.moveSelection(direction);
+                else if (!renderer.game.driving) cycleEquippedWeapon(direction);
+            }
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_W || code == KeyEvent.KEYCODE_S
+                || code == KeyEvent.KEYCODE_A || code == KeyEvent.KEYCODE_D) {
+            if (code == KeyEvent.KEYCODE_W) keyUp = down;
+            if (code == KeyEvent.KEYCODE_S) keyDown = down;
+            if (code == KeyEvent.KEYCODE_A) keyLeft = down;
+            if (code == KeyEvent.KEYCODE_D) keyRight = down;
+            updateRemoteMovement();
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_BUTTON_A) {
+            if (renderer.game.driving) renderer.game.handbrake = down;
+            else if (pressed) runOnGl(() -> renderer.game.jumpRequested = true);
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_B) {
-            if (pressed && renderer.game.driving && renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE)
-                runOnGl(() -> renderer.toggleAircraftGear());
-            else if (pressed && !renderer.game.driving) runOnGl(() -> renderer.game.kickRequested = true);
+            if (renderer.game.driving) renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f;
+            else if (pressed) runOnGl(() -> renderer.game.kickRequested = true);
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_X) {
-            if (pressed && !renderer.game.driving) runOnGl(() -> renderer.game.reloadRequested = true);
+            if (renderer.game.driving) { if (pressed) playHorn(); }
+            else if (pressed) runOnGl(() -> renderer.game.reloadRequested = true);
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
-        // GTA-style: hold LB/L1 for the radial weapon wheel; release to equip.
+        if (code == KeyEvent.KEYCODE_BUTTON_Y) {
+            if (pressed) runOnGl(() -> renderer.toggleCar());
+            return true;
+        }
         if (code == KeyEvent.KEYCODE_BUTTON_L1) {
             if (!renderer.game.driving) {
                 if (down && !weaponWheelOpen) {
                     weaponWheelOpen = true;
+                    glView.setWeaponWheelOpen(true);
                     runOnUiThread(() -> weaponWheelView.showWheel());
                 } else if (!down && weaponWheelOpen) {
                     weaponWheelOpen = false;
+                    glView.setWeaponWheelOpen(false);
                     final int chosen = weaponWheelView.selectedWeapon();
-                    runOnGl(() -> { renderer.game.equipWeapon(chosen); runOnUiThread(this::saveWeaponState); });
+                    runOnGl(() -> {
+                        renderer.game.equipWeapon(chosen);
+                        runOnUiThread(this::saveWeaponState);
+                    });
                     runOnUiThread(() -> weaponWheelView.hideWheel());
                 }
-            }
+            } else renderer.game.weaponAimHeld = down;
             return true;
         }
-        // Hold RB/R1 + D-pad up/down to smoothly zoom the camera.
         if (code == KeyEvent.KEYCODE_BUTTON_R1) {
-            padCameraModifier = down;
-            renderer.setGamepadZoomModifier(down);
-            renderer.game.guardRequested = down && !renderer.game.driving;
-            if (!down) renderer.game.cameraZoomInput = 0f;
+            if (renderer.game.driving) renderer.game.handbrake = down;
+            else renderer.game.guardRequested = down;
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_L2 || code == KeyEvent.KEYCODE_BUTTON_R2) {
             padL2 = code == KeyEvent.KEYCODE_BUTTON_L2 ? down : padL2;
             padR2 = code == KeyEvent.KEYCODE_BUTTON_R2 ? down : padR2;
             if (renderer.game.driving) {
-                if (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE)
+                if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
+                    renderer.game.brakeRequested = padL2;
+                    renderer.game.throttleInput = padR2 ? 1f : 0f;
+                } else if (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER)
                     renderer.game.throttleInput = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
-                else renderer.game.sy = (padL2 ? 1f : 0f) - (padR2 ? 1f : 0f);
+                else renderer.game.sy = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
             } else {
-                renderer.game.guardRequested = false;
                 renderer.game.weaponAimHeld = padL2;
                 renderer.game.weaponFireHeld = padR2;
             }
@@ -266,50 +339,23 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
         if (code == KeyEvent.KEYCODE_BUTTON_THUMBL) { renderer.game.sprint = down; return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_THUMBR) {
-            if (!renderer.game.driving && pressed) runOnGl(new Runnable() { @Override public void run() { renderer.game.dodgeRequested = true; } });
-            else renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f;
+            if (renderer.game.driving) renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f;
+            else if (pressed) runOnGl(() -> renderer.game.dodgeRequested = true);
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_SELECT) { if (pressed) showMapDialog(false); return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_START || code == KeyEvent.KEYCODE_BUTTON_MODE) { if (pressed) showPauseMenu(); return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_SELECT || code == KeyEvent.KEYCODE_BACK) {
+            if (pressed) showMapDialog(false);
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_BUTTON_START || code == KeyEvent.KEYCODE_BUTTON_MODE) {
+            if (pressed) showPauseMenu();
+            return true;
+        }
         if (code == KeyEvent.KEYCODE_ENTER || code == KeyEvent.KEYCODE_DPAD_CENTER) {
-            if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } });
+            if (pressed) runOnGl(() -> renderer.toggleCar());
             return true;
         }
         return super.dispatchKeyEvent(event);
-    }
-    @Override public boolean onGenericMotionEvent(MotionEvent event) {
-        if ((event.getSource() & android.view.InputDevice.SOURCE_JOYSTICK) != android.view.InputDevice.SOURCE_JOYSTICK
-                || event.getAction() != MotionEvent.ACTION_MOVE || renderer == null) {
-            return super.onGenericMotionEvent(event);
-        }
-        float lx = gamepadAxis(event.getAxisValue(MotionEvent.AXIS_X));
-        float ly = -gamepadAxis(event.getAxisValue(MotionEvent.AXIS_Y));
-        float rx = gamepadAxis(event.getAxisValue(MotionEvent.AXIS_Z));
-        float ry = gamepadAxis(event.getAxisValue(MotionEvent.AXIS_RZ));
-        if (Math.abs(rx) + Math.abs(ry) < 0.04f) {
-            rx = gamepadAxis(event.getAxisValue(MotionEvent.AXIS_RX));
-            ry = gamepadAxis(event.getAxisValue(MotionEvent.AXIS_RY));
-        }
-        // Left stick drives the player. The right stick controls the weapon wheel,
-        // camera look, or analog zoom depending on the held modifier.
-        renderer.game.sx = lx;
-        renderer.game.sy = ly;
-        if (weaponWheelOpen) {
-            weaponWheelView.selectDirection(rx, ry);
-        } else if (padCameraModifier) {
-            renderer.game.cameraZoomInput = -ry;
-            renderer.setGamepadLook(rx, 0f);
-        } else {
-            renderer.setGamepadLook(rx, ry);
-        }
-        return true;
-    }
-
-    private static float gamepadAxis(float value) {
-        float a = Math.abs(value);
-        if (a < 0.16f) return 0f;
-        return Math.copySign((a - 0.16f) / 0.84f, value);
     }
 
     @Override public void onBackPressed() {
@@ -359,6 +405,74 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             arrow.moveTo(cx,cy-dp(12)); arrow.lineTo(cx-dp(8),cy+dp(8)); arrow.lineTo(cx,cy+dp(4)); arrow.lineTo(cx+dp(8),cy+dp(8)); arrow.close();
             c.save(); c.rotate((float)Math.toDegrees(renderer.game.driving?renderer.game.cyaw:renderer.game.pyaw),cx,cy); c.drawPath(arrow,p); c.restore();
             p.setColor(Color.WHITE); p.setTextSize(dp(9)); c.drawText("MAP",cx-dp(11),h-dp(7),p);
+        }
+    }
+
+    private final class FullMapView extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final ScaleGestureDetector scaleDetector;
+        private float zoom = 1f, panX, panY, lastX, lastY;
+        FullMapView(Context c) {
+            super(c);
+            setBackgroundColor(0xff101923);
+            setFocusable(true);
+            scaleDetector = new ScaleGestureDetector(c, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                @Override public boolean onScale(ScaleGestureDetector detector) {
+                    zoom = Math.max(0.55f, Math.min(4.5f, zoom * detector.getScaleFactor()));
+                    invalidate();
+                    return true;
+                }
+            });
+        }
+        @Override protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            canvas.drawColor(0xff101923);
+            float w=getWidth(), h=getHeight(), cx=w*.5f, cy=h*.5f;
+            float px=renderer.game.driving?renderer.game.cx:renderer.game.px;
+            float pz=renderer.game.driving?renderer.game.cz:renderer.game.pz;
+            float scale=Math.min(w,h)/560f*zoom;
+            float ox=cx+panX, oy=cy+panY;
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(1));
+            paint.setColor(0x243c5267);
+            for(int i=-8;i<=8;i++){
+                canvas.drawLine(ox+i*70*zoom,0,ox+i*70*zoom,h,paint);
+                canvas.drawLine(0,oy+i*70*zoom,w,oy+i*70*zoom,paint);
+            }
+            float[] roads=renderer.miniMapRoads();
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            for(int i=0;i+3<roads.length;i+=4){
+                float x1=ox+(roads[i]-px)*scale, y1=oy+(roads[i+1]-pz)*scale;
+                float x2=ox+(roads[i+2]-px)*scale, y2=oy+(roads[i+3]-pz)*scale;
+                paint.setColor(0xff66798a); paint.setStrokeWidth(dp(5)*zoom);
+                canvas.drawLine(x1,y1,x2,y2,paint);
+                paint.setColor(0xffb9c4cf); paint.setStrokeWidth(dp(1.6f)*zoom);
+                canvas.drawLine(x1,y1,x2,y2,paint);
+            }
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(0xff36d77a);
+            canvas.drawCircle(ox,oy,dp(8),paint);
+            android.graphics.Path arrow=new android.graphics.Path();
+            arrow.moveTo(ox,oy-dp(17)); arrow.lineTo(ox-dp(7),oy+dp(8)); arrow.lineTo(ox,oy+dp(4)); arrow.lineTo(ox+dp(7),oy+dp(8)); arrow.close();
+            canvas.save(); canvas.rotate((float)Math.toDegrees(renderer.game.driving?renderer.game.cyaw:renderer.game.pyaw),ox,oy); canvas.drawPath(arrow,paint); canvas.restore();
+            paint.setColor(Color.WHITE); paint.setTextSize(dp(14)); paint.setFakeBoldText(true);
+            canvas.drawText("N",w-dp(30),dp(36),paint);
+            paint.setTextSize(dp(12)); paint.setFakeBoldText(false);
+            canvas.drawText("اسحب لتحريك الخريطة · قرّب بإصبعين",dp(18),h-dp(22),paint);
+            canvas.drawText(String.format(java.util.Locale.US,"%.5f, %.5f",Geo.latOf(pz),Geo.lonOf(px)),dp(18),h-dp(42),paint);
+            postInvalidateDelayed(600);
+        }
+        @Override public boolean onTouchEvent(MotionEvent event) {
+            scaleDetector.onTouchEvent(event);
+            if(scaleDetector.isInProgress()) return true;
+            switch(event.getActionMasked()){
+                case MotionEvent.ACTION_DOWN: lastX=event.getX(); lastY=event.getY(); return true;
+                case MotionEvent.ACTION_MOVE:
+                    if(event.getPointerCount()==1){panX+=event.getX()-lastX;panY+=event.getY()-lastY;lastX=event.getX();lastY=event.getY();invalidate();}
+                    return true;
+                case MotionEvent.ACTION_UP: case MotionEvent.ACTION_CANCEL: return true;
+            }
+            return true;
         }
     }
 
@@ -438,6 +552,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.addView(glView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         weaponWheelView = new WeaponWheelView(this);
         weaponWheelView.setGame(renderer.game);
+        glView.setWeaponWheelView(weaponWheelView);
+        renderer.setGraphicsQuality(getSharedPreferences("adam_world_settings", MODE_PRIVATE).getInt("graphics_quality",1));
         weaponWheelView.setListener(id -> {
             weaponWheelOpen = false;
             runOnGl(() -> {
@@ -530,7 +646,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         top.addView(hs);
         FrameLayout.LayoutParams tp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP);
         tp.setMargins(dp(8), dp(8), dp(8), 0);
-        root.addView(top, tp);
+        // City selection and search are available from Pause / Settings, never over the driving view.
 
         // العصا
         JoystickView js = new JoystickView(this);
@@ -680,12 +796,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         healthHud.setShadowLayer(4,0,0,Color.BLACK);
         healthHud.setText("♥ 100 / 100");
         FrameLayout.LayoutParams healthParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
-        healthParams.setMargins(0, dp(112), dp(18), 0);
+        healthParams.setMargins(0, dp(18), dp(18), 0);
         root.addView(healthHud, healthParams);
 
         miniMap = new MiniMapView(this);
+        miniMap.setOnClickListener(v -> showMapDialog(false));
         FrameLayout.LayoutParams miniParams = new FrameLayout.LayoutParams(dp(142), dp(142), Gravity.TOP | Gravity.START);
-        miniParams.setMargins(dp(14), dp(112), 0, 0);
+        miniParams.setMargins(dp(14), dp(18), 0, 0);
         root.addView(miniMap, miniParams);
 
         aimReticle = new AimReticleView(this);
@@ -763,6 +880,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     @Override protected void onPause() {
         // Never leave held touch/gamepad actions latched when Android interrupts the activity.
         padL2 = padR2 = padCameraModifier = false;
+        weaponWheelOpen = false;
+        if (glView != null) glView.setWeaponWheelOpen(false);
         keyUp = keyDown = keyLeft = keyRight = false;
         if (renderer != null) {
             renderer.pauseAudio();
