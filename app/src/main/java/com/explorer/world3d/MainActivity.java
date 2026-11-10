@@ -227,7 +227,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("على الهاتف: العصا اليسرى للحركة، واسحب على مساحة اللعب لتحريك الكاميرا، واستخدم أزرار القفز واللكم والركل والصد والركض والمراوغة. زر المركبة للاستدعاء والدخول والخروج، ومن قائمة المركبات اختر الهليكوبتر أو الطائرة. في مطار التدريب: زد الدفع حتى سرعة الإقلاع، ارفع مقدمة الطائرة، ثم اخفضها تدريجياً للهبوط. استخدم المكابح والعجلات؛ والهليكوبتر تتحكم بارتفاعها من أزرار الصعود والهبوط. زر العودة يعيدك إلى موقعك السابق. على التلفاز (توزيع قريب من GTA): العصا اليسرى للحركة أو التوجيه، واليمنى للكاميرا. اضغط مطولاً LB/L1 لعجلة السلاح، واختر بالعصا اليمنى أو الأسهم ثم اترك الزر للتأكيد. LT/L2 للتصويب أو الفرامل، RT/R2 للإطلاق أو التسارع، A للقفز أو فرامل اليد، B للكم أو النظر للخلف (وفي الطائرة لفتح/طي العجلات)، X للتلقيم أو البوق، Y للدخول والخروج، RB/R1 للصد أو فرامل اليد، L3 للركض، R3 للمراوغة، الأسهم أعلى/أسفل للزووم، والأسهم يمين/يسار لتبديل السلاح، وView للخريطة وMenu للإيقاف.")
+                .setMessage("على التلفاز: العصا اليسرى للحركة أو توجيه المركبة، واليمنى للكاميرا. أثناء المشي: A للركض، X للقفز، B للكمة، Y للدخول والخروج، LT للتصويب، RT لإطلاق النار، LB لعجلة الأسلحة (اضغط مطولاً)، RB للاحتماء، L3 لتبديل الركض، R3 للمراوغة. أثناء قيادة السيارة: RT للتسارع، LT للفرملة والرجوع، العصا اليسرى للتوجيه، A أو RB لفرامل اليد، X للبوق، B للنظر للخلف، Y للخروج. الطائرة: RT لقوة المحرك، LT للفرامل، العصا اليسرى للميل والتوجيه، LB/RB لدفة الاتجاه، L3 للعجلات. الهليكوبتر: RT لقوة المحرك، LT لخفض الارتفاع، الأسهم أعلى/أسفل للتحكم بالارتفاع، العصا اليسرى للحركة والميل، LB/RB للاتجاه. View للخريطة وMenu للإيقاف. على الهاتف تظهر أزرار اللمس المناسبة للحالة فقط.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
@@ -261,12 +261,16 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         });
     }
 
+    // GTA-style contextual controller map. All held actions are cleared on release.
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
-        final int rawCode = event.getKeyCode();
-        final int code = normalizeGamepadKeyCode(rawCode);
+        final int code = normalizeGamepadKeyCode(event.getKeyCode());
         final boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
         final boolean pressed = down && event.getRepeatCount() == 0;
         if (renderer == null) return super.dispatchKeyEvent(event);
+        final Game game = renderer.game;
+        final boolean aircraft = game.driving && (game.vehicleType == ProceduralVehicleModels.AIRPLANE
+                || game.vehicleType == ProceduralVehicleModels.HELICOPTER);
+
         if (mapOpen && fullMapView != null) {
             if (pressed && code == KeyEvent.KEYCODE_DPAD_UP) { fullMapView.panBy(0f, dp(72)); return true; }
             if (pressed && code == KeyEvent.KEYCODE_DPAD_DOWN) { fullMapView.panBy(0f, -dp(72)); return true; }
@@ -280,19 +284,22 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             }
             return true;
         }
+
         if (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN) {
             if (weaponWheelOpen && pressed) {
                 weaponWheelView.moveSelection(code == KeyEvent.KEYCODE_DPAD_UP ? 1 : -1);
-                return true;
+            } else if (aircraft && game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
+                game.liftInput = down ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
+            } else if (!aircraft) {
+                game.cameraZoomInput = down ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
             }
-            renderer.game.cameraZoomInput = down ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
             return true;
         }
         if (code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_DPAD_RIGHT) {
             if (pressed) {
                 int direction = code == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1;
                 if (weaponWheelOpen) weaponWheelView.moveSelection(direction);
-                else if (!renderer.game.driving) cycleEquippedWeapon(direction);
+                else if (!game.driving) cycleEquippedWeapon(direction);
             }
             return true;
         }
@@ -305,21 +312,23 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             updateRemoteMovement();
             return true;
         }
+
+        // Face buttons: GTA defaults on foot; contextual vehicle equivalents.
         if (code == KeyEvent.KEYCODE_BUTTON_A) {
-            if (renderer.game.driving) renderer.game.handbrake = down;
-            else if (pressed) runOnGl(() -> renderer.game.jumpRequested = true);
+            if (game.driving) {
+                if (aircraft) game.brakeRequested = down;
+                else game.handbrake = down;
+            } else game.sprint = down;
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_B) {
-            if (renderer.game.driving && renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE && pressed)
-                runOnGl(() -> renderer.toggleAircraftGear());
-            else if (renderer.game.driving) renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f;
-            else if (pressed) runOnGl(() -> renderer.game.punchRequested = true);
+            if (game.driving) game.cameraLookOffset = down ? (float)Math.PI : 0f;
+            else if (pressed) runOnGl(() -> game.punchRequested = true);
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_X) {
-            if (renderer.game.driving) { if (pressed) playHorn(); }
-            else if (pressed) runOnGl(() -> renderer.game.reloadRequested = true);
+            if (game.driving) { if (pressed && !aircraft) playHorn(); }
+            else if (pressed) runOnGl(() -> game.jumpRequested = true);
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) {
@@ -327,7 +336,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_L1) {
-            if (!renderer.game.driving) {
+            if (!game.driving) {
                 if (down && !weaponWheelOpen) {
                     weaponWheelOpen = true;
                     glView.setWeaponWheelOpen(true);
@@ -337,39 +346,48 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     glView.setWeaponWheelOpen(false);
                     final int chosen = weaponWheelView.selectedWeapon();
                     runOnGl(() -> {
-                        renderer.game.equipWeapon(chosen);
+                        game.equipWeapon(chosen);
                         runOnUiThread(this::saveWeaponState);
                     });
                     runOnUiThread(() -> weaponWheelView.hideWheel());
                 }
-            } else renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f;
+            } else if (aircraft) game.rudderInput = down ? -1f : 0f;
+            else game.weaponAimHeld = down;
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_R1) {
-            if (renderer.game.driving) renderer.game.handbrake = down;
-            else renderer.game.guardRequested = down;
+            if (game.driving) {
+                if (aircraft) game.rudderInput = down ? 1f : 0f;
+                else game.handbrake = down;
+            } else game.guardRequested = down;
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_L2 || code == KeyEvent.KEYCODE_BUTTON_R2) {
-            padL2 = code == KeyEvent.KEYCODE_BUTTON_L2 ? down : padL2;
-            padR2 = code == KeyEvent.KEYCODE_BUTTON_R2 ? down : padR2;
-            if (renderer.game.driving) {
-                if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
-                    renderer.game.brakeRequested = padL2;
-                    renderer.game.throttleInput = padR2 ? 1f : 0f;
-                } else if (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER)
-                    renderer.game.throttleInput = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
-                else renderer.game.sy = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
+            if (code == KeyEvent.KEYCODE_BUTTON_L2) padL2 = down; else padR2 = down;
+            if (game.driving) {
+                if (game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
+                    game.brakeRequested = padL2 || game.handbrake;
+                    game.throttleInput = padR2 ? 1f : 0f;
+                } else if (game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
+                    // Trigger controls engine power; collective is on D-pad up/down.
+                    game.throttleInput = padR2 ? 1f : 0f;
+                } else {
+                    game.sy = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
+                }
             } else {
-                renderer.game.weaponAimHeld = padL2;
-                renderer.game.weaponFireHeld = padR2;
+                game.weaponAimHeld = padL2;
+                game.weaponFireHeld = padR2;
             }
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_THUMBL) { renderer.game.sprint = down; return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_THUMBL) {
+            if (game.driving && aircraft && pressed) runOnGl(() -> renderer.toggleAircraftGear());
+            else if (!game.driving && pressed) game.sprint = !game.sprint;
+            return true;
+        }
         if (code == KeyEvent.KEYCODE_BUTTON_THUMBR) {
-            if (renderer.game.driving) renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f;
-            else if (pressed) runOnGl(() -> renderer.game.dodgeRequested = true);
+            if (game.driving) game.cameraLookOffset = down ? (float)Math.PI : 0f;
+            else if (pressed) runOnGl(() -> game.dodgeRequested = true);
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_SELECT) {
@@ -387,9 +405,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         return super.dispatchKeyEvent(event);
     }
 
-
-    // Android TV / Bluetooth / USB gamepads: left stick moves, right stick looks.
-    // While LB is held, the right stick selects a weapon instead of rotating the camera.
+    // Read analogue sticks and trigger axes from USB/Bluetooth controllers.
     @Override public boolean onGenericMotionEvent(android.view.MotionEvent event) {
         final int source = event.getSource();
         if (renderer == null || event.getActionMasked() != android.view.MotionEvent.ACTION_MOVE
@@ -398,7 +414,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
         android.view.InputDevice device = event.getDevice();
         float lx = event.getAxisValue(android.view.MotionEvent.AXIS_X);
-        float ly = -event.getAxisValue(android.view.MotionEvent.AXIS_Y); // stick-up is negative on Android
+        float ly = -event.getAxisValue(android.view.MotionEvent.AXIS_Y);
         float rx = event.getAxisValue(android.view.MotionEvent.AXIS_RX);
         float ry = event.getAxisValue(android.view.MotionEvent.AXIS_RY);
         final boolean hasRxRy = device != null && (hasMotionRange(device, android.view.MotionEvent.AXIS_RX, source)
@@ -414,41 +430,43 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         ly = applyStickDeadZone(ly, dead);
         rx = applyStickDeadZone(rx, dead);
         ry = applyStickDeadZone(ry, dead);
-        renderer.game.sx = lx;
-        renderer.game.sy = ly;
-        int leftTriggerAxis = device == null ? -1 : firstAvailableAxis(device, source,
+        Game game = renderer.game;
+        game.sx = lx;
+        if (game.driving && (game.vehicleType == ProceduralVehicleModels.AIRPLANE
+                || game.vehicleType == ProceduralVehicleModels.HELICOPTER)) {
+            game.sy = ly;
+        } else if (!game.driving) game.sy = ly;
+
+        int leftAxis = device == null ? -1 : firstAvailableAxis(device, source,
                 android.view.MotionEvent.AXIS_LTRIGGER, android.view.MotionEvent.AXIS_BRAKE);
-        int rightTriggerAxis = device == null ? -1 : firstAvailableAxis(device, source,
+        int rightAxis = device == null ? -1 : firstAvailableAxis(device, source,
                 android.view.MotionEvent.AXIS_RTRIGGER, android.view.MotionEvent.AXIS_GAS);
-        boolean hasLeftTrigger = leftTriggerAxis >= 0;
-        boolean hasRightTrigger = rightTriggerAxis >= 0;
-        float leftTrigger = hasLeftTrigger ? readTriggerAxis(event, device, leftTriggerAxis, source) : 0f;
-        float rightTrigger = hasRightTrigger ? readTriggerAxis(event, device, rightTriggerAxis, source) : 0f;
-        if (hasLeftTrigger) padL2 = leftTrigger > 0.18f;
-        if (hasRightTrigger) padR2 = rightTrigger > 0.18f;
-        if (hasLeftTrigger || hasRightTrigger || padL2 || padR2) {
-            if (renderer.game.driving) {
-                if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
-                    if (hasLeftTrigger) renderer.game.brakeRequested = padL2;
-                    if (hasRightTrigger) renderer.game.throttleInput = rightTrigger;
-                } else if (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
-                    renderer.game.throttleInput = (hasRightTrigger ? rightTrigger : (padR2 ? 1f : 0f))
-                            - (hasLeftTrigger ? leftTrigger : (padL2 ? 1f : 0f));
-                } else {
-                    float triggerDrive = (hasRightTrigger ? rightTrigger : (padR2 ? 1f : 0f))
-                            - (hasLeftTrigger ? leftTrigger : (padL2 ? 1f : 0f));
-                    renderer.game.sy = Math.abs(triggerDrive) > 0.05f ? triggerDrive : ly;
-                }
+        boolean hasLeft = leftAxis >= 0, hasRight = rightAxis >= 0;
+        float left = hasLeft ? readTriggerAxis(event, device, leftAxis, source) : (padL2 ? 1f : 0f);
+        float right = hasRight ? readTriggerAxis(event, device, rightAxis, source) : (padR2 ? 1f : 0f);
+        if (hasLeft) padL2 = left > 0.18f;
+        if (hasRight) padR2 = right > 0.18f;
+
+        if (game.driving) {
+            if (game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
+                if (hasLeft) game.brakeRequested = left > 0.18f;
+                if (hasRight) game.throttleInput = right;
+            } else if (game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
+                if (hasRight) game.throttleInput = right;
+                if (hasLeft) game.liftInput = -left;
             } else {
-                renderer.game.weaponAimHeld = padL2;
-                renderer.game.weaponFireHeld = padR2;
+                float drive = right - left;
+                if (hasLeft || hasRight) game.sy = Math.abs(drive) > 0.04f ? drive : 0f;
             }
+        } else {
+            game.weaponAimHeld = padL2;
+            game.weaponFireHeld = padR2;
         }
+
         if (device != null && (hasMotionRange(device, android.view.MotionEvent.AXIS_HAT_X, source)
                 || hasMotionRange(device, android.view.MotionEvent.AXIS_HAT_Y, source))) {
-            float hx = event.getAxisValue(android.view.MotionEvent.AXIS_HAT_X);
-            float hy = event.getAxisValue(android.view.MotionEvent.AXIS_HAT_Y);
-            handleHatDpad(hx, hy);
+            handleHatDpad(event.getAxisValue(android.view.MotionEvent.AXIS_HAT_X),
+                    event.getAxisValue(android.view.MotionEvent.AXIS_HAT_Y));
         }
         if (weaponWheelOpen && weaponWheelView != null) {
             if (Math.abs(rx) > 0.01f || Math.abs(ry) > 0.01f) weaponWheelView.selectDirection(rx, ry);
@@ -468,6 +486,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             renderer.game.cameraZoomInput = 0f;
             if (nx != padHatX && nx != 0f) weaponWheelView.moveSelection(nx > 0f ? 1 : -1);
             if (ny != padHatY && ny != 0f) weaponWheelView.moveSelection(ny < 0f ? 1 : -1);
+        } else if (renderer.game.driving && renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
+            renderer.game.cameraZoomInput = 0f;
+            renderer.game.liftInput = ny == 0f ? 0f : (ny < 0f ? 1f : -1f);
         } else {
             renderer.game.cameraZoomInput = ny == 0f ? 0f : (ny < 0f ? 1f : -1f);
             if (nx != padHatX && nx != 0f && !renderer.game.driving)
