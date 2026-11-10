@@ -60,8 +60,8 @@ public class CityGLView extends GLSurfaceView {
         boolean joystick = (source & InputDevice.SOURCE_CLASS_JOYSTICK)
                 == InputDevice.SOURCE_CLASS_JOYSTICK;
         if (joystick && e.getAction() == MotionEvent.ACTION_MOVE) {
-            float moveX = stick(firstActive(e.getAxisValue(MotionEvent.AXIS_X), e.getAxisValue(MotionEvent.AXIS_HAT_X)));
-            float moveY = stick(firstActive(e.getAxisValue(MotionEvent.AXIS_Y), e.getAxisValue(MotionEvent.AXIS_HAT_Y)));
+            float moveX = stick(e.getAxisValue(MotionEvent.AXIS_X));
+            float moveY = stick(e.getAxisValue(MotionEvent.AXIS_Y));
             float lookX = stick(firstActive(e.getAxisValue(MotionEvent.AXIS_RX), e.getAxisValue(MotionEvent.AXIS_Z)));
             float lookY = stick(-firstActive(e.getAxisValue(MotionEvent.AXIS_RY), e.getAxisValue(MotionEvent.AXIS_RZ)));
             float gas = trigger(e, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS);
@@ -72,7 +72,16 @@ public class CityGLView extends GLSurfaceView {
             if (weaponWheelOpen && weaponWheelView != null) {
                 if (Math.abs(lookX)+Math.abs(lookY) > 0.28f) weaponWheelView.selectDirection(lookX, lookY);
                 else if (Math.abs(hatX)+Math.abs(hatY) > 0.5f) weaponWheelView.selectDirection(hatX, -hatY);
-            } else renderer.setGamepadLook(lookX, lookY);
+            } else {
+                renderer.setGamepadLook(lookX, lookY);
+                // Some Android TV pads report the D-pad as HAT axes instead of key events.
+                if (Math.abs(hatY) > 0.5f) {
+                    if (renderer.game.driving && (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE
+                            || renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER))
+                        renderer.game.liftInput = -hatY;
+                    else renderer.game.cameraZoomInput = -hatY;
+                }
+            }
 
             renderer.game.sx = moveX;
             if (renderer.game.driving) {

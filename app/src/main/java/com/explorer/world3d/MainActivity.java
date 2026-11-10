@@ -90,7 +90,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     }
     private void showGameSettings() {
         final String[] options = {"اختيار المدينة / الموقع", "اختيار المركبة", "المطارات", "الخريطة الكبيرة",
-                "الصوت", "جودة الرسومات", "حساسية الكاميرا", "إعدادات التحكم", "التحقق من التحديثات", "إغلاق"};
+                "الصوت", "جودة الرسومات", "حساسية الكاميرا", "إعدادات التحكم", "تغيير وقت اليوم", "التحقق من التحديثات"};
         new AlertDialog.Builder(this).setTitle("إعدادات Adam World").setItems(options, (d, which) -> {
             if (which == 0) showCitySelector();
             else if (which == 1) showVehicleSelector();
@@ -105,7 +105,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             else if (which == 6) new AlertDialog.Builder(this).setTitle("حساسية الكاميرا")
                     .setItems(new String[]{"منخفضة", "متوسطة", "عالية"}, (x,v) -> renderer.setLookSensitivity(v==0?0.65f:v==1?1f:1.45f)).show();
             else if (which == 7) showControlsSettings();
-            else if (which == 8) UpdateManager.check(MainActivity.this, true);
+            else if (which == 8) {
+                renderer.timeIdx = (renderer.timeIdx + 1) % TIME_ICONS.length;
+                Toast.makeText(MainActivity.this, "تم تغيير وقت اليوم", Toast.LENGTH_SHORT).show();
+            } else if (which == 9) UpdateManager.check(MainActivity.this, true);
         }).show();
     }
     private void playHorn() {
@@ -167,22 +170,24 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     }
 
     private void showCitySelector() {
-        final String[] names = new String[CITIES.length + 6];
-        names[0] = "البيت — طبربور (محلي)";
-        names[1] = "عمّان — بيانات محلية";
-        names[2] = "مانيلا — بيانات محلية";
-        names[3] = "مطار عمّان المدني — ماركا";
-        names[4] = "مطار الملكة علياء الدولي";
-        names[5] = "بحث عن مدينة أو مكان";
-        for (int i=0;i<CITIES.length;i++) names[i+6] = (String)CITIES[i][0];
+        final String[] names = new String[CITIES.length + 7];
+        names[0] = "العودة إلى المدينة السابقة";
+        names[1] = "البيت — طبربور (محلي)";
+        names[2] = "عمّان — بيانات محلية";
+        names[3] = "مانيلا — بيانات محلية";
+        names[4] = "مطار عمّان المدني — ماركا";
+        names[5] = "مطار الملكة علياء الدولي";
+        names[6] = "بحث عن مدينة أو مكان";
+        for (int i=0;i<CITIES.length;i++) names[i+7] = (String)CITIES[i][0];
         new AlertDialog.Builder(this).setTitle("اختيار المدينة / الموقع").setItems(names,(d,which)->{
-            if(which==0) teleportOfflineTabarbour();
-            else if(which==1) teleportOfflineAmman();
-            else if(which==2) teleportOfflineManila();
-            else if(which==3) runOnGl(()->renderer.enterAirport(31.9726,35.9916));
-            else if(which==4) runOnGl(()->renderer.enterAirport(31.7226,35.9932));
-            else if(which==5) showSearchDialog();
-            else { Object[] city=CITIES[which-6]; teleport((Double)city[1],(Double)city[2]); }
+            if(which==0) runOnGl(()->renderer.leaveFlightSchool());
+            else if(which==1) teleportOfflineTabarbour();
+            else if(which==2) teleportOfflineAmman();
+            else if(which==3) teleportOfflineManila();
+            else if(which==4) runOnGl(()->renderer.enterAirport(31.9726,35.9916));
+            else if(which==5) runOnGl(()->renderer.enterAirport(31.7226,35.9932));
+            else if(which==6) showSearchDialog();
+            else { Object[] city=CITIES[which-7]; teleport((Double)city[1],(Double)city[2]); }
         }).show();
     }
 
