@@ -55,9 +55,9 @@ final class Game {
     long lastPlayerAttackMs, lastComboMs;
     volatile boolean weaponFireHeld, weaponAimHeld, reloadRequested;
     int equippedWeapon=0, cash=2500, magazineAmmo=12;
-    final boolean[] ownedWeapons={true,false,false,false,false};
-    final int[] reserveAmmo={48,0,0,0,0};
-    final int[] weaponMagazines={12,0,0,0,0};
+    final boolean[] ownedWeapons={true,false,false,false,false,false,false};
+    final int[] reserveAmmo={48,0,0,0,0,0,0};
+    final int[] weaponMagazines={12,0,0,0,0,0,0};
     long lastWeaponShotMs;
     float weaponReloadSeconds, weaponReloadDuration, weaponRecoil, muzzleFlashSeconds;
     int weaponReloadPendingAmmo, weaponReloadWeaponId=-1;
@@ -67,6 +67,8 @@ final class Game {
     volatile float sx, sy;
     volatile boolean sprint;
     final ArrayList<Agent> agents = new ArrayList<>();
+    final ArrayList<ProjectileSystem.Rocket> rockets = new ArrayList<>();
+    final ArrayList<ProjectileSystem.Blast> blasts = new ArrayList<>();
     private final float[] tmp = new float[4];
 
     static float clamp(float v, float a, float b) { return Math.max(a, Math.min(b, v)); }
@@ -92,7 +94,7 @@ final class Game {
         vehicleFrontStepContact = vehicleRearStepContact = false;
         vehicleWheelFL = vehicleWheelFR = vehicleWheelRL = vehicleWheelRR = 0f;
         vehicleWheelBodyLift = vehicleWheelBodyRoll = vehicleWheelBodyPitch = 0f;
-        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; agents.clear();
+        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; agents.clear(); rockets.clear(); blasts.clear();
     }
 
     float focusX() { return driving ? cx : px; }
@@ -454,6 +456,7 @@ final class Game {
             }
         }
 
+        ProjectileSystem.update(this,dt,w);
         updateCamera(dt);
     }
 
@@ -463,6 +466,7 @@ final class Game {
         if(magazineAmmo<=0){reloadWeapon();return;}
         lastWeaponShotMs=now;magazineAmmo--;weaponMagazines[id]=magazineAmmo;
         weaponRecoil=1f; muzzleFlashSeconds=1f;
+        if(id>=5){ ProjectileSystem.launch(this,id); return; }
 
         // Hitscan with deterministic weapon-specific dispersion and world occlusion.
         // A target behind a building/wall can no longer be damaged through geometry.
