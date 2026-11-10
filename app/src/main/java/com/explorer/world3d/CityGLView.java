@@ -13,6 +13,8 @@ public class CityGLView extends GLSurfaceView {
     private WeaponWheelView weaponWheelView;
     private volatile boolean weaponWheelOpen;
     private float lx, ly;
+    private float padHatX, padHatY;
+    private long lastHatWeaponChangeMs;
     private final ScaleGestureDetector scaleDetector;
 
     public CityGLView(Context c, CityRenderer r) {
@@ -66,6 +68,16 @@ public class CityGLView extends GLSurfaceView {
         return v < 0f ? (v + 1f) * 0.5f : Math.min(1f, v);
     }
 
+    private void cycleWeapon(int direction) {
+        Game g = renderer.game;
+        int selected = g.equippedWeapon;
+        for (int n = 0; n < WeaponSystem.NAME.length; n++) {
+            selected = (selected + direction + WeaponSystem.NAME.length) % WeaponSystem.NAME.length;
+            if (g.ownedWeapons[selected]) break;
+        }
+        g.equipWeapon(selected);
+    }
+
     /** USB/Bluetooth pads: left stick + hat move, right stick looks, triggers throttle/brake. */
     @Override public boolean onGenericMotionEvent(MotionEvent e) {
         int source = e.getSource();
@@ -83,12 +95,30 @@ public class CityGLView extends GLSurfaceView {
             float hatX = e.getAxisValue(MotionEvent.AXIS_HAT_X);
             float hatY = e.getAxisValue(MotionEvent.AXIS_HAT_Y);
 
+            // D-pad hats are joystick axes, not key events on many Bluetooth pads.
+            // This view consumes joystick motion, so route the hat here as well.
+            float nx = Math.abs(hatX) > 0.5f ? Math.signum(hatX) : 0f;
+            float ny = Math.abs(hatY) > 0.5f ? Math.signum(hatY) : 0f;
             if (weaponWheelOpen && weaponWheelView != null) {
                 if (Math.abs(lookX)+Math.abs(lookY) > 0.28f) weaponWheelView.selectDirection(lookX, lookY);
-                else if (Math.abs(hatX)+Math.abs(hatY) > 0.5f) weaponWheelView.selectDirection(hatX, -hatY);
+                else if (Math.abs(nx)+Math.abs(ny) > 0f) weaponWheelView.selectDirection(nx, -ny);
             } else {
                 renderer.setGamepadLook(lookX, lookY);
+                if (renderer.game.driving && renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
+                    renderer.game.liftInput = ny == 0f ? 0f : (ny < 0f ? 1f : -1f);
+                } else {
+                    renderer.game.cameraZoomInput = ny == 0f ? 0f : (ny < 0f ? 1f : -1f);
+                }
+                if (nx != 0f && nx != padHatX && !renderer.game.driving) {
+                    long now = System.currentTimeMillis();
+                    if (now - lastHatWeaponChangeMs > 180L) {
+                        cycleWeapon(nx > 0f ? 1 : -1);
+                        lastHatWeaponChangeMs = now;
+                    }
+                }
             }
+            padHatX = nx;
+            padHatY = ny;
 
             if (renderer.game.driving) {
                 renderer.game.vehicleSteeringInput = moveX;
