@@ -31,6 +31,16 @@ ASSETS = {
         "length": 5.20,
         "fallback": (0.20, 0.27, 0.34),
     },
+    "suv": {
+        "url": "https://grab3d.com/dl/1990s-suv/1990s-suv.glb",
+        "length": 4.69,
+        "fallback": (0.34, 0.42, 0.28),
+    },
+    "police": {
+        "url": "https://grab3d.com/dl/1990s-police-car/1990s-police-car.glb",
+        "length": 5.09,
+        "fallback": (0.82, 0.86, 0.90),
+    },
     "city-bus": {
         "url": "https://files.innerscene.com/library/low-floor-city-bus-9e7ce899/9c3a0074b0e553ba181a/city-bus-original.glb",
         "length": 8.30,
