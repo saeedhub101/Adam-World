@@ -247,7 +247,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("على التلفاز: العصا اليسرى للحركة أو توجيه المركبة، واليمنى للكاميرا. أثناء المشي: A للنقر المتكرر لتفعيل الركض السريع، X للقفز، B لإعادة التلقيم/الاشتباك، Y للدخول والخروج، LT للتصويب، RT لإطلاق النار، LB لعجلة الأسلحة (اضغط مطولاً)، RB للغطاء (لم يكتمل نظام الغطاء بعد)، L3 للتخفي، R3 للنظر خلفك. السيارة: RT للتسارع، LT للفرملة/الرجوع، العصا اليسرى للتوجيه، RB لفرامل اليد، L3 للبوق، R3 للنظر للخلف، B للكاميرا السينمائية، View لتغيير أوضاع الكاميرا، Y للخروج. الطائرة: RT لزيادة قوة المحرك، LT لتقليلها، العصا اليسرى للميل والمقدمة، LB/RB للانعراج، L3 للعجلات. الهليكوبتر: RT للصعود، LT للهبوط، وتركهما لتثبيت الارتفاع، العصا اليسرى للحركة والميل، LB/RB للانعراج. View لتغيير الكاميرا وMenu للإيقاف. أزرار الهاتف/الراديو غير مدعومة بعد.")
+                .setMessage("على التلفاز: العصا اليسرى والأسهم الأربعة (D-pad) تؤدي الوظيفة نفسها للحركة وتوجيه المركبة. العصا اليمنى وأزرار Y/X/A/B تؤدي الوظيفة نفسها لتحريك الكاميرا يميناً ويساراً وأعلى وأسفل. LT للتصويب/الفرملة، RT لإطلاق النار/التسارع، LB لعجلة الأسلحة (اضغط مطولاً)، RB للغطاء أو فرامل اليد، L3 للركض، R3 للنظر خلفك، View لتغيير أوضاع الكاميرا، وMenu للإيقاف. استخدم أزرار اللمس على الشاشة للقفز والاشتباك وإعادة التلقيم والدخول والخروج من المركبة.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
@@ -1047,6 +1047,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         padHatX = padHatY = 0f;
         weaponWheelOpen = false;
         if (glView != null) glView.setWeaponWheelOpen(false);
+        if (glView != null) glView.clearDigitalInputs();
         keyUp = keyDown = keyLeft = keyRight = false;
         if (renderer != null) {
             renderer.pauseAudio();
