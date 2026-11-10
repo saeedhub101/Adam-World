@@ -39,7 +39,8 @@ final class PlayerMotionSystem {
         g.jumpRequested = false;
 
         float groundY = world.heightAt(g.px, g.pz);
-        boolean onGround = grounded && g.jumpHeight <= 0.002f;
+        float supportHeight = vehicleSupportHeight(g, world, g.px, g.pz, groundY);
+        boolean onGround = grounded && Math.abs(g.jumpHeight - supportHeight) <= 0.035f;
         if (onGround) coyoteTimer = COYOTE_SECONDS;
         else coyoteTimer = Math.max(0f, coyoteTimer - dt);
 
@@ -86,14 +87,14 @@ final class PlayerMotionSystem {
         float nx = g.px + vx * dt;
         float nz = g.pz + vz * dt;
         float stepClearance = Math.max(0.58f, g.jumpHeight - 0.18f);
-        boolean blockedAll = blocked(world, nx, nz, stepClearance);
+        boolean blockedAll = blocked(g, world, nx, nz, stepClearance);
         if (!blockedAll) {
             g.px = nx;
             g.pz = nz;
         } else {
-            if (!blocked(world, nx, g.pz, stepClearance)) g.px = nx;
+            if (!blocked(g, world, nx, g.pz, stepClearance)) g.px = nx;
             else vx = 0f;
-            if (!blocked(world, g.px, nz, stepClearance)) g.pz = nz;
+            if (!blocked(g, world, g.px, nz, stepClearance)) g.pz = nz;
             else vz = 0f;
         }
 
@@ -108,13 +109,14 @@ final class PlayerMotionSystem {
         g.swingAmp = gaitBlend * (g.sprint ? 1f : (g.stealthMode ? 0.35f : (g.jogging ? 0.9f : 0.78f)));
 
         groundY = world.heightAt(g.px, g.pz);
-        if (!grounded || verticalVelocity > 0f || g.jumpHeight > 0f) {
+        supportHeight = vehicleSupportHeight(g, world, g.px, g.pz, groundY);
+        if (!grounded || verticalVelocity > 0f || g.jumpHeight > supportHeight + 0.002f) {
             float previousHeight = g.jumpHeight;
             g.jumpHeight += verticalVelocity * dt;
             verticalVelocity -= GRAVITY * dt;
-            if (g.jumpHeight <= 0f) {
+            if (verticalVelocity <= 0f && g.jumpHeight <= supportHeight) {
                 float impact = Math.max(0f, -verticalVelocity);
-                g.jumpHeight = 0f;
+                g.jumpHeight = supportHeight;
                 verticalVelocity = 0f;
                 grounded = true;
                 landingPulse = Math.min(1f, impact / 8f);
@@ -127,7 +129,7 @@ final class PlayerMotionSystem {
             }
         } else {
             grounded = true;
-            g.jumpHeight = 0f;
+            g.jumpHeight = supportHeight;
         }
         landingPulse = Math.max(0f, landingPulse - dt * 3.5f);
         float targetGround = groundY + g.jumpHeight;
@@ -138,11 +140,71 @@ final class PlayerMotionSystem {
         g.jumpVelocity = verticalVelocity;
     }
 
-    private static boolean blocked(Game.World world, float x, float z, float stepClearance) {
-        if (world instanceof CityRenderer) {
-            return ((CityRenderer)world).blockedAtHeight(x, z, BODY_RADIUS, stepClearance);
+    private static boolean blocked(Game g, Game.World world, float x, float z, float stepClearance) {
+        boolean worldBlocked = world instanceof CityRenderer
+                ? ((CityRenderer)world).blockedAtHeight(x, z, BODY_RADIUS, stepClearance)
+                : world.blocked(x, z, BODY_RADIUS);
+        return worldBlocked || vehicleSideBlocked(g, world, x, z, g.jumpHeight);
+    }
+
+    /*
+     * Dynamic vehicle proxies are deliberately independent of render meshes.
+     * The same oriented footprint blocks the player's capsule and exposes a
+     * walkable roof plane when the player lands from above.
+     */
+    private static float vehicleSupportHeight(Game g, Game.World world, float x, float z, float playerGround) {
+        float support = 0f;
+        if (!g.driving) {
+            support = Math.max(support, roofHeightAt(x, z, g.cx, g.cz, g.cyaw,
+                    g.vehicleType, world, playerGround));
+            for (int i = 0; i < g.agents.size(); i++) {
+                Game.Agent a = g.agents.get(i);
+                if (a.car) support = Math.max(support, roofHeightAt(x, z, a.x, a.z, a.yaw,
+                        a.vehicleType, world, playerGround));
+            }
         }
-        return world.blocked(x, z, BODY_RADIUS);
+        return support;
+    }
+
+    private static boolean vehicleSideBlocked(Game g, Game.World world, float x, float z, float feetHeight) {
+        if (g.driving) return false;
+        if (insideVehicle(x, z, g.cx, g.cz, g.cyaw, g.vehicleType, BODY_RADIUS)
+                && feetHeight < roofHeight(g.vehicleType) - 0.06f) return true;
+        for (int i = 0; i < g.agents.size(); i++) {
+            Game.Agent a = g.agents.get(i);
+            if (a.car && insideVehicle(x, z, a.x, a.z, a.yaw, a.vehicleType, BODY_RADIUS)
+                    && feetHeight < roofHeight(a.vehicleType) - 0.06f) return true;
+        }
+        return false;
+    }
+
+    private static float roofHeightAt(float x, float z, float vx, float vz, float yaw,
+                                      int type, Game.World world, float playerGround) {
+        if (!insideVehicle(x, z, vx, vz, yaw, type, -0.02f)) return 0f;
+        float vehicleGround = world.heightAt(vx, vz);
+        return Math.max(0f, vehicleGround - playerGround + roofHeight(type));
+    }
+
+    private static boolean insideVehicle(float x, float z, float vx, float vz,
+                                         float yaw, int type, float expand) {
+        float dx = x - vx, dz = z - vz;
+        float forward = dx * (float)Math.sin(yaw) + dz * (float)Math.cos(yaw);
+        float side = dx * (float)Math.cos(yaw) - dz * (float)Math.sin(yaw);
+        float halfLength = type == ProceduralVehicleModels.BUS ? 4.05f
+                : type == ProceduralVehicleModels.TANK ? 2.45f
+                : type == ProceduralVehicleModels.MOTORBIKE || type == ProceduralVehicleModels.BICYCLE ? 1.48f : 2.42f;
+        float halfWidth = type == ProceduralVehicleModels.BUS ? 1.38f
+                : type == ProceduralVehicleModels.TANK ? 1.48f
+                : type == ProceduralVehicleModels.MOTORBIKE || type == ProceduralVehicleModels.BICYCLE ? 0.48f : 1.02f;
+        return Math.abs(forward) <= halfLength + expand && Math.abs(side) <= halfWidth + expand;
+    }
+
+    private static float roofHeight(int type) {
+        if (type == ProceduralVehicleModels.BUS) return 2.75f;
+        if (type == ProceduralVehicleModels.TANK) return 1.85f;
+        if (type == ProceduralVehicleModels.MOTORBIKE || type == ProceduralVehicleModels.BICYCLE) return 1.05f;
+        if (type == ProceduralVehicleModels.SUV || type == ProceduralVehicleModels.PICKUP) return 1.62f;
+        return 1.38f;
     }
 
     private static float approach(float value, float target, float amount) {
