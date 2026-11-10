@@ -122,8 +122,9 @@ final class WorldAudio {
                 if (audible) {
                     windPhase += 2.0 * Math.PI * 73.0 / RATE;
                     double n = noise();
-                    ambience = n * (0.025 + wind * 0.075) * ambienceVolume;
-                    ambience += Math.sin(windPhase) * (0.006 + wind * 0.018);
+                    // Never synthesize broadband hiss while the world is still. Wind noise scales only with actual vehicle/flight speed.
+                    ambience = n * wind * 0.045 * ambienceVolume;
+                    ambience += Math.sin(windPhase) * wind * 0.018;
                     if (traffic > 0.01f) {
                         trafficPhase += 2.0 * Math.PI * (62.0 + traffic * 95.0) / RATE;
                         trafficSound = (Math.sin(trafficPhase) * 0.10 + Math.sin(trafficPhase * 2.2) * 0.035)
