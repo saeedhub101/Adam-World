@@ -66,7 +66,7 @@ final class Game {
     float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
     long lastLookMs;
     volatile float sx, sy;
-    volatile boolean sprint;
+    volatile boolean sprint, stealthMode;
     final ArrayList<Agent> agents = new ArrayList<>();
     final ArrayList<ProjectileSystem.Rocket> rockets = new ArrayList<>();
     final ArrayList<ProjectileSystem.Blast> blasts = new ArrayList<>();
@@ -83,7 +83,7 @@ final class Game {
     }
 
     void reset() {
-        sx = sy = 0f; sprint = false;
+        sx = sy = 0f; sprint = false; stealthMode = false;
         playerMotion.reset();
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
