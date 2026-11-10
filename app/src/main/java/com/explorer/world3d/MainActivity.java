@@ -434,8 +434,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     renderer.game.throttleInput = (hasRightTrigger ? rightTrigger : (padR2 ? 1f : 0f))
                             - (hasLeftTrigger ? leftTrigger : (padL2 ? 1f : 0f));
                 } else {
-                    renderer.game.sy = (hasRightTrigger ? rightTrigger : (padR2 ? 1f : 0f))
+                    float triggerDrive = (hasRightTrigger ? rightTrigger : (padR2 ? 1f : 0f))
                             - (hasLeftTrigger ? leftTrigger : (padL2 ? 1f : 0f));
+                    renderer.game.sy = Math.abs(triggerDrive) > 0.05f ? triggerDrive : ly;
                 }
             } else {
                 renderer.game.weaponAimHeld = padL2;
