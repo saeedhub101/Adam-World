@@ -437,8 +437,8 @@ final class Game {
                     float distance=(float)Math.hypot(dx,dz);
                     float desiredYaw=(float)Math.atan2(dx,dz);
                     a.yaw+=angDiff(a.yaw,desiredYaw)*Math.min(1f,dt*2.6f);
-                    a.sp=Math.min(23f,Math.max(a.sp, a.cruiseSpeed)+dt*5f);
                     if(distance>4.2f){
+                        a.sp=Math.min(23f,Math.max(a.sp, a.cruiseSpeed)+dt*5f);
                         float step=Math.min(distance-3.2f,a.sp*dt);
                         float nx=a.x+(float)Math.sin(a.yaw)*step,nz=a.z+(float)Math.cos(a.yaw)*step;
                         if(!w.blocked(nx,nz,1.05f)){a.x=nx;a.z=nz;}
