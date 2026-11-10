@@ -182,6 +182,9 @@ final class TileBuilder {
                     if (mappedWidth > 2f && mappedWidth < 120f) width = mappedWidth;
                     addClippedRibbon(td, xs, zs, width, 0.14f, td.bufs[B_ROADN],
                             airportColorR, airportColorG, airportColorB);
+                    // Centerline taxiways are traversable by aircraft; expose them to vehicle spawning and routing.
+                    if (aeroway.matches("taxiway|taxilane") && xs.length >= 2)
+                        td.paths.add(new RoadPath(xs, zs, 5f, true));
                 }
             } else if (natural.equals("coastline")) {
                 td.hasCoast = true;
