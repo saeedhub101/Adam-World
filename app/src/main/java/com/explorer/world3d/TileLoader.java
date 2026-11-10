@@ -267,8 +267,10 @@ final class TileLoader extends Thread {
         root = new JSONObject(json);
         }
         // DEM يُحمّل فقط للمربعات القريبة من عمّان؛ لا تُحمّل بيانات المدينة كاملة.
-        if (Terrain.enabled) {
+        if (Terrain.covers((south + north) * 0.5, (west + east) * 0.5)) {
             // DEM is an enhancement, not a prerequisite for city geometry.
+            // Do not fetch elevation tiles after the player has driven outside
+            // the supported Amman/Tabarbour terrain footprint.
             // A slow or unavailable elevation server must never prevent roads/buildings
             // from appearing or block a switch to another city.
             try {
