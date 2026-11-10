@@ -245,6 +245,7 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
     # measured shoulder-to-elbow vector toward a natural hanging direction. This
     # avoids guessing X/Y/Z hinge axes and works with differently oriented VRM/GLB rigs.
     arm_drop_local={}
+    arm_drop_sides=set()
     for forearm_id in ordered:
         frole,fside=classify_bone(nodes[forearm_id].get("name",""))
         if frole!="forearm":continue
@@ -272,8 +273,21 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
         local_fix=quat_mul(quat_mul(quat_conjugate(bind_global_q),world_fix),bind_global_q)
         local_fix/=max(np.linalg.norm(local_fix),1e-12)
         arm_drop_local[upper_id]=local_fix
+        arm_drop_sides.add(-1 if side < 0 else 1)
         angle=2.0*math.acos(float(np.clip(abs(local_fix[3]),-1.0,1.0)))
         print(f"ARM_DROP node={nodes[upper_id].get('name',upper_id)} side={side:+.0f} angle_deg={math.degrees(angle):.2f} source_root={current_root.round(4).tolist()} target_root={target_root.round(4).tolist()}",flush=True)
+    # Do not silently package an uncorrected T-pose. Adam's source rig must
+    # expose and correct both left and right upper arms before any mesh is emitted.
+    if len(arm_drop_local) < 2 or arm_drop_sides != {-1, 1}:
+        raise ValueError(
+            "Adam rig validation failed: expected corrected left and right upper arms; "
+            f"found {len(arm_drop_local)} joints on sides {sorted(arm_drop_sides)}"
+        )
+    print(
+        f"ARM_RIG_VALIDATED joints={len(arm_drop_local)} sides=both "
+        "rest_pose=lowered_wide",
+        flush=True,
+    )
     clips=[]
     for clip_name,duration in specs:
         times=np.linspace(0.0,duration,41,dtype=np.float64)
