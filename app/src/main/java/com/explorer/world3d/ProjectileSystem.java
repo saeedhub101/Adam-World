@@ -20,7 +20,7 @@ final class ProjectileSystem {
 
     static void launch(Game g,int weaponId){
         if(g.rockets.size()>=MAX_ROCKETS) return;
-        float yaw=g.pyaw+g.aimYawOffset,pitch=g.aimPitchOffset;
+        float yaw=g.weaponAimHeld?g.camYaw:g.pyaw,pitch=g.weaponAimHeld?Game.clamp(0.38f-g.camPitch,-0.78f,0.78f):0f;
         float horizontal=(float)Math.cos(pitch),fx=(float)Math.sin(yaw)*horizontal,fz=(float)Math.cos(yaw)*horizontal;
         Rocket r=new Rocket();r.guided=weaponId==6;
         r.x=g.px+fx*.78f;r.y=g.py+g.jumpHeight+1.25f;r.z=g.pz+fz*.78f;
