@@ -214,7 +214,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             else if (pressed && !renderer.game.driving) runOnGl(() -> renderer.game.kickRequested = true);
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_X) { if (pressed && !renderer.game.driving) runOnGl(() -> renderer.game.reloadRequested = true); return true; }
+        if (code == KeyEvent.KEYCODE_BUTTON_X) {
+            if (pressed && !renderer.game.driving) runOnGl(() -> {
+                if (padCameraModifier) renderer.game.reloadRequested = true;
+                else renderer.game.punchRequested = true;
+            });
+            return true;
+        }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_L1) { if (!renderer.game.driving) renderer.game.weaponAimHeld = down; else renderer.game.cameraLookOffset = down ? -0.95f : 0f; return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_R1) {
