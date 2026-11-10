@@ -130,8 +130,10 @@ final class PlayerMotionSystem {
         }
         landingPulse = Math.max(0f, landingPulse - dt * 3.5f);
         float targetGround = groundY + g.jumpHeight;
-        float groundResponse = grounded ? 1f - (float)Math.exp(-dt * 18f) : 1f - (float)Math.exp(-dt * 7f);
-        g.py += (targetGround - g.py) * groundResponse;
+        // While grounded, anchor the feet directly to the sampled terrain height. A smoothed
+        // ground target lags behind slopes and causes the actor to visibly sink into hills.
+        if (grounded) g.py = targetGround;
+        else g.py += (targetGround - g.py) * (1f - (float)Math.exp(-dt * 7f));
         g.jumpVelocity = verticalVelocity;
     }
 
