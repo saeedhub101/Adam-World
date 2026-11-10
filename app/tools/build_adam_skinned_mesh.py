@@ -5,14 +5,15 @@ Only the compact runtime mesh is written to Android assets. The source GLB remai
 in the repository and is never copied into the APK. Large rigs are reduced to the 24 most influential joints while retaining required ancestors.
 """
 from __future__ import annotations
-import json, math, struct, io
+import json, math, struct, io, os
 from pathlib import Path
+from urllib.parse import unquote
 import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / "Adam_Walking.glb"
-OUT = ROOT / "app/src/main/assets/models/runtime/characters/adam.awmesh5"
+SOURCE = Path(os.environ.get("ADAM_SOURCE_GLTF", str(ROOT / "Adam_Walking.glb"))).resolve()
+OUT = Path(os.environ.get("ADAM_OUTPUT_MESH", str(ROOT / "app/src/main/assets/models/runtime/characters/adam.awmesh5"))).resolve()
 MAX_BONES = 24
 MAX_VERTICES = 250000
 MAX_KEYS_TOTAL = 20000
@@ -83,6 +84,9 @@ def material_base_color(doc, binary, primitive, uv):
         elif image.get("uri","").startswith("data:"):
             import base64
             payload=base64.b64decode(image["uri"].split(",",1)[1])
+        elif image.get("uri"):
+            external_image = (SOURCE.parent / unquote(image["uri"].split("#",1)[0])).resolve()
+            payload = external_image.read_bytes()
         else:
             return np.tile(factor[:3],(len(uv),1))
         with Image.open(io.BytesIO(payload)) as source:

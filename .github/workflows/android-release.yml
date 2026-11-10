@@ -76,6 +76,30 @@ jobs:
           python app/tools/build_runtime_meshes.py
           python app/tools/build_adam_skinned_mesh.py
 
+          # CC0 adult pedestrian with a real skinned walk cycle. The source is converted
+          # at build time; only the compact runtime mesh can enter the APK.
+          PED_SOURCE="$RUNNER_TEMP/adam-world-pedestrian.glb"
+          PED_OUTPUT="app/src/main/assets/models/runtime/characters/pedestrian.awmesh5"
+          mkdir -p "$(dirname "$PED_OUTPUT")"
+          rm -f "$PED_OUTPUT"
+          PED_URL="https://files.innerscene.com/library/relaxed-walk-sam-3d-person-animated-732f1206/b11d02f72ad777e03d68/relaxed-walk-sam-3d-person-animated.glb"
+          if curl -fL --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 180 "$PED_URL" -o "$PED_SOURCE"; then
+            if ADAM_SOURCE_GLTF="$PED_SOURCE" ADAM_OUTPUT_MESH="$PED_OUTPUT" python app/tools/build_adam_skinned_mesh.py; then
+              PED_BYTES="$(stat -c%s "$PED_OUTPUT")"
+              if [ "$PED_BYTES" -gt 12000000 ]; then
+                rm -f "$PED_OUTPUT"
+                echo "::warning::Pedestrian mesh exceeded 12 MB and was omitted to protect APK and memory budgets."
+              else
+                echo "Pedestrian runtime mesh ready: $PED_BYTES bytes"
+              fi
+            else
+              rm -f "$PED_OUTPUT"
+              echo "::warning::Optional CC0 pedestrian conversion failed; procedural fallback remains enabled."
+            fi
+          else
+            echo "::warning::Optional CC0 pedestrian source was unavailable; procedural fallback remains enabled."
+          fi
+
       - name: Prepare signing and calculate release version
         env:
           ADAM_WORLD_KEYSTORE_BASE64: ${{ secrets.ADAM_WORLD_KEYSTORE_BASE64 }}
