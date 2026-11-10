@@ -1299,7 +1299,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         GLES20.glUniform1f(uSkinning,1f);
         GLES20.glUniform1f(uPbr,0f);
         GLES20.glUniform1f(uGlass,0f);
-        GLES20.glUniform3f(uTint,1f,1f,1f);
+        GLES20.glUniform3f(uTint,0.88f,0.78f,0.66f);
         bindTex(tex.white,tex.black);
         playerCharacterAsset.mesh.draw();
         GLES20.glUniform1f(uSkinning,0f);
@@ -1317,7 +1317,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
         float fall=pose==2?Math.min(1f,poseTime/.25f):pose==3?1f:pose==4?Math.max(0f,1f-poseTime/.55f):0f;
         Matrix.translateM(base,0,0f,.82f*fall,0f); Matrix.rotateM(base,0,-82f*fall,0f,0f,1f); Matrix.translateM(base,0,0f,-.82f*fall,0f);
-        Matrix.scaleM(base,0,.86f,.86f,.86f);
+        Matrix.scaleM(base,0,1.08f,1.08f,1.08f);
         float attackDuration = attackType == 3 ? .62f : .42f;
         float attackPhase = attack > 0f ? Math.max(0f,Math.min(1f,1f-attack/attackDuration)) : 0f;
         float attackPulse = attack > 0f ? (float)Math.sin(attackPhase*Math.PI) : 0f;
