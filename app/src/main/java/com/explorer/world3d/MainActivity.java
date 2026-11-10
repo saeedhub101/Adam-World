@@ -463,8 +463,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
 
     private final class AimReticleView extends View {
         private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
-        private boolean aiming;
-        AimReticleView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setClickable(false);}
+        private boolean aiming, dragging;
+        private float lastX, lastY, offsetX, offsetY;
+        AimReticleView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setClickable(true);}
         void setAiming(boolean value){aiming=value;}
         @Override protected void onDraw(Canvas c){
             super.onDraw(c);
@@ -476,6 +477,29 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             c.drawLine(cx,cy-len-gap,cx,cy-gap,paint);c.drawLine(cx,cy+gap,cx,cy+len+gap,paint);
             paint.setStyle(Paint.Style.FILL);c.drawCircle(cx,cy,dp(1.2f),paint);
         }
+        @Override public boolean onTouchEvent(MotionEvent e) {
+            switch(e.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    dragging=true;lastX=e.getRawX();lastY=e.getRawY();return true;
+                case MotionEvent.ACTION_MOVE:
+                    if(!dragging)return true;
+                    float dx=e.getRawX()-lastX,dy=e.getRawY()-lastY;
+                    lastX=e.getRawX();lastY=e.getRawY();
+                    offsetX=Math.max(-getRootView().getWidth()*.42f,Math.min(getRootView().getWidth()*.42f,offsetX+dx));
+                    offsetY=Math.max(-getRootView().getHeight()*.34f,Math.min(getRootView().getHeight()*.34f,offsetY+dy));
+                    setTranslationX(offsetX);setTranslationY(offsetY);
+                    if(renderer!=null) {
+                        final float yawDelta=dx*0.0032f;
+                        runOnGl(()->renderer.game.aimYawOffset=Game.clamp(renderer.game.aimYawOffset+yawDelta,-1.15f,1.15f));
+                    }
+                    invalidate();return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    dragging=false;performClick();return true;
+            }
+            return true;
+        }
+        @Override public boolean performClick(){super.performClick();return true;}
     }
 
     private final class MiniMapView extends View {
