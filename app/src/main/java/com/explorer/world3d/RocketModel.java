@@ -9,7 +9,7 @@ final class RocketModel {
     private static final int SIDES=24;
     private RocketModel(){}
 
-    static Mesh build(){
+    static Mesh build(boolean guided){
         GeoBuf b=new GeoBuf();
         // Multi-section machined body and tapered nose.
         float[][] profile={
@@ -22,7 +22,7 @@ final class RocketModel {
             for(int i=0;i<SIDES;i++){
                 float a0=(float)(Math.PI*2*i/SIDES),a1=(float)(Math.PI*2*(i+1)/SIDES);
                 float c0=(float)Math.cos(a0),s0=(float)Math.sin(a0),c1=(float)Math.cos(a1),s1=(float)Math.sin(a1);
-                float[] col=sectionColor((z0+z1)*.5f);
+                float[] col=sectionColor((z0+z1)*.5f,guided);
                 vertex(b,r0*c0,r0*s0,z0,c0,-slope,s0,col);
                 vertex(b,r0*c1,r0*s1,z0,c1,-slope,s1,col);
                 vertex(b,r1*c1,r1*s1,z1,c1,-slope,s1,col);
@@ -34,7 +34,7 @@ final class RocketModel {
         // Warhead nose tip and dark optical seeker aperture.
         addRing(b,.78f,.064f,.805f,.052f,.74f,.76f,.78f);
         addRing(b,.805f,.052f,.835f,.031f,.16f,.18f,.20f);
-        addRing(b,.835f,.031f,.855f,.024f,.08f,.18f,.23f);
+        addRing(b,.835f,.031f,.855f,.024f,.08f,.18f,.23f);\n        if(guided){\n            addRing(b,.70f,.084f,.725f,.080f,.13f,.17f,.20f);\n            addRing(b,.725f,.080f,.744f,.075f,.74f,.48f,.12f);\n            addRing(b,.744f,.075f,.758f,.067f,.12f,.14f,.16f);\n        }
         // Tail collar, nozzle lip and recessed exhaust throat.
         addRing(b,-.88f,.073f,-.91f,.086f,.31f,.33f,.35f);
         addRing(b,-.91f,.086f,-.95f,.073f,.55f,.57f,.59f);
@@ -62,12 +62,12 @@ final class RocketModel {
         b.vn(x,y,z,nx/l,ny/l,nz/l,.5f,.5f,c[0],c[1],c[2]);
     }
 
-    private static float[] sectionColor(float z){
+    private static float[] sectionColor(float z,boolean guided){
         if(z>.68f)return new float[]{.72f,.75f,.77f};
         if(z<-.86f)return new float[]{.27f,.29f,.31f};
         if(z<-.70f)return new float[]{.48f,.50f,.52f};
         if(z>.47f)return new float[]{.62f,.65f,.67f};
-        return new float[]{.78f,.79f,.77f};
+        return guided?new float[]{.34f,.39f,.31f}:new float[]{.78f,.79f,.77f};
     }
 
     private static void addRing(GeoBuf b,float z0,float r0,float z1,float r1,float cr,float cg,float cb){
