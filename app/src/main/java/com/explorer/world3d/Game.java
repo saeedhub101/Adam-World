@@ -67,6 +67,9 @@ final class Game {
     long lastLookMs;
     volatile float sx, sy;
     volatile boolean sprint, stealthMode;
+    volatile long lastSprintTapMs;
+    volatile boolean cinematicCamera;
+    volatile int cameraMode = 1;
     final ArrayList<Agent> agents = new ArrayList<>();
     final ArrayList<ProjectileSystem.Rocket> rockets = new ArrayList<>();
     final ArrayList<ProjectileSystem.Blast> blasts = new ArrayList<>();
@@ -83,7 +86,8 @@ final class Game {
     }
 
     void reset() {
-        sx = sy = 0f; sprint = false; stealthMode = false;
+        sx = sy = 0f; sprint = false; stealthMode = false; lastSprintTapMs = 0L;
+        cinematicCamera = false; cameraMode = 1;
         playerMotion.reset();
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
@@ -263,6 +267,7 @@ final class Game {
             camDistance = clamp(camDistance * zoomFactor, 3.2f, 180f);
         }
         long now = System.currentTimeMillis();
+        if (sprint && lastSprintTapMs > 0L && now - lastSprintTapMs > 430L) sprint = false;
         if (dead) {
             sx = sy = 0f;
             if (now - deathStartedMs >= 4500L) { dead = false; health = 50; px = cx; pz = cz; cv = 0f; altitude = 0f; aircraftDamage = 0f; engineThrottle = 0f; aircraftOnGround = true; playerPose=4; playerPoseTime=0f; playerFall=1f; }
@@ -530,10 +535,12 @@ final class Game {
     private void updateCamera(float dt) {
         float tx = focusX(), tz = focusZ();
         boolean aircraft = driving && (vehicleType == ProceduralVehicleModels.HELICOPTER || vehicleType == ProceduralVehicleModels.AIRPLANE);
-        float dist = camDistance * (driving ? (aircraft ? 2.15f : 1.6f) : 1f), th = driving ? (aircraft ? 3.0f : 1.6f) : 1.55f;
-        if (aircraft && altitude > 80f) dist = Math.max(dist, camDistance * 2.8f);
+        float modeScale = cameraMode == 0 ? 0.72f : cameraMode == 2 ? 1.55f : 1f;
+        float dist = camDistance * modeScale * (driving ? (aircraft ? 2.15f : 1.6f) : 1f), th = driving ? (aircraft ? 3.0f : 1.6f) : 1.55f;
+        if (aircraft && altitude > 80f) dist = Math.max(dist, camDistance * modeScale * 2.8f);
         float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);
-        float effectiveYaw = camYaw + cameraLookOffset;
+        float cinematicYaw = cinematicCamera ? (float)Math.sin(System.currentTimeMillis() * 0.00022f) * 0.48f : 0f;
+        float effectiveYaw = camYaw + cameraLookOffset + cinematicYaw;
         float dx = tx - (float) Math.sin(effectiveYaw) * dist * cp;
         float dz = tz - (float) Math.cos(effectiveYaw) * dist * cp;
         float dy = Math.max(py + 0.6f, py + th + dist * sp);
