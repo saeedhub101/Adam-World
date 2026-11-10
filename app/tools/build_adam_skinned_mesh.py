@@ -127,6 +127,107 @@ def sample_channel(times, values, target_times, path, interpolation):
         out.append(v)
     return np.asarray(out)
 
+def quat_mul(a,b):
+    ax,ay,az,aw=a; bx,by,bz,bw=b
+    return np.array([aw*bx+ax*bw+ay*bz-az*by, aw*by-ax*bz+ay*bw+az*bx,
+                     aw*bz+ax*by-ay*bx+az*bw, aw*bw-ax*bx-ay*by-az*bz],dtype=np.float64)
+
+def classify_bone(name):
+    n=name.lower().replace("mixamorig:","").replace("mixamorig","")
+    side=-1.0 if "left" in n or "_l" in n or "-l" in n else (1.0 if "right" in n or "_r" in n or "-r" in n else 0.0)
+    if any(x in n for x in ("pelvis","hips","hip","root")): return "root",side
+    if any(x in n for x in ("spine","chest","torso")): return "spine",side
+    if any(x in n for x in ("neck","head")): return "head",side
+    if any(x in n for x in ("forearm","lowerarm","elbow")): return "forearm",side
+    if any(x in n for x in ("shoulder","clavicle","upperarm","arm")): return "arm",side
+    if any(x in n for x in ("upleg","thigh","upperleg","femur")): return "thigh",side
+    if any(x in n for x in ("foot","ankle","toe")): return "foot",side
+    if any(x in n for x in ("leg","calf","shin","knee")): return "calf",side
+    if any(x in n for x in ("hand","wrist")): return "hand",side
+    return "other",side
+
+def make_procedural_clips(ordered,nodes,bind_t,bind_r,bind_s):
+    """Generate deterministic full-body animation clips from the imported bind rig."""
+    specs=[("idle",1.6),("walk",1.0),("run",0.72),("jump",0.9),
+           ("punch",0.72),("kick",0.9),("aim",1.0),("shoot",0.55),
+           ("reload",1.35),("guard",0.9),("hurt",0.7),("fall",1.0),("getup",1.35)]
+    clips=[]
+    for clip_name,duration in specs:
+        times=np.linspace(0.0,duration,31,dtype=np.float64)
+        tracks=[]
+        for bi,node_id in enumerate(ordered):
+            role,side=classify_bone(nodes[node_id].get("name",f"bone_{bi}"))
+            bt=np.asarray(bind_t[bi*3:bi*3+3],dtype=np.float64)
+            bq=np.asarray(bind_r[bi*4:bi*4+4],dtype=np.float64)
+            bs=np.asarray(bind_s[bi*3:bi*3+3],dtype=np.float64)
+            T=np.tile(bt,(len(times),1)); R=np.tile(bq,(len(times),1)); S=np.tile(bs,(len(times),1))
+            for k,t in enumerate(times):
+                phase=2.0*math.pi*t/duration
+                wave=math.sin(phase); cosine=math.cos(phase)
+                angle=0.0; dy=0.0
+                sign=side if side else (1.0 if bi%2 else -1.0)
+                if clip_name=="idle":
+                    if role=="spine": angle=0.018*wave
+                    elif role=="head": angle=0.012*math.sin(phase*0.5)
+                elif clip_name in ("walk","run"):
+                    amp=0.48 if clip_name=="walk" else 0.82
+                    if role=="thigh": angle=amp*wave*sign
+                    elif role=="calf": angle=max(0.0,-wave*sign)*(0.52 if clip_name=="walk" else 0.85)
+                    elif role=="foot": angle=-0.18*wave*sign
+                    elif role=="arm": angle=-amp*0.72*wave*sign
+                    elif role=="forearm": angle=0.12+0.12*max(0.0,wave*sign)
+                    elif role=="spine": angle=0.025*wave
+                    elif role=="root": dy=(0.025 if clip_name=="walk" else 0.045)*(0.5-0.5*cosine)
+                elif clip_name=="jump":
+                    if role=="root": dy=0.20*max(0.0,math.sin(math.pi*t/duration))
+                    elif role=="thigh": angle=-0.38*sign
+                    elif role=="calf": angle=0.62
+                    elif role=="arm": angle=-0.72
+                    elif role=="spine": angle=-0.10
+                elif clip_name=="punch":
+                    if role=="spine": angle=-0.12*max(0.0,wave)
+                    elif role=="arm" and side>=0: angle=-1.15*max(0.0,wave)
+                    elif role=="forearm" and side>=0: angle=-1.45*max(0.0,wave)
+                elif clip_name=="kick":
+                    if role=="thigh" and side>=0: angle=1.05*max(0.0,wave)
+                    elif role=="calf" and side>=0: angle=-1.1*max(0.0,wave)
+                    elif role=="arm": angle=0.30
+                elif clip_name in ("aim","shoot"):
+                    if role=="arm": angle=-0.72
+                    elif role=="forearm": angle=-0.45
+                    elif role=="spine": angle=-0.08
+                    if clip_name=="shoot" and role=="forearm": angle-=0.10*max(0.0,wave)
+                elif clip_name=="reload":
+                    if role=="arm": angle=-0.45+0.12*wave
+                    elif role=="forearm": angle=-0.9+0.18*cosine
+                    elif role=="head": angle=0.10
+                elif clip_name=="guard":
+                    if role=="arm": angle=-0.95
+                    elif role=="forearm": angle=-0.75
+                    elif role=="spine": angle=-0.08
+                elif clip_name=="hurt":
+                    if role=="spine": angle=0.22*wave
+                    elif role=="arm": angle=0.45*sign
+                    elif role=="thigh": angle=-0.18
+                elif clip_name=="fall":
+                    if role=="root": dy=-0.28*min(1.0,t/(duration*0.45))
+                    elif role=="spine": angle=0.85*min(1.0,t/(duration*0.55))
+                    elif role=="arm": angle=1.1*sign
+                    elif role=="thigh": angle=-0.65
+                    elif role=="calf": angle=0.85
+                elif clip_name=="getup":
+                    recovery=min(1.0,t/duration)
+                    if role=="root": dy=-0.28*(1.0-recovery)
+                    elif role=="spine": angle=0.85*(1.0-recovery)
+                    elif role=="arm": angle=0.65*(1.0-recovery)*sign
+                    elif role=="thigh": angle=-0.45*(1.0-recovery)
+                dq=np.array([math.sin(angle*0.5),0.0,0.0,math.cos(angle*0.5)])
+                q=quat_mul(bq,dq); q/=max(np.linalg.norm(q),1e-12)
+                R[k]=q; T[k,1]+=dy
+            tracks.append((bi,times,T,R,S))
+        clips.append((clip_name,duration,tracks))
+    return clips
+
 def main():
     if not SOURCE.is_file(): raise FileNotFoundError(f"source missing: {SOURCE}")
     doc,binary=glb_parts(SOURCE)
@@ -284,6 +385,9 @@ def main():
                 else:S=sampled
             tracks.append((old_to_new[old],all_times,T,R,S))
         if tracks:clips.append((anim.get("name",f"animation_{ai}"),max_time,tracks))
+    if not clips:
+        clips=make_procedural_clips(ordered,doc["nodes"],bind_t,bind_r,bind_s)
+        print(f"ADAM_PROCEDURAL_ANIMATIONS clips={len(clips)} names={','.join(x[0] for x in clips)}",flush=True)
     total_keys=sum(len(t[1]) for _,_,tr in clips for t in tr)
     if total_keys>MAX_KEYS_TOTAL:raise ValueError(f"animation keys {total_keys} exceed runtime cap {MAX_KEYS_TOTAL}")
     OUT.parent.mkdir(parents=True,exist_ok=True)
