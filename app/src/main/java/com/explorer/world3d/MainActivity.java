@@ -1119,8 +1119,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             renderer.setGamepadLook(0f, 0f);
             renderer.game.sprint = false;
             renderer.game.guardRequested = false;
+            renderer.game.handbrake = false;
             renderer.game.brakeRequested = false;
             renderer.game.liftInput = 0f;
+            renderer.game.rudderInput = 0f;
             renderer.game.throttleInput = 0f;
             renderer.game.weaponFireHeld = false;
             renderer.game.weaponAimHeld = false;
