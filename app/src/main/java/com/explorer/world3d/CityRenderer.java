@@ -695,7 +695,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
     }
 
     private void spawnAgents() {
-        if (game.agents.size() >= 34 || tiles.isEmpty()) return;
+        if (game.agents.size() >= 12 || tiles.isEmpty()) return;
         ArrayList<Tile> list = new ArrayList<>(tiles.values());
         Tile t = list.get(rng.nextInt(list.size()));
         if (t.paths.isEmpty()) return;
@@ -705,7 +705,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         float s = rng.nextFloat() * p.total;
         p.posAt(s, 0, o);
         float d = (float) Math.hypot(o[0] - fx, o[1] - fz);
-        if (d < 25f || d > 380f) return;
+        if (d < 38f || d > 240f) return;
         Game.Agent a = new Game.Agent();
         a.path = p; a.tile = t; a.s = s; a.dir = rng.nextBoolean() ? 1 : -1;
         a.car = p.veh && rng.nextFloat() < 0.72f;
@@ -961,7 +961,8 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         bindTex(tex.white, tex.black);
         GLES20.glUniform1f(uEmisK, 0f);
         for (Game.Agent a : g.agents) {
-            if (Math.hypot(a.x - g.camX, a.z - g.camZ) > 350) continue;
+            float agentDistance = (float)Math.hypot(a.x - g.camX, a.z - g.camZ);
+            if (agentDistance > (a.car ? 240f : 145f)) continue;
             if (a.car) {
                 float damageTint = a.knockedOut ? 0.48f : a.hitFlash > 0f ? 0.72f : 0f;
                 float cr = a.cr * (1f-damageTint) + damageTint;
@@ -1086,9 +1087,13 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         // اللون يظل في رؤوس الشبكة؛ التلوين هنا يستخدم فقط كتعديل خفيف للطلاء.
         GLES20.glUniform3f(uTint,.70f+cr*.30f,.70f+cg*.30f,.70f+cb*.30f);
         GLES20.glUniform1f(uGlass,0f);
-        GLES20.glUniform1f(uPbr,1f);
+        // Keep the costly multi-texture PBR path for the player's own vehicle only.
+        // AI traffic uses the lit base material to protect mobile/TV frame time.
+        boolean detailedPlayerVehicle = advancedShader && game.driving
+                && Math.abs(x - game.cx) < 0.01f && Math.abs(z - game.cz) < 0.01f;
+        GLES20.glUniform1f(uPbr,detailedPlayerVehicle ? 1f : 0f);
         GLES20.glUniform2f(uMatParams, 1f, 1f);
-        bindVehicleMaps();
+        if (detailedPlayerVehicle) bindVehicleMaps();
         if(imported != null) imported.draw(uMatParams, tex.white);
         else { GLES20.glUniform2f(uMatParams, 1f, 1f); vehicleModels[type].draw(); }
         GLES20.glUniform1f(uPbr,0f);
