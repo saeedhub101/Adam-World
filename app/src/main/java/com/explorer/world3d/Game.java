@@ -193,8 +193,9 @@ final class Game {
             cv -= Math.signum(cv) * Math.min(Math.abs(cv), 4.2f * dt);
             cv = clamp(cv, -25f, 48f);
             cyaw -= rudderInput * 0.72f * dt;
-            aircraftVerticalSpeed += (engineThrottle * 19f - 9.81f + liftInput * 10.5f
-                    - aircraftVerticalSpeed * 0.72f) * dt;
+            // GTA-style collective: RT climbs, LT descends, releasing both stabilizes hover.
+            aircraftVerticalSpeed += (liftInput * (8f + engineThrottle * 3f)
+                    - aircraftVerticalSpeed * 1.8f) * dt;
             aircraftVerticalSpeed = clamp(aircraftVerticalSpeed, -13f, 13f);
             altitude += aircraftVerticalSpeed * dt;
             if (altitude <= 0f) {
