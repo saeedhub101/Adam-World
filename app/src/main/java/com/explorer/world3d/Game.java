@@ -59,7 +59,8 @@ final class Game {
     final int[] reserveAmmo={48,0,0,0,0};
     final int[] weaponMagazines={12,0,0,0,0};
     long lastWeaponShotMs;
-    float weaponReloadSeconds, weaponRecoil, muzzleFlashSeconds;
+    float weaponReloadSeconds, weaponReloadDuration, weaponRecoil, muzzleFlashSeconds;
+    int weaponReloadPendingAmmo, weaponReloadWeaponId=-1;
     int comboStep;
     float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
     long lastLookMs;
@@ -83,7 +84,7 @@ final class Game {
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = 0; brakeRequested = false; camYaw = 0; health = 100; dead = false;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
-        weaponFireHeld=weaponAimHeld=reloadRequested=false;weaponReloadSeconds=weaponRecoil=muzzleFlashSeconds=0f;
+        weaponFireHeld=weaponAimHeld=reloadRequested=false;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
@@ -257,7 +258,17 @@ final class Game {
         if (health > 0 && health < 100 && now - lastDamageMs >= 5000L)
             health = Math.min(100, health + Math.max(1, (int)(dt * 12f)));
         attackSeconds = Math.max(0f, attackSeconds - dt);
-        weaponReloadSeconds=Math.max(0f,weaponReloadSeconds-dt);
+        if(weaponReloadSeconds>0f){
+            weaponReloadSeconds=Math.max(0f,weaponReloadSeconds-dt);
+            if(weaponReloadSeconds<=0f){
+                int reloadId=weaponReloadWeaponId;
+                if(reloadId>=0&&reloadId==equippedWeapon){
+                    magazineAmmo=Math.min(WeaponSystem.MAGAZINE[reloadId],magazineAmmo+weaponReloadPendingAmmo);
+                    weaponMagazines[reloadId]=magazineAmmo;
+                }
+                weaponReloadDuration=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
+            }
+        }
         weaponRecoil=Math.max(0f,weaponRecoil-dt*5.8f);
         muzzleFlashSeconds=Math.max(0f,muzzleFlashSeconds-dt*8.5f);
         if(weaponAimHeld&&!driving)pyaw+=angDiff(pyaw,camYaw)*Math.min(1f,dt*10f);
@@ -512,8 +523,20 @@ final class Game {
             }
         }
     }
-    void reloadWeapon(){int id=equippedWeapon;if(weaponReloadSeconds>0f||magazineAmmo>=WeaponSystem.MAGAZINE[id]||reserveAmmo[id]<=0)return;int moved=Math.min(WeaponSystem.MAGAZINE[id]-magazineAmmo,reserveAmmo[id]);reserveAmmo[id]-=moved;magazineAmmo+=moved;weaponMagazines[id]=magazineAmmo;weaponReloadSeconds=WeaponSystem.RELOAD_SECONDS[id];weaponFireHeld=false;}
-    boolean equipWeapon(int id){if(id<0||id>=ownedWeapons.length||!ownedWeapons[id])return false;weaponMagazines[equippedWeapon]=magazineAmmo;equippedWeapon=id;magazineAmmo=Math.min(WeaponSystem.MAGAZINE[id],Math.max(0,weaponMagazines[id]));weaponFireHeld=false;weaponReloadSeconds=0f;return true;}
+    void reloadWeapon(){
+        int id=equippedWeapon;
+        if(weaponReloadSeconds>0f||id<0||id>=ownedWeapons.length||magazineAmmo>=WeaponSystem.MAGAZINE[id]||reserveAmmo[id]<=0)return;
+        int moved=Math.min(WeaponSystem.MAGAZINE[id]-magazineAmmo,reserveAmmo[id]);
+        reserveAmmo[id]-=moved;weaponReloadPendingAmmo=moved;weaponReloadWeaponId=id;
+        weaponReloadDuration=weaponReloadSeconds=WeaponSystem.RELOAD_SECONDS[id];weaponFireHeld=false;
+    }
+    boolean equipWeapon(int id){
+        if(id<0||id>=ownedWeapons.length||!ownedWeapons[id])return false;
+        if(weaponReloadWeaponId>=0&&weaponReloadPendingAmmo>0)reserveAmmo[weaponReloadWeaponId]+=weaponReloadPendingAmmo;
+        weaponReloadSeconds=weaponReloadDuration=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
+        weaponMagazines[equippedWeapon]=magazineAmmo;equippedWeapon=id;
+        magazineAmmo=Math.min(WeaponSystem.MAGAZINE[id],Math.max(0,weaponMagazines[id]));weaponFireHeld=false;return true;
+    }
     boolean purchaseWeapon(int id){if(id<0||id>=ownedWeapons.length||ownedWeapons[id]||cash<WeaponSystem.PRICE[id])return false;cash-=WeaponSystem.PRICE[id];ownedWeapons[id]=true;reserveAmmo[id]=WeaponSystem.START_AMMO[id];weaponMagazines[id]=WeaponSystem.MAGAZINE[id];weaponMagazines[equippedWeapon]=magazineAmmo;equippedWeapon=id;magazineAmmo=weaponMagazines[id];return true;}
     void cycleWeapon(){for(int n=1;n<=ownedWeapons.length;n++){int id=(equippedWeapon+n)%ownedWeapons.length;if(ownedWeapons[id]){equipWeapon(id);return;}}}
     boolean buyAmmo(){int id=equippedWeapon;int cost=WeaponSystem.AMMO_PACK_PRICE[id];if(cash<cost)return false;cash-=cost;reserveAmmo[id]+=WeaponSystem.AMMO_PACK[id];return true;}
