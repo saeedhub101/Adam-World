@@ -430,6 +430,7 @@ final class Game {
         for (int i = agents.size() - 1; i >= 0; i--) {
             Agent a = agents.get(i);
             if (a.tile.dead) { agents.remove(i); continue; }
+            if(a.policeUnit && wantedLevel<=0){a.policeUnit=false;a.parked=true;a.sp=0f;}
             if (a.car) {
                 a.hitFlash = Math.max(0f, a.hitFlash - dt);
                 if(a.policeUnit && wantedLevel>0 && !a.knockedOut){
