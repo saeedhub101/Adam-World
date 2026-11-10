@@ -123,7 +123,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private int uVP, uModel, uCam, uTint, uMatParams, uTex, uEmis, uSunDir, uSunCol, uAmb, uFog, uFogN, uFogF, uEmisK, uTop, uHor, uWater, uDecal, uTime, uPbr, uGlass, uNormalMap, uRoughMap, uMetalMap, uEnvMap;
     private Textures tex;
     private ProceduralMaterialMaps vehicleMaps;
-    private Mesh cube, groundMesh, skyQuad, seaMesh, flightSchoolMesh;
+    private Mesh cube, groundMesh, skyQuad, seaMesh, flightSchoolMesh, rocketMesh;
     private volatile boolean flightSchoolMode, airportVisit;
     private boolean savedOfflineAmman;
     private String savedOfflineCitySlug;
@@ -311,6 +311,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         tex = new Textures();
         vehicleMaps = advancedShader ? ProceduralMaterialMaps.create() : null;
         cube = makeCube();
+        rocketMesh = RocketModel.build();
         flightSchoolMesh = Airfield.build();
         // The former runway/apron/terminal scene is reused as an airport overlay at real airport coordinates.
         vehicleModels = ProceduralVehicleModels.buildAll();
@@ -985,11 +986,10 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             Matrix.translateM(tmp,0,r.x,r.y,r.z);
             Matrix.rotateM(tmp,0,(float)Math.toDegrees(r.yaw),0f,1f,0f);
             Matrix.rotateM(tmp,0,(float)-Math.toDegrees(r.pitch),1f,0f,0f);
-            Matrix.scaleM(tmp,0,.82f,.105f,.12f);
             GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
-            GLES20.glUniform3f(uTint,.72f,.76f,.80f);
-            GLES20.glUniform1f(uEmisK,.08f);
-            cube.draw();
+            GLES20.glUniform3f(uTint,1f,1f,1f);
+            GLES20.glUniform1f(uEmisK,.035f);
+            if(rocketMesh!=null)rocketMesh.draw();
             Matrix.setIdentityM(tmp,0);
             Matrix.translateM(tmp,0,r.x-(float)Math.sin(r.yaw)*.53f,r.y,r.z-(float)Math.cos(r.yaw)*.53f);
             Matrix.scaleM(tmp,0,.24f,.15f,.15f);
