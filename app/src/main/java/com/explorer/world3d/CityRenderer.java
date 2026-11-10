@@ -139,7 +139,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private final float[] proj = new float[16], view = new float[16], vp = new float[16];
     private final float[] ident = new float[16], tmp = new float[16], base = new float[16];
     private float aspect = 1f;
-    private long lastN = System.nanoTime(), lastUnload, lastAgentMs, lastHudMs, spawnDeadline, lastAudioWeaponShot;
+    private long lastN = System.nanoTime(), lastUnload, lastAgentMs, lastHudMs, spawnDeadline, lastAudioWeaponShot, lastMiniMapUpdate;
+    private volatile float[] miniMapRoadSnapshot = new float[0];
     private boolean started, needSpawn, spawned, spawnTimeoutNotified;
     private float lookDx, lookDy;
     private volatile float gamepadLookX, gamepadLookY;
@@ -150,6 +151,30 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     public volatile boolean undergroundCutaway = false;
 
     public void toggleUndergroundCutaway() { undergroundCutaway = !undergroundCutaway; }
+    public float[] miniMapRoads() { return miniMapRoadSnapshot; }
+
+    private void refreshMiniMapRoads(long nowMs) {
+        if (nowMs - lastMiniMapUpdate < 500L) return;
+        lastMiniMapUpdate = nowMs;
+        if (flightSchoolMode || tiles.isEmpty()) { miniMapRoadSnapshot = new float[0]; return; }
+        float px = game.focusX(), pz = game.focusZ();
+        float[] points = new float[16000];
+        int used = 0;
+        for (Tile tile : tiles.values()) {
+            if (Math.abs(tile.cx - px) > 260f || Math.abs(tile.cz - pz) > 260f) continue;
+            for (RoadPath road : tile.paths) {
+                if (road == null || road.xs == null || road.zs == null) continue;
+                for (int i = 1; i < road.xs.length && used + 4 <= points.length; i++) {
+                    float x0 = road.xs[i-1], z0 = road.zs[i-1], x1 = road.xs[i], z1 = road.zs[i];
+                    float mx = (x0+x1)*0.5f-px, mz = (z0+z1)*0.5f-pz;
+                    if (mx*mx + mz*mz > 260f*260f) continue;
+                    points[used++] = x0; points[used++] = z0;
+                    points[used++] = x1; points[used++] = z1;
+                }
+            }
+        }
+        miniMapRoadSnapshot = java.util.Arrays.copyOf(points, used);
+    }
     private long lastErrToast;
     private final Random rng = new Random();
     private final WorldAudio worldAudio;
@@ -759,6 +784,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             loader.havePlayer = false;
         }
 
+        if (!flightSchoolMode) refreshMiniMapRoads(nowMs);
         if (spawned) {
             game.update(dt, this);
             if (game.lastWeaponShotMs != 0L && game.lastWeaponShotMs != lastAudioWeaponShot) {
