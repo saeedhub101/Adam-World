@@ -118,7 +118,7 @@ final class Game {
 
     void reportCrime(int severity) {
         long now=System.currentTimeMillis();
-        wantedLevel=clamp(wantedLevel+Math.max(1,severity),0,5);
+        wantedLevel=Math.max(0,Math.min(5,wantedLevel+Math.max(1,severity)));
         lastCrimeMs=now;
         nextWantedDecayMs=now+30000L;
     }
