@@ -399,6 +399,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                 "models/runtime/characters/pedestrian-office.awmesh5",
                 "models/runtime/characters/pedestrian-elder.awmesh5",
                 "models/runtime/characters/pedestrian-manager.awmesh5",
+                "models/runtime/characters/pedestrian-adam.awmesh5",
                 "models/runtime/characters/pedestrian-saeed-glb.awmesh5",
                 "models/runtime/characters/pedestrian-saeed-vrm.awmesh5"
         };
@@ -430,7 +431,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             pedestrianHurtClips[p] = sourceAnimator.findClip("hurt");
             pedestrianFallClips[p] = sourceAnimator.findClip("fall");
             pedestrianGetupClips[p] = sourceAnimator.findClip("getup");
+            if (pedestrianWalkClips[p] < 0) pedestrianWalkClips[p] = sourceAnimator.findClip("walk");
             if (pedestrianWalkClips[p] < 0 && sourceAnimator.clips.length > 0) pedestrianWalkClips[p] = 0;
+            if (pedestrianIdleClips[p] < 0) pedestrianIdleClips[p] = sourceAnimator.findClip("idle");
             if (pedestrianIdleClips[p] < 0) pedestrianIdleClips[p] = pedestrianWalkClips[p];
             if (pedestrianRunClips[p] < 0) pedestrianRunClips[p] = pedestrianWalkClips[p];
         }
@@ -870,7 +873,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
     }
 
     private void spawnAgents() {
-        final int maxAgents = 24, targetCars = 14, targetPedestrians = 10;
+        final int maxAgents = 24, targetCars = 12, targetPedestrians = 12;
         if (game.agents.size() >= maxAgents || tiles.isEmpty()) return;
         int cars = 0, pedestrians = 0;
         for (Game.Agent old : game.agents) { if (old.car) cars++; else pedestrians++; }
@@ -888,7 +891,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             float candidateS = 7f + rng.nextFloat() * Math.max(1f, candidate.total - 14f);
             candidate.posAt(candidateS, 0f, point);
             float distance = (float)Math.hypot(point[0] - fx, point[1] - fz);
-            if (distance < 24f || distance > 165f) continue;
+            if (distance < 8f || distance > 125f) continue;
             boolean occupied = false; float gapMin = wantCar ? 9f : 3.2f;
             for (Game.Agent old : game.agents) { if (Math.hypot(old.x-point[0],old.z-point[1]) < gapMin) { occupied=true; break; } }
             if (occupied) continue;
@@ -904,7 +907,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 float candidateS = 6f + rng.nextFloat() * Math.max(1f,candidate.total-12f);
                 candidate.posAt(candidateS,0f,point);
                 float distance = (float)Math.hypot(point[0]-fx,point[1]-fz);
-                if (distance < 22f || distance > 150f) continue;
+                if (distance < 7f || distance > 115f) continue;
                 boolean occupied = false;
                 for (Game.Agent old : game.agents) { if (Math.hypot(old.x-point[0],old.z-point[1]) < 3.2f) { occupied=true; break; } }
                 if (!occupied) { path=candidate; tile=candidateTile; s=candidateS; }
@@ -925,7 +928,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             float[][] colors={{.93f,.94f,.95f},{.17f,.24f,.31f},{.50f,.55f,.55f},{.95f,.77f,.06f},{.16f,.50f,.74f},{.83f,.33f,.08f},{.15f,.68f,.38f},{.08f,.08f,.09f}};
             float[] color=colors[rng.nextInt(colors.length)]; agent.cr=color[0]; agent.cg=color[1]; agent.cb=color[2];
         } else {
-            agent.humanType=rng.nextInt(5);
+            agent.humanType=rng.nextInt(6);
             float side=rng.nextBoolean()?1f:-1f;
             agent.off=path.veh?(path.w*0.5f+1.55f)*side:(rng.nextFloat()-0.5f)*1.2f;
             agent.sp=1.0f+rng.nextFloat()*0.85f; agent.ph=rng.nextFloat()*6f;
@@ -1030,7 +1033,12 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 worldAudio.playEffect(game.equippedWeapon);
             }
             if(game.explosionEventCount!=lastAudioExplosionEvent){lastAudioExplosionEvent=game.explosionEventCount;worldAudio.playEffect(6);}
-            if (!flightSchoolMode && nowMs - lastAgentMs > 450) { lastAgentMs = nowMs; spawnAgents(); }
+            if (!flightSchoolMode && nowMs - lastAgentMs > 350) {
+                lastAgentMs = nowMs;
+                // Spawn in short batches so a visible city population appears quickly.
+                spawnAgents();
+                spawnAgents();
+            }
             if (nowMs - lastHudMs > 200) {
                 lastHudMs = nowMs;
                 if (flightSchoolMode && game.driving && (game.vehicleType == ProceduralVehicleModels.HELICOPTER || game.vehicleType == ProceduralVehicleModels.AIRPLANE)) {
@@ -1178,10 +1186,10 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         bindTex(tex.white, tex.black);
         GLES20.glUniform1f(uEmisK, 0f);
         int detailedPedestrians = 0;
-        int pedestrianBudget = graphicsQuality == 0 ? 8 : graphicsQuality == 1 ? 6 : 4;
+        int pedestrianBudget = graphicsQuality == 0 ? 10 : graphicsQuality == 1 ? 8 : 6;
         for (Game.Agent a : g.agents) {
             float agentDistance = (float)Math.hypot(a.x - g.camX, a.z - g.camZ);
-            if (agentDistance > (a.car ? 190f : 95f)) continue;
+            if (agentDistance > (a.car ? 210f : 125f)) continue;
             if (a.car) {
                 float damageTint = a.knockedOut ? 0.48f : a.hitFlash > 0f ? 0.72f : 0f;
                 float cr = a.cr * (1f-damageTint) + damageTint;
@@ -1190,7 +1198,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, cr, cg, cb,
                         a.sp * a.dir, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
             } else if (pedestrianCharacterAssets.length > 0 && detailedPedestrians < pedestrianBudget
-                    && agentDistance < 68f
+                    && agentDistance < 88f
                     && pedestrianCharacterAssets[Math.floorMod(a.humanType, pedestrianCharacterAssets.length)] != null
                     && pedestrianWalkClips[Math.floorMod(a.humanType, pedestrianWalkClips.length)] >= 0) {
                 drawSkinnedPerson(a, Terrain.h(a.x,a.z), frameDeltaSeconds,

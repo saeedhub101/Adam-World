@@ -278,12 +278,12 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
                 elif clip_name=="punch":
                     pulse=max(0.0,math.sin(math.pi*min(1.0,t/duration)))
                     if role=="spine": angle=-0.16*pulse
-                    elif role=="arm" and side>=0: angle=-1.20*pulse
-                    elif role=="forearm" and side>=0: angle=-1.50*pulse
+                    elif role=="arm" and side>=0: angle=1.20*pulse
+                    elif role=="forearm" and side>=0: angle=1.50*pulse
                 elif clip_name=="kick":
                     pulse=max(0.0,math.sin(math.pi*min(1.0,t/duration)))
-                    if role=="thigh" and side>=0: angle=1.05*pulse
-                    elif role=="calf" and side>=0: angle=-1.10*pulse
+                    if role=="thigh" and side>=0: angle=-1.05*pulse
+                    elif role=="calf" and side>=0: angle=1.10*pulse
                     elif role=="arm": angle=0.30*pulse
                 elif clip_name in ("aim","shoot"):
                     if role=="arm": angle=-0.72*sign
@@ -315,7 +315,35 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
                     elif role=="arm": angle=0.65*(1.0-recovery)*sign
                     elif role=="thigh": angle=-0.45*(1.0-recovery)
                 dq=axis_angle_quat(axis_local,angle)
-                q=quat_mul(bq,dq); q/=max(np.linalg.norm(q),1e-12)
+                q=quat_mul(bq,dq)
+                if role=="arm":
+                    # Never expose the imported T-pose: lower the shoulders first,
+                    # then layer locomotion, combat and interaction over this rest pose.
+                    drop_axis=quat_rotate_inverse(bind_global_q,[0.0,0.0,1.0])
+                    drop=axis_angle_quat(drop_axis,-1.22*sign)
+                    motion=np.array([0.0,0.0,0.0,1.0],dtype=np.float64)
+                    action_axis=quat_rotate_inverse(bind_global_q,[1.0,0.0,0.0])
+                    if clip_name in ("walk","run"):
+                        amp=0.48 if clip_name=="walk" else 0.82
+                        motion=axis_angle_quat(action_axis,-amp*0.30*wave*sign)
+                    elif clip_name=="punch" and side>=0:
+                        motion=axis_angle_quat(action_axis,-1.15*pulse)
+                    elif clip_name=="kick":
+                        motion=axis_angle_quat(action_axis,0.18*pulse)
+                    elif clip_name=="jump":
+                        motion=axis_angle_quat(action_axis,-0.34)
+                    elif clip_name in ("aim","shoot","reload"):
+                        motion=axis_angle_quat(action_axis,-0.92)
+                    elif clip_name=="guard":
+                        motion=axis_angle_quat(action_axis,-0.78)
+                    elif clip_name=="hurt":
+                        motion=axis_angle_quat(action_axis,0.22*wave)
+                    elif clip_name=="fall":
+                        motion=axis_angle_quat(action_axis,0.42*sign)
+                    elif clip_name=="getup":
+                        motion=axis_angle_quat(action_axis,0.30*sign*(1.0-t/duration))
+                    q=quat_mul(quat_mul(bq,drop),motion)
+                q/=max(np.linalg.norm(q),1e-12)
                 R[k]=q; T[k]+=vertical_local*dy
             tracks.append((bi,times,T,R,S))
         clips.append((clip_name,duration,tracks))
@@ -486,9 +514,11 @@ def main():
                 else:S=sampled
             tracks.append((old_to_new[old],all_times,T,R,S))
         if tracks:clips.append((anim.get("name",f"animation_{ai}"),max_time,tracks))
-    # Always provide canonical locomotion and interaction clips. A source may contain
-    # a static pose or an unrelated single clip; that must not leave a pedestrian frozen.
+    # Canonical clips are regenerated for every rig so T-pose or reversed source
+    # clips cannot override the corrected rest pose and forward attack direction.
     procedural=make_procedural_clips(ordered,doc["nodes"],parents,globals_,bind_t,bind_r,bind_s)
+    canonical={"idle","walk","run","punch","kick","jump","aim","shoot","reload","guard","hurt","fall","getup"}
+    clips=[clip for clip in clips if clip[0].lower() not in canonical]
     existing_names={name.lower() for name,_,_ in clips}
     added=[]
     for generated in procedural:
