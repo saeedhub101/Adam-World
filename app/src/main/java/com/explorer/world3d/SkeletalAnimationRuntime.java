@@ -1,7 +1,5 @@
 package com.explorer.world3d;
 
-import java.util.Arrays;
-
 /**
  * Compact, allocation-free skeletal pose evaluator for the native GLES2 actor path.
  * Matrices are column-major and compatible with android.opengl.Matrix.
@@ -53,7 +51,7 @@ final class SkeletalAnimationRuntime {
         final Skeleton skeleton;
         final Clip[] clips;
         final float[] localT, localR, localS, fromT, fromR, fromS, targetT, targetR, targetS;
-        final float[] global, skin;
+        final float[] global, skin, matrixScratch = new float[16];
         int current=-1, previous=-1;
         float time, previousTime, fade, fadeDuration, speed=1f;
         boolean loop=true;
@@ -129,7 +127,7 @@ final class SkeletalAnimationRuntime {
         }
 
         private void evaluateMatrices() {
-            float[] m=new float[16];
+            float[] m=matrixScratch;
             for(int i=0;i<skeleton.count;i++) {
                 compose(localT,i*3,localR,i*4,localS,i*3,m);
                 int parent=skeleton.parent[i];
