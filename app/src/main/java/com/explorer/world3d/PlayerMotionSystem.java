@@ -62,7 +62,7 @@ final class PlayerMotionSystem {
             float len = Math.max(0.0001f, (float)Math.hypot(desiredX, desiredZ));
             desiredX /= len;
             desiredZ /= len;
-            desiredSpeed = (g.sprint ? RUN_SPEED : WALK_SPEED) * magnitude;
+            desiredSpeed = (g.sprint ? RUN_SPEED : (g.stealthMode ? WALK_SPEED * 0.58f : WALK_SPEED)) * magnitude;
         }
         if (g.dodgeSeconds > 0f) {
             desiredX = g.dodgeX;
@@ -104,7 +104,7 @@ final class PlayerMotionSystem {
         g.phase += horizontalSpeed * dt * 1.7f;
         float targetGait = Math.min(1f, horizontalSpeed / RUN_SPEED);
         gaitBlend += (targetGait - gaitBlend) * Math.min(1f, dt * (hasInput ? 10f : 14f));
-        g.swingAmp = gaitBlend * (g.sprint ? 1f : 0.78f);
+        g.swingAmp = gaitBlend * (g.sprint ? 1f : (g.stealthMode ? 0.35f : 0.78f));
 
         groundY = world.heightAt(g.px, g.pz);
         if (!grounded || verticalVelocity > 0f || g.jumpHeight > 0f) {
