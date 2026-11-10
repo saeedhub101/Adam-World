@@ -305,21 +305,15 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
 
-        if (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN) {
+        if (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN
+                || code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_DPAD_RIGHT) {
             if (weaponWheelOpen && pressed) {
-                weaponWheelView.moveSelection(code == KeyEvent.KEYCODE_DPAD_UP ? 1 : -1);
-            } else if (aircraft && game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
-                game.liftInput = down ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
-            } else if (!aircraft) {
-                game.cameraZoomInput = down ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
-            }
-            return true;
-        }
-        if (code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_DPAD_RIGHT) {
-            if (pressed) {
-                int direction = code == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1;
-                if (weaponWheelOpen) weaponWheelView.moveSelection(direction);
-                else if (!game.driving) cycleEquippedWeapon(direction);
+                if (code == KeyEvent.KEYCODE_DPAD_UP) weaponWheelView.moveSelection(1);
+                else if (code == KeyEvent.KEYCODE_DPAD_DOWN) weaponWheelView.moveSelection(-1);
+                else weaponWheelView.moveSelection(code == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
+            } else if (glView != null) {
+                // D-pad is the digital equivalent of the LEFT analogue stick.
+                glView.setDigitalMoveDirection(code, down);
             }
             return true;
         }
@@ -333,30 +327,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
 
-        // Xbox/GTA on-foot layout: A jump, B melee, X reload, Y enter/exit vehicle.
-        // Sprint is assigned to left-stick click (L3), never to the A face button.
-        if (code == KeyEvent.KEYCODE_BUTTON_A) {
-            if (!game.driving && pressed) runOnGl(() -> game.jumpRequested = true);
-            else if (game.driving) game.handbrake = down;
-            return true;
-        }
-        if (code == KeyEvent.KEYCODE_BUTTON_B) {
-            if (game.driving && pressed) game.cinematicCamera = !game.cinematicCamera;
-            else if (!game.driving && pressed) runOnGl(() -> game.punchRequested = true);
-            return true;
-        }
-        if (code == KeyEvent.KEYCODE_BUTTON_X) {
-            if (!game.driving && pressed) runOnGl(() -> game.reloadRequested = true);
-            else if (game.driving && pressed) playHorn();
-            return true;
-        }
-        if (code == KeyEvent.KEYCODE_BUTTON_Y) {
-            if (pressed) runOnGl(() -> {
-                game.sprint = false; game.weaponAimHeld = false; game.weaponFireHeld = false;
-                game.handbrake = false; game.brakeRequested = false;
-                game.liftInput = 0f; game.rudderInput = 0f; game.throttleInput = 0f;
-                renderer.toggleCar();
-            });
+        // The four face buttons are the digital equivalent of the RIGHT analogue stick.
+        // Y=up, A=down, X=left, B=right. Do not assign unrelated gameplay actions here.
+        if (code == KeyEvent.KEYCODE_BUTTON_A || code == KeyEvent.KEYCODE_BUTTON_B
+                || code == KeyEvent.KEYCODE_BUTTON_X || code == KeyEvent.KEYCODE_BUTTON_Y) {
+            if (glView != null) glView.setDigitalLookDirection(code, down);
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_L1) {
@@ -439,118 +414,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
         return super.dispatchKeyEvent(event);
-    }
-
-    // Read analogue sticks and trigger axes from USB/Bluetooth controllers.
-    @Override public boolean onGenericMotionEvent(android.view.MotionEvent event) {
-        final int source = event.getSource();
-        if (renderer == null || event.getActionMasked() != android.view.MotionEvent.ACTION_MOVE
-                || (source & android.view.InputDevice.SOURCE_CLASS_JOYSTICK) == 0) {
-            return super.onGenericMotionEvent(event);
-        }
-        android.view.InputDevice device = event.getDevice();
-        float lx = event.getAxisValue(android.view.MotionEvent.AXIS_X);
-        float ly = -event.getAxisValue(android.view.MotionEvent.AXIS_Y);
-        // Camera input is read only from the declared right-stick axes.
-        // Z/RZ are ambiguous on Android pads and must never steal left-stick movement.
-        float rx = device != null && hasMotionRange(device, android.view.MotionEvent.AXIS_RX, source)
-                ? event.getAxisValue(android.view.MotionEvent.AXIS_RX) : 0f;
-        float ry = device != null && hasMotionRange(device, android.view.MotionEvent.AXIS_RY, source)
-                ? event.getAxisValue(android.view.MotionEvent.AXIS_RY) : 0f;
-        final float dead = 0.16f;
-        lx = applyStickDeadZone(lx, dead);
-        ly = applyStickDeadZone(ly, dead);
-        rx = applyStickDeadZone(rx, dead);
-        ry = applyStickDeadZone(ry, dead);
-        Game game = renderer.game;
-        if (game.driving) {
-            game.vehicleSteeringInput = lx;
-            game.sx = game.sy = 0f;
-            if (game.vehicleType == ProceduralVehicleModels.AIRPLANE
-                    || game.vehicleType == ProceduralVehicleModels.HELICOPTER) game.vehicleForwardInput = ly;
-        } else {
-            game.sx = lx; game.sy = ly;
-            game.vehicleSteeringInput = game.vehicleForwardInput = 0f;
-        }
-
-        int leftAxis = device == null ? -1 : firstAvailableAxis(device, source,
-                android.view.MotionEvent.AXIS_LTRIGGER, android.view.MotionEvent.AXIS_BRAKE);
-        int rightAxis = device == null ? -1 : firstAvailableAxis(device, source,
-                android.view.MotionEvent.AXIS_RTRIGGER, android.view.MotionEvent.AXIS_GAS);
-        boolean hasLeft = leftAxis >= 0, hasRight = rightAxis >= 0;
-        float left = hasLeft ? readTriggerAxis(event, device, leftAxis, source) : (padL2 ? 1f : 0f);
-        float right = hasRight ? readTriggerAxis(event, device, rightAxis, source) : (padR2 ? 1f : 0f);
-        if (hasLeft) padL2 = left > 0.18f;
-        if (hasRight) padR2 = right > 0.18f;
-
-        if (game.driving) {
-            if (game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
-                if (hasLeft) game.brakeRequested = left > 0.18f;
-                if (hasRight) game.throttleInput = right;
-            } else if (game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
-                game.throttleInput = 0f;
-                if (hasLeft || hasRight) game.liftInput = right - left;
-            } else {
-                float drive = right - left;
-                if (hasLeft || hasRight) game.vehicleForwardInput = Math.abs(drive) > 0.04f ? drive : 0f;
-                else game.vehicleForwardInput = ly;
-            }
-        } else {
-            game.weaponAimHeld = padL2;
-            game.weaponFireHeld = padR2;
-        }
-
-        if (device != null && (hasMotionRange(device, android.view.MotionEvent.AXIS_HAT_X, source)
-                || hasMotionRange(device, android.view.MotionEvent.AXIS_HAT_Y, source))) {
-            handleHatDpad(event.getAxisValue(android.view.MotionEvent.AXIS_HAT_X),
-                    event.getAxisValue(android.view.MotionEvent.AXIS_HAT_Y));
-        }
-        if (weaponWheelOpen && weaponWheelView != null) {
-            if (Math.abs(rx) > 0.01f || Math.abs(ry) > 0.01f) weaponWheelView.selectDirection(rx, ry);
-            renderer.setGamepadLook(0f, 0f);
-        } else renderer.setGamepadLook(rx, ry);
-        return true;
-    }
-
-    private void handleHatDpad(float x, float y) {
-        float nx = Math.abs(x) > 0.5f ? Math.signum(x) : 0f;
-        float ny = Math.abs(y) > 0.5f ? Math.signum(y) : 0f;
-        if (mapOpen && fullMapView != null) {
-            renderer.game.cameraZoomInput = 0f;
-            if (nx != padHatX && nx != 0f) fullMapView.panBy(nx < 0f ? dp(72) : -dp(72), 0f);
-            if (ny != padHatY && ny != 0f) fullMapView.panBy(0f, ny < 0f ? dp(72) : -dp(72));
-        } else if (weaponWheelOpen && weaponWheelView != null) {
-            renderer.game.cameraZoomInput = 0f;
-            if (nx != padHatX && nx != 0f) weaponWheelView.moveSelection(nx > 0f ? 1 : -1);
-            if (ny != padHatY && ny != 0f) weaponWheelView.moveSelection(ny < 0f ? 1 : -1);
-        } else if (renderer.game.driving && renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
-            renderer.game.cameraZoomInput = 0f;
-            renderer.game.liftInput = ny == 0f ? 0f : (ny < 0f ? 1f : -1f);
-        } else {
-            renderer.game.cameraZoomInput = ny == 0f ? 0f : (ny < 0f ? 1f : -1f);
-            if (nx != padHatX && nx != 0f && !renderer.game.driving)
-                cycleEquippedWeapon(nx > 0f ? 1 : -1);
-        }
-        padHatX = nx; padHatY = ny;
-    }
-
-    private static boolean hasMotionRange(android.view.InputDevice device, int axis, int source) {
-        return device != null && device.getMotionRange(axis, source) != null;
-    }
-
-    private static int firstAvailableAxis(android.view.InputDevice device, int source, int first, int second) {
-        if (hasMotionRange(device, first, source)) return first;
-        if (hasMotionRange(device, second, source)) return second;
-        return -1;
-    }
-
-    private static float readTriggerAxis(android.view.MotionEvent event, android.view.InputDevice device, int axis, int source) {
-        android.view.InputDevice.MotionRange range = device.getMotionRange(axis, source);
-        if (range == null) return 0f;
-        float span = range.getMax() - range.getMin();
-        if (span <= 0.0001f) return 0f;
-        float value = (event.getAxisValue(axis) - range.getMin()) / span;
-        return Math.max(0f, Math.min(1f, value));
     }
 
     private static int normalizeGamepadKeyCode(int code) {
