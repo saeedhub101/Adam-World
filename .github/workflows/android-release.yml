@@ -72,8 +72,7 @@ jobs:
           python app/tools/build_runtime_meshes.py
           python app/tools/build_adam_skinned_mesh.py
           test -s app/src/main/assets/models/runtime/characters/adam.awmesh5
-          cp app/src/main/assets/models/runtime/characters/adam.awmesh5 app/src/main/assets/models/runtime/characters/pedestrian-adam.awmesh5
-          echo "Legacy Adam pedestrian ready: $(stat -c%s app/src/main/assets/models/runtime/characters/pedestrian-adam.awmesh5) bytes"
+          echo "Legacy Adam pedestrian asset ready: $(stat -c%s app/src/main/assets/models/runtime/characters/adam.awmesh5) bytes"
 
           # Compact, textured, rigged CC0 everyday pedestrians with Idle/Walk/Run clips.
           # Keep each converted mesh under 1.5 MB to bound APK size and GPU memory.
@@ -133,7 +132,7 @@ jobs:
           USER_PED_MODELS
           test -s app/src/main/assets/models/runtime/characters/pedestrian-saeed-vrm.awmesh5 || { echo '::error::Required VRM player conversion is missing'; exit 1; }
           test -s app/src/main/assets/models/runtime/characters/pedestrian-saeed-glb.awmesh5 || { echo '::error::Required Saeed GLB pedestrian conversion is missing'; exit 1; }
-          test -s app/src/main/assets/models/runtime/characters/pedestrian-adam.awmesh5 || { echo '::error::Required legacy Adam pedestrian conversion is missing'; exit 1; }
+          test -s app/src/main/assets/models/runtime/characters/adam.awmesh5 || { echo '::error::Required legacy Adam pedestrian conversion is missing'; exit 1; }
           echo 'VRM player, Saeed GLB pedestrian and legacy Adam pedestrian assets validated.'
 
       - name: Prepare signing and calculate release version

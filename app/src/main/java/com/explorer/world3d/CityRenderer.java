@@ -399,7 +399,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                 "models/runtime/characters/pedestrian-office.awmesh5",
                 "models/runtime/characters/pedestrian-elder.awmesh5",
                 "models/runtime/characters/pedestrian-manager.awmesh5",
-                "models/runtime/characters/pedestrian-adam.awmesh5",
+                "models/runtime/characters/adam.awmesh5",
                 "models/runtime/characters/pedestrian-saeed-glb.awmesh5",
                 "models/runtime/characters/pedestrian-saeed-vrm.awmesh5"
         };
