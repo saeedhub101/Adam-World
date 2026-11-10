@@ -566,21 +566,25 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         L.onToast(game.landingGearDown ? "عجلات الهبوط مفتوحة" : "عجلات الهبوط مطوية");
     }
 
-    public void toggleCar() {
-        Game g = game;
-        if (!spawned) return;
-        // Prevent held on-foot or vehicle inputs from leaking across the enter/exit transition.
+    private static void clearContextualControlState(Game g) {
+        // Prevent held on-foot or vehicle inputs from leaking across a successful enter/exit transition.
         g.sprint = false; g.stealthMode = false;
         g.weaponAimHeld = false; g.weaponFireHeld = false;
         g.handbrake = false; g.brakeRequested = false;
         g.liftInput = 0f; g.rudderInput = 0f; g.throttleInput = 0f;
+    }
+
+    public void toggleCar() {
+        Game g = game;
+        if (!spawned) return;
         if (flightSchoolMode) {
             if (g.driving) {
                 boolean aircraft = g.vehicleType == ProceduralVehicleModels.HELICOPTER || g.vehicleType == ProceduralVehicleModels.AIRPLANE;
                 if (Math.abs(g.cv) > 3f || g.altitude > 1f) { L.onToast("أوقف المركبة واهبط قبل الخروج"); return; }
+                clearContextualControlState(g);
                 g.driving = false; g.cv = 0f; g.engineThrottle = g.vehicleType == ProceduralVehicleModels.HELICOPTER ? 0.52f : 0f;
                 g.px = g.cx + 3.2f; g.pz = g.cz; g.py = 0f;
-            } else spawnFlightSchoolVehicle(true);
+            } else { clearContextualControlState(g); spawnFlightSchoolVehicle(true); }
             return;
         }
         if (!g.driving) {
@@ -600,6 +604,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 g.cv = nearestTrafficCar.sp * nearestTrafficCar.dir;
                 g.vehicleType = nearestTrafficCar.vehicleType;
                 playerVehicleType = nearestTrafficCar.vehicleType;
+                clearContextualControlState(g);
                 g.driving = true; g.altitude = 0f; g.engineThrottle = 0f;
                 g.aircraftVerticalSpeed = 0f; g.aircraftOnGround = true; g.landingGearDown = true;
                 g.agents.remove(nearestTrafficCar);
@@ -607,6 +612,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 return;
             }
             if (d < 8f) {
+                clearContextualControlState(g);
                 g.driving = true; g.cv = 0; g.vehicleType = playerVehicleType; g.altitude = 0f; g.liftInput = g.throttleInput = 0f; g.brakeRequested = false; g.engineThrottle = playerVehicleType == ProceduralVehicleModels.HELICOPTER ? 0.52f : 0f; g.aircraftVerticalSpeed = 0f; g.aircraftOnGround = true; g.aircraftDamage = 0f; g.landingGearDown = true; g.aircraftPitch = g.aircraftRoll = 0f;
                 L.onToast("قيادة: العصا للتسارع والتوجيه");
             } else {
@@ -618,6 +624,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                     if (!blocked(x, z, 2.2f)) { g.cx = x; g.cz = z; g.cyaw = g.pyaw; g.cv = 0; ok = true; break; }
                 }
                 if (ok) {
+                    clearContextualControlState(g);
                     g.driving = true; g.vehicleType = playerVehicleType; g.cv = 0f;
                     g.altitude = 0f; g.engineThrottle = 0f; g.aircraftVerticalSpeed = 0f;
                     g.landingGearDown = true; g.aircraftOnGround = true;
@@ -627,6 +634,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         } else {
             boolean aircraft = g.vehicleType == ProceduralVehicleModels.HELICOPTER || g.vehicleType == ProceduralVehicleModels.AIRPLANE;
             if (aircraft && (g.altitude > 1f || Math.abs(g.cv) > 3f)) { L.onToast("لا يمكنك الخروج من الطائرة أثناء الحركة أو الطيران"); return; }
+            clearContextualControlState(g);
             float rx = -(float) Math.cos(g.cyaw), rz = (float) Math.sin(g.cyaw);
             float x = g.cx + rx * 2.6f, z = g.cz + rz * 2.6f;
             if (blocked(x, z, 0.5f)) { x = g.cx - rx * 2.6f; z = g.cz - rz * 2.6f; }
