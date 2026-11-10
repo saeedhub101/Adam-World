@@ -406,24 +406,34 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             rx = event.getAxisValue(android.view.MotionEvent.AXIS_Z);
             ry = event.getAxisValue(android.view.MotionEvent.AXIS_RZ);
         }
+        boolean hasLeftTrigger = device != null
+                && (device.getMotionRange(android.view.MotionEvent.AXIS_LTRIGGER, event.getSource()) != null
+                || device.getMotionRange(android.view.MotionEvent.AXIS_BRAKE, event.getSource()) != null);
+        boolean hasRightTrigger = device != null
+                && (device.getMotionRange(android.view.MotionEvent.AXIS_RTRIGGER, event.getSource()) != null
+                || device.getMotionRange(android.view.MotionEvent.AXIS_GAS, event.getSource()) != null);
         float leftTrigger = Math.max(event.getAxisValue(android.view.MotionEvent.AXIS_LTRIGGER),
                 event.getAxisValue(android.view.MotionEvent.AXIS_BRAKE));
         float rightTrigger = Math.max(event.getAxisValue(android.view.MotionEvent.AXIS_RTRIGGER),
                 event.getAxisValue(android.view.MotionEvent.AXIS_GAS));
-        padL2 = leftTrigger > 0.35f;
-        padR2 = rightTrigger > 0.35f;
-        if (renderer.game.driving) {
-            if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
-                renderer.game.brakeRequested = padL2;
-                renderer.game.throttleInput = rightTrigger;
-            } else if (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
-                renderer.game.throttleInput = rightTrigger - leftTrigger;
+        if (hasLeftTrigger) padL2 = leftTrigger > 0.35f;
+        if (hasRightTrigger) padR2 = rightTrigger > 0.35f;
+        if (hasLeftTrigger || hasRightTrigger) {
+            if (renderer.game.driving) {
+                if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
+                    if (hasLeftTrigger) renderer.game.brakeRequested = padL2;
+                    if (hasRightTrigger) renderer.game.throttleInput = rightTrigger;
+                } else if (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
+                    renderer.game.throttleInput = (hasRightTrigger ? rightTrigger : (padR2 ? 1f : 0f))
+                            - (hasLeftTrigger ? leftTrigger : (padL2 ? 1f : 0f));
+                } else {
+                    renderer.game.sy = (hasRightTrigger ? rightTrigger : (padR2 ? 1f : 0f))
+                            - (hasLeftTrigger ? leftTrigger : (padL2 ? 1f : 0f));
+                }
             } else {
-                renderer.game.sy = rightTrigger - leftTrigger;
+                renderer.game.weaponAimHeld = padL2;
+                renderer.game.weaponFireHeld = padR2;
             }
-        } else {
-            renderer.game.weaponAimHeld = padL2;
-            renderer.game.weaponFireHeld = padR2;
         }
         final float dead = 0.16f;
         lx = applyStickDeadZone(lx, dead);
