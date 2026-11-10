@@ -41,16 +41,18 @@ public class CityGLView extends GLSurfaceView {
         return Math.signum(value) * Math.min(1f, (a - 0.16f) / 0.84f);
     }
 
-    private static float firstActive(float primary, float fallback) {
-        return Math.abs(primary) > 0.08f ? primary : fallback;
+    private static float readAxis(MotionEvent event, int primary, int fallback) {
+        android.view.InputDevice device = event.getDevice();
+        if (device != null && device.getMotionRange(primary, event.getSource()) != null)
+            return event.getAxisValue(primary);
+        return event.getAxisValue(fallback);
     }
 
     void setWeaponWheelView(WeaponWheelView wheel) { weaponWheelView = wheel; }
     void setWeaponWheelOpen(boolean open) { weaponWheelOpen = open; }
 
     private static float trigger(MotionEvent e, int axis, int fallback) {
-        float v = e.getAxisValue(axis);
-        if (Math.abs(v) < 0.08f) v = e.getAxisValue(fallback);
+        float v = readAxis(e, axis, fallback);
         return v < 0f ? (v + 1f) * 0.5f : Math.min(1f, v);
     }
 
@@ -62,8 +64,8 @@ public class CityGLView extends GLSurfaceView {
         if (joystick && e.getAction() == MotionEvent.ACTION_MOVE) {
             float moveX = stick(e.getAxisValue(MotionEvent.AXIS_X));
             float moveY = stick(e.getAxisValue(MotionEvent.AXIS_Y));
-            float lookX = stick(firstActive(e.getAxisValue(MotionEvent.AXIS_RX), e.getAxisValue(MotionEvent.AXIS_Z)));
-            float lookY = stick(-firstActive(e.getAxisValue(MotionEvent.AXIS_RY), e.getAxisValue(MotionEvent.AXIS_RZ)));
+            float lookX = stick(readAxis(e, MotionEvent.AXIS_RX, MotionEvent.AXIS_Z));
+            float lookY = stick(-readAxis(e, MotionEvent.AXIS_RY, MotionEvent.AXIS_RZ));
             float gas = trigger(e, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS);
             float brake = trigger(e, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE);
             float hatX = e.getAxisValue(MotionEvent.AXIS_HAT_X);
