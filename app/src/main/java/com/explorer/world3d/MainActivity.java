@@ -377,8 +377,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     game.brakeRequested = padL2 || game.handbrake;
                     game.throttleInput = padR2 ? 1f : 0f;
                 } else if (game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
-                    game.throttleInput = padR2 ? 1f : 0f;
-                    game.liftInput = padL2 ? -1f : 0f;
+                    game.throttleInput = 0f;
+                    game.liftInput = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
                 } else {
                     game.sy = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
                 }
@@ -466,8 +466,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 if (hasLeft) game.brakeRequested = left > 0.18f;
                 if (hasRight) game.throttleInput = right;
             } else if (game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
-                if (hasRight) game.throttleInput = right;
-                if (hasLeft) game.liftInput = -left;
+                game.throttleInput = 0f;
+                if (hasLeft || hasRight) game.liftInput = right - left;
             } else {
                 float drive = right - left;
                 if (hasLeft || hasRight) game.sy = Math.abs(drive) > 0.04f ? drive : 0f;
