@@ -40,10 +40,8 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 }
-// Package repository-hosted Manila data and the migrated Rizal Park inventory.
-android.sourceSets.main.assets.srcDirs += [
-    file("$rootDir/data/offline-world/manila")
-]
+// City datasets are streamed from the repository and cached under app cacheDir.
+// Never package offline-world city shards inside the APK/AAB.
 
 dependencies {
     implementation 'androidx.core:core:1.13.1'
