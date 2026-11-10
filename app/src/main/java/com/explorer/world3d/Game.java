@@ -71,6 +71,7 @@ final class Game {
     final ArrayList<ProjectileSystem.Rocket> rockets = new ArrayList<>();
     final ArrayList<ProjectileSystem.Blast> blasts = new ArrayList<>();
     private final float[] tmp = new float[4];
+    private final PlayerMotionSystem playerMotion = new PlayerMotionSystem();
 
     static float clamp(float v, float a, float b) { return Math.max(a, Math.min(b, v)); }
 
@@ -83,6 +84,7 @@ final class Game {
 
     void reset() {
         sx = sy = 0f; sprint = false;
+        playerMotion.reset();
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = 0; brakeRequested = false; camYaw = 0; health = 100; dead = false;
@@ -300,13 +302,8 @@ final class Game {
         }
         if (guardRequested && !driving) stamina = Math.max(0f, stamina - 12f * dt);
         if (stamina <= 0f) guardRequested = false;
-        if (jumpRequested && !driving && jumpHeight <= 0.001f && !dead && playerPose==0) jumpVelocity = 5.1f;
-        jumpRequested = false;
-        if (jumpHeight > 0f || jumpVelocity > 0f) {
-            jumpHeight += jumpVelocity * dt;
-            jumpVelocity -= 13.8f * dt;
-            if (jumpHeight <= 0f) { jumpHeight = 0f; jumpVelocity = 0f; }
-        }
+        // Character locomotion owns jump buffering, coyote time and vertical integration.
+        // Consume the input here only through PlayerMotionSystem so touch/gamepad share one path.
         boolean punch = punchRequested || attackRequested;
         boolean kick = kickRequested;
         punchRequested = kickRequested = attackRequested = false;
@@ -346,32 +343,7 @@ final class Game {
         if(playerPose==2||playerPose==3||playerPose==4){jx=0f;jy=0f;}
         float mag = Math.min(1f, (float) Math.hypot(jx, jy));
         if (!driving) {
-            if (mag > 0.08f) {
-                float fx = (float) Math.sin(camYaw), fz = (float) Math.cos(camYaw);
-                float rx = -fz, rz = fx; // يمين الكاميرا
-                rx = -(float) Math.cos(camYaw); rz = (float) Math.sin(camYaw);
-                float dx = fx * jy + rx * jx, dz = fz * jy + rz * jx;
-                float dl = (float) Math.hypot(dx, dz);
-                if (dl < 1e-5f) dl = 1;
-                dx /= dl; dz /= dl;
-                float speed = (sprint ? 8.5f : 4.6f) * mag;
-                if (dodgeSeconds > 0f) { dx = dodgeX; dz = dodgeZ; speed = 12.5f; }
-                float nx = px + dx * speed * dt, nz = pz + dz * speed * dt;
-                // Low curbs and traffic islands are step-up surfaces, not walls.
-                // Keep tall building footprints solid while allowing normal walking
-                // across street/sidewalk edges even without a ramp mesh.
-                float stepClearance = Math.max(0.58f, jumpHeight - 0.18f);
-                boolean blockedAhead = (w instanceof CityRenderer) ? ((CityRenderer) w).blockedAtHeight(nx, nz, 0.45f, stepClearance) : w.blocked(nx, nz, 0.45f);
-                boolean blockedX = (w instanceof CityRenderer) ? ((CityRenderer) w).blockedAtHeight(nx, pz, 0.45f, stepClearance) : w.blocked(nx, pz, 0.45f);
-                boolean blockedZ = (w instanceof CityRenderer) ? ((CityRenderer) w).blockedAtHeight(px, nz, 0.45f, stepClearance) : w.blocked(px, nz, 0.45f);
-                if (!blockedAhead) { px = nx; pz = nz; }
-                else if (!blockedX) px = nx;
-                else if (!blockedZ) pz = nz;
-                pyaw += angDiff(pyaw, (float) Math.atan2(dx, dz)) * Math.min(1f, dt * 12f);
-                phase += speed * dt * 1.7f;
-                swingAmp = 0.8f * Math.min(1f, speed / 4f);
-            } else swingAmp = 0;
-            py += (w.heightAt(px, pz) - py) * Math.min(1f, dt * 10f);
+            playerMotion.update(this, dt, w);
         } else {
             boolean aircraft = vehicleType == ProceduralVehicleModels.HELICOPTER || vehicleType == ProceduralVehicleModels.AIRPLANE;
             if (aircraft) updateAircraft(dt, jx, jy);
