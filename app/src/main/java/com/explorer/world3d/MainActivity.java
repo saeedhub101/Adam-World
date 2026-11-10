@@ -775,7 +775,16 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         touchMoveJoystick = js;
         js.setListener(new JoystickView.Listener() {
             @Override public void onMove(float x, float y) {
-                if (!renderer.game.driving) { renderer.game.sx = x; renderer.game.sy = y; }
+                Game g = renderer.game;
+                if (g.driving) {
+                    // The same persistent left touch stick steers and drives the vehicle.
+                    g.vehicleSteeringInput = x;
+                    g.vehicleForwardInput = y;
+                    g.sx = g.sy = 0f;
+                } else {
+                    g.sx = x; g.sy = y;
+                    g.vehicleSteeringInput = g.vehicleForwardInput = 0f;
+                }
             }
         });
         FrameLayout.LayoutParams jp = new FrameLayout.LayoutParams(dp(150), dp(150), Gravity.BOTTOM | Gravity.START);
@@ -1181,7 +1190,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         boolean driving = renderer.game.driving;
         boolean aircraft = driving && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
                 || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE);
-        if (touchMoveJoystick != null) touchMoveJoystick.setVisibility(driving ? View.GONE : View.VISIBLE);
+        // Keep the movement stick mounted in both modes; its listener routes input
+        // to character movement on foot and steering/throttle while seated.
+        if (touchMoveJoystick != null) touchMoveJoystick.setVisibility(View.VISIBLE);
         if (touchCombatRow != null) {
             for (int i = 0; i < touchCombatRow.getChildCount(); i++) {
                 View child = touchCombatRow.getChildAt(i);
