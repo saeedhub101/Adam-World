@@ -446,9 +446,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 renderer.game.weaponFireHeld = padR2;
             }
         }
-        float hx = event.getAxisValue(android.view.MotionEvent.AXIS_HAT_X);
-        float hy = event.getAxisValue(android.view.MotionEvent.AXIS_HAT_Y);
-        handleHatDpad(hx, hy);
+        if (device != null && (hasMotionRange(device, android.view.MotionEvent.AXIS_HAT_X, source)
+                || hasMotionRange(device, android.view.MotionEvent.AXIS_HAT_Y, source))) {
+            float hx = event.getAxisValue(android.view.MotionEvent.AXIS_HAT_X);
+            float hy = event.getAxisValue(android.view.MotionEvent.AXIS_HAT_Y);
+            handleHatDpad(hx, hy);
+        }
         if (weaponWheelOpen && weaponWheelView != null) {
             if (Math.abs(rx) > 0.01f || Math.abs(ry) > 0.01f) weaponWheelView.selectDirection(rx, ry);
             renderer.setGamepadLook(0f, 0f);
