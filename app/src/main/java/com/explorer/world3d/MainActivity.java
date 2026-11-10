@@ -461,50 +461,47 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         else showPauseMenu();
     }
 
+    /** Fixed GTA-style centre reticle. Camera look is handled by the right-side look surface. */
     private final class AimReticleView extends View {
         private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
-        private boolean aiming, dragging;
-        private float lastX, lastY, offsetX, offsetY;
-        AimReticleView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setClickable(true);}
+        private boolean aiming;
+        AimReticleView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setClickable(false);setFocusable(false);}
         void setAiming(boolean value){aiming=value;}
         @Override protected void onDraw(Canvas c){
             super.onDraw(c);
             float cx=getWidth()/2f,cy=getHeight()/2f;
-            paint.setColor(aiming?0xfffff1c2:0xddefffff);paint.setStrokeWidth(dp(1.5f));paint.setStyle(Paint.Style.STROKE);
-            float r=aiming?dp(10):dp(7),gap=aiming?dp(6):dp(4),len=aiming?dp(10):dp(7);
+            paint.setColor(aiming?0xffffe6a3:0xddefffff);
+            paint.setStrokeWidth(dp(1.6f));paint.setStyle(Paint.Style.STROKE);
+            float r=aiming?dp(9):dp(6),gap=aiming?dp(6):dp(4),len=aiming?dp(10):dp(7);
             c.drawCircle(cx,cy,r,paint);
             c.drawLine(cx-len-gap,cy,cx-gap,cy,paint);c.drawLine(cx+gap,cy,cx+len+gap,cy,paint);
             c.drawLine(cx,cy-len-gap,cx,cy-gap,paint);c.drawLine(cx,cy+gap,cx,cy+len+gap,paint);
-            paint.setStyle(Paint.Style.FILL);c.drawCircle(cx,cy,dp(1.2f),paint);
+            paint.setStyle(Paint.Style.FILL);c.drawCircle(cx,cy,dp(1.3f),paint);
         }
-        @Override public boolean onTouchEvent(MotionEvent e) {
-            switch(e.getActionMasked()) {
+    }
+
+    /** GTA-like right-side camera look zone: drag to rotate view, never drag the reticle. */
+    private final class CameraLookSurface extends View {
+        private float lastX,lastY;
+        private boolean tracking;
+        CameraLookSurface(Context c){super(c);setBackgroundColor(Color.TRANSPARENT);setClickable(true);}
+        @Override public boolean onTouchEvent(MotionEvent e){
+            float x=e.getX(),y=e.getY();
+            switch(e.getActionMasked()){
                 case MotionEvent.ACTION_DOWN:
-                    dragging=true;lastX=e.getRawX();lastY=e.getRawY();return true;
+                    if(x<getWidth()*0.48f || y>getHeight()*0.78f)return false;
+                    tracking=true;lastX=x;lastY=y;return true;
                 case MotionEvent.ACTION_MOVE:
-                    if(!dragging)return true;
-                    float dx=e.getRawX()-lastX,dy=e.getRawY()-lastY;
-                    lastX=e.getRawX();lastY=e.getRawY();
-                    offsetX=Math.max(-getRootView().getWidth()*.42f,Math.min(getRootView().getWidth()*.42f,offsetX+dx));
-                    offsetY=Math.max(-getRootView().getHeight()*.34f,Math.min(getRootView().getHeight()*.34f,offsetY+dy));
-                    setTranslationX(offsetX);setTranslationY(offsetY);
-                    if(renderer!=null) {
-                        final float yawDelta=dx*0.0036f;
-                        final float pitchDelta=-dy*0.0028f;
-                        runOnGl(()->{
-                            Game g=renderer.game;
-                            g.aimYawOffset=Game.clamp(g.aimYawOffset+yawDelta,-1.25f,1.25f);
-                            g.aimPitchOffset=Game.clamp(g.aimPitchOffset+pitchDelta,-0.62f,0.62f);
-                        });
-                    }
-                    invalidate();return true;
+                    if(!tracking)return false;
+                    float dx=x-lastX,dy=y-lastY;lastX=x;lastY=y;
+                    if(renderer!=null)renderer.addLook(dx,dy);
+                    return true;
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
-                    dragging=false;performClick();return true;
+                    tracking=false;return true;
             }
-            return true;
+            return tracking;
         }
-        @Override public boolean performClick(){super.performClick();return true;}
     }
 
     private final class MiniMapView extends View {
@@ -1012,8 +1009,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.addView(miniMap, miniParams);
 
         aimReticle = new AimReticleView(this);
-        FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(dp(112),dp(112),Gravity.CENTER);
+        FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(dp(76),dp(76),Gravity.CENTER);
         root.addView(aimReticle,reticleParams);
+        CameraLookSurface cameraLookSurface=new CameraLookSurface(this);
+        root.addView(cameraLookSurface,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
 
         Button settings = btn("⚙");
         settings.setOnClickListener(v -> showGameSettings());
