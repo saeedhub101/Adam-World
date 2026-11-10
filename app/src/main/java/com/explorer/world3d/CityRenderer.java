@@ -1239,7 +1239,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                     g.driving ? g.vehicleWheelFR - g.vehicleWheelBodyLift : 0f,
                     g.driving ? g.vehicleWheelRL - g.vehicleWheelBodyLift : 0f,
                     g.driving ? g.vehicleWheelRR - g.vehicleWheelBodyLift : 0f);
-            if (!g.driving) drawKid(g.px,g.py,g.pz,g.pyaw+(g.weaponAimHeld?g.aimYawOffset:0f),g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash,g.equippedWeapon,g.weaponAimHeld,g.weaponRecoil,g.muzzleFlashSeconds,g.weaponReloadSeconds,g.weaponReloadDuration);
+            if (!g.driving) drawKid(g.px,g.py,g.pz,g.weaponAimHeld?g.camYaw:g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash,g.equippedWeapon,g.weaponAimHeld,g.weaponRecoil,g.muzzleFlashSeconds,g.weaponReloadSeconds,g.weaponReloadDuration);
         }
     }
 
