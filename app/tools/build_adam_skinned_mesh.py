@@ -178,6 +178,10 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
             bq=np.asarray(bind_r[bi*4:bi*4+4],dtype=np.float64)
             bs=np.asarray(bind_s[bi*3:bi*3+3],dtype=np.float64)
             T=np.tile(bt,(len(times),1)); R=np.tile(bq,(len(times),1)); S=np.tile(bs,(len(times),1))
+            parent_id=parents[node_id]
+            parent_global=globals_[parent_id] if parent_id>=0 else np.eye(4,dtype=np.float64)
+            parent_global_q=decompose(parent_global)[1]
+            vertical_local=quat_rotate_inverse(parent_global_q,[0.0,1.0,0.0])
             gp=globals_[node_id][:3,3]
             root_local=(root_inverse@np.array([gp[0],gp[1],gp[2],1.0]))[:3]
             if side==0.0 and role in ("arm","forearm","hand","thigh","calf","foot"):
@@ -255,7 +259,7 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
                     elif role=="thigh": angle=-0.45*(1.0-recovery)
                 dq=axis_angle_quat(axis_local,angle)
                 q=quat_mul(bq,dq); q/=max(np.linalg.norm(q),1e-12)
-                R[k]=q; T[k,1]+=dy
+                R[k]=q; T[k]+=vertical_local*dy
             tracks.append((bi,times,T,R,S))
         clips.append((clip_name,duration,tracks))
     return clips
@@ -308,7 +312,7 @@ def main():
     print(f"ADAM_RIG_COMPRESSED source_bones={source_bone_count} runtime_bones={bone_count} mapped={sum(1 for n in joints if node_to_selected[n]!=n)}",flush=True)
     for bi,node_id in enumerate(ordered):
         role,side=classify_bone(doc["nodes"][node_id].get("name",f"bone_{bi}"))
-        print(f"ADAM_BONE index={bi} node={node_id} name={doc[\"nodes\"][node_id].get(\"name\",\"unnamed\")} role={role} side={side:+.0f} parent={bone_parent[bi] if bi<len(bone_parent) else -1}",flush=True)
+        print(f"ADAM_BONE index={bi} node={node_id} name={doc[\"nodes\"][node_id].get(\"name\",\"unnamed\")} role={role} side={side:+.0f}",flush=True)
     mesh_global=globals_[mesh_node]; inv_mesh=np.linalg.inv(mesh_global)
     ibm_source=np.asarray([np.asarray(row,dtype=np.float64).reshape((4,4),order="F") for row in accessor(doc,binary,skin["inverseBindMatrices"])]) if "inverseBindMatrices" in skin else np.repeat(np.eye(4)[None,:,:],source_bone_count,axis=0)
     if len(ibm_source)!=source_bone_count:raise ValueError("source inverse bind matrix count mismatch")
