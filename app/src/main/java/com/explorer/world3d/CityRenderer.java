@@ -166,6 +166,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private long lastN = System.nanoTime(), lastUnload, lastAgentMs, lastHudMs, spawnDeadline, lastAudioWeaponShot, lastMiniMapUpdate, lastAudioExplosionEvent;
     private long lastTerrainBuildMs;
     private volatile float[] miniMapRoadSnapshot = new float[0];
+    private volatile float[] fullMapRoadSnapshot = new float[0];
     private boolean started, needSpawn, spawned, spawnTimeoutNotified;
     private float lookDx, lookDy;
     private volatile float gamepadLookX, gamepadLookY;
@@ -178,28 +179,41 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
     public void toggleUndergroundCutaway() { undergroundCutaway = !undergroundCutaway; }
     public float[] miniMapRoads() { return miniMapRoadSnapshot; }
+    public float[] fullMapRoads() { return fullMapRoadSnapshot; }
 
     private void refreshMiniMapRoads(long nowMs) {
         if (nowMs - lastMiniMapUpdate < 900L) return;
         lastMiniMapUpdate = nowMs;
-        if (flightSchoolMode || tiles.isEmpty()) { miniMapRoadSnapshot = new float[0]; return; }
+        if (flightSchoolMode || tiles.isEmpty()) {
+            miniMapRoadSnapshot = new float[0];
+            fullMapRoadSnapshot = new float[0];
+            return;
+        }
         float px = game.focusX(), pz = game.focusZ();
-        float[] points = new float[3200];
-        int used = 0;
+        float[] mini = new float[3200];
+        float[] full = new float[24000];
+        int miniUsed = 0, fullUsed = 0;
         for (Tile tile : tiles.values()) {
-            if (Math.abs(tile.cx - px) > 260f || Math.abs(tile.cz - pz) > 260f) continue;
+            if (Math.abs(tile.cx - px) > 950f || Math.abs(tile.cz - pz) > 950f) continue;
             for (RoadPath road : tile.paths) {
                 if (road == null || road.xs == null || road.zs == null) continue;
-                for (int i = 1; i < road.xs.length && used + 4 <= points.length; i++) {
+                for (int i = 1; i < road.xs.length && (miniUsed + 4 <= mini.length || fullUsed + 4 <= full.length); i++) {
                     float x0 = road.xs[i-1], z0 = road.zs[i-1], x1 = road.xs[i], z1 = road.zs[i];
                     float mx = (x0+x1)*0.5f-px, mz = (z0+z1)*0.5f-pz;
-                    if (mx*mx + mz*mz > 260f*260f) continue;
-                    points[used++] = x0; points[used++] = z0;
-                    points[used++] = x1; points[used++] = z1;
+                    float distance2 = mx*mx + mz*mz;
+                    if (distance2 <= 900f*900f && fullUsed + 4 <= full.length) {
+                        full[fullUsed++] = x0; full[fullUsed++] = z0;
+                        full[fullUsed++] = x1; full[fullUsed++] = z1;
+                    }
+                    if (distance2 <= 260f*260f && miniUsed + 4 <= mini.length) {
+                        mini[miniUsed++] = x0; mini[miniUsed++] = z0;
+                        mini[miniUsed++] = x1; mini[miniUsed++] = z1;
+                    }
                 }
             }
         }
-        miniMapRoadSnapshot = java.util.Arrays.copyOf(points, used);
+        miniMapRoadSnapshot = java.util.Arrays.copyOf(mini, miniUsed);
+        fullMapRoadSnapshot = java.util.Arrays.copyOf(full, fullUsed);
     }
     private long lastErrToast;
     private final Random rng = new Random();

@@ -65,6 +65,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private AimReticleView aimReticle;
     private WeaponWheelView weaponWheelView;
     private boolean weaponWheelOpen;
+    private boolean mapOpen;
+    private AlertDialog mapDialog;
+    private FullMapView fullMapView;
     private long lastHudRefresh;
     private LinearLayout touchActionPad, touchCombatRow, touchFlightRow;
     private Button touchVehicleButton, touchVehicleTypeButton, touchSprintButton, touchDodgeButton;
@@ -159,9 +162,15 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (renderer == null) return;
         if (!returnToPauseMenu) setGamePaused(true);
         FullMapView map = new FullMapView(this);
+        fullMapView = map;
+        mapOpen = true;
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle("الخريطة").setView(map)
                 .setNegativeButton("إغلاق", null).create();
+        mapDialog = dialog;
         dialog.setOnDismissListener(d -> {
+            mapOpen = false;
+            fullMapView = null;
+            mapDialog = null;
             if (returnToPauseMenu && !isFinishing()) showPauseMenu();
             else setGamePaused(false);
         });
@@ -255,6 +264,19 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         final boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
         final boolean pressed = down && event.getRepeatCount() == 0;
         if (renderer == null) return super.dispatchKeyEvent(event);
+        if (mapOpen && fullMapView != null) {
+            if (pressed && code == KeyEvent.KEYCODE_DPAD_UP) { fullMapView.panBy(0f, dp(72)); return true; }
+            if (pressed && code == KeyEvent.KEYCODE_DPAD_DOWN) { fullMapView.panBy(0f, -dp(72)); return true; }
+            if (pressed && code == KeyEvent.KEYCODE_DPAD_LEFT) { fullMapView.panBy(dp(72), 0f); return true; }
+            if (pressed && code == KeyEvent.KEYCODE_DPAD_RIGHT) { fullMapView.panBy(-dp(72), 0f); return true; }
+            if (pressed && code == KeyEvent.KEYCODE_BUTTON_L1) { fullMapView.zoomBy(1.25f); return true; }
+            if (pressed && code == KeyEvent.KEYCODE_BUTTON_R1) { fullMapView.zoomBy(0.8f); return true; }
+            if (pressed && (code == KeyEvent.KEYCODE_BUTTON_B || code == KeyEvent.KEYCODE_BUTTON_SELECT || code == KeyEvent.KEYCODE_BACK)) {
+                if (mapDialog != null) mapDialog.dismiss();
+                return true;
+            }
+            return true;
+        }
         if (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN) {
             if (weaponWheelOpen && pressed) {
                 weaponWheelView.moveSelection(code == KeyEvent.KEYCODE_DPAD_UP ? 1 : -1);
@@ -289,7 +311,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_B) {
-            if (renderer.game.driving) renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f;
+            if (renderer.game.driving && renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE && pressed)
+                runOnGl(() -> renderer.toggleAircraftGear());
+            else if (renderer.game.driving) renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f;
             else if (pressed) runOnGl(() -> renderer.game.kickRequested = true);
             return true;
         }
@@ -397,7 +421,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             float playerX=renderer.game.driving?renderer.game.cx:renderer.game.px;
             float playerZ=renderer.game.driving?renderer.game.cz:renderer.game.pz;
             float mapScale=rad/260f;
-            float[] roads=renderer.miniMapRoads();
+            float[] roads=renderer.fullMapRoads();
             for(int i=0;i+3<roads.length;i+=4){
                 float x1=cx+(roads[i]-playerX)*mapScale, y1=cy+(roads[i+1]-playerZ)*mapScale;
                 float x2=cx+(roads[i+2]-playerX)*mapScale, y2=cy+(roads[i+3]-playerZ)*mapScale;
@@ -467,6 +491,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             canvas.drawText(String.format(java.util.Locale.US,"%.5f, %.5f",Geo.latOf(pz),Geo.lonOf(px)),dp(18),h-dp(42),paint);
             postInvalidateDelayed(600);
         }
+        void panBy(float dx, float dy) { panX += dx; panY += dy; invalidate(); }
+        void zoomBy(float factor) { zoom = Math.max(0.55f, Math.min(4.5f, zoom * factor)); invalidate(); }
+
         @Override public boolean onTouchEvent(MotionEvent event) {
             scaleDetector.onTouchEvent(event);
             if(scaleDetector.isInProgress()) return true;
@@ -492,15 +519,29 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         final String[] items=new String[WeaponSystem.NAME.length+1];
         for(int i=0;i<WeaponSystem.NAME.length;i++)items[i]=WeaponSystem.NAME[i]+(renderer.game.ownedWeapons[i]?" — مملوك":" — $"+WeaponSystem.PRICE[i]);
         items[items.length-1]="شراء ذخيرة للسلاح الحالي";
-        new AlertDialog.Builder(this).setTitle("متجر الأسلحة · الرصيد $"+renderer.game.cash).setItems(items,(d,which)->runOnGl(()->{Game game=renderer.game;if(which==items.length-1){if(game.buyAmmo())onToast("تم شراء الذخيرة");else onToast("الرصيد غير كافٍ");}else if(game.ownedWeapons[which]){game.equipWeapon(which);onToast("تم تجهيز "+WeaponSystem.NAME[which]);}else if(game.purchaseWeapon(which))onToast("تم شراء "+WeaponSystem.NAME[which]);else onToast("الرصيد غير كافٍ");saveWeaponState();})).setNegativeButton("إغلاق",null).show();
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("متجر الأسلحة · الرصيد $"+renderer.game.cash)
+                .setItems(items,(d,which)->runOnGl(()->{
+                    Game game=renderer.game;
+                    if(which==items.length-1){if(game.buyAmmo())onToast("تم شراء الذخيرة");else onToast("الرصيد غير كافٍ");}
+                    else if(game.ownedWeapons[which]){game.equipWeapon(which);onToast("تم تجهيز "+WeaponSystem.NAME[which]);}
+                    else if(game.purchaseWeapon(which))onToast("تم شراء "+WeaponSystem.NAME[which]);else onToast("الرصيد غير كافٍ");
+                    saveWeaponState();
+                })).setNegativeButton("إغلاق",null).create();
+        dialog.setOnDismissListener(d -> setGamePaused(false));
+        dialog.show();
     }
 
     private void showVehicleSelector() {
         final String[] names = {"سيدان", "SUV", "بيك أب", "باص", "شرطة", "دراجة نارية",
                 "دراجة هوائية", "دبابة", "هليكوبتر", "طائرة"};
-        new AlertDialog.Builder(this).setTitle("اختر المركبة")
-                .setItems(names, (dialog, which) -> runOnGl(() -> renderer.selectVehicleType(which)))
-                .setNegativeButton("إلغاء", null).show();
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("اختر المركبة")
+                .setItems(names, (d, which) -> runOnGl(() -> {
+                    renderer.selectVehicleType(which);
+                    renderer.game.paused = false;
+                }))
+                .setNegativeButton("إلغاء", null).create();
+        dialog.setOnDismissListener(d -> setGamePaused(false));
+        dialog.show();
     }
 
     private Button touchAction(String label, final Runnable press, final Runnable release) {
