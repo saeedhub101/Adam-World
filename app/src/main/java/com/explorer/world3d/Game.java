@@ -166,7 +166,7 @@ final class Game {
                 : w.blocked(nx + fx * vehicleProbe, nz + fz * vehicleProbe, vehicleRadius)
                 || w.blocked(nx - fx * vehicleProbe, nz - fz * vehicleProbe, vehicleRadius)
                 || w.blocked(nx, nz, vehicleRadius);
-        boolean blockedTraffic = overlapsAnyVehicle(nx, nz, cyaw, vehicleType, null);
+        boolean blockedTraffic = overlapsAnyVehicle(nx, nz, cyaw, vehicleType, null, false);
         if (blockedWorld || blockedTraffic) {
             // A solid vehicle-to-vehicle contact: brake to a full stop instead of
             // reversing through the other car or allowing the two bodies to overlap.
@@ -247,15 +247,16 @@ final class Game {
     }
 
     /** Checks nearby traffic plus the player's parked/driven vehicle. */
-    private boolean overlapsAnyVehicle(float x, float z, float yaw, int type, Agent ignore) {
+    private boolean overlapsAnyVehicle(float x, float z, float yaw, int type,
+                                        Agent ignore, boolean includePlayerVehicle) {
         for (Agent other : agents) {
             if (other == ignore || !other.car || other.knockedOut) continue;
             if (vehicleOverlap(x,z,yaw,type,other.x,other.z,other.yaw,other.vehicleType)) return true;
         }
-        if (!driving && vehicleOverlap(x,z,yaw,type,cx,cz,cyaw,vehicleType)) return true;
-        if (driving && vehicleOverlap(x,z,yaw,type,cx,cz,cyaw,vehicleType)
-                && (Math.abs(x-cx)+Math.abs(z-cz)>0.01f)) return true;
-        return false;
+        // AI traffic must also respect the player's car, whether parked or driven.
+        // The player-car movement query excludes itself and checks only AI vehicles.
+        return includePlayerVehicle
+                && vehicleOverlap(x,z,yaw,type,cx,cz,cyaw,vehicleType);
     }
 
     private void updateAircraft(float dt, float jx, float jy) {
@@ -503,7 +504,7 @@ final class Game {
                         a.sp=Math.min(23f,Math.max(a.sp, a.cruiseSpeed)+dt*5f);
                         float step=Math.min(distance-3.2f,a.sp*dt);
                         float nx=a.x+(float)Math.sin(a.yaw)*step,nz=a.z+(float)Math.cos(a.yaw)*step;
-                        if(!w.blocked(nx,nz,1.05f) && !overlapsAnyVehicle(nx,nz,a.yaw,a.vehicleType,a)){
+                        if(!w.blocked(nx,nz,1.05f) && !overlapsAnyVehicle(nx,nz,a.yaw,a.vehicleType,a,true)){
                             a.x=nx;a.z=nz;
                         } else {
                             a.sp=Math.max(0f,a.sp-dt*20f);
@@ -540,7 +541,7 @@ final class Game {
                         // Follow the vehicle ahead. Keep a real bumper gap and brake
                         // before the oriented footprints overlap, producing queues at
                         // stopped traffic instead of cars passing through each other.
-                        if (!overlapsAnyVehicle(tmp[0], tmp[1], nextYaw, a.vehicleType, a)) {
+                        if (!overlapsAnyVehicle(tmp[0], tmp[1], nextYaw, a.vehicleType, a,true)) {
                             a.s = nextS;
                             a.x = tmp[0]; a.z = tmp[1]; a.yaw = nextYaw;
                             a.sp = Math.min(a.cruiseSpeed, a.sp + dt * 2.4f);
