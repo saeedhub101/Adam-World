@@ -227,7 +227,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("على التلفاز: العصا اليسرى للحركة أو توجيه المركبة، واليمنى للكاميرا. أثناء المشي: A للركض، X للقفز، B للكمة، Y للدخول والخروج، LT للتصويب، RT لإطلاق النار، LB لعجلة الأسلحة (اضغط مطولاً)، RB للاحتماء، L3 لتبديل الركض، R3 للمراوغة. أثناء قيادة السيارة: RT للتسارع، LT للفرملة والرجوع، العصا اليسرى للتوجيه، A أو RB لفرامل اليد، X للبوق، B للنظر للخلف، Y للخروج. الطائرة: RT لقوة المحرك، LT للفرامل، العصا اليسرى للميل والتوجيه، LB/RB لدفة الاتجاه، L3 للعجلات. الهليكوبتر: RT لقوة المحرك، LT لخفض الارتفاع، الأسهم أعلى/أسفل للتحكم بالارتفاع، العصا اليسرى للحركة والميل، LB/RB للاتجاه. View للخريطة وMenu للإيقاف. على الهاتف تظهر أزرار اللمس المناسبة للحالة فقط.")
+                .setMessage("على التلفاز: العصا اليسرى للحركة أو توجيه المركبة، واليمنى للكاميرا. أثناء المشي: A للركض، X للقفز (أو إعادة التلقيم أثناء التصويب)، B للكمة، Y للدخول والخروج، LT للتصويب، RT لإطلاق النار، LB لعجلة الأسلحة (اضغط مطولاً)، RB للاحتماء، L3 للركض، R3 للمراوغة. أثناء قيادة السيارة: RT للتسارع، LT للفرملة والرجوع، العصا اليسرى للتوجيه، A أو RB لفرامل اليد، X للبوق، B للنظر للخلف، Y للخروج. الطائرة: RT لقوة المحرك، LT للفرامل، العصا اليسرى للميل والتوجيه، LB/RB لدفة الاتجاه، L3 للعجلات. الهليكوبتر: RT لقوة المحرك، LT لخفض الارتفاع، الأسهم أعلى/أسفل للتحكم بالارتفاع، العصا اليسرى للحركة والميل، LB/RB للاتجاه. View للخريطة وMenu للإيقاف. على الهاتف تظهر أزرار اللمس المناسبة للحالة فقط.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
@@ -315,10 +315,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
 
         // Face buttons: GTA defaults on foot; contextual vehicle equivalents.
         if (code == KeyEvent.KEYCODE_BUTTON_A) {
-            if (game.driving) {
-                if (aircraft) game.brakeRequested = down;
-                else game.handbrake = down;
-            } else game.sprint = down;
+            if (!game.driving) game.sprint = down;
+            // In GTA-style vehicle controls, handbrake belongs to RB, not A.
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_B) {
@@ -327,12 +325,19 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_X) {
-            if (game.driving) { if (pressed && !aircraft) playHorn(); }
-            else if (pressed) runOnGl(() -> game.jumpRequested = true);
+            if (!game.driving && pressed) {
+                if (game.weaponAimHeld && game.equippedWeapon > 0) runOnGl(() -> game.reloadRequested = true);
+                else runOnGl(() -> game.jumpRequested = true);
+            }
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) {
-            if (pressed) runOnGl(() -> renderer.toggleCar());
+            if (pressed) runOnGl(() -> {
+                game.sprint = false; game.weaponAimHeld = false; game.weaponFireHeld = false;
+                game.handbrake = false; game.brakeRequested = false;
+                game.liftInput = 0f; game.rudderInput = 0f; game.throttleInput = 0f;
+                renderer.toggleCar();
+            });
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_L1) {
@@ -381,8 +386,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_THUMBL) {
-            if (game.driving && aircraft && pressed) runOnGl(() -> renderer.toggleAircraftGear());
-            else if (!game.driving && pressed) game.sprint = !game.sprint;
+            if (pressed && game.driving && game.vehicleType == ProceduralVehicleModels.AIRPLANE)
+                runOnGl(() -> renderer.toggleAircraftGear());
+            else if (pressed && game.driving && !aircraft) playHorn();
+            else if (!game.driving) game.sprint = down;
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_THUMBR) {
@@ -399,7 +406,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
         if (code == KeyEvent.KEYCODE_ENTER || code == KeyEvent.KEYCODE_DPAD_CENTER) {
-            if (pressed) runOnGl(() -> renderer.toggleCar());
+            if (pressed) runOnGl(() -> {
+                game.sprint = false; game.weaponAimHeld = false; game.weaponFireHeld = false;
+                game.handbrake = false; game.brakeRequested = false;
+                game.liftInput = 0f; game.rudderInput = 0f; game.throttleInput = 0f;
+                renderer.toggleCar();
+            });
             return true;
         }
         return super.dispatchKeyEvent(event);
