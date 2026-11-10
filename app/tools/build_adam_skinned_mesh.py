@@ -241,10 +241,14 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
             # Motion is authored in character/world anatomical axes, then transformed
             # into each joint's bind-local frame. This avoids assuming every rig uses X as its hinge.
             bind_global_q=decompose(globals_[node_id])[1]
+            # Humanoid bind pose is treated anatomically: shoulders swing about
+            # the vertical axis, elbows hinge about the forward axis, and legs/
+            # torso bend about the lateral axis. Mirrored limbs receive mirrored
+            # signed angles so both arms move toward the same forward target.
             axis_world=np.array([1.0,0.0,0.0],dtype=np.float64)
-            if role in ("spine","head"):
+            if role=="arm":
                 axis_world=np.array([0.0,1.0,0.0],dtype=np.float64)
-            elif clip_name=="guard" and role=="arm":
+            elif role in ("forearm","hand"):
                 axis_world=np.array([0.0,0.0,1.0],dtype=np.float64)
             axis_local=quat_rotate_inverse(bind_global_q,axis_world)
             for k,t in enumerate(times):
@@ -268,7 +272,8 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
                     if role=="root": dy=0.20*max(0.0,math.sin(math.pi*t/duration))
                     elif role=="thigh": angle=-0.38*sign
                     elif role=="calf": angle=0.62
-                    elif role=="arm": angle=-0.72
+                    elif role=="arm": angle=-0.72*sign
+                    elif role=="forearm": angle=0.42*sign
                     elif role=="spine": angle=-0.10
                 elif clip_name=="punch":
                     pulse=max(0.0,math.sin(math.pi*min(1.0,t/duration)))
@@ -281,17 +286,17 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
                     elif role=="calf" and side>=0: angle=-1.10*pulse
                     elif role=="arm": angle=0.30*pulse
                 elif clip_name in ("aim","shoot"):
-                    if role=="arm": angle=-0.72
-                    elif role=="forearm": angle=-0.45
+                    if role=="arm": angle=-0.72*sign
+                    elif role=="forearm": angle=-0.45*sign
                     elif role=="spine": angle=-0.08
-                    if clip_name=="shoot" and role=="forearm": angle-=0.10*max(0.0,wave)
+                    if clip_name=="shoot" and role=="forearm": angle-=0.10*max(0.0,wave)*sign
                 elif clip_name=="reload":
-                    if role=="arm": angle=-0.45+0.12*wave
-                    elif role=="forearm": angle=-0.9+0.18*cosine
+                    if role=="arm": angle=(-0.45+0.12*wave)*sign
+                    elif role=="forearm": angle=(-0.9+0.18*cosine)*sign
                     elif role=="head": angle=0.10
                 elif clip_name=="guard":
-                    if role=="arm": angle=-0.95
-                    elif role=="forearm": angle=-0.75
+                    if role=="arm": angle=-0.95*sign
+                    elif role=="forearm": angle=-0.75*sign
                     elif role=="spine": angle=-0.08
                 elif clip_name=="hurt":
                     if role=="spine": angle=0.22*wave
