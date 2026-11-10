@@ -159,15 +159,19 @@ final class Game {
                 : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 0.95f : 1.55f;
         float vehicleRadius = vehicleType == ProceduralVehicleModels.BUS ? 1.05f
                 : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 0.38f : 0.72f;
-        boolean blockedVehicle = (w instanceof CityRenderer)
+        boolean blockedWorld = (w instanceof CityRenderer)
                 ? ((CityRenderer) w).blockedAtHeight(nx + fx * vehicleProbe, nz + fz * vehicleProbe, vehicleRadius, 0.58f)
                 || ((CityRenderer) w).blockedAtHeight(nx - fx * vehicleProbe, nz - fz * vehicleProbe, vehicleRadius, 0.58f)
                 || ((CityRenderer) w).blockedAtHeight(nx, nz, vehicleRadius, 0.58f)
                 : w.blocked(nx + fx * vehicleProbe, nz + fz * vehicleProbe, vehicleRadius)
                 || w.blocked(nx - fx * vehicleProbe, nz - fz * vehicleProbe, vehicleRadius)
                 || w.blocked(nx, nz, vehicleRadius);
-        if (blockedVehicle) cv = -cv * 0.25f;
-        else { cx = nx; cz = nz; }
+        boolean blockedTraffic = overlapsAnyVehicle(nx, nz, cyaw, vehicleType, null);
+        if (blockedWorld || blockedTraffic) {
+            // A solid vehicle-to-vehicle contact: brake to a full stop instead of
+            // reversing through the other car or allowing the two bodies to overlap.
+            cv = 0f;
+        } else { cx = nx; cz = nz; }
         if (w instanceof CityRenderer) {
             CityRenderer city = (CityRenderer) w;
             float rx = fz, rz = -fx, halfWidth = 0.91f;
@@ -210,6 +214,48 @@ final class Game {
             }
             vehicleFrontStepContact = frontContact; vehicleRearStepContact = rearContact;
         }
+    }
+
+    private static float vehicleHalfLength(int type) {
+        if (type == ProceduralVehicleModels.BUS) return 4.05f;
+        if (type == ProceduralVehicleModels.TANK) return 2.55f;
+        if (type == ProceduralVehicleModels.MOTORBIKE || type == ProceduralVehicleModels.BICYCLE) return 1.55f;
+        if (type == ProceduralVehicleModels.PICKUP || type == ProceduralVehicleModels.SUV) return 2.55f;
+        return 2.45f;
+    }
+
+    private static float vehicleHalfWidth(int type) {
+        if (type == ProceduralVehicleModels.BUS) return 1.42f;
+        if (type == ProceduralVehicleModels.TANK) return 1.52f;
+        if (type == ProceduralVehicleModels.MOTORBIKE || type == ProceduralVehicleModels.BICYCLE) return 0.55f;
+        return 1.08f;
+    }
+
+    /** Oriented rectangle-vs-rectangle test with a small safety gap. */
+    private static boolean vehicleOverlap(float ax, float az, float ayaw, int at,
+                                          float bx, float bz, float byaw, int bt) {
+        float dx = bx - ax, dz = bz - az;
+        float sinA = (float)Math.sin(ayaw), cosA = (float)Math.cos(ayaw);
+        float forward = dx * sinA + dz * cosA;
+        float side = dx * cosA - dz * sinA;
+        float delta = ayaw - byaw;
+        float c = Math.abs((float)Math.cos(delta)), sn = Math.abs((float)Math.sin(delta));
+        float otherLong = vehicleHalfLength(bt) * c + vehicleHalfWidth(bt) * sn;
+        float otherWide = vehicleHalfWidth(bt) * c + vehicleHalfLength(bt) * sn;
+        return Math.abs(forward) < vehicleHalfLength(at) + otherLong + 0.42f
+                && Math.abs(side) < vehicleHalfWidth(at) + otherWide + 0.20f;
+    }
+
+    /** Checks nearby traffic plus the player's parked/driven vehicle. */
+    private boolean overlapsAnyVehicle(float x, float z, float yaw, int type, Agent ignore) {
+        for (Agent other : agents) {
+            if (other == ignore || !other.car || other.knockedOut) continue;
+            if (vehicleOverlap(x,z,yaw,type,other.x,other.z,other.yaw,other.vehicleType)) return true;
+        }
+        if (!driving && vehicleOverlap(x,z,yaw,type,cx,cz,cyaw,vehicleType)) return true;
+        if (driving && vehicleOverlap(x,z,yaw,type,cx,cz,cyaw,vehicleType)
+                && (Math.abs(x-cx)+Math.abs(z-cz)>0.01f)) return true;
+        return false;
     }
 
     private void updateAircraft(float dt, float jx, float jy) {
@@ -457,8 +503,11 @@ final class Game {
                         a.sp=Math.min(23f,Math.max(a.sp, a.cruiseSpeed)+dt*5f);
                         float step=Math.min(distance-3.2f,a.sp*dt);
                         float nx=a.x+(float)Math.sin(a.yaw)*step,nz=a.z+(float)Math.cos(a.yaw)*step;
-                        if(!w.blocked(nx,nz,1.05f)){a.x=nx;a.z=nz;}
-                        else {a.yaw+=0.85f*dt; a.sp=Math.max(5f,a.sp*0.72f);}
+                        if(!w.blocked(nx,nz,1.05f) && !overlapsAnyVehicle(nx,nz,a.yaw,a.vehicleType,a)){
+                            a.x=nx;a.z=nz;
+                        } else {
+                            a.sp=Math.max(0f,a.sp-dt*20f);
+                        }
                     }else a.sp=0f;
                 } else if (a.knockedOut || a.parked) {
                     a.sp = 0f;
@@ -483,12 +532,21 @@ final class Game {
                             a.trafficStopped = false; a.hornCount = 0; a.sp = a.cruiseSpeed;
                         }
                     } else {
-                        a.s += a.dir * a.sp * dt;
-                        if (a.s > a.path.total) { a.s = a.path.total; a.dir = -1; }
-                        else if (a.s < 0f) { a.s = 0f; a.dir = 1; }
-                        a.path.posAt(a.s, a.off * a.dir, tmp);
-                        a.x = tmp[0]; a.z = tmp[1];
-                        a.yaw = (float)Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
+                        float nextS = a.s + a.dir * a.sp * dt;
+                        if (nextS > a.path.total) { nextS = a.path.total; a.dir = -1; }
+                        else if (nextS < 0f) { nextS = 0f; a.dir = 1; }
+                        a.path.posAt(nextS, a.off * a.dir, tmp);
+                        float nextYaw = (float)Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
+                        // Follow the vehicle ahead. Keep a real bumper gap and brake
+                        // before the oriented footprints overlap, producing queues at
+                        // stopped traffic instead of cars passing through each other.
+                        if (!overlapsAnyVehicle(tmp[0], tmp[1], nextYaw, a.vehicleType, a)) {
+                            a.s = nextS;
+                            a.x = tmp[0]; a.z = tmp[1]; a.yaw = nextYaw;
+                            a.sp = Math.min(a.cruiseSpeed, a.sp + dt * 2.4f);
+                        } else {
+                            a.sp = Math.max(0f, a.sp - dt * 22f);
+                        }
                     }
                 }
             }
