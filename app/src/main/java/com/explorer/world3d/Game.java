@@ -60,7 +60,8 @@ final class Game {
     final int[] weaponMagazines={12,0,0,0,0,0,0};
     long lastWeaponShotMs;
     float weaponReloadSeconds, weaponReloadDuration, weaponRecoil, muzzleFlashSeconds;
-    int weaponReloadPendingAmmo, weaponReloadWeaponId=-1;\n    long explosionEventCount;
+    int weaponReloadPendingAmmo, weaponReloadWeaponId=-1;
+    long explosionEventCount;
     int comboStep;
     float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
     long lastLookMs;
