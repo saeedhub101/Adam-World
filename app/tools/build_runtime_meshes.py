@@ -94,7 +94,12 @@ def simplify_visual_mesh(mesh: trimesh.Trimesh, target_faces: int) -> trimesh.Tr
     if kind == "vertex":
         vertex_colors = np.asarray(visual.vertex_colors)
     elif kind == "face":
-        vertex_colors = color_for(mesh, (1.0, 1.0, 1.0))
+        vertex_colors = np.clip(color_for(mesh, (1.0, 1.0, 1.0)) * 255.0, 0, 255).astype(np.uint8)
+    if vertex_colors is not None:
+        if np.issubdtype(vertex_colors.dtype, np.floating):
+            if vertex_colors.size and float(np.nanmax(vertex_colors)) <= 1.0:
+                vertex_colors = vertex_colors * 255.0
+            vertex_colors = np.clip(vertex_colors, 0, 255).astype(np.uint8)
 
     simplified = mesh.simplify_quadric_decimation(face_count=target_faces, aggression=4)
     if len(simplified.vertices) < 3 or len(simplified.faces) < 1:
