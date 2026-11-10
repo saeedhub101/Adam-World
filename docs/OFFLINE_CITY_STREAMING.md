@@ -20,15 +20,16 @@ When no local city mode is active, the loader queries public Overpass endpoints 
 
 ## Memory and cleanup
 
-- Loader requests are ordered by distance from the player.
-- `LOAD_R=1` creates a 3×3 candidate neighborhood.
-- The ready queue is held below two completed tiles to apply back-pressure.
+- The renderer keeps a 3×3 GPU render-tile window (`CityRenderer.KEEP_R=1`) and evicts tiles every 250 ms as the player moves. Eviction releases VBOs, decal textures, collision grids and road paths; agents referencing an evicted tile are removed first.
+- The loader keeps only the nearby 5×5 request neighborhood (`LOAD_R=2`), discards stale ready results and applies back-pressure at two completed CPU tiles.
+- Terrain is geographically restricted to the Amman/Tabarbour coverage footprint. Driving outside that footprint immediately clears terrain VBOs and stops requesting DEM tiles; distant world travel must not continue streaming Amman elevation data.
+- DEM decoding uses a 12-tile LRU working set. File reads, downloads and image decoding run outside the terrain cache monitor so the GL render thread can sample terrain without waiting for a slow network request.
 - Manila and Amman GZIP records are read line by line; the whole city dataset is not parsed into one JSON object.
 - Manila/Amman decoded-shard caches and Tabarbour decoded-cell caches are bounded.
 - App-private cache files are pruned according to the limits in `TileLoader`.
-- GPU meshes and decal textures are released when render tiles are evicted; CPU vertex buffers are released after GPU upload.
+- CPU vertex buffers are released after GPU upload; the persistent downloaded files are retained as disk cache and are not deleted by render-tile eviction.
 
-The exact limits are code constants and may change with later commits. Do not copy historical cache sizes into new documentation without checking the current code.
+The exact limits are code constants and may change with later commits. The 3×3 GPU tile and terrain bounds are runtime limits; they do not mean the source files are deleted from local storage.
 
 ## Terrain
 
