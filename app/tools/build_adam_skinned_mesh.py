@@ -146,7 +146,7 @@ def main():
     ordered=sorted(joints,key=lambda n:sum(1 for _ in iter_ancestors(n,parents)))
     old_to_new={old:i for i,old in enumerate(ordered)}
     mesh_global=globals_[mesh_node]; inv_mesh=np.linalg.inv(mesh_global)
-    ibm=np.asarray(accessor(doc,binary,skin["inverseBindMatrices"]),dtype=np.float64).reshape(-1,4,4,order="F") if "inverseBindMatrices" in skin else np.repeat(np.eye(4)[None,:,:],bone_count,axis=0)
+    ibm=np.asarray([np.asarray(row,dtype=np.float64).reshape((4,4),order="F") for row in accessor(doc,binary,skin["inverseBindMatrices"])]) if "inverseBindMatrices" in skin else np.repeat(np.eye(4)[None,:,:],bone_count,axis=0)
     if len(ibm)!=bone_count:raise ValueError("inverse bind matrix count mismatch")
     bone_parent=[];bind_t=[];bind_r=[];bind_s=[];inverse_bind=[]
     for old in ordered:
@@ -201,7 +201,7 @@ def main():
     if not vertices:raise ValueError("no renderable skinned vertices")
     # Convert triangle indices into the non-indexed draw stream expected by GLES2.
     data=np.asarray(vertices,dtype=np.float32)[np.asarray(triangles,dtype=np.int64)]
-    if len(data)<3 or len(data)>MAX_VERTICES*3:raise ValueError("expanded triangle count outside runtime budget")
+    if len(data)<3 or len(data)>MAX_VERTICES:raise ValueError("expanded triangle count exceeds the 250k runtime vertex budget")
     # Center horizontally and place the lowest point on the ground plane.
     lo=data[:,:3].min(axis=0);hi=data[:,:3].max(axis=0)
     center=np.array([(lo[0]+hi[0])*.5,lo[1],(lo[2]+hi[2])*.5])
@@ -214,8 +214,8 @@ def main():
             m=compose(bind_t[b*3:b*3+3],bind_r[b*4:b*4+4],bind_s[b*3:b*3+3])
             t,q,s=decompose(shift@m)
             bind_t[b*3:b*3+3]=t;bind_r[b*4:b*4+4]=q;bind_s[b*3:b*3+3]=s
-            ib=np.asarray(inverse_bind[b*16:b*16+16]).reshape((4,4),order="F")
-            inverse_bind[b*16:b*16+16]=(ib@inv_shift).reshape(16,order="F")
+        ib=np.asarray(inverse_bind[b*16:b*16+16]).reshape((4,4),order="F")
+        inverse_bind[b*16:b*16+16]=(ib@inv_shift).reshape(16,order="F")
     clips=[]
     for ai,anim in enumerate(doc.get("animations",[])[:32]):
         node_channels={}
@@ -226,8 +226,11 @@ def main():
             sampler=anim["samplers"][ch["sampler"]]
             times=np.asarray(accessor(doc,binary,sampler["input"]),dtype=np.float64).reshape(-1)
             vals=np.asarray(accessor(doc,binary,sampler["output"]),dtype=np.float64)
-            if sampler.get("interpolation","LINEAR")=="CUBICSPLINE":vals=vals.reshape(len(times),3,-1)[:,1,:]
-            node_channels.setdefault(node,{})[path]=(times,vals,sampler.get("interpolation","LINEAR"))
+            interp=sampler.get("interpolation","LINEAR")
+            if interp=="CUBICSPLINE":
+                vals=vals.reshape(len(times),3,-1)[:,1,:]
+                interp="LINEAR"
+            node_channels.setdefault(node,{})[path]=(times,vals,interp)
             if len(times):max_time=max(max_time,float(times[-1]))
         if max_time<=1e-5:continue
         tracks=[]
