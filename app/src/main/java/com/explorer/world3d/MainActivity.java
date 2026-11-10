@@ -412,7 +412,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
 
     private final class MiniMapView extends View {
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        MiniMapView(Context c) { super(c); setLayerType(View.LAYER_TYPE_SOFTWARE,null); }
+        MiniMapView(Context c) { super(c); }
         @Override protected void onDraw(Canvas c) {
             super.onDraw(c);
             float w=getWidth(), h=getHeight(), cx=w/2f, cy=h/2f, rad=Math.min(w,h)*.47f;
@@ -422,7 +422,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             float playerX=renderer.game.driving?renderer.game.cx:renderer.game.px;
             float playerZ=renderer.game.driving?renderer.game.cz:renderer.game.pz;
             float mapScale=rad/260f;
-            float[] roads=renderer.fullMapRoads();
+            float[] roads=renderer.miniMapRoads();
             for(int i=0;i+3<roads.length;i+=4){
                 float x1=cx+(roads[i]-playerX)*mapScale, y1=cy+(roads[i+1]-playerZ)*mapScale;
                 float x2=cx+(roads[i+2]-playerX)*mapScale, y2=cy+(roads[i+3]-playerZ)*mapScale;
