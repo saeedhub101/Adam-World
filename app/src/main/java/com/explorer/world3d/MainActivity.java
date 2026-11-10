@@ -326,7 +326,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
         if (code == KeyEvent.KEYCODE_BUTTON_X) {
             if (!game.driving && pressed) {
-                if (game.weaponAimHeld && game.equippedWeapon > 0) runOnGl(() -> game.reloadRequested = true);
+                if (game.weaponAimHeld) runOnGl(() -> game.reloadRequested = true);
                 else runOnGl(() -> game.jumpRequested = true);
             }
             return true;
