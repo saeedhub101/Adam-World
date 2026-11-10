@@ -311,8 +311,9 @@ def main():
     bone_count=len(ordered)
     print(f"ADAM_RIG_COMPRESSED source_bones={source_bone_count} runtime_bones={bone_count} mapped={sum(1 for n in joints if node_to_selected[n]!=n)}",flush=True)
     for bi,node_id in enumerate(ordered):
-        role,side=classify_bone(doc["nodes"][node_id].get("name",f"bone_{bi}"))
-        print(f"ADAM_BONE index={bi} node={node_id} name={doc[\"nodes\"][node_id].get(\"name\",\"unnamed\")} role={role} side={side:+.0f}",flush=True)
+        bone_label=doc["nodes"][node_id].get("name",f"bone_{bi}")
+        role,side=classify_bone(bone_label)
+        print(f"ADAM_BONE index={bi} node={node_id} name={bone_label} role={role} side={side:+.0f}",flush=True)
     mesh_global=globals_[mesh_node]; inv_mesh=np.linalg.inv(mesh_global)
     ibm_source=np.asarray([np.asarray(row,dtype=np.float64).reshape((4,4),order="F") for row in accessor(doc,binary,skin["inverseBindMatrices"])]) if "inverseBindMatrices" in skin else np.repeat(np.eye(4)[None,:,:],source_bone_count,axis=0)
     if len(ibm_source)!=source_bone_count:raise ValueError("source inverse bind matrix count mismatch")
