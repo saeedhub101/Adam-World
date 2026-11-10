@@ -691,7 +691,7 @@ final class Game {
         float focusY = driving ? vehicleY : py;
         boolean aircraft = driving && (vehicleType == ProceduralVehicleModels.HELICOPTER || vehicleType == ProceduralVehicleModels.AIRPLANE);
         float modeScale = cameraMode == 0 ? 0.72f : cameraMode == 2 ? 1.55f : 1f;
-        float dist = camDistance * modeScale * (driving ? (aircraft ? 2.15f : 1.6f) : 1f), th = driving ? (aircraft ? 3.0f : 1.6f) : 1.55f;
+        float dist = camDistance * modeScale * (weaponAimHeld && !driving ? 0.82f : 1f) * (driving ? (aircraft ? 2.15f : 1.6f) : 1f), th = driving ? (aircraft ? 3.0f : 1.6f) : (weaponAimHeld ? 1.42f : 1.55f);
         if (aircraft && altitude > 80f) dist = Math.max(dist, camDistance * modeScale * 2.8f);
         float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);
         float cinematicYaw = cinematicCamera ? (float)Math.sin(System.currentTimeMillis() * 0.00022f) * 0.48f : 0f;
