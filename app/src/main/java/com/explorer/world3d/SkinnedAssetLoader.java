@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
-/** Bounded AWM5 reader for skinned triangle meshes, skeletons and sampled TRS clips. */
+/** Bounded AWM5/AWM6 reader for skinned triangle meshes, skeletons and sampled TRS clips. */
 final class SkinnedAssetLoader {
     private static final int MAGIC_AWM5=0x354d5741, MAGIC_AWM6=0x364d5741;
     private static final int AWM6_VERTEX_BYTES=30;
@@ -77,7 +77,7 @@ final class SkinnedAssetLoader {
             }
             if(d.hasRemaining())return null;
             for(int v=0;v<vertices;v++){
-                int o=v*stride+11;
+                int o=v*SkinnedMesh.STRIDE_FLOATS+11;
                 float sum=0f;
                 for(int j=0;j<4;j++){
                     float joint=data[o+j],weight=data[o+4+j];
