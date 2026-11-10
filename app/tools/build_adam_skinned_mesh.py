@@ -263,7 +263,7 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
         current=globals_[forearm_id][:3,3]-globals_[upper_id][:3,3]
         current_root=quat_rotate(quat_conjugate(root_global_q),current)
         # Arms hang beside the torso, with a small outward clearance.
-        target_root=np.array([0.20*side,-0.98,0.015],dtype=np.float64)
+        target_root=np.array([0.28*side,-0.96,0.015],dtype=np.float64)
         target_root/=np.linalg.norm(target_root)
         target_world=quat_rotate(root_global_q,target_root)
         world_fix=quat_from_to(current,target_world)
