@@ -569,6 +569,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
     private static void clearContextualControlState(Game g) {
         // Prevent held on-foot or vehicle inputs from leaking across a successful enter/exit transition.
         g.sprint = false; g.stealthMode = false;
+        g.sx = g.sy = 0f; g.cameraLookOffset = 0f; g.cameraZoomInput = 0f;
         g.weaponAimHeld = false; g.weaponFireHeld = false;
         g.handbrake = false; g.brakeRequested = false;
         g.liftInput = 0f; g.rudderInput = 0f; g.throttleInput = 0f;
