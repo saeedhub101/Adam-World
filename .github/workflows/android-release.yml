@@ -127,6 +127,8 @@ jobs:
           saeed-glb|3D/Saeed_NoAnimation.glb
           saeed-vrm|3D/Saeed_NoAnimation.vrm
           USER_PED_MODELS
+          test -s app/src/main/assets/models/runtime/characters/pedestrian-saeed-vrm.awmesh5 || { echo '::error::Required VRM player conversion is missing'; exit 1; }
+          echo 'Required VRM player asset validated.'
 
       - name: Prepare signing and calculate release version
         env:

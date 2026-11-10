@@ -918,9 +918,9 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             agent.vehicleType=types[rng.nextInt(types.length)];
             agent.parked=rng.nextFloat()<0.34f; agent.driverPresent=!agent.parked;
             float side=agent.dir;
-            agent.off=agent.parked?(path.w*0.5f+1.25f)*side:Math.min(1.65f,path.w*0.23f)*side;
+            agent.off=agent.parked?path.w*0.5f+1.25f:Math.min(1.65f,path.w*0.23f);
             agent.cruiseSpeed=6.5f+rng.nextFloat()*7.5f; agent.sp=agent.parked?0f:agent.cruiseSpeed;
-            path.posAt(agent.s,agent.off,point); agent.x=point[0]; agent.z=point[1];
+            path.posAt(agent.s,agent.off*agent.dir,point); agent.x=point[0]; agent.z=point[1];
             agent.yaw=(float)Math.atan2(point[2]*agent.dir,point[3]*agent.dir);
             float[][] colors={{.93f,.94f,.95f},{.17f,.24f,.31f},{.50f,.55f,.55f},{.95f,.77f,.06f},{.16f,.50f,.74f},{.83f,.33f,.08f},{.15f,.68f,.38f},{.08f,.08f,.09f}};
             float[] color=colors[rng.nextInt(colors.length)]; agent.cr=color[0]; agent.cg=color[1]; agent.cb=color[2];
