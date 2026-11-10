@@ -45,9 +45,11 @@ final class WeaponWheelView extends View {
     /** Select the radial sector from a normalized right-stick direction. */
     void selectDirection(float x, float y) {
         if (game == null || Math.hypot(x, y) < 0.32) return;
-        float cx = getWidth() * .5f, cy = getHeight() * .5f;
-        float radius = Math.min(getWidth(), getHeight()) * .42f;
-        selected = selectionAt(cx + x * radius, cy + y * radius);
+        double a = Math.atan2(x, -y);
+        if (a < 0) a += Math.PI * 2.0;
+        int slot = ((int)Math.floor((a + Math.PI / WeaponSystem.NAME.length)
+                / (2.0 * Math.PI / WeaponSystem.NAME.length))) % WeaponSystem.NAME.length;
+        selected = nearestOwned(slot);
         invalidate();
     }
 
@@ -56,12 +58,16 @@ final class WeaponWheelView extends View {
         double a = Math.atan2(x - cx, cy - y);
         if (a < 0) a += Math.PI * 2.0;
         int slot = ((int)Math.floor((a + Math.PI / WeaponSystem.NAME.length) / (2.0 * Math.PI / WeaponSystem.NAME.length))) % WeaponSystem.NAME.length;
+        return nearestOwned(slot);
+    }
+
+    private int nearestOwned(int slot) {
         if (game == null || game.ownedWeapons[slot]) return slot;
         for (int n = 1; n < WeaponSystem.NAME.length; n++) {
             int next = (slot + n) % WeaponSystem.NAME.length;
             if (game.ownedWeapons[next]) return next;
         }
-        return game.equippedWeapon;
+        return game == null ? 0 : game.equippedWeapon;
     }
 
     @Override protected void onDraw(Canvas canvas) {
