@@ -20,10 +20,11 @@ final class ProjectileSystem {
 
     static void launch(Game g,int weaponId){
         if(g.rockets.size()>=MAX_ROCKETS) return;
-        float yaw=g.pyaw,fx=(float)Math.sin(yaw),fz=(float)Math.cos(yaw);
+        float yaw=g.pyaw+g.aimYawOffset,pitch=g.aimPitchOffset;
+        float horizontal=(float)Math.cos(pitch),fx=(float)Math.sin(yaw)*horizontal,fz=(float)Math.cos(yaw)*horizontal;
         Rocket r=new Rocket();r.guided=weaponId==6;
         r.x=g.px+fx*.78f;r.y=g.py+g.jumpHeight+1.25f;r.z=g.pz+fz*.78f;
-        r.yaw=yaw;r.vx=fx*9f;r.vz=fz*9f;
+        r.yaw=yaw;r.pitch=pitch;r.vx=fx*9f;r.vy=(float)Math.sin(pitch)*9f;r.vz=fz*9f;
         if(r.guided){
             float best=95f;
             for(Game.Agent a:g.agents){
