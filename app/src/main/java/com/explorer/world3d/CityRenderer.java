@@ -1225,14 +1225,51 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         else L.onToast("المركبة المحددة: " + ProceduralVehicleModels.name(playerVehicleType) + " — اضغط استدعاء / دخول");
     }
 
-    /** Imported, skinned player path. The procedural rig remains a safe fallback until an AWM5 pack is installed. */
-    private void drawImportedKid(float x,float y,float z,float yaw) {
+    /** Imported, skinned player path. Animation state follows the same combat inputs as the fallback rig. */
+    private void drawImportedKid(float x,float y,float z,float yaw,float movement,float attack,int attackType,
+                                 int pose,float poseTime,float guard,float hurt,int weaponId,boolean aiming,
+                                 float recoil,float muzzleFlash,float reloadSeconds,float reloadDuration) {
         SkeletalAnimationRuntime.Animator animator=playerCharacterAsset.animator;
-        float movement=Math.max(Math.abs(game.sx),Math.abs(game.sy));
-        String wanted=game.jumpHeight>0.12f?"jump":game.sprint&&movement>.08f?"run":movement>.08f?"walk":"idle";
-        int clip=animator.findClip(wanted);
+        int clip=-1;
+        boolean repeat=true;
+        // Combat and recovery take priority over locomotion; clip names are optional
+        // so packs with a smaller animation set still degrade to a valid idle/walk cycle.
+        if(pose==2 || pose==3) {
+            clip=animator.findClip(pose==3?"down":"fall");
+            if(clip<0) clip=animator.findClip("knockdown");
+            if(clip<0) clip=animator.findClip("hit");
+            repeat=pose==3;
+        } else if(pose==4) {
+            clip=animator.findClip("getup");
+            if(clip<0) clip=animator.findClip("stand_up");
+            if(clip<0) clip=animator.findClip("recover");
+            repeat=false;
+        } else if(hurt>0.02f) {
+            clip=animator.findClip("hurt");
+            if(clip<0) clip=animator.findClip("hit");
+            repeat=false;
+        } else if(attack>0.01f) {
+            clip=animator.findClip(attackType==3?"kick":attackType==2?"heavy_punch":"punch");
+            if(clip<0) clip=animator.findClip("attack");
+            repeat=false;
+        } else if(reloadSeconds>0.01f && weaponId>=0) {
+            clip=animator.findClip("reload");
+            repeat=false;
+        } else if(guard>0.05f) {
+            clip=animator.findClip("guard");
+            if(clip<0) clip=animator.findClip("block");
+        } else if(aiming || muzzleFlash>0.01f) {
+            clip=animator.findClip(muzzleFlash>0.01f?"shoot":"aim");
+            if(clip<0) clip=animator.findClip("aim");
+        } else if(game.jumpHeight>0.12f) {
+            clip=animator.findClip("jump");
+            repeat=false;
+        } else if(movement>0.08f) {
+            clip=animator.findClip(game.sprint?"run":"walk");
+        }
         if(clip<0) clip=animator.findClip("idle");
-        if(clip>=0 && animator.current!=clip) animator.play(clip,.18f,true);
+        if(clip<0 && animator.clips.length>0) clip=0;
+        if(clip>=0 && animator.current!=clip) animator.play(clip,.16f,repeat);
         long now=System.nanoTime();
         float dt=lastCharacterAnimationNanos==0L?0f:(now-lastCharacterAnimationNanos)*1.0e-9f;
         lastCharacterAnimationNanos=now;
@@ -1254,7 +1291,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
 
     /** اللاعب: نسخة طفولية من الشخصية الإجرائية نفسها مع مفاصل ووجه وملابس مولّدة. */
     private void drawKid(float x,float y,float z,float yaw,float ph,float amp,float attack,int attackType,int pose,float poseTime,float guard,float hurt,int weaponId,boolean aiming,float recoil,float muzzleFlash,float reloadSeconds,float reloadDuration) {
-        if(playerCharacterAsset!=null){drawImportedKid(x,y,z,yaw);return;}
+        if(playerCharacterAsset!=null){drawImportedKid(x,y,z,yaw,Math.max(Math.abs(game.sx),Math.abs(game.sy)),attack,attackType,pose,poseTime,guard,hurt,weaponId,aiming,recoil,muzzleFlash,reloadSeconds,reloadDuration);return;}
         if(humanRigModels==null||humanRigModels.length==0)return;
         Mesh[] rig=humanRigModels[0];
         float swing=(float)Math.sin(ph)*amp*.58f;
