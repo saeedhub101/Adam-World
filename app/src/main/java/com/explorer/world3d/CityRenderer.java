@@ -190,7 +190,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             return;
         }
         float px = game.focusX(), pz = game.focusZ();
-        float[] mini = new float[3200];
+        float[] mini = new float[1600];
         float[] full = new float[24000];
         int miniUsed = 0, fullUsed = 0;
         for (Tile tile : tiles.values()) {
@@ -620,8 +620,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
     /** يبني مربعات الأرض من الارتفاعات الحقيقية حول اللاعب ويحذف البعيد منها. */
     private void updateTerrain(int ptx, int ptz) {
         if (flightSchoolMode || loader.offlineManila || !Terrain.enabled || !Terrain.baseSet) return;
-        // Terrain sampling builds a complete mesh on the GL thread. Pace it so
-        // walking/driving never triggers one expensive height-grid build every frame.
+        // Terrain height-grid generation is dispatched to a single worker; the GL thread only uploads one completed VBO.
         long terrainNow = System.currentTimeMillis();
         if (terrainNow - lastTerrainBuildMs < 350L || terrainBuilding.size() >= 1) return;
         Iterator<Map.Entry<Long, Mesh>> it = terrain.entrySet().iterator();
@@ -1032,7 +1031,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         boolean coast = false;
         if (!flightSchoolMode) for (Tile t : tiles.values()) {
             if (t.hasCoast) coast = true;
-            if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > 1750) continue;
+            if (Math.hypot(t.cx - g.camX, t.cz - g.camZ) > visibleTileRadius()) continue;
             if (t.meshes[TileBuilder.B_WATER] != null) t.meshes[TileBuilder.B_WATER].draw();
         }
         if (coast) {
