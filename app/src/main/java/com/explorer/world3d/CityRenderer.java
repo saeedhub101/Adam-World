@@ -393,7 +393,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         vehicleModels = ProceduralVehicleModels.buildAll();
         // Prefer build-time converted real meshes; procedural meshes remain a safe fallback.
         importedVehicleModels = new AssetMeshLoader.Model[ProceduralVehicleModels.COUNT];
-        playerCharacterAsset = SkinnedAssetLoader.load(ctx, "models/runtime/characters/adam.awmesh5");
+        // The user VRM is the playable character; preserve its authored upright forward pose.
+        playerCharacterAsset = SkinnedAssetLoader.load(ctx, "models/runtime/characters/pedestrian-saeed-vrm.awmesh5");
         String[] pedestrianFiles = {
                 "models/runtime/characters/pedestrian-office.awmesh5",
                 "models/runtime/characters/pedestrian-elder.awmesh5",
@@ -869,45 +870,72 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
     }
 
     private void spawnAgents() {
-        if (game.agents.size() >= 8 || tiles.isEmpty()) return;
+        final int maxAgents = 24, targetCars = 14, targetPedestrians = 10;
+        if (game.agents.size() >= maxAgents || tiles.isEmpty()) return;
+        int cars = 0, pedestrians = 0;
+        for (Game.Agent old : game.agents) { if (old.car) cars++; else pedestrians++; }
+        boolean wantCar = cars < targetCars && (pedestrians >= targetPedestrians || rng.nextFloat() < 0.68f);
         ArrayList<Tile> list = new ArrayList<>(tiles.values());
-        Tile t = list.get(rng.nextInt(list.size()));
-        if (t.paths.isEmpty()) return;
-        RoadPath p = t.paths.get(rng.nextInt(t.paths.size()));
+        RoadPath path = null; Tile tile = null; float s = 0f;
+        float[] point = new float[4];
         float fx = game.focusX(), fz = game.focusZ();
-        float[] o = new float[4];
-        float s = rng.nextFloat() * p.total;
-        p.posAt(s, 0, o);
-        float d = (float) Math.hypot(o[0] - fx, o[1] - fz);
-        if (d < 38f || d > 240f) return;
-        Game.Agent a = new Game.Agent();
-        a.path = p; a.tile = t; a.s = s; a.dir = rng.nextBoolean() ? 1 : -1;
-        a.car = p.veh && rng.nextFloat() < 0.72f;
-        if (a.car) {
-            int[] roadTypes = {ProceduralVehicleModels.SEDAN, ProceduralVehicleModels.SUV, ProceduralVehicleModels.PICKUP, ProceduralVehicleModels.BUS, ProceduralVehicleModels.POLICE, ProceduralVehicleModels.MOTORBIKE, ProceduralVehicleModels.BICYCLE};
-            a.vehicleType = roadTypes[rng.nextInt(roadTypes.length)];
-            a.off = p.w / 4f;
-            a.parked = rng.nextFloat() < 0.16f;
-            a.driverPresent = !a.parked;
-            a.cruiseSpeed = 7f + rng.nextFloat() * 7f;
-            a.sp = a.parked ? 0f : a.cruiseSpeed;
-            p.posAt(a.s, a.off * a.dir, o);
-            a.x = o[0]; a.z = o[1];
-            a.yaw = (float)Math.atan2(o[2] * a.dir, o[3] * a.dir);
-            float[][] cols = {{.93f, .94f, .95f}, {.17f, .24f, .31f}, {.5f, .55f, .55f}, {.95f, .77f, .06f}, {.16f, .5f, .74f}, {.83f, .33f, 0f}, {.15f, .68f, .38f}, {.07f, .07f, .07f}};
-            float[] c = cols[rng.nextInt(cols.length)];
-            a.cr = c[0]; a.cg = c[1]; a.cb = c[2];
-        } else {
-            a.humanType = rng.nextInt(5);
-            a.off = p.veh ? (p.w / 2f + 1.6f) * (rng.nextBoolean() ? 1 : -1) : (rng.nextFloat() - 0.5f) * 0.8f;
-            a.sp = 1.1f + rng.nextFloat() * 0.7f; a.ph = rng.nextFloat() * 6f;
-            float[][] cols = {{.2f, .6f, .86f}, {.9f, .5f, .15f}, {.1f, .74f, .6f}, {.6f, .35f, .72f}, {.93f, .94f, .95f}, {.95f, .6f, .07f}};
-            float[] c = cols[rng.nextInt(cols.length)];
-            a.cr = c[0]; a.cg = c[1]; a.cb = c[2];
+        for (int attempt = 0; attempt < 120 && path == null; attempt++) {
+            Tile candidateTile = list.get(rng.nextInt(list.size()));
+            if (candidateTile.paths == null || candidateTile.paths.isEmpty()) continue;
+            RoadPath candidate = candidateTile.paths.get(rng.nextInt(candidateTile.paths.size()));
+            if (candidate == null || candidate.xs == null || candidate.total < 20f) continue;
+            if (wantCar && (!candidate.veh || candidate.w < 5f)) continue;
+            float candidateS = 7f + rng.nextFloat() * Math.max(1f, candidate.total - 14f);
+            candidate.posAt(candidateS, 0f, point);
+            float distance = (float)Math.hypot(point[0] - fx, point[1] - fz);
+            if (distance < 24f || distance > 165f) continue;
+            boolean occupied = false; float gapMin = wantCar ? 9f : 3.2f;
+            for (Game.Agent old : game.agents) { if (Math.hypot(old.x-point[0],old.z-point[1]) < gapMin) { occupied=true; break; } }
+            if (occupied) continue;
+            path = candidate; tile = candidateTile; s = candidateS;
         }
-        game.agents.add(a);
+        if (path == null && wantCar) {
+            wantCar = false;
+            for (int attempt = 0; attempt < 100 && path == null; attempt++) {
+                Tile candidateTile = list.get(rng.nextInt(list.size()));
+                if (candidateTile.paths == null || candidateTile.paths.isEmpty()) continue;
+                RoadPath candidate = candidateTile.paths.get(rng.nextInt(candidateTile.paths.size()));
+                if (candidate == null || candidate.xs == null || candidate.total < 18f) continue;
+                float candidateS = 6f + rng.nextFloat() * Math.max(1f,candidate.total-12f);
+                candidate.posAt(candidateS,0f,point);
+                float distance = (float)Math.hypot(point[0]-fx,point[1]-fz);
+                if (distance < 22f || distance > 150f) continue;
+                boolean occupied = false;
+                for (Game.Agent old : game.agents) { if (Math.hypot(old.x-point[0],old.z-point[1]) < 3.2f) { occupied=true; break; } }
+                if (!occupied) { path=candidate; tile=candidateTile; s=candidateS; }
+            }
+        }
+        if (path == null || tile == null) return;
+        Game.Agent agent = new Game.Agent();
+        agent.path=path; agent.tile=tile; agent.s=s; agent.dir=rng.nextBoolean()?1:-1; agent.car=wantCar;
+        if (agent.car) {
+            int[] types={ProceduralVehicleModels.SEDAN,ProceduralVehicleModels.SUV,ProceduralVehicleModels.PICKUP,ProceduralVehicleModels.BUS,ProceduralVehicleModels.POLICE,ProceduralVehicleModels.MOTORBIKE};
+            agent.vehicleType=types[rng.nextInt(types.length)];
+            agent.parked=rng.nextFloat()<0.34f; agent.driverPresent=!agent.parked;
+            float side=agent.dir;
+            agent.off=agent.parked?(path.w*0.5f+1.25f)*side:Math.min(1.65f,path.w*0.23f)*side;
+            agent.cruiseSpeed=6.5f+rng.nextFloat()*7.5f; agent.sp=agent.parked?0f:agent.cruiseSpeed;
+            path.posAt(agent.s,agent.off,point); agent.x=point[0]; agent.z=point[1];
+            agent.yaw=(float)Math.atan2(point[2]*agent.dir,point[3]*agent.dir);
+            float[][] colors={{.93f,.94f,.95f},{.17f,.24f,.31f},{.50f,.55f,.55f},{.95f,.77f,.06f},{.16f,.50f,.74f},{.83f,.33f,.08f},{.15f,.68f,.38f},{.08f,.08f,.09f}};
+            float[] color=colors[rng.nextInt(colors.length)]; agent.cr=color[0]; agent.cg=color[1]; agent.cb=color[2];
+        } else {
+            agent.humanType=rng.nextInt(5);
+            float side=rng.nextBoolean()?1f:-1f;
+            agent.off=path.veh?(path.w*0.5f+1.55f)*side:(rng.nextFloat()-0.5f)*1.2f;
+            agent.sp=1.0f+rng.nextFloat()*0.85f; agent.ph=rng.nextFloat()*6f;
+            path.posAt(agent.s,agent.off,point); agent.x=point[0]; agent.z=point[1];
+            agent.yaw=(float)Math.atan2(point[2],point[3]);
+            float[][] colors={{.20f,.45f,.72f},{.72f,.28f,.19f},{.12f,.52f,.42f},{.43f,.30f,.62f},{.86f,.84f,.77f},{.72f,.55f,.25f}};
+            float[] color=colors[rng.nextInt(colors.length)]; agent.cr=color[0]; agent.cg=color[1]; agent.cb=color[2];
+        }
+        game.agents.add(agent);
     }
-
     @Override public void onDrawFrame(GL10 gl) {
         long nowN = System.nanoTime();
         float dt = Math.min(0.1f, (nowN - lastN) / 1e9f);
@@ -1002,7 +1030,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 worldAudio.playEffect(game.equippedWeapon);
             }
             if(game.explosionEventCount!=lastAudioExplosionEvent){lastAudioExplosionEvent=game.explosionEventCount;worldAudio.playEffect(6);}
-            if (!flightSchoolMode && nowMs - lastAgentMs > 700) { lastAgentMs = nowMs; spawnAgents(); }
+            if (!flightSchoolMode && nowMs - lastAgentMs > 450) { lastAgentMs = nowMs; spawnAgents(); }
             if (nowMs - lastHudMs > 200) {
                 lastHudMs = nowMs;
                 if (flightSchoolMode && game.driving && (game.vehicleType == ProceduralVehicleModels.HELICOPTER || game.vehicleType == ProceduralVehicleModels.AIRPLANE)) {
@@ -1150,7 +1178,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         bindTex(tex.white, tex.black);
         GLES20.glUniform1f(uEmisK, 0f);
         int detailedPedestrians = 0;
-        int pedestrianBudget = graphicsQuality == 0 ? 6 : graphicsQuality == 1 ? 4 : 2;
+        int pedestrianBudget = graphicsQuality == 0 ? 8 : graphicsQuality == 1 ? 6 : 4;
         for (Game.Agent a : g.agents) {
             float agentDistance = (float)Math.hypot(a.x - g.camX, a.z - g.camZ);
             if (agentDistance > (a.car ? 190f : 95f)) continue;
@@ -1162,7 +1190,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, cr, cg, cb,
                         a.sp * a.dir, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
             } else if (pedestrianCharacterAssets.length > 0 && detailedPedestrians < pedestrianBudget
-                    && agentDistance < 42f
+                    && agentDistance < 68f
                     && pedestrianCharacterAssets[Math.floorMod(a.humanType, pedestrianCharacterAssets.length)] != null
                     && pedestrianWalkClips[Math.floorMod(a.humanType, pedestrianWalkClips.length)] >= 0) {
                 drawSkinnedPerson(a, Terrain.h(a.x,a.z), frameDeltaSeconds,
@@ -1485,7 +1513,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         Matrix.setIdentityM(base,0);
         Matrix.translateM(base,0,x,y,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
-        Matrix.scaleM(base,0,3.04f,3.04f,3.04f);
+        Matrix.scaleM(base,0,1.0f,1.0f,1.0f);
         GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
         GLES20.glUniformMatrix4fv(uBones,animator.boneCount(),false,animator.skinMatrices(),0);
         GLES20.glUniform1f(uSkinning,1f);

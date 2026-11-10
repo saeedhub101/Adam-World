@@ -92,10 +92,9 @@ public class CityGLView extends GLSurfaceView {
         applyControllerState();
     }
 
-    /** Y/A/X/B are the digital twin of the right analogue stick. */
+    /** A/B/X provide digital camera directions; Y is reserved for vehicle interaction. */
     void setDigitalLookDirection(int keyCode, boolean pressed) {
-        if (keyCode == KeyEvent.KEYCODE_BUTTON_Y) digitalLookUp = pressed;
-        else if (keyCode == KeyEvent.KEYCODE_BUTTON_A) digitalLookDown = pressed;
+        if (keyCode == KeyEvent.KEYCODE_BUTTON_A) digitalLookDown = pressed;
         else if (keyCode == KeyEvent.KEYCODE_BUTTON_X) digitalLookLeft = pressed;
         else if (keyCode == KeyEvent.KEYCODE_BUTTON_B) digitalLookRight = pressed;
         applyControllerState();

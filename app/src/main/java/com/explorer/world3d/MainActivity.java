@@ -247,7 +247,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("على التلفاز: العصا اليسرى والأسهم الأربعة (D-pad) تؤدي الوظيفة نفسها للحركة وتوجيه المركبة. العصا اليمنى وأزرار Y/X/A/B تؤدي الوظيفة نفسها لتحريك الكاميرا يميناً ويساراً وأعلى وأسفل. LT للتصويب/الفرملة، RT لإطلاق النار/التسارع، LB لعجلة الأسلحة (اضغط مطولاً)، RB للغطاء أو فرامل اليد، L3 للركض، R3 للنظر خلفك، View لتغيير أوضاع الكاميرا، وMenu للإيقاف. استخدم أزرار اللمس على الشاشة للقفز والاشتباك وإعادة التلقيم والدخول والخروج من المركبة.")
+                .setMessage("على التلفاز: العصا اليسرى والأسهم الأربعة (D-pad) للحركة وتوجيه المركبة. العصا اليمنى لتحريك الكاميرا في الاتجاهات الأربعة. زر Y للدخول إلى المركبة والخروج منها. A/B/X للاتجاهات الرقمية المتاحة للكاميرا. LT للتصويب/الفرملة، RT لإطلاق النار/التسارع، LB لعجلة الأسلحة (اضغط مطولاً)، RB للغطاء أو فرامل اليد، L3 للركض، R3 للنظر خلفك، View لتغيير أوضاع الكاميرا، وMenu للإيقاف. استخدم أزرار اللمس للقفز والاشتباك وإعادة التلقيم.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
@@ -327,10 +327,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
 
-        // The four face buttons are the digital equivalent of the RIGHT analogue stick.
-        // Y=up, A=down, X=left, B=right. Do not assign unrelated gameplay actions here.
+        // Y is reserved for contextual enter/exit vehicle interaction.
+        if (code == KeyEvent.KEYCODE_BUTTON_Y) {
+            if (pressed) runOnGl(() -> renderer.toggleCar());
+            return true;
+        }
+        // A/B/X are digital camera directions; the right stick retains all four directions.
         if (code == KeyEvent.KEYCODE_BUTTON_A || code == KeyEvent.KEYCODE_BUTTON_B
-                || code == KeyEvent.KEYCODE_BUTTON_X || code == KeyEvent.KEYCODE_BUTTON_Y) {
+                || code == KeyEvent.KEYCODE_BUTTON_X) {
             if (glView != null) glView.setDigitalLookDirection(code, down);
             return true;
         }
