@@ -16,7 +16,7 @@ final class PlayerMotionSystem {
     private static final float GROUND_BRAKE = 28f;
     private static final float AIR_DRAG = 0.65f;
     private static final float GRAVITY = 15.5f;
-    private static final float JUMP_SPEED = 5.45f;
+    private static final float JUMP_SPEED = 7.4f; // Enough vertical clearance to vault onto a standard car roof.
     private static final float COYOTE_SECONDS = 0.12f;
     private static final float JUMP_BUFFER_SECONDS = 0.15f;
     private static final float BODY_RADIUS = 0.38f;
