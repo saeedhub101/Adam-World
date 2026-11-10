@@ -290,15 +290,18 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             rx = gamepadAxis(event.getAxisValue(MotionEvent.AXIS_RX));
             ry = gamepadAxis(event.getAxisValue(MotionEvent.AXIS_RY));
         }
-        // Left stick drives the player; right stick always controls the camera.
-        if (!renderer.game.driving) {
-            renderer.game.sx = lx;
-            renderer.game.sy = ly;
+        // Left stick drives the player. The right stick controls the weapon wheel,
+        // camera look, or analog zoom depending on the held modifier.
+        renderer.game.sx = lx;
+        renderer.game.sy = ly;
+        if (weaponWheelOpen) {
+            weaponWheelView.selectDirection(rx, ry);
+        } else if (padCameraModifier) {
+            renderer.game.cameraZoomInput = -ry;
+            renderer.setGamepadLook(rx, 0f);
         } else {
-            renderer.game.sx = lx;
-            renderer.game.sy = ly;
+            renderer.setGamepadLook(rx, ry);
         }
-        renderer.setGamepadLook(rx, ry);
         return true;
     }
 

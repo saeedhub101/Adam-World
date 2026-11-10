@@ -42,6 +42,15 @@ final class WeaponWheelView extends View {
         invalidate();
     }
 
+    /** Select the radial sector from a normalized right-stick direction. */
+    void selectDirection(float x, float y) {
+        if (game == null || Math.hypot(x, y) < 0.32) return;
+        float cx = getWidth() * .5f, cy = getHeight() * .5f;
+        float radius = Math.min(getWidth(), getHeight()) * .42f;
+        selected = selectionAt(cx + x * radius, cy + y * radius);
+        invalidate();
+    }
+
     private int selectionAt(float x, float y) {
         float cx = getWidth() * .5f, cy = getHeight() * .5f;
         double a = Math.atan2(x - cx, cy - y);
