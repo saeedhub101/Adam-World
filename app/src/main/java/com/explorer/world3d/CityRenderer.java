@@ -294,7 +294,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
 
     public void setGraphicsQuality(int quality) { graphicsQuality = Math.max(0, Math.min(2, quality)); }
 
-    private float visibleTileRadius() { return graphicsQuality == 0 ? 1450f : graphicsQuality == 1 ? 1050f : 760f; }
+    private float visibleTileRadius() { return graphicsQuality == 0 ? 1200f : graphicsQuality == 1 ? 850f : 620f; }
 
     public void setLookSensitivity(float sensitivity) {
         if (Float.isFinite(sensitivity)) lookSensitivity = Math.max(0.35f, Math.min(2.0f, sensitivity));
@@ -1074,6 +1074,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         bindTex(tex.white, tex.black);
         GLES20.glUniform1f(uEmisK, 0f);
         int detailedPedestrians = 0;
+        int pedestrianBudget = graphicsQuality == 0 ? 6 : graphicsQuality == 1 ? 4 : 2;
         for (Game.Agent a : g.agents) {
             float agentDistance = (float)Math.hypot(a.x - g.camX, a.z - g.camZ);
             if (agentDistance > (a.car ? 190f : 95f)) continue;
@@ -1084,7 +1085,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 float cb = a.cb * (1f-damageTint) + damageTint * 0.22f;
                 drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, cr, cg, cb,
                         a.sp * a.dir, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
-            } else if (pedestrianCharacterAssets.length > 0 && detailedPedestrians < 4
+            } else if (pedestrianCharacterAssets.length > 0 && detailedPedestrians < pedestrianBudget
                     && agentDistance < 42f && !a.knockedOut && a.state != 3
                     && pedestrianCharacterAssets[Math.floorMod(a.humanType, pedestrianCharacterAssets.length)] != null
                     && pedestrianWalkClips[Math.floorMod(a.humanType, pedestrianWalkClips.length)] >= 0) {

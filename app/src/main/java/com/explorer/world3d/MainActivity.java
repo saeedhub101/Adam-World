@@ -3,6 +3,7 @@ package com.explorer.world3d;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -599,7 +600,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         weaponWheelView = new WeaponWheelView(this);
         weaponWheelView.setGame(renderer.game);
         glView.setWeaponWheelView(weaponWheelView);
-        renderer.setGraphicsQuality(getSharedPreferences("adam_world_settings", MODE_PRIVATE).getInt("graphics_quality",1));
+        ActivityManager activityManager = (ActivityManager)getSystemService(ACTIVITY_SERVICE);
+        int defaultGraphicsQuality = activityManager != null && activityManager.isLowRamDevice() ? 2 : 1;
+        renderer.setGraphicsQuality(getSharedPreferences("adam_world_settings", MODE_PRIVATE).getInt("graphics_quality",defaultGraphicsQuality));
         weaponWheelView.setListener(id -> {
             weaponWheelOpen = false;
             runOnGl(() -> {
@@ -842,7 +845,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         healthHud.setShadowLayer(4,0,0,Color.BLACK);
         healthHud.setText("♥ 100 / 100");
         FrameLayout.LayoutParams healthParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
-        healthParams.setMargins(0, dp(18), dp(18), 0);
+        healthParams.setMargins(0, dp(62), dp(18), 0);
         root.addView(healthHud, healthParams);
 
         miniMap = new MiniMapView(this);
