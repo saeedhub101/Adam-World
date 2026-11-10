@@ -311,8 +311,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         tex = new Textures();
         vehicleMaps = advancedShader ? ProceduralMaterialMaps.create() : null;
         cube = makeCube();
-        if (flightSchoolMesh != null) flightSchoolMesh.release();
-        flightSchoolMesh = Mesh.from(Airfield.build());
+        flightSchoolMesh = Airfield.build();
         // The former runway/apron/terminal scene is reused as an airport overlay at real airport coordinates.
         vehicleModels = ProceduralVehicleModels.buildAll();
         // Prefer build-time converted real meshes; procedural meshes remain a safe fallback.
