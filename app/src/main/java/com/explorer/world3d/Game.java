@@ -62,6 +62,8 @@ final class Game {
     int attackType;
     long lastPlayerAttackMs, lastComboMs;
     volatile boolean weaponFireHeld, weaponAimHeld, reloadRequested;
+    // Horizontal offset of the movable on-screen aiming reticle, in radians.
+    volatile float aimYawOffset;
     int equippedWeapon=0, cash=100000, magazineAmmo=12;
     final boolean[] ownedWeapons={true,false,false,false,false,false,false};
     final int[] reserveAmmo={48,0,0,0,0,0,0};
@@ -105,7 +107,7 @@ final class Game {
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; dead = false;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
-        weaponFireHeld=weaponAimHeld=reloadRequested=false;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
+        weaponFireHeld=weaponAimHeld=reloadRequested=false;aimYawOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
@@ -544,7 +546,7 @@ final class Game {
 
         // Hitscan with deterministic weapon-specific dispersion and world occlusion.
         // A target behind a building/wall can no longer be damaged through geometry.
-        float baseYaw=pyaw;
+        float baseYaw=pyaw+aimYawOffset;
         float spread=weaponAimHeld?0.006f:0.022f;
         if(id==3)spread*=2.8f;       // shotgun pellet cone
         if(id==4)spread*=0.22f;      // precision rifle
