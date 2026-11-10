@@ -222,15 +222,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_X) {
-            if (pressed && !renderer.game.driving) runOnGl(() -> {
-                if (padCameraModifier) renderer.game.reloadRequested = true;
-                else renderer.game.punchRequested = true;
-            });
+            if (pressed && !renderer.game.driving) runOnGl(() -> renderer.game.reloadRequested = true);
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_L1) { if (!renderer.game.driving) renderer.game.weaponAimHeld = down; else renderer.game.cameraLookOffset = down ? -0.95f : 0f; return true; }
-        if (code == KeyEvent.KEYCODE_BUTTON_R1) {
+        // GTA-style: hold LB/L1 for the radial weapon wheel; release to equip.
+        if (code == KeyEvent.KEYCODE_BUTTON_L1) {
             if (!renderer.game.driving) {
                 if (down && !weaponWheelOpen) {
                     weaponWheelOpen = true;
@@ -242,7 +239,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     runOnUiThread(() -> weaponWheelView.hideWheel());
                 }
             }
+            return true;
+        }
+        // Hold RB/R1 + D-pad up/down to smoothly zoom the camera.
+        if (code == KeyEvent.KEYCODE_BUTTON_R1) {
             padCameraModifier = down;
+            renderer.game.guardRequested = down && !renderer.game.driving;
             if (!down) renderer.game.cameraZoomInput = 0f;
             return true;
         }
