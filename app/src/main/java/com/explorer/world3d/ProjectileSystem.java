@@ -74,7 +74,7 @@ final class ProjectileSystem {
 
     private static void detonate(Game g,Rocket r,Game.World world){
         if(g.blasts.size()>=MAX_BLASTS)g.blasts.remove(0);
-        g.blasts.add(new Blast(r.x,r.y,r.z));
+        g.blasts.add(new Blast(r.x,r.y,r.z));g.explosionEventCount++;
         final float radius=7.5f;
         for(Game.Agent a:g.agents){
             float dx=a.x-r.x,dz=a.z-r.z,d=(float)Math.hypot(dx,dz);
