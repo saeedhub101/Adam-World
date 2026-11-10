@@ -73,6 +73,8 @@ final class TileLoader extends Thread {
     private String bundledCitySlug;
     private JSONObject bundledCityManifest;
     private String bundledManifestSlug;
+    private HashMap<String, String> bundledExpectedTiles;
+    private long bundledManifestLoadedAt;
     private final LinkedHashMap<String, JSONObject> bundledCityTileCache =
             new LinkedHashMap<String, JSONObject>(80, 0.75f, true) {
                 @Override protected boolean removeEldestEntry(Map.Entry<String, JSONObject> eldest) {
@@ -97,6 +99,12 @@ final class TileLoader extends Thread {
         if (manifest.isFile()) manifest.setLastModified(0L);
         synchronized (bundledCityTileCache) {
             bundledCityTileCache.clear();
+        }
+        synchronized (this) {
+            bundledCityManifest = null;
+            bundledManifestSlug = null;
+            bundledExpectedTiles = null;
+            bundledManifestLoadedAt = 0L;
         }
     }
 
@@ -144,7 +152,12 @@ final class TileLoader extends Thread {
         synchronized (bundledCityTileCache) { bundledCityTileCache.clear(); }
         synchronized (offlineShardCache) { offlineShardCache.clear(); }
         bundledCityRoot = null;
-        bundledCityManifest = null;
+        synchronized (this) {
+            bundledCityManifest = null;
+            bundledManifestSlug = null;
+            bundledExpectedTiles = null;
+            bundledManifestLoadedAt = 0L;
+        }
     }
 
     /** Keep only nearby transient loader state; disk cache remains untouched. */
@@ -286,10 +299,13 @@ final class TileLoader extends Thread {
         final String slug = offlineCitySlug;
         if (!"tabarbour".equals(slug)) return emptyElements();
         JSONObject manifest;
+        HashMap<String, String> expectedTiles;
         synchronized (this) {
             tabarbourOfflineDir.mkdirs();
             File manifestFile = new File(tabarbourOfflineDir, "manifest.json");
-            if (!manifestFile.isFile() || System.currentTimeMillis() - manifestFile.lastModified() > 5L * 60 * 1000) {
+            boolean refresh = !manifestFile.isFile()
+                    || System.currentTimeMillis() - manifestFile.lastModified() > 5L * 60 * 1000;
+            if (refresh) {
                 try {
                     byte[] bytes = downloadBytes(TABARBOUR_DATA_BASE + "/manifest.json");
                     File tmp = new File(manifestFile.getPath() + ".tmp");
@@ -299,12 +315,30 @@ final class TileLoader extends Thread {
                     if (!manifestFile.isFile() || manifestFile.length() == 0) throw networkError;
                 }
             }
-            manifest = new JSONObject(readFile(manifestFile));
-            if (!"tabarbour".equals(manifest.optString("slug")) || manifest.optJSONObject("center") == null
-                    || manifest.optJSONArray("tiles") == null || !manifest.optBoolean("complete", false)
-                    || !"complete".equals(manifest.optString("status"))) {
-                throw new IOException("Tabarbour stream manifest is incomplete or invalid");
+            long modified = manifestFile.lastModified();
+            if (bundledCityManifest == null || !"tabarbour".equals(bundledManifestSlug)
+                    || bundledManifestLoadedAt != modified || bundledExpectedTiles == null) {
+                JSONObject parsed = new JSONObject(readFile(manifestFile));
+                if (!"tabarbour".equals(parsed.optString("slug")) || parsed.optJSONObject("center") == null
+                        || parsed.optJSONArray("tiles") == null || !parsed.optBoolean("complete", false)
+                        || !"complete".equals(parsed.optString("status"))) {
+                    throw new IOException("Tabarbour stream manifest is incomplete or invalid");
+                }
+                HashMap<String, String> index = new HashMap<>();
+                JSONArray manifestTiles = parsed.optJSONArray("tiles");
+                if (manifestTiles != null) for (int i = 0; i < manifestTiles.length(); i++) {
+                    JSONObject item = manifestTiles.optJSONObject(i);
+                    if (item != null) index.put(item.optInt("ix") + "_" + item.optInt("iz"),
+                            item.optString("file", "tile_" + item.optInt("ix") + "_" + item.optInt("iz") + ".json"));
+                }
+                if (index.isEmpty()) throw new IOException("Tabarbour manifest contains no spatial cells");
+                bundledCityManifest = parsed;
+                bundledManifestSlug = "tabarbour";
+                bundledExpectedTiles = index;
+                bundledManifestLoadedAt = modified;
             }
+            manifest = bundledCityManifest;
+            expectedTiles = bundledExpectedTiles;
         }
         String datasetVersion = manifest.optString("dataset_version", "legacy");
         if (datasetVersion.isEmpty() || !datasetVersion.matches("[A-Za-z0-9_-]{1,80}"))
@@ -317,14 +351,6 @@ final class TileLoader extends Thread {
         int maxX = (int) Math.floor(((east - lon0) * kx) / tileSize);
         int minZ = (int) Math.floor((-(north - lat0) * ky) / tileSize);
         int maxZ = (int) Math.floor((-(south - lat0) * ky) / tileSize);
-        JSONArray manifestTiles = manifest.optJSONArray("tiles");
-        HashMap<String, String> expectedTiles = new HashMap<>();
-        if (manifestTiles != null) for (int i = 0; i < manifestTiles.length(); i++) {
-            JSONObject item = manifestTiles.optJSONObject(i);
-            if (item != null) expectedTiles.put(item.optInt("ix") + "_" + item.optInt("iz"),
-                    item.optString("file", "tile_" + item.optInt("ix") + "_" + item.optInt("iz") + ".json"));
-        }
-        if (expectedTiles.isEmpty()) throw new IOException("Tabarbour manifest contains no spatial cells");
         JSONArray selected = new JSONArray();
         HashSet<String> seen = new HashSet<>();
         for (int x = minX; x <= maxX; x++) for (int z = minZ; z <= maxZ; z++) {
