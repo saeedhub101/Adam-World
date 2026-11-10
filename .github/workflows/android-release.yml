@@ -43,6 +43,7 @@ jobs:
           filter: blob:none
           sparse-checkout: |
             /app/
+            /Adam_Walking.glb
             /data/offline-city-stream/amman/
             /data/offline-city-stream/manila/
             /data/offline-world/manila/
@@ -73,6 +74,7 @@ jobs:
           set -euo pipefail
           python -m pip install --disable-pip-version-check --no-input numpy trimesh
           python app/tools/build_runtime_meshes.py
+          python app/tools/build_adam_skinned_mesh.py
 
       - name: Prepare signing and calculate release version
         env:
