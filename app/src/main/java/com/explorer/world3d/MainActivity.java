@@ -169,12 +169,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showPauseMenu() {
         if (isFinishing() || (pauseDialog != null && pauseDialog.isShowing())) return;
         setGamePaused(true);
-        final String[] items = {"متابعة اللعبة", "الخريطة", "إعدادات اللعبة", "إنهاء اللعبة"};
+        final String[] items = {"متابعة اللعبة", "الخريطة", "إعدادات اللعبة", "متجر الأسلحة", "إنهاء اللعبة"};
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle("إيقاف مؤقت").setItems(items, (d, which) -> {
             if (which == 0) setGamePaused(false);
             else if (which == 1) { d.dismiss(); showMapDialog(true); }
             else if (which == 2) showGameSettings();
-            else if (which == 3) { setGamePaused(false); finish(); }
+            else if (which == 3) { d.dismiss(); showWeaponShop(); }
+            else if (which == 4) { setGamePaused(false); finish(); }
         }).create();
         dialog.setOnCancelListener(d -> setGamePaused(false));
         pauseDialog = dialog;

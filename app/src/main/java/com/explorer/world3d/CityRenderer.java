@@ -990,7 +990,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                     g.vehicleBumpPitch + g.vehicleWheelBodyPitch + g.aircraftPitch,
                     g.vehicleWheelFL - g.vehicleWheelBodyLift, g.vehicleWheelFR - g.vehicleWheelBodyLift,
                     g.vehicleWheelRL - g.vehicleWheelBodyLift, g.vehicleWheelRR - g.vehicleWheelBodyLift);
-            if (!g.driving) drawKid(g.px,g.py+g.jumpHeight,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash,g.equippedWeapon,g.weaponAimHeld,g.weaponRecoil,g.muzzleFlashSeconds,g.weaponReloadSeconds,g.weaponReloadDuration);
+            if (!g.driving) drawKid(g.px,g.py,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash,g.equippedWeapon,g.weaponAimHeld,g.weaponRecoil,g.muzzleFlashSeconds,g.weaponReloadSeconds,g.weaponReloadDuration);
         }
     }
 
@@ -1293,13 +1293,13 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         Matrix.setIdentityM(base,0);
         Matrix.translateM(base,0,x,y,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
-        Matrix.scaleM(base,0,1.12f,1.12f,1.12f);
+        Matrix.scaleM(base,0,1.28f,1.28f,1.28f);
         GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
         GLES20.glUniformMatrix4fv(uBones,animator.boneCount(),false,animator.skinMatrices(),0);
         GLES20.glUniform1f(uSkinning,1f);
         GLES20.glUniform1f(uPbr,0f);
         GLES20.glUniform1f(uGlass,0f);
-        GLES20.glUniform3f(uTint,0.88f,0.78f,0.66f);
+        GLES20.glUniform3f(uTint,1f,1f,1f);
         bindTex(tex.white,tex.black);
         playerCharacterAsset.mesh.draw();
         GLES20.glUniform1f(uSkinning,0f);
