@@ -417,8 +417,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         renderer.game.sy = ly;
         if (weaponWheelOpen && weaponWheelView != null) {
             if (Math.abs(rx) > 0.01f || Math.abs(ry) > 0.01f) {
-                final float wx = rx, wy = ry;
-                runOnUiThread(() -> weaponWheelView.selectDirection(wx, wy));
+                weaponWheelView.selectDirection(rx, ry);
             }
             renderer.setGamepadLook(0f, 0f);
         } else {
