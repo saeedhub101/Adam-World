@@ -5,9 +5,10 @@ Only the compact runtime mesh is written to Android assets. The source GLB remai
 in the repository and is never copied into the APK. Large rigs are reduced to the 24 most influential joints while retaining required ancestors.
 """
 from __future__ import annotations
-import json, math, struct
+import json, math, struct, io
 from pathlib import Path
 import numpy as np
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "Adam_Walking.glb"
@@ -53,6 +54,53 @@ def accessor(doc, binary, index):
             info=np.iinfo(arr.dtype); arr=np.maximum(arr.astype(np.float32)/info.max,-1.0)
         else: arr=arr.astype(np.float32)/np.iinfo(arr.dtype).max
     return arr[:,0] if n==1 else arr
+
+def material_base_color(doc, binary, primitive, uv):
+    """Bake glTF baseColorFactor/baseColorTexture into vertex colors for the GLES2 runtime."""
+    factor=np.ones(4,dtype=np.float64)
+    material_index=primitive.get("material")
+    if material_index is None or material_index>=len(doc.get("materials",[])):
+        return np.ones((len(uv),3),dtype=np.float64)
+    material=doc["materials"][material_index]
+    pbr=material.get("pbrMetallicRoughness",{})
+    factor=np.asarray(pbr.get("baseColorFactor",[1,1,1,1]),dtype=np.float64)
+    texture_info=pbr.get("baseColorTexture")
+    if not texture_info or "index" not in texture_info or len(uv)==0:
+        return np.tile(factor[:3],(len(uv),1))
+    tex_index=texture_info["index"]
+    textures=doc.get("textures",[])
+    if tex_index<0 or tex_index>=len(textures):
+        return np.tile(factor[:3],(len(uv),1))
+    image_index=textures[tex_index].get("source")
+    images=doc.get("images",[])
+    if image_index is None or image_index<0 or image_index>=len(images):
+        return np.tile(factor[:3],(len(uv),1))
+    image=images[image_index]
+    try:
+        if "bufferView" in image:
+            view=doc["bufferViews"][image["bufferView"]]
+            start=view.get("byteOffset",0); payload=binary[start:start+view["byteLength"]]
+        elif image.get("uri","").startswith("data:"):
+            import base64
+            payload=base64.b64decode(image["uri"].split(",",1)[1])
+        else:
+            return np.tile(factor[:3],(len(uv),1))
+        with Image.open(io.BytesIO(payload)) as source:
+            pixels=np.asarray(source.convert("RGB"),dtype=np.float32)/255.0
+        h,w=pixels.shape[:2]
+        sampler_index=textures[tex_index].get("sampler",-1)
+        samplers=doc.get("samplers",[])
+        sampler=samplers[sampler_index] if 0<=sampler_index<len(samplers) else {}
+        wrap_s=sampler.get("wrapS",10497); wrap_t=sampler.get("wrapT",10497)
+        u=uv[:,0].astype(np.float64); v=uv[:,1].astype(np.float64)
+        u=(u%1.0) if wrap_s==10497 else np.clip(u,0.0,1.0)
+        v=(v%1.0) if wrap_t==10497 else np.clip(v,0.0,1.0)
+        xs=np.minimum(w-1,np.maximum(0,np.rint(u*(w-1)).astype(np.int64)))
+        ys=np.minimum(h-1,np.maximum(0,np.rint((1.0-v)*(h-1)).astype(np.int64)))
+        return pixels[ys,xs].astype(np.float64)*factor[:3]
+    except Exception as exc:
+        print(f"ADAM_TEXTURE_FALLBACK material={material_index} reason={exc}",flush=True)
+        return np.tile(factor[:3],(len(uv),1))
 
 def quat_matrix(q):
     x,y,z,w=map(float,q)
@@ -351,6 +399,10 @@ def main():
             col=np.asarray(accessor(doc,binary,attrs["COLOR_0"]),dtype=np.float64) if "COLOR_0" in attrs else np.ones((len(p),4))
             if col.ndim==1:col=col[:,None]
             if col.shape[1]==3:col=np.column_stack([col,np.ones(len(col))])
+            # AWM5 has no runtime material/texture slots. Bake the original glTF
+            # base color into vertex colors so the player is never rendered as a white mannequin.
+            baked=material_base_color(doc,binary,primitive,uv)
+            col[:,:3]*=baked
             if len(p)+len(vertices)>MAX_VERTICES:raise ValueError("Adam mesh exceeds runtime vertex budget")
             for k in range(len(p)):
                 accum={}
