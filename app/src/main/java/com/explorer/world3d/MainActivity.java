@@ -59,8 +59,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private boolean keyUp, keyDown, keyLeft, keyRight;
     private AlertDialog pauseDialog;
     private boolean padL2, padR2, padCameraModifier;
-    private TextView healthHud;
+    private TextView healthHud, weaponHud;
     private MiniMapView miniMap;
+    private AimReticleView aimReticle;
     private long lastHudRefresh;
     private LinearLayout touchActionPad, touchCombatRow, touchFlightRow;
     private Button touchVehicleButton, touchVehicleTypeButton, touchSprintButton, touchDodgeButton;
@@ -146,11 +147,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         WebView map = new WebView(this);
         map.setBackgroundColor(Color.WHITE);
         WebSettings settings = map.getSettings();
-        settings.setJavaScriptEnabled(false);
-        settings.setDomStorageEnabled(false);
-        map.loadDataWithBaseURL("https://www.openstreetmap.org/",
-                "<html><body style='margin:0'><iframe width='100%' height='100%' frameborder='0' scrolling='no' src='" + mapUrl
-                        + "'></iframe></body></html>", "text/html", "UTF-8", null);
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        map.loadUrl(mapUrl);
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle("خريطة Adam World").setView(map)
                 .setNegativeButton("إغلاق", null).create();
         dialog.setOnDismissListener(d -> { map.destroy(); if (returnToPauseMenu && !isFinishing()) showPauseMenu(); });
@@ -217,6 +218,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_L1) { if (!renderer.game.driving) renderer.game.weaponAimHeld = down; else renderer.game.cameraLookOffset = down ? -0.95f : 0f; return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_R1) {
+            if (pressed && !renderer.game.driving) runOnGl(() -> { renderer.game.cycleWeapon(); runOnUiThread(this::saveWeaponState); });
             padCameraModifier = down;
             if (!down) renderer.game.cameraZoomInput = 0f;
             return true;
@@ -252,6 +254,23 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     @Override public void onBackPressed() {
         if (pauseDialog != null && pauseDialog.isShowing()) { pauseDialog.dismiss(); setGamePaused(false); }
         else showPauseMenu();
+    }
+
+    private final class AimReticleView extends View {
+        private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+        private boolean aiming;
+        AimReticleView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setClickable(false);}
+        void setAiming(boolean value){aiming=value;}
+        @Override protected void onDraw(Canvas c){
+            super.onDraw(c);
+            float cx=getWidth()/2f,cy=getHeight()/2f;
+            paint.setColor(aiming?0xfffff1c2:0xddefffff);paint.setStrokeWidth(dp(1.5f));paint.setStyle(Paint.Style.STROKE);
+            float r=aiming?dp(8):dp(5),gap=aiming?dp(5):dp(3),len=aiming?dp(8):dp(5);
+            c.drawCircle(cx,cy,r,paint);
+            c.drawLine(cx-len-gap,cy,cx-gap,cy,paint);c.drawLine(cx+gap,cy,cx+len+gap,cy,paint);
+            c.drawLine(cx,cy-len-gap,cx,cy-gap,paint);c.drawLine(cx,cy+gap,cx,cy+len+gap,paint);
+            paint.setStyle(Paint.Style.FILL);c.drawCircle(cx,cy,dp(1.2f),paint);
+        }
     }
 
     private final class MiniMapView extends View {
@@ -550,11 +569,26 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
 
         hud = new TextView(this);
         hud.setTextColor(Color.WHITE);
-        hud.setTextSize(20);
-        hud.setShadowLayer(4, 0, 0, Color.BLACK);
+        hud.setTextSize(13);
+        hud.setShadowLayer(2, 0, 1, Color.BLACK);
+        hud.setSingleLine(false);
+        hud.setPadding(dp(9),dp(5),dp(9),dp(5));
+        hud.setBackgroundColor(0x990d141c);
         FrameLayout.LayoutParams hp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.END);
         hp.setMargins(0, 0, dp(24), dp(190));
         root.addView(hud, hp);
+
+        weaponHud = new TextView(this);
+        weaponHud.setTextColor(Color.WHITE);
+        weaponHud.setTextSize(12);
+        weaponHud.setTypeface(android.graphics.Typeface.MONOSPACE);
+        weaponHud.setShadowLayer(2,0,1,Color.BLACK);
+        weaponHud.setPadding(dp(10),dp(6),dp(10),dp(6));
+        weaponHud.setBackgroundColor(0xb318202a);
+        weaponHud.setText("Pistol   12 / 48");
+        FrameLayout.LayoutParams weaponParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT,Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);
+        weaponParams.setMargins(0,0,0,dp(142));
+        root.addView(weaponHud,weaponParams);
 
         healthHud = new TextView(this);
         healthHud.setTextColor(0xff65e58b);
@@ -570,6 +604,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         miniParams.setMargins(dp(14), dp(112), 0, 0);
         root.addView(miniMap, miniParams);
 
+        aimReticle = new AimReticleView(this);
+        FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(dp(42),dp(42),Gravity.CENTER);
+        root.addView(aimReticle,reticleParams);
 
         Button settings = btn("⚙");
         settings.setOnClickListener(v -> showGameSettings());
@@ -792,13 +829,16 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
 
     @Override public void onHud(final String s) {
         runOnUiThread(new Runnable() { @Override public void run() {
-            hud.setText(s);
+            if (!s.equals(hud.getText().toString())) hud.setText(s);
             updateTouchActionVisibility();
             if (System.currentTimeMillis()-lastHudRefresh>250 && renderer!=null) {
                 lastHudRefresh=System.currentTimeMillis();
                 int hp=renderer.game.health;
                 healthHud.setText("♥ "+hp+" / 100     ⚡ "+(int)renderer.game.stamina+" / 100"+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
-                hud.setText(s+"\n🔫 "+WeaponSystem.NAME[renderer.game.equippedWeapon]+"  "+renderer.game.magazineAmmo+" / "+renderer.game.reserveAmmo[renderer.game.equippedWeapon]+"   $"+renderer.game.cash);
+                Game game=renderer.game;
+                String ammo=WeaponSystem.NAME[game.equippedWeapon]+"   "+game.magazineAmmo+" / "+game.reserveAmmo[game.equippedWeapon]+"     $"+game.cash;
+                if(weaponHud!=null&&!ammo.equals(weaponHud.getText().toString()))weaponHud.setText(ammo);
+                if(aimReticle!=null){aimReticle.setAiming(game.weaponAimHeld);aimReticle.invalidate();}
                 healthHud.setTextColor(hp>60?0xff65e58b:hp>25?0xffffc857:0xffff5555);
                 miniMap.invalidate();
             }
