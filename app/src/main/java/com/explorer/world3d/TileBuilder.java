@@ -166,7 +166,7 @@ final class TileBuilder {
             String waterway = tg(tags, "waterway");
             String aeroway = tg(tags, "aeroway");
 
-            if (!aeroway.isEmpty()) {
+            if (aeroway.matches("runway|taxiway|taxilane|apron|helipad|holding_position|parking_position")) {
                 float[][] airportArea = clean(xs, zs);
                 float airportColorR = aeroway.equals("runway") ? 0.20f : aeroway.equals("taxiway") ? 0.27f : 0.34f;
                 float airportColorG = aeroway.equals("runway") ? 0.21f : aeroway.equals("taxiway") ? 0.28f : 0.35f;
