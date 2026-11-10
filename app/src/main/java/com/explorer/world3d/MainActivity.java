@@ -402,11 +402,28 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         float ly = -event.getAxisValue(android.view.MotionEvent.AXIS_Y); // stick-up is negative on Android
         float rx = event.getAxisValue(android.view.MotionEvent.AXIS_RX);
         float ry = event.getAxisValue(android.view.MotionEvent.AXIS_RY);
-        if (device != null) {
-            if (Math.abs(rx) < 0.08f && Math.abs(ry) < 0.08f) {
-                rx = event.getAxisValue(android.view.MotionEvent.AXIS_Z);
-                ry = event.getAxisValue(android.view.MotionEvent.AXIS_RZ);
+        if (device != null && Math.abs(rx) < 0.08f && Math.abs(ry) < 0.08f) {
+            rx = event.getAxisValue(android.view.MotionEvent.AXIS_Z);
+            ry = event.getAxisValue(android.view.MotionEvent.AXIS_RZ);
+        }
+        float leftTrigger = Math.max(event.getAxisValue(android.view.MotionEvent.AXIS_LTRIGGER),
+                event.getAxisValue(android.view.MotionEvent.AXIS_BRAKE));
+        float rightTrigger = Math.max(event.getAxisValue(android.view.MotionEvent.AXIS_RTRIGGER),
+                event.getAxisValue(android.view.MotionEvent.AXIS_GAS));
+        padL2 = leftTrigger > 0.35f;
+        padR2 = rightTrigger > 0.35f;
+        if (renderer.game.driving) {
+            if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
+                renderer.game.brakeRequested = padL2;
+                renderer.game.throttleInput = rightTrigger;
+            } else if (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
+                renderer.game.throttleInput = rightTrigger - leftTrigger;
+            } else {
+                renderer.game.sy = rightTrigger - leftTrigger;
             }
+        } else {
+            renderer.game.weaponAimHeld = padL2;
+            renderer.game.weaponFireHeld = padR2;
         }
         final float dead = 0.16f;
         lx = applyStickDeadZone(lx, dead);
