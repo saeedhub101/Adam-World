@@ -219,6 +219,13 @@ final class Game {
                     altitude = 0f; aircraftVerticalSpeed = 0f; aircraftOnGround = true;
                     if (!landingGearDown || touchdownSpeed > 58f) aircraftDamage = Math.min(100f, aircraftDamage + 32f);
                     else if (touchdownSpeed > 46f) aircraftDamage = Math.min(100f, aircraftDamage + 8f);
+                    boolean fatalLanding = (!landingGearDown && touchdownSpeed > 58f) || touchdownSpeed > 78f;
+                    if (fatalLanding && !dead) {
+                        aircraftDamage = 100f;
+                        health = 0; dead = true; deathStartedMs = System.currentTimeMillis();
+                        playerPose = 2; playerPoseTime = 0f; playerFall = 0f;
+                        sx = sy = 0f;
+                    }
                     cv *= landingGearDown ? 0.88f : 0.70f;
                     aircraftPitch = Math.max(0f, aircraftPitch);
                 }
@@ -242,7 +249,7 @@ final class Game {
         long now = System.currentTimeMillis();
         if (dead) {
             sx = sy = 0f;
-            if (now - deathStartedMs >= 4500L) { dead = false; health = 50; px = cx; pz = cz; cv = 0f; altitude = 0f; playerPose=4; playerPoseTime=0f; playerFall=1f; }
+            if (now - deathStartedMs >= 4500L) { dead = false; health = 50; px = cx; pz = cz; cv = 0f; altitude = 0f; aircraftDamage = 0f; engineThrottle = 0f; aircraftOnGround = true; playerPose=4; playerPoseTime=0f; playerFall=1f; }
             updateCamera(dt);
             return;
         }
