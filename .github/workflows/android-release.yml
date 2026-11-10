@@ -154,6 +154,7 @@ jobs:
         continue-on-error: true
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
           tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ github.sha }}
           name: Adam World v${{ env.VERSION_CODE }}
