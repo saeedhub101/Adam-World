@@ -311,7 +311,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         tex = new Textures();
         vehicleMaps = advancedShader ? ProceduralMaterialMaps.create() : null;
         cube = makeCube();
-        rocketMesh = RocketModel.build(false);\n        guidedRocketMesh = RocketModel.build(true);
+        rocketMesh = RocketModel.build(false);
+        guidedRocketMesh = RocketModel.build(true);
         flightSchoolMesh = Airfield.build();
         // The former runway/apron/terminal scene is reused as an airport overlay at real airport coordinates.
         vehicleModels = ProceduralVehicleModels.buildAll();
@@ -989,7 +990,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
             GLES20.glUniform3f(uTint,1f,1f,1f);
             GLES20.glUniform1f(uEmisK,.035f);
-            Mesh activeRocketMesh=r.guided?guidedRocketMesh:rocketMesh;\n            if(activeRocketMesh!=null)activeRocketMesh.draw();
+            Mesh activeRocketMesh=r.guided?guidedRocketMesh:rocketMesh;
+            if(activeRocketMesh!=null)activeRocketMesh.draw();
             Matrix.setIdentityM(tmp,0);
             Matrix.translateM(tmp,0,r.x-(float)Math.sin(r.yaw)*.53f,r.y,r.z-(float)Math.cos(r.yaw)*.53f);
             Matrix.scaleM(tmp,0,.24f,.15f,.15f);
