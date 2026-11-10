@@ -399,7 +399,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
         android.view.InputDevice device = event.getDevice();
         float lx = event.getAxisValue(android.view.MotionEvent.AXIS_X);
-        float ly = event.getAxisValue(android.view.MotionEvent.AXIS_Y);
+        float ly = -event.getAxisValue(android.view.MotionEvent.AXIS_Y); // stick-up is negative on Android
         float rx = event.getAxisValue(android.view.MotionEvent.AXIS_RX);
         float ry = event.getAxisValue(android.view.MotionEvent.AXIS_RY);
         if (device != null) {
