@@ -959,6 +959,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                         a.sp * a.dir, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
             } else drawPerson(a.x,Terrain.h(a.x,a.z),a.z,a.yaw,a.ph,a.humanType,a.hostile,a.knockedOut,a.state,a.stateTime,a.hitFlash);
         }
+        drawProjectileEffects();
         if (spawned) {
             drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.py - Terrain.h(g.cx, g.cz), 0.75f, 0.22f, 0.17f, g.cv, g.sx,
                     g.vehicleBumpOffset, g.vehicleBumpRoll + g.vehicleWheelBodyRoll + g.aircraftRoll,
@@ -967,6 +968,66 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                     g.vehicleWheelRL - g.vehicleWheelBodyLift, g.vehicleWheelRR - g.vehicleWheelBodyLift);
             if (!g.driving) drawKid(g.px,g.py+g.jumpHeight,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash,g.equippedWeapon,g.weaponAimHeld,g.weaponRecoil,g.muzzleFlashSeconds,g.weaponReloadSeconds,g.weaponReloadDuration);
         }
+    }
+
+
+    /** Draw short-lived rocket meshes, exhaust and bounded smoke / blast effects. */
+    private void drawProjectileEffects() {
+        if (cube == null) return;
+        GLES20.glUniform1f(uWater,0f);
+        GLES20.glUniform1f(uGlass,0f);
+        GLES20.glUniform1f(uPbr,0f);
+        bindTex(tex.white,tex.black);
+        for (ProjectileSystem.Rocket r : game.rockets) {
+            if (Math.hypot(r.x-game.camX,r.z-game.camZ)>520f) continue;
+            Matrix.setIdentityM(tmp,0);
+            Matrix.translateM(tmp,0,r.x,r.y,r.z);
+            Matrix.rotateM(tmp,0,(float)Math.toDegrees(r.yaw),0f,1f,0f);
+            Matrix.rotateM(tmp,0,(float)-Math.toDegrees(r.pitch),1f,0f,0f);
+            Matrix.scaleM(tmp,0,.82f,.105f,.12f);
+            GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
+            GLES20.glUniform3f(uTint,.72f,.76f,.80f);
+            GLES20.glUniform1f(uEmisK,.08f);
+            cube.draw();
+            Matrix.setIdentityM(tmp,0);
+            Matrix.translateM(tmp,0,r.x-(float)Math.sin(r.yaw)*.53f,r.y,r.z-(float)Math.cos(r.yaw)*.53f);
+            Matrix.scaleM(tmp,0,.24f,.15f,.15f);
+            GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
+            GLES20.glUniform3f(uTint,1f,.34f,.035f);
+            GLES20.glUniform1f(uEmisK,1.15f);
+            cube.draw();
+            for(int k=0;k<r.trailCount;k++){
+                float fade=1f-k/(float)Math.max(1,r.tx.length);
+                Matrix.setIdentityM(tmp,0);
+                Matrix.translateM(tmp,0,r.tx[k],r.ty[k],r.tz[k]);
+                float size=.10f+.12f*(1f-fade);
+                Matrix.scaleM(tmp,0,size,size,size);
+                GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
+                GLES20.glUniform3f(uTint,.52f,.54f,.57f);
+                GLES20.glUniform1f(uEmisK,.04f);
+                cube.draw();
+            }
+        }
+        for(ProjectileSystem.Blast b:game.blasts){
+            float t=Math.max(0f,b.life/.72f),size=(1f-t)*4.8f+.35f;
+            Matrix.setIdentityM(tmp,0);
+            Matrix.translateM(tmp,0,b.x,b.y,b.z);
+            Matrix.scaleM(tmp,0,size,size,size);
+            GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
+            GLES20.glUniform3f(uTint,1f,.34f,.045f);
+            GLES20.glUniform1f(uEmisK,1.25f*t);
+            cube.draw();
+            Matrix.setIdentityM(tmp,0);
+            Matrix.translateM(tmp,0,b.x,b.y+.35f,b.z);
+            Matrix.scaleM(tmp,0,size*.72f,size*.82f,size*.72f);
+            GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
+            GLES20.glUniform3f(uTint,.30f,.29f,.27f);
+            GLES20.glUniform1f(uEmisK,.02f);
+            cube.draw();
+        }
+        GLES20.glUniformMatrix4fv(uModel,1,false,ident,0);
+        GLES20.glUniform3f(uTint,1f,1f,1f);
+        GLES20.glUniform1f(uEmisK,0f);
     }
 
     private void bindTex(int t0, int t1) {
