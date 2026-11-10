@@ -401,11 +401,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         float ly = -event.getAxisValue(android.view.MotionEvent.AXIS_Y); // stick-up is negative on Android
         float rx = event.getAxisValue(android.view.MotionEvent.AXIS_RX);
         float ry = event.getAxisValue(android.view.MotionEvent.AXIS_RY);
-        final boolean hasDedicatedTriggers = device != null && (hasMotionRange(device, android.view.MotionEvent.AXIS_LTRIGGER, source)
-                || hasMotionRange(device, android.view.MotionEvent.AXIS_RTRIGGER, source)
-                || hasMotionRange(device, android.view.MotionEvent.AXIS_BRAKE, source)
-                || hasMotionRange(device, android.view.MotionEvent.AXIS_GAS, source));
-        if (device != null && Math.abs(rx) < 0.08f && Math.abs(ry) < 0.08f && !hasDedicatedTriggers
+        final boolean hasRxRy = device != null && (hasMotionRange(device, android.view.MotionEvent.AXIS_RX, source)
+                || hasMotionRange(device, android.view.MotionEvent.AXIS_RY, source));
+        if (device != null && !hasRxRy
                 && hasMotionRange(device, android.view.MotionEvent.AXIS_Z, source)
                 && hasMotionRange(device, android.view.MotionEvent.AXIS_RZ, source)) {
             rx = event.getAxisValue(android.view.MotionEvent.AXIS_Z);
@@ -510,6 +508,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             case KeyEvent.KEYCODE_BUTTON_10: return KeyEvent.KEYCODE_BUTTON_THUMBR;
             case KeyEvent.KEYCODE_BUTTON_11: return KeyEvent.KEYCODE_BUTTON_SELECT;
             case KeyEvent.KEYCODE_BUTTON_12: return KeyEvent.KEYCODE_BUTTON_START;
+            case KeyEvent.KEYCODE_BUTTON_13: return KeyEvent.KEYCODE_DPAD_UP;
+            case KeyEvent.KEYCODE_BUTTON_14: return KeyEvent.KEYCODE_DPAD_DOWN;
+            case KeyEvent.KEYCODE_BUTTON_15: return KeyEvent.KEYCODE_DPAD_LEFT;
+            case KeyEvent.KEYCODE_BUTTON_16: return KeyEvent.KEYCODE_DPAD_RIGHT;
             default: return code;
         }
     }
