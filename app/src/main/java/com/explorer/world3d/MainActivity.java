@@ -244,6 +244,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         // Hold RB/R1 + D-pad up/down to smoothly zoom the camera.
         if (code == KeyEvent.KEYCODE_BUTTON_R1) {
             padCameraModifier = down;
+            renderer.setGamepadZoomModifier(down);
             renderer.game.guardRequested = down && !renderer.game.driving;
             if (!down) renderer.game.cameraZoomInput = 0f;
             return true;
