@@ -281,7 +281,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             advancedShader = true;
         } catch (RuntimeException incompatiblePbrShader) {
             Log.w("AdamWorldGL", "PBR shader unavailable; using GLES 2.0 compatible renderer", incompatiblePbrShader);
-            prog = link(VS, FS_COMPAT, new String[]{"aPos", "aNor", "aUV", "aCol"});
+            prog = link(VS, FS_COMPAT, new String[]{"aPos", "aNor", "aUV", "aCol", "aJoints", "aWeights"});
             advancedShader = false;
         }
         uVP = GLES20.glGetUniformLocation(prog, "uVP");
