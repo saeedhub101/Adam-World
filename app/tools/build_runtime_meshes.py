@@ -27,6 +27,7 @@ ASSETS = {
         "url": "https://files.innerscene.com/library/sedan-car-42109739/75c64c1b3c8b03734314/sedan-original.glb",
         "length": 4.45,
         "fallback": (0.16, 0.30, 0.48),
+        "texture_size": 1024,
         "target_faces": 10000,
         "max_bytes": 3000000,
     },
@@ -34,6 +35,7 @@ ASSETS = {
         "url": "https://files.innerscene.com/library/pickup-truck-da45aa3f/aef5bc0897dcaebfa6a2/pickup-original.glb",
         "length": 5.20,
         "fallback": (0.20, 0.27, 0.34),
+        "texture_size": 1024,
         "target_faces": 12000,
         "max_bytes": 3200000,
     },
@@ -41,6 +43,7 @@ ASSETS = {
         "url": "https://grab3d.com/dl/1990s-suv/1990s-suv.glb",
         "length": 4.69,
         "fallback": (0.34, 0.42, 0.28),
+        "texture_size": 1024,
         "target_faces": 12000,
         "max_bytes": 3200000,
     },
@@ -48,6 +51,7 @@ ASSETS = {
         "url": "https://grab3d.com/dl/1990s-police-car/1990s-police-car.glb",
         "length": 5.09,
         "fallback": (0.82, 0.86, 0.90),
+        "texture_size": 1024,
         "target_faces": 12000,
         "max_bytes": 3200000,
     },
@@ -55,6 +59,7 @@ ASSETS = {
         "url": "https://files.innerscene.com/library/low-floor-city-bus-9e7ce899/9c3a0074b0e553ba181a/city-bus-original.glb",
         "length": 8.30,
         "fallback": (0.82, 0.70, 0.16),
+        "texture_size": 1024,
         "target_faces": 10000,
         "max_bytes": 3000000,
     },
@@ -63,6 +68,7 @@ ASSETS = {
         "length": 2.10,
         "fallback": (0.72, 0.08, 0.06),
         "target_faces": 8000,
+        "texture_size": 512,
         "max_bytes": 2200000,
     },
 }
@@ -217,7 +223,7 @@ def vertex_normals(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
     return np.nan_to_num(normals, nan=0.0, posinf=0.0, neginf=0.0)
 
 
-def convert(raw: bytes, target_length: float, fallback, target_faces: int):
+def convert(raw: bytes, target_length: float, fallback, target_faces: int, texture_size: int):
     meshes = scene_meshes(raw, target_faces)
     all_vertices, all_normals, all_uvs, all_colors = [], [], [], []
     face_groups, material_records = [], []
@@ -263,8 +269,8 @@ def convert(raw: bytes, target_length: float, fallback, target_faces: int):
             try:
                 if hasattr(source_image, "convert") and hasattr(source_image, "save"):
                     rgba = source_image.convert("RGBA")
-                    if max(rgba.size) > 1024:
-                        rgba.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+                    if max(rgba.size) > texture_size:
+                        rgba.thumbnail((texture_size, texture_size), Image.Resampling.LANCZOS)
                     encoded = io.BytesIO()
                     rgba.save(encoded, format="PNG", optimize=True)
                     payload = encoded.getvalue()
@@ -335,7 +341,7 @@ def main():
         destination = OUT / (name + ".awmesh")
         try:
             raw = fetch(item["url"])
-            vertices, submeshes, materials, textures = convert(raw, item["length"], item["fallback"], item["target_faces"])
+            vertices, submeshes, materials, textures = convert(raw, item["length"], item["fallback"], item["target_faces"], item["texture_size"])
             with destination.open("wb") as stream:
                 stream.write(struct.pack("<4sIIIII", b"AWM4", len(vertices), len(submeshes), len(materials), 11, len(textures)))
                 stream.write(vertices.astype("<f4", copy=False).tobytes())
