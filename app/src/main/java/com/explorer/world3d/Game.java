@@ -605,8 +605,8 @@ final class Game {
 
         // Hitscan with deterministic weapon-specific dispersion and world occlusion.
         // A target behind a building/wall can no longer be damaged through geometry.
-        float baseYaw=pyaw+aimYawOffset;
-        float shotPitch=aimPitchOffset;
+        float baseYaw=weaponAimHeld?camYaw:pyaw;
+        float shotPitch=weaponAimHeld?Game.clamp(0.38f-camPitch,-0.78f,0.78f):0f;
         float horizontalScale=(float)Math.cos(shotPitch);
         float verticalScale=(float)Math.sin(shotPitch);
         float spread=weaponAimHeld?0.006f:0.022f;
