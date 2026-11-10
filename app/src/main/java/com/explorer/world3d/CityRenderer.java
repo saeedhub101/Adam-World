@@ -802,6 +802,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                 lastAudioWeaponShot = game.lastWeaponShotMs;
                 worldAudio.playEffect(game.equippedWeapon);
             }
+            if(game.explosionEventCount!=lastAudioExplosionEvent){lastAudioExplosionEvent=game.explosionEventCount;worldAudio.playEffect(6);}
             if (!flightSchoolMode && nowMs - lastAgentMs > 700) { lastAgentMs = nowMs; spawnAgents(); }
             if (nowMs - lastHudMs > 200) {
                 lastHudMs = nowMs;
