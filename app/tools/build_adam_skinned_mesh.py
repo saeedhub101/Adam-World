@@ -212,13 +212,67 @@ def axis_angle_quat(axis, angle):
     h=angle*.5
     return np.array([axis[0]*math.sin(h),axis[1]*math.sin(h),axis[2]*math.sin(h),math.cos(h)],dtype=np.float64)
 
+def quat_conjugate(q):
+    return np.array([-q[0],-q[1],-q[2],q[3]],dtype=np.float64)
+
+def quat_rotate(q,v):
+    p=np.array([v[0],v[1],v[2],0.0],dtype=np.float64)
+    return quat_mul(quat_mul(q,p),quat_conjugate(q))[:3]
+
+def quat_from_to(source,target):
+    """Shortest world-space rotation mapping one direction onto another."""
+    a=np.asarray(source,dtype=np.float64); b=np.asarray(target,dtype=np.float64)
+    a/=max(float(np.linalg.norm(a)),1e-12); b/=max(float(np.linalg.norm(b)),1e-12)
+    dot=float(np.clip(np.dot(a,b),-1.0,1.0))
+    if dot>0.999999:return np.array([0.,0.,0.,1.],dtype=np.float64)
+    if dot< -0.999999:
+        axis=np.cross(a,[1.,0.,0.])
+        if np.linalg.norm(axis)<1e-6:axis=np.cross(a,[0.,0.,1.])
+        return axis_angle_quat(axis,math.pi)
+    axis=np.cross(a,b)
+    return axis_angle_quat(axis,math.atan2(float(np.linalg.norm(axis)),dot))
+
 def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
-    """Generate articulated clips using each joint's real bind orientation and anatomical side."""
+    """Generate articulated clips and geometrically lower upper arms from their actual rig."""
     specs=[("idle",1.6),("walk",1.0),("run",0.72),("jump",0.9),
            ("punch",0.72),("kick",0.9),("aim",1.0),("shoot",0.55),
            ("reload",1.35),("guard",0.9),("hurt",0.7),("fall",1.0),("getup",1.35)]
     root_node=next((n for n in ordered if classify_bone(nodes[n].get("name",""))[0]=="root"),ordered[0])
     root_inverse=np.linalg.inv(globals_[root_node])
+    root_global_q=decompose(globals_[root_node])[1]
+
+    # Find the actual upper-arm joint immediately above each forearm. Rotate its
+    # measured shoulder-to-elbow vector toward a natural hanging direction. This
+    # avoids guessing X/Y/Z hinge axes and works with differently oriented VRM/GLB rigs.
+    arm_drop_local={}
+    for forearm_id in ordered:
+        frole,fside=classify_bone(nodes[forearm_id].get("name",""))
+        if frole!="forearm":continue
+        anc=parents[forearm_id]
+        upper_id=None
+        while anc>=0:
+            arole,aside=classify_bone(nodes[anc].get("name",""))
+            if arole=="arm":
+                upper_id=anc
+                if fside==0.0 or aside==0.0 or fside==aside:break
+                upper_id=None
+            anc=parents[anc]
+        if upper_id is None or upper_id not in ordered:continue
+        bi=ordered.index(upper_id)
+        side=classify_bone(nodes[upper_id].get("name",""))[1] or fside or 1.0
+        current=globals_[forearm_id][:3,3]-globals_[upper_id][:3,3]
+        current_root=quat_rotate(quat_conjugate(root_global_q),current)
+        # Arms hang beside the torso, with a small outward clearance.
+        target_root=np.array([0.20*side,-0.98,0.015],dtype=np.float64)
+        target_root/=np.linalg.norm(target_root)
+        target_world=quat_rotate(root_global_q,target_root)
+        world_fix=quat_from_to(current,target_world)
+        bind_global_q=decompose(globals_[upper_id])[1]
+        local_fix=quat_mul(quat_mul(quat_conjugate(bind_global_q),world_fix),bind_global_q)
+        local_fix/=max(np.linalg.norm(local_fix),1e-12)
+        arm_drop_local[upper_id]=local_fix
+        angle=2.0*math.acos(float(np.clip(abs(local_fix[3]),-1.0,1.0)))
+        print(f"ARM_DROP node={nodes[upper_id].get('name',upper_id)} side={side:+.0f} angle_deg={math.degrees(angle):.2f} source_root={current_root.round(4).tolist()} target_root={target_root.round(4).tolist()}",flush=True)
     clips=[]
     for clip_name,duration in specs:
         times=np.linspace(0.0,duration,41,dtype=np.float64)
@@ -319,8 +373,7 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
                 if role=="arm":
                     # Never expose the imported T-pose: lower the shoulders first,
                     # then layer locomotion, combat and interaction over this rest pose.
-                    drop_axis=quat_rotate_inverse(bind_global_q,[0.0,0.0,1.0])
-                    drop=axis_angle_quat(drop_axis,-1.22*sign)
+                    drop=arm_drop_local.get(node_id,np.array([0.0,0.0,0.0,1.0],dtype=np.float64))
                     motion=np.array([0.0,0.0,0.0,1.0],dtype=np.float64)
                     action_axis=quat_rotate_inverse(bind_global_q,[1.0,0.0,0.0])
                     if clip_name in ("walk","run"):
