@@ -59,7 +59,7 @@ final class Game {
     final int[] reserveAmmo={48,0,0,0,0};
     final int[] weaponMagazines={12,0,0,0,0};
     long lastWeaponShotMs;
-    float weaponReloadSeconds;
+    float weaponReloadSeconds, weaponRecoil, muzzleFlashSeconds;
     int comboStep;
     float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
     long lastLookMs;
@@ -83,7 +83,7 @@ final class Game {
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = 0; brakeRequested = false; camYaw = 0; health = 100; dead = false;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
-        weaponFireHeld=weaponAimHeld=reloadRequested=false;weaponReloadSeconds=0f;
+        weaponFireHeld=weaponAimHeld=reloadRequested=false;weaponReloadSeconds=weaponRecoil=muzzleFlashSeconds=0f;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
@@ -258,6 +258,8 @@ final class Game {
             health = Math.min(100, health + Math.max(1, (int)(dt * 12f)));
         attackSeconds = Math.max(0f, attackSeconds - dt);
         weaponReloadSeconds=Math.max(0f,weaponReloadSeconds-dt);
+        weaponRecoil=Math.max(0f,weaponRecoil-dt*5.8f);
+        muzzleFlashSeconds=Math.max(0f,muzzleFlashSeconds-dt*8.5f);
         if(weaponAimHeld&&!driving)pyaw+=angDiff(pyaw,camYaw)*Math.min(1f,dt*10f);
         if(reloadRequested){reloadRequested=false;reloadWeapon();}
         if(weaponFireHeld&&!driving&&weaponReloadSeconds<=0f)fireWeapon(now,w);
@@ -449,6 +451,7 @@ final class Game {
         if(id<0||id>=WeaponSystem.NAME.length||now-lastWeaponShotMs<WeaponSystem.FIRE_INTERVAL_MS[id])return;
         if(magazineAmmo<=0){reloadWeapon();return;}
         lastWeaponShotMs=now;magazineAmmo--;weaponMagazines[id]=magazineAmmo;
+        weaponRecoil=1f; muzzleFlashSeconds=1f;
 
         // Hitscan with deterministic weapon-specific dispersion and world occlusion.
         // A target behind a building/wall can no longer be damaged through geometry.
@@ -492,6 +495,9 @@ final class Game {
             int damage=WeaponSystem.DAMAGE[id];
             if(id==3)damage=Math.max(12,damage-(int)(best*2.0f));
             target.health=Math.max(0,target.health-damage);
+            float hitDx=target.x-px, hitDz=target.z-pz, hitLen=Math.max(0.001f,(float)Math.hypot(hitDx,hitDz));
+            target.knockbackX += hitDx/hitLen*(id==3?2.2f:id==4?3.4f:1.25f);
+            target.knockbackZ += hitDz/hitLen*(id==3?2.2f:id==4?3.4f:1.25f);
             target.hitFlash=0.28f;
             if(target.car){
                 // Vehicles are valid ballistic targets too; repeated hits disable them.

@@ -965,7 +965,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                     g.vehicleBumpPitch + g.vehicleWheelBodyPitch + g.aircraftPitch,
                     g.vehicleWheelFL - g.vehicleWheelBodyLift, g.vehicleWheelFR - g.vehicleWheelBodyLift,
                     g.vehicleWheelRL - g.vehicleWheelBodyLift, g.vehicleWheelRR - g.vehicleWheelBodyLift);
-            if (!g.driving) drawKid(g.px,g.py+g.jumpHeight,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash,g.equippedWeapon);
+            if (!g.driving) drawKid(g.px,g.py+g.jumpHeight,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash,g.equippedWeapon,g.weaponAimHeld,g.weaponRecoil,g.muzzleFlashSeconds);
         }
     }
 
@@ -1153,7 +1153,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     }
 
     /** اللاعب: نسخة طفولية من الشخصية الإجرائية نفسها مع مفاصل ووجه وملابس مولّدة. */
-    private void drawKid(float x,float y,float z,float yaw,float ph,float amp,float attack,int attackType,int pose,float poseTime,float guard,float hurt,int weaponId) {
+    private void drawKid(float x,float y,float z,float yaw,float ph,float amp,float attack,int attackType,int pose,float poseTime,float guard,float hurt,int weaponId,boolean aiming,float recoil,float muzzleFlash) {
         if(humanRigModels==null||humanRigModels.length==0)return;
         Mesh[] rig=humanRigModels[0];
         float swing=(float)Math.sin(ph)*amp*.58f;
@@ -1179,6 +1179,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             float leg=(side<0?swing:-swing)*57.29578f;
             float arm=(side<0?-swing:swing)*42f;
             if(guard>.05f)arm=side>0?-72f*guard:-58f*guard;
+            if(aiming && weaponId>=0 && weaponId<WeaponSystem.NAME.length) arm=side>0?-104f:-76f;
             if(hurt>0f)arm=side>0?65f:-55f;
             if(fall>.05f)arm=side>0?-65f:55f;
             if (attack > 0f && attackType == 1) {
@@ -1199,12 +1200,13 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             drawHumanPart(rig[12],side*.052f,1.667f,.137f,0,0,0,0,1,1,1);
             drawHumanPart(rig[15],side*.31f,.78f,.02f,arm*.42f,0,0,0,1,1,1);
             if(side>0&&weaponId>=0&&weaponId<WeaponSystem.NAME.length){
-                float gunRot=arm*.42f;
+                float gunRot=arm*.42f + recoil*10f;
                 if(weaponId==0){
                     // Pistol: slide, muzzle and grip are separate solid parts held in the palm.
                     drawHumanPartY(cube,.40f,.92f,.19f,gunRot,-90f,0,0,0,.25f,.075f,.060f);
                     drawHumanPartY(cube,.53f,.93f,.19f,gunRot,-90f,0,0,0,.13f,.035f,.038f);
                     drawHumanPartY(cube,.34f,.82f,.20f,gunRot,-90f,0,0,0,.075f,.15f,.060f);
+                    if(muzzleFlash>0.02f) drawHumanPartY(cube,.70f,.93f,.19f,gunRot,-90f,0,0,0,.10f*muzzleFlash,.10f*muzzleFlash,.10f*muzzleFlash);
                 }else{
                     // Long guns: receiver, barrel, stock, foregrip and magazine create a readable silhouette.
                     drawHumanPartY(cube,.43f,.94f,.19f,gunRot,-90f,0,0,0,.30f,.085f,.070f);
@@ -1213,6 +1215,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                     drawHumanPartY(cube,.39f,.82f,.20f,gunRot,-90f,0,0,0,.10f,.18f,.060f);
                     if(weaponId==4)drawHumanPartY(cube,.75f,.96f,.19f,gunRot,-90f,0,0,0,.12f,.07f,.06f);
                     if(weaponId==3)drawHumanPartY(cube,.48f,.80f,.20f,gunRot,-90f,0,0,0,.11f,.18f,.065f);
+                    if(muzzleFlash>0.02f) drawHumanPartY(cube,1.02f,.96f,.19f,gunRot,-90f,0,0,0,.13f*muzzleFlash,.11f*muzzleFlash,.11f*muzzleFlash);
                 }
             }
         }
