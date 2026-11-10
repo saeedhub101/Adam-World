@@ -66,7 +66,7 @@ final class Game {
     float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
     long lastLookMs;
     volatile float sx, sy;
-    volatile boolean sprint, stealthMode;
+    volatile boolean sprint, jogging, stealthMode;
     volatile long lastSprintTapMs;
     volatile boolean cinematicCamera;
     volatile int cameraMode = 1;
@@ -86,7 +86,7 @@ final class Game {
     }
 
     void reset() {
-        sx = sy = 0f; sprint = false; stealthMode = false; lastSprintTapMs = 0L;
+        sx = sy = 0f; sprint = false; jogging = false; stealthMode = false; lastSprintTapMs = 0L;
         cinematicCamera = false; cameraMode = 1;
         playerMotion.reset();
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
