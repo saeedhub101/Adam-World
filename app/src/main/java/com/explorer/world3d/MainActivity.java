@@ -537,6 +537,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 "دراجة هوائية", "دبابة", "هليكوبتر", "طائرة"};
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle("اختر المركبة")
                 .setItems(names, (d, which) -> runOnGl(() -> {
+                    if (which == ProceduralVehicleModels.AIRPLANE || which == ProceduralVehicleModels.HELICOPTER)
+                        renderer.enterAirport(31.9726, 35.9916);
                     renderer.selectVehicleType(which);
                     renderer.game.paused = false;
                 }))
