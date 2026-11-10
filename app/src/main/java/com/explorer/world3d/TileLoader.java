@@ -399,7 +399,7 @@ final class TileLoader extends Thread {
     /** Preserve the old_app NPDC tree inventory as geolocated tree features in offline Manila. */
     private void addRizalParkInventory(JSONObject city) {
         try (InputStream in = context.getAssets().open(
-                "regions/philippines/manila/rizal-park/rizal-park-inventory.json");
+                "data/regions/philippines/manila/rizal-park/rizal-park-inventory.json");
              BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"))) {
             StringBuilder json = new StringBuilder();
             String line;
