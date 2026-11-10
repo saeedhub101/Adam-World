@@ -173,10 +173,18 @@ final class Game {
                     : vehicleType == ProceduralVehicleModels.SUV ? 1.52f
                     : vehicleType == ProceduralVehicleModels.PICKUP ? 1.65f
                     : vehicleType == ProceduralVehicleModels.MOTORBIKE || vehicleType == ProceduralVehicleModels.BICYCLE ? 1.45f : 1.38f;
-            float fl = city.lowObstacleHeightAt(cx + fx * halfLength - rx * halfWidth, cz + fz * halfLength - rz * halfWidth);
-            float fr = city.lowObstacleHeightAt(cx + fx * halfLength + rx * halfWidth, cz + fz * halfLength + rz * halfWidth);
-            float rl = city.lowObstacleHeightAt(cx - fx * halfLength - rx * halfWidth, cz - fz * halfLength - rz * halfWidth);
-            float rr = city.lowObstacleHeightAt(cx - fx * halfLength + rx * halfWidth, cz - fz * halfLength + rz * halfWidth);
+            // Sample the actual ground independently below all four wheels. Values are
+            // offsets from the chassis centre so the body follows slopes without double
+            // applying the centre elevation when vehicleY is assembled below.
+            float centreGround = city.baseHeightAt(cx, cz);
+            float fl = city.baseHeightAt(cx + fx * halfLength - rx * halfWidth, cz + fz * halfLength - rz * halfWidth) - centreGround
+                    + city.lowObstacleHeightAt(cx + fx * halfLength - rx * halfWidth, cz + fz * halfLength - rz * halfWidth);
+            float fr = city.baseHeightAt(cx + fx * halfLength + rx * halfWidth, cz + fz * halfLength + rz * halfWidth) - centreGround
+                    + city.lowObstacleHeightAt(cx + fx * halfLength + rx * halfWidth, cz + fz * halfLength + rz * halfWidth);
+            float rl = city.baseHeightAt(cx - fx * halfLength - rx * halfWidth, cz - fz * halfLength - rz * halfWidth) - centreGround
+                    + city.lowObstacleHeightAt(cx - fx * halfLength - rx * halfWidth, cz - fz * halfLength - rz * halfWidth);
+            float rr = city.baseHeightAt(cx - fx * halfLength + rx * halfWidth, cz - fz * halfLength + rz * halfWidth) - centreGround
+                    + city.lowObstacleHeightAt(cx - fx * halfLength + rx * halfWidth, cz - fz * halfLength + rz * halfWidth);
             float spring = Math.min(1f, dt * 18f);
             vehicleWheelFL += (fl - vehicleWheelFL) * spring; vehicleWheelFR += (fr - vehicleWheelFR) * spring;
             vehicleWheelRL += (rl - vehicleWheelRL) * spring; vehicleWheelRR += (rr - vehicleWheelRR) * spring;
@@ -395,7 +403,12 @@ final class Game {
             playerMotion.update(this, dt, w);
             // The parked car keeps its own ground height; character jump/height never moves it.
             vehicleY = (w instanceof CityRenderer)
-                    ? ((CityRenderer) w).baseHeightAt(cx, cz) : w.heightAt(cx, cz);
+                    ? ((CityRenderer) w).baseHeightAt(cx, cz) + vehicleWheelBodyLift : w.heightAt(cx, cz);
+            // Chase camera smoothly turns behind the walking direction. Manual look
+            // input temporarily owns the camera, then heading-follow resumes.
+            if (Math.hypot(sx, sy) > 0.08f && System.currentTimeMillis() - lastLookMs > 900L) {
+                camYaw += angDiff(camYaw, pyaw) * Math.min(1f, dt * 4.2f);
+            }
         } else {
             boolean aircraft = vehicleType == ProceduralVehicleModels.HELICOPTER || vehicleType == ProceduralVehicleModels.AIRPLANE;
             if (aircraft) updateAircraft(dt, jx, jy);
@@ -405,8 +418,8 @@ final class Game {
                     : w.heightAt(cx, cz);
             // Vehicle elevation is independent from the on-foot character transform.
             vehicleY = ground + altitude;
-            if (System.currentTimeMillis() - lastLookMs > 2500) {
-                camYaw += angDiff(camYaw, cyaw) * Math.min(1f, dt * 2.5f);
+            if (Math.abs(cv) > 0.8f && System.currentTimeMillis() - lastLookMs > 900L) {
+                camYaw += angDiff(camYaw, cyaw) * Math.min(1f, dt * 4.0f);
             }
         }
 
