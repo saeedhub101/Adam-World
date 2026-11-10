@@ -124,7 +124,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private Textures tex;
     private ProceduralMaterialMaps vehicleMaps;
     private Mesh cube, groundMesh, skyQuad, seaMesh, flightSchoolMesh;
-    private volatile boolean flightSchoolMode;
+    private volatile boolean flightSchoolMode, airportVisit;
     private boolean savedOfflineAmman;
     private String savedOfflineCitySlug;
     private double savedCityLat, savedCityLon;
@@ -414,43 +414,33 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         beginSpawn();
     }
 
-    /** Enter a self-contained flight-school scene while preserving the current city session. */
-    public void enterFlightSchool() {
-        if (flightSchoolMode || !spawned) return;
+    /** Visit a real mapped airport while staying in the same streamed city world. */
+    public void enterFlightSchool() { enterAirport(31.9726, 35.9916); }
+
+    public void enterAirport(double latitude, double longitude) {
+        if (flightSchoolMode || airportVisit || !spawned) return;
         savedCityLat = Geo.latOf(game.focusZ());
         savedCityLon = Geo.lonOf(game.focusX());
         savedOfflineAmman = loader.offlineAmman;
         savedOfflineCitySlug = loader.offlineManila ? "manila" : loader.offlineCitySlug;
-        flightSchoolMode = true;
-        loader.havePlayer = false;
-        loader.gen++;
-        loader.cancelCurrentLoad();
-        loader.ready.clear(); loader.requested.clear(); loader.failedAt.clear();
-        for (Tile tile : tiles.values()) tile.release();
-        tiles.clear();
-        for (Mesh mesh : terrain.values()) mesh.release();
-        terrain.clear();
-        Terrain.reset();
-        loader.offlineAmman = false; loader.offlineManila = false; loader.offlineCitySlug = null;
-        Geo.setOrigin(0.0, 0.0);
-        if (playerVehicleType != ProceduralVehicleModels.HELICOPTER
-                && playerVehicleType != ProceduralVehicleModels.AIRPLANE) playerVehicleType = ProceduralVehicleModels.AIRPLANE;
-        spawnFlightSchoolVehicle(true);
-        L.onLoading(false, "");
-        L.onToast("مطار التدريب جاهز — الطائرة على المدرج، والهليكوبتر على منصة H");
+        airportVisit = true;
+        playerVehicleType = ProceduralVehicleModels.AIRPLANE;
+        teleportInternal(latitude, longitude, false, null);
+        L.onToast("تم الانتقال إلى المطار الحقيقي داخل المدينة — المدرج والممرات من بيانات الخريطة");
     }
 
-    /** Restore the exact city coordinates and offline dataset used before the flight session. */
+    /** Restore the exact city coordinates and offline dataset used before the airport visit. */
     public void leaveFlightSchool() {
-        if (!flightSchoolMode) return;
+        if (!flightSchoolMode && !airportVisit) return;
         double lat = savedCityLat, lon = savedCityLon;
         boolean offline = savedOfflineAmman;
         String slug = savedOfflineCitySlug;
         flightSchoolMode = false;
+        airportVisit = false;
         teleportInternal(lat, lon, offline, slug);
     }
 
-    public boolean isFlightSchoolMode() { return flightSchoolMode; }
+    public boolean isFlightSchoolMode() { return flightSchoolMode || airportVisit; }
 
     private void spawnFlightSchoolVehicle(boolean enter) {
         Game g = game;
