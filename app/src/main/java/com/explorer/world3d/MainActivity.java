@@ -799,7 +799,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 audioPrefs.getInt("ambience", 55)/100f, audioPrefs.getInt("effects", 85)/100f);
         loadWeaponState();
         glView = new CityGLView(this, renderer);
+        glView.setFocusable(true);
+        glView.setFocusableInTouchMode(true);
         root.addView(glView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        glView.requestFocus();
         weaponWheelView = new WeaponWheelView(this);
         weaponWheelView.setGame(renderer.game);
         glView.setWeaponWheelView(weaponWheelView);
