@@ -461,6 +461,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         float nx = Math.abs(x) > 0.5f ? Math.signum(x) : 0f;
         float ny = Math.abs(y) > 0.5f ? Math.signum(y) : 0f;
         if (mapOpen && fullMapView != null) {
+            renderer.game.cameraZoomInput = 0f;
             if (nx != padHatX && nx != 0f) fullMapView.panBy(nx < 0f ? dp(72) : -dp(72), 0f);
             if (ny != padHatY && ny != 0f) fullMapView.panBy(0f, ny < 0f ? dp(72) : -dp(72));
         } else if (weaponWheelOpen && weaponWheelView != null) {
