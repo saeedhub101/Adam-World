@@ -927,7 +927,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         weaponCard.setStroke(dp(1), 0xff53677d);
         weaponHud.setBackground(weaponCard);
         weaponHud.setElevation(dp(8));
-        weaponHud.setText("مسدس\\n12   /   48");
+        weaponHud.setText("مسدس\n12   /   48");
         FrameLayout.LayoutParams weaponParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT,Gravity.TOP|Gravity.END);
         weaponParams.setMargins(0,dp(112),dp(18),0);
         root.addView(weaponHud,weaponParams);
@@ -1182,7 +1182,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 healthHud.setText("♥ "+hp+" / 100     ⚡ "+(int)renderer.game.stamina+" / 100"+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
                 Game game=renderer.game;
                 String weaponName=WeaponSystem.NAME[game.equippedWeapon];
-                String ammo=weaponName+"\\n"+game.magazineAmmo+"   /   "+game.reserveAmmo[game.equippedWeapon];
+                String ammo=weaponName+"\n"+game.magazineAmmo+"   /   "+game.reserveAmmo[game.equippedWeapon];
                 if(weaponHud!=null&&!ammo.equals(weaponHud.getText().toString())){
                     android.text.SpannableStringBuilder styled=new android.text.SpannableStringBuilder(ammo);
                     int split=weaponName.length();
