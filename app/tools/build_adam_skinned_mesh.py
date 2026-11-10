@@ -187,7 +187,8 @@ def main():
                 for ji,weight in zip(j[k],w[k]):
                     if weight<=0:continue
                     if ji<0 or ji>=bone_count:raise ValueError("joint index outside skin")
-                    new=old_to_new[joints[int(ji)]]
+                    mapped_node=node_to_selected[joints[int(ji)]]
+                    new=old_to_new[mapped_node]
                     accum[new]=accum.get(new,0.0)+float(weight)
                 ranked=sorted(accum.items(),key=lambda x:x[1],reverse=True)[:4]
                 total=sum(v for _,v in ranked)
@@ -240,14 +241,14 @@ def main():
             all_times=np.unique(np.concatenate([v[0] for v in channels.values()]))
             if len(all_times)>240:
                 all_times=np.linspace(0,max_time,240)
-            bt,bq,bs=decompose(np.linalg.inv(globals_[parents[old]])@globals_[old] if parents[old] in joint_set else globals_[old]) if parents[old]>=0 else decompose(globals_[old])
-            # For joints below non-joint helper nodes, bind transform is relative to nearest joint ancestor.
-            anc=parents[old]
-            while anc>=0 and anc not in joint_set:anc=parents[anc]
-            if anc>=0:bt,bq,bs=decompose(np.linalg.inv(globals_[anc])@globals_[old])
+            bi=old_to_new[old]
+            bt=np.asarray(bind_t[bi*3:bi*3+3],dtype=np.float64)
+            bq=np.asarray(bind_r[bi*4:bi*4+4],dtype=np.float64)
+            bs=np.asarray(bind_s[bi*3:bi*3+3],dtype=np.float64)
             T=np.tile(bt,(len(all_times),1));R=np.tile(bq,(len(all_times),1));S=np.tile(bs,(len(all_times),1))
             for path,(times,vals,interp) in channels.items():
                 sampled=sample_channel(times,vals,all_times,path,interp)
+                if path=="translation" and bone_parent[old_to_new[old]]<0:sampled=sampled-center
                 if path=="translation":T=sampled
                 elif path=="rotation":R=sampled
                 else:S=sampled
