@@ -281,8 +281,16 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             float w=getWidth(), h=getHeight(), cx=w/2f, cy=h/2f, rad=Math.min(w,h)*.47f;
             p.setColor(0xd91a2028); c.drawCircle(cx,cy,rad,p);
             c.save(); android.graphics.Path clip=new android.graphics.Path(); clip.addCircle(cx,cy,rad,android.graphics.Path.Direction.CW); c.clipPath(clip);
-            p.setColor(0xff56616b); p.setStrokeWidth(dp(5)); p.setStyle(Paint.Style.STROKE);
-            for(int i=-2;i<=2;i++){ c.drawLine(cx+i*dp(27),cy-rad,cx+i*dp(27),cy+rad,p); c.drawLine(cx-rad,cy+i*dp(27),cx+rad,cy+i*dp(27),p); }
+            p.setColor(0xffaeb9c4); p.setStrokeWidth(dp(2.2f)); p.setStrokeCap(Paint.Cap.ROUND); p.setStyle(Paint.Style.STROKE);
+            float playerX=renderer.game.driving?renderer.game.cx:renderer.game.px;
+            float playerZ=renderer.game.driving?renderer.game.cz:renderer.game.pz;
+            float mapScale=rad/260f;
+            float[] roads=renderer.miniMapRoads();
+            for(int i=0;i+3<roads.length;i+=4){
+                float x1=cx+(roads[i]-playerX)*mapScale, y1=cy+(roads[i+1]-playerZ)*mapScale;
+                float x2=cx+(roads[i+2]-playerX)*mapScale, y2=cy+(roads[i+3]-playerZ)*mapScale;
+                c.drawLine(x1,y1,x2,y2,p);
+            }
             p.setColor(0xffd4d9df); p.setStrokeWidth(dp(1.4f)); c.drawLine(cx,cy-rad*.72f,cx,cy-rad*.9f,p); p.setStyle(Paint.Style.FILL);
             p.setColor(Color.WHITE); p.setTextSize(dp(10)); c.drawText("N",cx-dp(3),cy-rad*.76f,p);
             c.restore();
