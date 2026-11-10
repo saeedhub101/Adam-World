@@ -2,8 +2,7 @@
 """Convert the repository's animated Adam GLB into the native AWM5 skinned format.
 
 Only the compact runtime mesh is written to Android assets. The source GLB remains
-in the repository and is never copied into the APK. This converter deliberately
-fails closed when the source rig exceeds the GLES2 shader's 24-bone budget.
+in the repository and is never copied into the APK. Large rigs are reduced to the 24 most influential joints while retaining required ancestors.
 """
 from __future__ import annotations
 import json, math, struct
@@ -138,13 +137,43 @@ def main():
         if "mesh" in node and "skin" in node: candidates.append((ni,node["mesh"],node["skin"]))
     if not candidates: raise ValueError("Adam GLB has no skinned mesh node")
     mesh_node,mesh_index,skin_index=candidates[0]
-    skin=skins[skin_index]; joints=skin["joints"]; bone_count=len(joints)
-    print(f"ADAM_SOURCE nodes={len(doc['nodes'])} skins={len(skins)} joints={bone_count} animations={len(doc.get('animations',[]))}",flush=True)
-    if bone_count>MAX_BONES: raise ValueError(f"source rig has {bone_count} joints; GLES2 budget is {MAX_BONES}; refusing lossy bone removal")
-    if bone_count<1: raise ValueError("empty skin")
-    joint_set=set(joints); joint_pos={n:i for i,n in enumerate(joints)}
-    ordered=sorted(joints,key=lambda n:sum(1 for _ in iter_ancestors(n,parents)))
+    skin=skins[skin_index]; joints=skin["joints"]; source_bone_count=len(joints)
+    print(f"ADAM_SOURCE nodes={len(doc['nodes'])} skins={len(skins)} joints={source_bone_count} animations={len(doc.get('animations',[]))}",flush=True)
+    if source_bone_count<1: raise ValueError("empty skin")
+    joint_pos={n:i for i,n in enumerate(joints)}
+    # Rank joints by actual vertex influence, retaining skin-joint ancestors.
+    influence={n:0.0 for n in joints}
+    for node_id,node_mesh,node_skin in candidates:
+        if node_skin!=skin_index: continue
+        for primitive in doc["meshes"][node_mesh]["primitives"]:
+            attrs=primitive["attributes"]
+            if "JOINTS_0" not in attrs or "WEIGHTS_0" not in attrs: continue
+            jj=np.asarray(accessor(doc,binary,attrs["JOINTS_0"]),dtype=np.int64)
+            ww=np.asarray(accessor(doc,binary,attrs["WEIGHTS_0"]),dtype=np.float64)
+            for ids,weights in zip(jj,ww):
+                for ji,weight in zip(ids,weights):
+                    if 0<=int(ji)<source_bone_count and weight>0:
+                        influence[joints[int(ji)]]+=float(weight)
+    ranked=sorted(joints,key=lambda n:influence[n],reverse=True)
+    selected=set()
+    for node_id in ranked:
+        chain=[]; anc=node_id
+        while anc>=0:
+            if anc in joint_pos and anc not in selected: chain.append(anc)
+            anc=parents[anc]
+        if chain and len(selected)+len(chain)<=MAX_BONES: selected.update(chain)
+        if len(selected)>=MAX_BONES: break
+    if not selected: selected.add(joints[0])
+    ordered=sorted(selected,key=lambda n:sum(1 for _ in iter_ancestors(n,parents)))
     old_to_new={old:i for i,old in enumerate(ordered)}
+    node_to_selected={}
+    for old in joints:
+        anc=old
+        while anc>=0 and anc not in old_to_new: anc=parents[anc]
+        if anc<0: anc=ordered[0]
+        node_to_selected[old]=anc
+    bone_count=len(ordered)
+    print(f"ADAM_RIG_COMPRESSED source_bones={source_bone_count} runtime_bones={bone_count} mapped={sum(1 for n in joints if node_to_selected[n]!=n)}",flush=True)
     mesh_global=globals_[mesh_node]; inv_mesh=np.linalg.inv(mesh_global)
     ibm=np.asarray([np.asarray(row,dtype=np.float64).reshape((4,4),order="F") for row in accessor(doc,binary,skin["inverseBindMatrices"])]) if "inverseBindMatrices" in skin else np.repeat(np.eye(4)[None,:,:],bone_count,axis=0)
     if len(ibm)!=bone_count:raise ValueError("inverse bind matrix count mismatch")
