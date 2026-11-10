@@ -252,7 +252,7 @@ final class Game {
         weaponReloadSeconds=Math.max(0f,weaponReloadSeconds-dt);
         if(weaponAimHeld&&!driving)pyaw+=angDiff(pyaw,camYaw)*Math.min(1f,dt*10f);
         if(reloadRequested){reloadRequested=false;reloadWeapon();}
-        if(weaponFireHeld&&!driving&&weaponReloadSeconds<=0f)fireWeapon(now);
+        if(weaponFireHeld&&!driving&&weaponReloadSeconds<=0f)fireWeapon(now,w);
         dodgeSeconds = Math.max(0f, dodgeSeconds - dt);
         hurtFlash=Math.max(0f,hurtFlash-dt);
         guardBlend += ((guardRequested && !driving && stamina>0f ? 1f:0f)-guardBlend)*Math.min(1f,dt*12f);
@@ -416,7 +416,7 @@ final class Game {
         updateCamera(dt);
     }
 
-    void fireWeapon(long now){
+    void fireWeapon(long now, World w){
         int id=equippedWeapon;
         if(id<0||id>=WeaponSystem.NAME.length||now-lastWeaponShotMs<WeaponSystem.FIRE_INTERVAL_MS[id])return;
         if(magazineAmmo<=0){reloadWeapon();return;}
