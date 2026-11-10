@@ -469,7 +469,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 canvas.drawLine(ox+i*70*zoom,0,ox+i*70*zoom,h,paint);
                 canvas.drawLine(0,oy+i*70*zoom,w,oy+i*70*zoom,paint);
             }
-            float[] roads=renderer.miniMapRoads();
+            float[] roads=renderer.fullMapRoads();
             paint.setStrokeCap(Paint.Cap.ROUND);
             for(int i=0;i+3<roads.length;i+=4){
                 float x1=ox+(roads[i]-px)*scale, y1=oy+(roads[i+1]-pz)*scale;
