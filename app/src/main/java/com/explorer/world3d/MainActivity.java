@@ -227,7 +227,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("على التلفاز: العصا اليسرى للحركة أو توجيه المركبة، واليمنى للكاميرا. أثناء المشي: A للركض، X للقفز (أو إعادة التلقيم أثناء التصويب)، B للكمة، Y للدخول والخروج، LT للتصويب، RT لإطلاق النار، LB لعجلة الأسلحة (اضغط مطولاً)، RB للاحتماء، L3 للركض، R3 للمراوغة. أثناء قيادة السيارة: RT للتسارع، LT للفرملة والرجوع، العصا اليسرى للتوجيه، A أو RB لفرامل اليد، X للبوق، B للنظر للخلف، Y للخروج. الطائرة: RT لقوة المحرك، LT للفرامل، العصا اليسرى للميل والتوجيه، LB/RB لدفة الاتجاه، L3 للعجلات. الهليكوبتر: RT لقوة المحرك، LT لخفض الارتفاع، الأسهم أعلى/أسفل للتحكم بالارتفاع، العصا اليسرى للحركة والميل، LB/RB للاتجاه. View للخريطة وMenu للإيقاف. على الهاتف تظهر أزرار اللمس المناسبة للحالة فقط.")
+                .setMessage("على التلفاز: العصا اليسرى للحركة أو توجيه المركبة، واليمنى للكاميرا. أثناء المشي: A للركض، X للقفز (أو إعادة التلقيم أثناء التصويب)، B للكمة، Y للدخول والخروج، LT للتصويب، RT لإطلاق النار، LB لعجلة الأسلحة (اضغط مطولاً)، RB للاحتماء، L3 لتبديل وضع التخفي والمشي البطيء، R3 للمراوغة. أثناء قيادة السيارة: RT للتسارع، LT للفرملة والرجوع، العصا اليسرى للتوجيه، A أو RB لفرامل اليد، X للبوق، B للنظر للخلف، Y للخروج. الطائرة: RT لقوة المحرك، LT للفرامل، العصا اليسرى للميل والتوجيه، LB/RB لدفة الاتجاه، L3 للعجلات. الهليكوبتر: RT لقوة المحرك، LT لخفض الارتفاع، الأسهم أعلى/أسفل للتحكم بالارتفاع، العصا اليسرى للحركة والميل، LB/RB للاتجاه. View للخريطة وMenu للإيقاف. على الهاتف تظهر أزرار اللمس المناسبة للحالة فقط.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
@@ -389,7 +389,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if (pressed && game.driving && game.vehicleType == ProceduralVehicleModels.AIRPLANE)
                 runOnGl(() -> renderer.toggleAircraftGear());
             else if (pressed && game.driving && !aircraft) playHorn();
-            else if (!game.driving) game.sprint = down;
+            else if (pressed && !game.driving) game.stealthMode = !game.stealthMode;
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_THUMBR) {
@@ -1130,6 +1130,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             renderer.game.cameraLookOffset = 0f;
             renderer.setGamepadLook(0f, 0f);
             renderer.game.sprint = false;
+            renderer.game.stealthMode = false;
             renderer.game.guardRequested = false;
             renderer.game.handbrake = false;
             renderer.game.brakeRequested = false;
