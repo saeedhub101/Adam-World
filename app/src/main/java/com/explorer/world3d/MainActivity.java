@@ -444,16 +444,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         android.view.InputDevice device = event.getDevice();
         float lx = event.getAxisValue(android.view.MotionEvent.AXIS_X);
         float ly = -event.getAxisValue(android.view.MotionEvent.AXIS_Y);
-        float rx = event.getAxisValue(android.view.MotionEvent.AXIS_RX);
-        float ry = event.getAxisValue(android.view.MotionEvent.AXIS_RY);
-        final boolean hasRxRy = device != null && (hasMotionRange(device, android.view.MotionEvent.AXIS_RX, source)
-                || hasMotionRange(device, android.view.MotionEvent.AXIS_RY, source));
-        if (device != null && !hasRxRy
-                && hasMotionRange(device, android.view.MotionEvent.AXIS_Z, source)
-                && hasMotionRange(device, android.view.MotionEvent.AXIS_RZ, source)) {
-            rx = event.getAxisValue(android.view.MotionEvent.AXIS_Z);
-            ry = event.getAxisValue(android.view.MotionEvent.AXIS_RZ);
-        }
+        // Camera input is read only from the declared right-stick axes.
+        // Z/RZ are ambiguous on Android pads and must never steal left-stick movement.
+        float rx = device != null && hasMotionRange(device, android.view.MotionEvent.AXIS_RX, source)
+                ? event.getAxisValue(android.view.MotionEvent.AXIS_RX) : 0f;
+        float ry = device != null && hasMotionRange(device, android.view.MotionEvent.AXIS_RY, source)
+                ? event.getAxisValue(android.view.MotionEvent.AXIS_RY) : 0f;
         final float dead = 0.16f;
         lx = applyStickDeadZone(lx, dead);
         ly = applyStickDeadZone(ly, dead);
