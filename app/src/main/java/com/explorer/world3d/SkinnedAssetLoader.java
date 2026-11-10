@@ -9,7 +9,8 @@ import java.nio.charset.StandardCharsets;
 
 /** Bounded AWM5 reader for skinned triangle meshes, skeletons and sampled TRS clips. */
 final class SkinnedAssetLoader {
-    private static final int MAGIC=0x354d5741;
+    private static final int MAGIC_AWM5=0x354d5741, MAGIC_AWM6=0x364d5741;
+    private static final int AWM6_VERTEX_BYTES=30;
     private static final int MAX_VERTICES=250000,MAX_CLIPS=64,MAX_KEYS=20000,MAX_NAME=96;
     private SkinnedAssetLoader(){}
     static final class Asset {
@@ -22,11 +23,27 @@ final class SkinnedAssetLoader {
         try(InputStream in=context.getAssets().open(path);ByteArrayOutputStream out=new ByteArrayOutputStream()){
             byte[] block=new byte[32768];int n;while((n=in.read(block))!=-1){if(out.size()+n>96*1024*1024)return null;out.write(block,0,n);}
             ByteBuffer d=ByteBuffer.wrap(out.toByteArray()).order(ByteOrder.LITTLE_ENDIAN);
-            if(d.remaining()<24||d.getInt()!=MAGIC)return null;
+            if(d.remaining()<24)return null;
+            int magic=d.getInt();
             int vertices=d.getInt(),bones=d.getInt(),clipCount=d.getInt(),stride=d.getInt(),flags=d.getInt();
-            if(vertices<3||vertices>MAX_VERTICES||bones<1||bones>SkeletalAnimationRuntime.MAX_BONES||clipCount<0||clipCount>MAX_CLIPS||stride!=SkinnedMesh.STRIDE_FLOATS)return null;
-            long vertexBytes=(long)vertices*stride*4;if(vertexBytes>d.remaining())return null;
-            float[] data=new float[vertices*stride];for(int i=0;i<data.length;i++){data[i]=d.getFloat();if(!Float.isFinite(data[i]))return null;}
+            boolean compact=magic==MAGIC_AWM6;
+            if((!compact&&magic!=MAGIC_AWM5)||vertices<3||vertices>MAX_VERTICES
+                    ||bones<1||bones>SkeletalAnimationRuntime.MAX_BONES||clipCount<0||clipCount>MAX_CLIPS
+                    ||(compact?stride!=AWM6_VERTEX_BYTES:stride!=SkinnedMesh.STRIDE_FLOATS))return null;
+            long vertexBytes=(long)vertices*(compact?AWM6_VERTEX_BYTES:(long)stride*4L);
+            if(vertexBytes>d.remaining())return null;
+            float[] data=new float[vertices*SkinnedMesh.STRIDE_FLOATS];
+            if(compact){
+                for(int v=0;v<vertices;v++){
+                    int o=v*SkinnedMesh.STRIDE_FLOATS;
+                    for(int j=0;j<11;j++)data[o+j]=halfToFloat(Short.toUnsignedInt(d.getShort()));
+                    for(int j=0;j<4;j++)data[o+11+j]=d.get()&0xff;
+                    for(int j=0;j<4;j++)data[o+15+j]=(d.get()&0xff)/255f;
+                }
+            }else{
+                for(int i=0;i<data.length;i++)data[i]=d.getFloat();
+            }
+            for(float value:data)if(!Float.isFinite(value))return null;
             int[] parent=new int[bones];String[] names=new String[bones];float[] bt=new float[bones*3],br=new float[bones*4],bs=new float[bones*3],ib=new float[bones*16];
             for(int b=0;b<bones;b++){
                 parent[b]=d.getInt();names[b]=readString(d);
@@ -72,6 +89,13 @@ final class SkinnedAssetLoader {
             }
             return new Asset(SkinnedMesh.upload(data,vertices),new SkeletalAnimationRuntime.Animator(skeleton,clips));
         }catch(Exception ignored){return null;}
+    }
+    private static float halfToFloat(int bits){
+        float sign=(bits&0x8000)!=0?-1f:1f;
+        int exponent=(bits>>>10)&0x1f,mantissa=bits&0x03ff;
+        if(exponent==0)return sign*(float)Math.scalb(mantissa/1024.0,-14);
+        if(exponent==31)return mantissa==0?sign*Float.POSITIVE_INFINITY:Float.NaN;
+        return sign*(float)Math.scalb(1.0+mantissa/1024.0,exponent-15);
     }
     private static String readString(ByteBuffer d){int n=d.getInt();if(n<1||n>MAX_NAME||n>d.remaining())throw new IllegalArgumentException("Invalid string");byte[] b=new byte[n];d.get(b);return new String(b,StandardCharsets.UTF_8);}
     private static boolean finite(float[] a,int o,int n){for(int i=0;i<n;i++)if(!Float.isFinite(a[o+i]))return false;return true;}

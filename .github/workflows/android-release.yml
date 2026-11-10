@@ -79,7 +79,7 @@ jobs:
             PED_OUTPUT="app/src/main/assets/models/runtime/characters/pedestrian-$NAME.awmesh5"
             rm -f "$PED_OUTPUT"
             if curl -fL --retry 2 --retry-delay 2 --connect-timeout 12 --max-time 50 "$PED_URL" -o "$PED_SOURCE"; then
-              if ADAM_SOURCE_GLTF="$PED_SOURCE" ADAM_OUTPUT_MESH="$PED_OUTPUT" ADAM_TARGET_FACES=8500 python app/tools/build_adam_skinned_mesh.py; then
+              if ADAM_SOURCE_GLTF="$PED_SOURCE" ADAM_OUTPUT_MESH="$PED_OUTPUT" python app/tools/build_adam_skinned_mesh.py; then
                 PED_BYTES="$(stat -c%s "$PED_OUTPUT")"
                 if [ "$PED_BYTES" -gt 1572864 ]; then
                   rm -f "$PED_OUTPUT"
@@ -111,7 +111,7 @@ jobs:
               echo "::warning::Pedestrian source missing: $SOURCE_REL"
               continue
             fi
-            if ADAM_SOURCE_GLTF="$PED_SOURCE" ADAM_OUTPUT_MESH="$PED_OUTPUT" ADAM_TARGET_FACES=8500 python app/tools/build_adam_skinned_mesh.py; then
+            if ADAM_SOURCE_GLTF="$PED_SOURCE" ADAM_OUTPUT_MESH="$PED_OUTPUT" python app/tools/build_adam_skinned_mesh.py; then
               PED_BYTES="$(stat -c%s "$PED_OUTPUT")"
               if [ "$PED_BYTES" -gt 3145728 ]; then
                 rm -f "$PED_OUTPUT"

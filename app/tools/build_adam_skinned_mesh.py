@@ -9,8 +9,6 @@ import json, math, struct, io, os
 from pathlib import Path
 from urllib.parse import unquote
 import numpy as np
-import trimesh
-from scipy.spatial import cKDTree
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -19,7 +17,6 @@ OUT = Path(os.environ.get("ADAM_OUTPUT_MESH", str(ROOT / "app/src/main/assets/mo
 MAX_BONES = 24
 MAX_VERTICES = 250000
 MAX_KEYS_TOTAL = 20000
-TARGET_FACES = max(0, int(os.environ.get("ADAM_TARGET_FACES", "0")))
 
 def glb_parts(path):
     raw = path.read_bytes()
@@ -324,33 +321,6 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
         clips.append((clip_name,duration,tracks))
     return clips
 
-def simplify_skinned_primitive(positions, indices, joints, weights, normals, uv, colors, target_faces):
-    """Decimate a skinned primitive while remapping UVs, colors and four-bone weights."""
-    faces=np.asarray(indices,dtype=np.int64).reshape(-1,3)
-    if len(faces)<=target_faces:
-        return positions,faces.reshape(-1),joints,weights,normals,uv,colors
-    current=trimesh.Trimesh(vertices=np.asarray(positions,dtype=np.float64),faces=faces,process=False)
-    current_to_original=np.arange(len(positions),dtype=np.int64)
-    for attempt in range(5):
-        if len(current.faces)<=target_faces: break
-        next_target=max(target_faces,int(len(current.faces)*0.52))
-        candidate=current.simplify_quadric_decimation(face_count=next_target,aggression=10)
-        if len(candidate.vertices)<3 or len(candidate.faces)<1 or len(candidate.faces)>=len(current.faces):
-            break
-        nearest_current=cKDTree(np.asarray(current.vertices,dtype=np.float64)).query(
-            np.asarray(candidate.vertices,dtype=np.float64),k=1,workers=-1
-        )[1]
-        current_to_original=current_to_original[nearest_current]
-        current=candidate
-        print(f"ADAM_SKIN_DECIMATION pass={attempt+1} faces={len(current.faces)}",flush=True)
-    nearest=current_to_original
-    simplified_positions=np.asarray(current.vertices,dtype=np.float64)
-    simplified_normals=np.asarray(current.vertex_normals,dtype=np.float64)
-    simplified_normals/=np.maximum(np.linalg.norm(simplified_normals,axis=1,keepdims=True),1e-10)
-    return (simplified_positions,np.asarray(current.faces,dtype=np.int64).reshape(-1),
-            np.asarray(joints)[nearest],np.asarray(weights)[nearest],simplified_normals,
-            np.asarray(uv)[nearest],np.asarray(colors)[nearest])
-
 def main():
     if not SOURCE.is_file(): raise FileNotFoundError(f"source missing: {SOURCE}")
     doc,binary=glb_parts(SOURCE)
@@ -416,16 +386,6 @@ def main():
         bone_parent.append(parent_new);bind_t.extend(t);bind_r.extend(q);bind_s.extend(s)
         # Vertices are stored in mesh-node world coordinates, so remove mesh transform here.
         inverse_bind.extend((ibm[old_to_new[old]]@inv_mesh).reshape(16,order="F"))
-    total_source_faces=0
-    if TARGET_FACES>0:
-        for node_id,node_mesh,node_skin in candidates:
-            if node_skin!=skin_index: continue
-            for primitive in doc["meshes"][node_mesh]["primitives"]:
-                if primitive.get("mode",4)!=4: continue
-                if "indices" in primitive:
-                    total_source_faces+=len(accessor(doc,binary,primitive["indices"]))//3
-                else:
-                    total_source_faces+=len(accessor(doc,binary,primitive["attributes"]["POSITION"]))//3
     vertices=[];triangles=[];base_vertex=0
     for node_id,node_mesh,node_skin in candidates:
         if node_skin!=skin_index:continue
@@ -455,12 +415,6 @@ def main():
             col[:,:3]*=baked
             idx=accessor(doc,binary,primitive["indices"]) if "indices" in primitive else np.arange(len(p))
             if len(idx)%3:raise ValueError("triangle index count is not divisible by three")
-            if TARGET_FACES>0 and total_source_faces>0:
-                face_count=len(idx)//3
-                face_budget=max(100,int(TARGET_FACES*face_count/total_source_faces))
-                if face_count>face_budget:
-                    p,idx,j,w,n,uv,col=simplify_skinned_primitive(p,idx,j,w,n,uv,col,face_budget)
-                    print(f"ADAM_SKIN_PRIMITIVE faces={face_count}->{len(idx)//3} vertices={len(p)}",flush=True)
             if len(p)+len(vertices)>MAX_VERTICES:raise ValueError("Adam mesh exceeds runtime vertex budget")
             for k in range(len(p)):
                 accum={}
@@ -547,9 +501,15 @@ def main():
     total_keys=sum(len(t[1]) for _,_,tr in clips for t in tr)
     if total_keys>MAX_KEYS_TOTAL:raise ValueError(f"animation keys {total_keys} exceed runtime cap {MAX_KEYS_TOTAL}")
     OUT.parent.mkdir(parents=True,exist_ok=True)
+    # AWM6 keeps every triangle and all skin influences while storing the 11
+    # geometric/material floats as IEEE-754 halfs and joint/weight channels as bytes.
+    compact=np.empty((len(data),30),dtype=np.uint8)
+    compact[:,:22]=data[:,:11].astype("<f2").view(np.uint8).reshape(-1,22)
+    compact[:,22:26]=np.clip(np.rint(data[:,11:15]),0,255).astype(np.uint8)
+    compact[:,26:30]=np.clip(np.rint(data[:,15:19]*255.0),0,255).astype(np.uint8)
     with OUT.open("wb") as f:
-        f.write(struct.pack("<6I",0x354d5741,len(data),bone_count,len(clips),19,0))
-        f.write(data.astype("<f4",copy=False).tobytes())
+        f.write(struct.pack("<6I",0x364d5741,len(data),bone_count,len(clips),30,0))
+        f.write(compact.tobytes())
         for i,old in enumerate(ordered):
             name=doc["nodes"][old].get("name",f"bone_{i}").encode("utf-8")[:96]
             f.write(struct.pack("<iI",bone_parent[i],len(name)));f.write(name)
