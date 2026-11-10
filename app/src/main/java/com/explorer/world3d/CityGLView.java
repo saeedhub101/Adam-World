@@ -71,6 +71,14 @@ public class CityGLView extends GLSurfaceView {
         return v < 0f ? (v + 1f) * 0.5f : Math.min(1f, v);
     }
 
+    void clearDigitalInputs() {
+        digitalMoveUp = digitalMoveDown = digitalMoveLeft = digitalMoveRight = false;
+        digitalLookUp = digitalLookDown = digitalLookLeft = digitalLookRight = false;
+        hatMoveX = hatMoveY = analogMoveX = analogMoveY = analogLookX = analogLookY = 0f;
+        padGas = padBrake = 0f;
+        applyControllerState();
+    }
+
     private static float clampInput(float value) {
         return Math.max(-1f, Math.min(1f, value));
     }
