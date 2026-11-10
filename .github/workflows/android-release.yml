@@ -76,29 +76,34 @@ jobs:
           python app/tools/build_runtime_meshes.py
           python app/tools/build_adam_skinned_mesh.py
 
-          # CC0 adult pedestrian with a real skinned walk cycle. The source is converted
-          # at build time; only the compact runtime mesh can enter the APK.
-          PED_SOURCE="$RUNNER_TEMP/adam-world-pedestrian.glb"
-          PED_OUTPUT="app/src/main/assets/models/runtime/characters/pedestrian.awmesh5"
-          mkdir -p "$(dirname "$PED_OUTPUT")"
-          rm -f "$PED_OUTPUT"
-          PED_URL="https://files.innerscene.com/library/relaxed-walk-sam-3d-person-animated-732f1206/b11d02f72ad777e03d68/relaxed-walk-sam-3d-person-animated.glb"
-          if curl -fL --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 180 "$PED_URL" -o "$PED_SOURCE"; then
-            if ADAM_SOURCE_GLTF="$PED_SOURCE" ADAM_OUTPUT_MESH="$PED_OUTPUT" python app/tools/build_adam_skinned_mesh.py; then
-              PED_BYTES="$(stat -c%s "$PED_OUTPUT")"
-              if [ "$PED_BYTES" -gt 12000000 ]; then
-                rm -f "$PED_OUTPUT"
-                echo "::warning::Pedestrian mesh exceeded 12 MB and was omitted to protect APK and memory budgets."
+          # Compact, textured, rigged CC0 everyday pedestrians with Idle/Walk/Run clips.
+          # Keep each converted mesh under 1.5 MB to bound APK size and GPU memory.
+          mkdir -p app/src/main/assets/models/runtime/characters
+          while IFS='|' read -r NAME PED_URL; do
+            PED_SOURCE="$RUNNER_TEMP/adam-world-$NAME.glb"
+            PED_OUTPUT="app/src/main/assets/models/runtime/characters/pedestrian-$NAME.awmesh5"
+            rm -f "$PED_OUTPUT"
+            if curl -fL --retry 2 --retry-delay 2 --connect-timeout 12 --max-time 50 "$PED_URL" -o "$PED_SOURCE"; then
+              if ADAM_SOURCE_GLTF="$PED_SOURCE" ADAM_OUTPUT_MESH="$PED_OUTPUT" python app/tools/build_adam_skinned_mesh.py; then
+                PED_BYTES="$(stat -c%s "$PED_OUTPUT")"
+                if [ "$PED_BYTES" -gt 1572864 ]; then
+                  rm -f "$PED_OUTPUT"
+                  echo "::warning::Pedestrian $NAME exceeded 1.5 MB and was omitted."
+                else
+                  echo "Pedestrian $NAME ready: $PED_BYTES bytes"
+                fi
               else
-                echo "Pedestrian runtime mesh ready: $PED_BYTES bytes"
+                rm -f "$PED_OUTPUT"
+                echo "::warning::Pedestrian $NAME conversion failed; that variant will use the fallback."
               fi
             else
-              rm -f "$PED_OUTPUT"
-              echo "::warning::Optional CC0 pedestrian conversion failed; procedural fallback remains enabled."
+              echo "::warning::Pedestrian $NAME download failed; that variant will use the fallback."
             fi
-          else
-            echo "::warning::Optional CC0 pedestrian source was unavailable; procedural fallback remains enabled."
-          fi
+          done <<'PED_MODELS'
+          office|https://gobkit.com/freebies/human015/OfficeWorker.glb
+          elder|https://gobkit.com/freebies/human001/GrandmaShopper.glb
+          manager|https://gobkit.com/freebies/human001/StoreManager.glb
+          PED_MODELS
 
       - name: Prepare signing and calculate release version
         env:
