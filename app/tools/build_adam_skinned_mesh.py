@@ -151,7 +151,7 @@ def main():
     bone_parent=[];bind_t=[];bind_r=[];bind_s=[];inverse_bind=[]
     for old in ordered:
         anc=parents[old]
-        while anc>=0 and anc not in joint_set:anc=parents[anc]
+        while anc>=0 and anc not in old_to_new:anc=parents[anc]
         parent_new=old_to_new[anc] if anc>=0 else -1
         local=np.linalg.inv(globals_[anc])@globals_[old] if anc>=0 else globals_[old]
         t,q,s=decompose(local)
