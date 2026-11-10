@@ -3,6 +3,7 @@ package com.explorer.world3d;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.view.InputDevice;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 
@@ -13,8 +14,10 @@ public class CityGLView extends GLSurfaceView {
     private WeaponWheelView weaponWheelView;
     private volatile boolean weaponWheelOpen;
     private float lx, ly;
-    private float padHatX, padHatY;
-    private long lastHatWeaponChangeMs;
+    private float analogMoveX, analogMoveY, analogLookX, analogLookY;
+    private float hatMoveX, hatMoveY, padGas, padBrake;
+    private boolean digitalMoveUp, digitalMoveDown, digitalMoveLeft, digitalMoveRight;
+    private boolean digitalLookUp, digitalLookDown, digitalLookLeft, digitalLookRight;
     private final ScaleGestureDetector scaleDetector;
 
     public CityGLView(Context c, CityRenderer r) {
@@ -68,82 +71,91 @@ public class CityGLView extends GLSurfaceView {
         return v < 0f ? (v + 1f) * 0.5f : Math.min(1f, v);
     }
 
-    private void cycleWeapon(int direction) {
-        Game g = renderer.game;
-        int selected = g.equippedWeapon;
-        for (int n = 0; n < WeaponSystem.NAME.length; n++) {
-            selected = (selected + direction + WeaponSystem.NAME.length) % WeaponSystem.NAME.length;
-            if (g.ownedWeapons[selected]) break;
-        }
-        g.equipWeapon(selected);
+    private static float clampInput(float value) {
+        return Math.max(-1f, Math.min(1f, value));
     }
 
-    /** USB/Bluetooth pads: left stick + hat move, right stick looks, triggers throttle/brake. */
+    /** D-pad is the digital twin of the left analogue stick. */
+    void setDigitalMoveDirection(int keyCode, boolean pressed) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_UP) digitalMoveUp = pressed;
+        else if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) digitalMoveDown = pressed;
+        else if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) digitalMoveLeft = pressed;
+        else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) digitalMoveRight = pressed;
+        applyControllerState();
+    }
+
+    /** Y/A/X/B are the digital twin of the right analogue stick. */
+    void setDigitalLookDirection(int keyCode, boolean pressed) {
+        if (keyCode == KeyEvent.KEYCODE_BUTTON_Y) digitalLookUp = pressed;
+        else if (keyCode == KeyEvent.KEYCODE_BUTTON_A) digitalLookDown = pressed;
+        else if (keyCode == KeyEvent.KEYCODE_BUTTON_X) digitalLookLeft = pressed;
+        else if (keyCode == KeyEvent.KEYCODE_BUTTON_B) digitalLookRight = pressed;
+        applyControllerState();
+    }
+
+    private void applyControllerState() {
+        float moveX = clampInput(analogMoveX
+                + (digitalMoveRight ? 1f : 0f) - (digitalMoveLeft ? 1f : 0f) + hatMoveX);
+        float moveForward = clampInput(-analogMoveY
+                + (digitalMoveUp ? 1f : 0f) - (digitalMoveDown ? 1f : 0f) - hatMoveY);
+        float lookX = clampInput(analogLookX
+                + (digitalLookRight ? 1f : 0f) - (digitalLookLeft ? 1f : 0f));
+        float lookY = clampInput(analogLookY
+                + (digitalLookUp ? 1f : 0f) - (digitalLookDown ? 1f : 0f));
+
+        if (weaponWheelOpen && weaponWheelView != null) {
+            if (Math.abs(lookX) + Math.abs(lookY) > 0.12f)
+                weaponWheelView.selectDirection(lookX, lookY);
+        } else {
+            renderer.setGamepadLook(lookX, lookY);
+        }
+
+        Game game = renderer.game;
+        if (game.driving) {
+            game.vehicleSteeringInput = moveX;
+            game.sx = game.sy = 0f;
+            game.guardRequested = false;
+            game.weaponAimHeld = false;
+            game.weaponFireHeld = false;
+            if (game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
+                game.vehicleForwardInput = moveForward;
+                game.throttleInput = padGas;
+                game.brakeRequested = padBrake > 0.08f;
+            } else if (game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
+                game.vehicleForwardInput = moveForward;
+                game.throttleInput = padGas - padBrake;
+            } else {
+                game.vehicleForwardInput = (padGas + padBrake > 0.08f)
+                        ? padGas - padBrake : moveForward;
+            }
+        } else {
+            game.sx = moveX;
+            game.sy = moveForward;
+            game.vehicleSteeringInput = game.vehicleForwardInput = 0f;
+            game.weaponAimHeld = padBrake > 0.08f;
+            game.weaponFireHeld = padGas > 0.08f;
+            game.guardRequested = false;
+        }
+    }
+
+    /** One input path: left stick + D-pad move; right stick + Y/X/A/B look. */
     @Override public boolean onGenericMotionEvent(MotionEvent e) {
         int source = e.getSource();
         boolean joystick = (source & InputDevice.SOURCE_CLASS_JOYSTICK)
                 == InputDevice.SOURCE_CLASS_JOYSTICK;
         if (joystick && e.getAction() == MotionEvent.ACTION_MOVE) {
-            float moveX = stick(e.getAxisValue(MotionEvent.AXIS_X));
-            float moveY = stick(e.getAxisValue(MotionEvent.AXIS_Y));
-            // Right stick controls camera; do not fall back to Z/RZ because
-            // those axes are not consistently mapped across Android controllers.
-            float lookX = stick(readStickAxis(e, MotionEvent.AXIS_RX));
-            float lookY = stick(-readStickAxis(e, MotionEvent.AXIS_RY));
-            float gas = trigger(e, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS);
-            float brake = trigger(e, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE);
+            analogMoveX = stick(readAxis(e, MotionEvent.AXIS_X, MotionEvent.AXIS_X));
+            analogMoveY = stick(readAxis(e, MotionEvent.AXIS_Y, MotionEvent.AXIS_Y));
+            analogLookX = stick(readStickAxis(e, MotionEvent.AXIS_RX));
+            analogLookY = stick(-readStickAxis(e, MotionEvent.AXIS_RY));
+            padGas = trigger(e, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS);
+            padBrake = trigger(e, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE);
+
             float hatX = e.getAxisValue(MotionEvent.AXIS_HAT_X);
             float hatY = e.getAxisValue(MotionEvent.AXIS_HAT_Y);
-
-            // D-pad hats are joystick axes, not key events on many Bluetooth pads.
-            // This view consumes joystick motion, so route the hat here as well.
-            float nx = Math.abs(hatX) > 0.5f ? Math.signum(hatX) : 0f;
-            float ny = Math.abs(hatY) > 0.5f ? Math.signum(hatY) : 0f;
-            if (weaponWheelOpen && weaponWheelView != null) {
-                if (Math.abs(lookX)+Math.abs(lookY) > 0.28f) weaponWheelView.selectDirection(lookX, lookY);
-                else if (Math.abs(nx)+Math.abs(ny) > 0f) weaponWheelView.selectDirection(nx, -ny);
-            } else {
-                renderer.setGamepadLook(lookX, lookY);
-                if (renderer.game.driving && renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
-                    renderer.game.liftInput = ny == 0f ? 0f : (ny < 0f ? 1f : -1f);
-                } else {
-                    renderer.game.cameraZoomInput = ny == 0f ? 0f : (ny < 0f ? 1f : -1f);
-                }
-                if (nx != 0f && nx != padHatX && !renderer.game.driving) {
-                    long now = System.currentTimeMillis();
-                    if (now - lastHatWeaponChangeMs > 180L) {
-                        cycleWeapon(nx > 0f ? 1 : -1);
-                        lastHatWeaponChangeMs = now;
-                    }
-                }
-            }
-            padHatX = nx;
-            padHatY = ny;
-
-            if (renderer.game.driving) {
-                renderer.game.vehicleSteeringInput = moveX;
-                renderer.game.sx = renderer.game.sy = 0f;
-                renderer.game.guardRequested = false;
-                renderer.game.weaponAimHeld = false;
-                renderer.game.weaponFireHeld = false;
-                if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
-                    renderer.game.vehicleForwardInput = -moveY;
-                    renderer.game.throttleInput = gas;
-                    renderer.game.brakeRequested = brake > 0.08f;
-                } else if (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
-                    renderer.game.vehicleForwardInput = -moveY;
-                    renderer.game.throttleInput = gas - brake;
-                } else {
-                    renderer.game.vehicleForwardInput = (gas + brake > 0.08f) ? gas - brake : -moveY;
-                }
-            } else {
-                renderer.game.sx = moveX;
-                renderer.game.sy = -moveY;
-                renderer.game.vehicleSteeringInput = renderer.game.vehicleForwardInput = 0f;
-                renderer.game.weaponAimHeld = brake > 0.08f;
-                renderer.game.weaponFireHeld = gas > 0.08f;
-                renderer.game.guardRequested = false;
-            }
+            hatMoveX = Math.abs(hatX) > 0.5f ? Math.signum(hatX) : 0f;
+            hatMoveY = Math.abs(hatY) > 0.5f ? Math.signum(hatY) : 0f;
+            applyControllerState();
             return true;
         }
         return super.onGenericMotionEvent(e);
