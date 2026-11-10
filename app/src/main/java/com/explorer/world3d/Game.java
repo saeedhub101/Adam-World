@@ -435,7 +435,7 @@ final class Game {
         float fx=(float)Math.sin(shotYaw),fz=(float)Math.cos(shotYaw);
         float range=WeaponSystem.RANGE[id];
         Agent target=null;float best=range;
-        for(Agent a:agents)if(!a.car&&!a.knockedOut){
+        for(Agent a:agents)if(!a.knockedOut){
             float dx=a.x-px,dz=a.z-pz,d=(float)Math.hypot(dx,dz);
             if(d<0.65f||d>best)continue;
             float facing=(dx*fx+dz*fz)/(d+0.0001f);
@@ -464,11 +464,17 @@ final class Game {
             int damage=WeaponSystem.DAMAGE[id];
             if(id==3)damage=Math.max(12,damage-(int)(best*2.0f));
             target.health=Math.max(0,target.health-damage);
-            target.hostile=true;target.state=1;target.stateTime=0f;
-            target.stunSeconds=id==4?0.85f:0.5f;target.hitFlash=0.28f;
-            if(target.health==0){
-                target.knockedOut=true;target.hostile=false;target.state=3;
-                target.stateTime=0f;target.knockdownSeconds=22f;target.sp=0f;
+            target.hitFlash=0.28f;
+            if(target.car){
+                // Vehicles are valid ballistic targets too; repeated hits disable them.
+                if(target.health==0){target.knockedOut=true;target.sp=0f;target.state=3;target.stateTime=0f;}
+            }else{
+                target.hostile=true;target.state=1;target.stateTime=0f;
+                target.stunSeconds=id==4?0.85f:0.5f;
+                if(target.health==0){
+                    target.knockedOut=true;target.hostile=false;target.state=3;
+                    target.stateTime=0f;target.knockdownSeconds=22f;target.sp=0f;
+                }
             }
         }
     }
