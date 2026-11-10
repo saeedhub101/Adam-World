@@ -326,6 +326,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         playerCharacterAsset = SkinnedAssetLoader.load(ctx, "models/runtime/characters/adam.awmesh5");
         importedVehicleModels[ProceduralVehicleModels.SEDAN] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/sedan.awmesh");
         importedVehicleModels[ProceduralVehicleModels.PICKUP] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/pickup.awmesh");
+importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/suv.awmesh");
+        importedVehicleModels[ProceduralVehicleModels.POLICE] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/police.awmesh");
         importedVehicleModels[ProceduralVehicleModels.BUS] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/city-bus.awmesh");
         importedVehicleModels[ProceduralVehicleModels.MOTORBIKE] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/motorcycle.awmesh");
         // Imported replacements make their procedural GPU copies redundant. Release them
