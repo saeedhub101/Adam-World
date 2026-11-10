@@ -1136,7 +1136,23 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             drawHumanPart(rig[8],side*.052f,1.645f,.127f,0,0,0,0,1,1,1);
             drawHumanPart(rig[12],side*.052f,1.667f,.137f,0,0,0,0,1,1,1);
             drawHumanPart(rig[15],side*.31f,.78f,.02f,arm*.42f,0,0,0,1,1,1);
-            if(side>0&&weaponId>=0&&weaponId<WeaponSystem.NAME.length)drawHumanPart(cube,.39f,.91f,.19f,arm*.42f,0,0,0,weaponId==0?.20f:weaponId==3?.22f:.34f,.075f,weaponId==4?.10f:.055f);
+            if(side>0&&weaponId>=0&&weaponId<WeaponSystem.NAME.length){
+                float gunRot=arm*.42f;
+                if(weaponId==0){
+                    // Pistol: slide, muzzle and grip are separate solid parts held in the palm.
+                    drawHumanPart(cube,.40f,.92f,.19f,gunRot,0,0,0,.25f,.075f,.060f);
+                    drawHumanPart(cube,.53f,.93f,.19f,gunRot,0,0,0,.13f,.035f,.038f);
+                    drawHumanPart(cube,.34f,.82f,.20f,gunRot,0,0,0,.075f,.15f,.060f);
+                }else{
+                    // Long guns: receiver, barrel, stock, foregrip and magazine create a readable silhouette.
+                    drawHumanPart(cube,.43f,.94f,.19f,gunRot,0,0,0,.30f,.085f,.070f);
+                    drawHumanPart(cube,.68f,.96f,.19f,gunRot,0,0,0,.34f,.035f,.035f);
+                    drawHumanPart(cube,.22f,.94f,.19f,gunRot,0,0,0,.20f,.070f,.065f);
+                    drawHumanPart(cube,.39f,.82f,.20f,gunRot,0,0,0,.10f,.18f,.060f);
+                    if(weaponId==4)drawHumanPart(cube,.75f,.96f,.19f,gunRot,0,0,0,.12f,.07f,.06f);
+                    if(weaponId==3)drawHumanPart(cube,.48f,.80f,.20f,gunRot,0,0,0,.11f,.18f,.065f);
+                }
+            }
         }
         drawHumanPart(rig[9],0,1.555f,.137f,0,0,0,0,1,1,1);
     }
