@@ -425,7 +425,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 event.getAxisValue(android.view.MotionEvent.AXIS_GAS));
         if (hasLeftTrigger) padL2 = leftTrigger > 0.35f;
         if (hasRightTrigger) padR2 = rightTrigger > 0.35f;
-        if (hasLeftTrigger || hasRightTrigger) {
+        if (hasLeftTrigger || hasRightTrigger || padL2 || padR2) {
             if (renderer.game.driving) {
                 if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
                     if (hasLeftTrigger) renderer.game.brakeRequested = padL2;
