@@ -375,12 +375,17 @@ final class Game {
             Agent a = agents.get(i);
             if (a.tile.dead) { agents.remove(i); continue; }
             if (a.car) {
-                a.s += a.dir * a.sp * dt;
-                if (a.s > a.path.total) { a.s = a.path.total; a.dir = -1; }
-                else if (a.s < 0f) { a.s = 0f; a.dir = 1; }
-                a.path.posAt(a.s, a.off * a.dir, tmp);
-                a.x = tmp[0]; a.z = tmp[1];
-                a.yaw = (float)Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
+                a.hitFlash = Math.max(0f, a.hitFlash - dt);
+                if (a.knockedOut) {
+                    a.sp = 0f;
+                } else {
+                    a.s += a.dir * a.sp * dt;
+                    if (a.s > a.path.total) { a.s = a.path.total; a.dir = -1; }
+                    else if (a.s < 0f) { a.s = 0f; a.dir = 1; }
+                    a.path.posAt(a.s, a.off * a.dir, tmp);
+                    a.x = tmp[0]; a.z = tmp[1];
+                    a.yaw = (float)Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
+                }
             }
             if (!a.car) {
                 a.stateTime+=dt; a.hitFlash=Math.max(0f,a.hitFlash-dt);
