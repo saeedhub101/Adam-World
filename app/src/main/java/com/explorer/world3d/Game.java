@@ -60,7 +60,7 @@ final class Game {
     final int[] weaponMagazines={12,0,0,0,0,0,0};
     long lastWeaponShotMs;
     float weaponReloadSeconds, weaponReloadDuration, weaponRecoil, muzzleFlashSeconds;
-    int weaponReloadPendingAmmo, weaponReloadWeaponId=-1;
+    int weaponReloadPendingAmmo, weaponReloadWeaponId=-1;\n    long explosionEventCount;
     int comboStep;
     float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
     long lastLookMs;
@@ -94,7 +94,7 @@ final class Game {
         vehicleFrontStepContact = vehicleRearStepContact = false;
         vehicleWheelFL = vehicleWheelFR = vehicleWheelRL = vehicleWheelRR = 0f;
         vehicleWheelBodyLift = vehicleWheelBodyRoll = vehicleWheelBodyPitch = 0f;
-        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; agents.clear(); rockets.clear(); blasts.clear();
+        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; explosionEventCount=0L; agents.clear(); rockets.clear(); blasts.clear();
     }
 
     float focusX() { return driving ? cx : px; }
