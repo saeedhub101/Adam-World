@@ -156,11 +156,11 @@ final class PlayerMotionSystem {
         float support = 0f;
         if (!g.driving) {
             support = Math.max(support, roofHeightAt(x, z, g.cx, g.cz, g.cyaw,
-                    g.vehicleType, world, playerGround));
+                    g.vehicleType, world, playerGround, g.jumpHeight));
             for (int i = 0; i < g.agents.size(); i++) {
                 Game.Agent a = g.agents.get(i);
                 if (a.car) support = Math.max(support, roofHeightAt(x, z, a.x, a.z, a.yaw,
-                        a.vehicleType, world, playerGround));
+                        a.vehicleType, world, playerGround, g.jumpHeight));
             }
         }
         return support;
@@ -168,21 +168,29 @@ final class PlayerMotionSystem {
 
     private static boolean vehicleSideBlocked(Game g, Game.World world, float x, float z, float feetHeight) {
         if (g.driving) return false;
-        if (insideVehicle(x, z, g.cx, g.cz, g.cyaw, g.vehicleType, BODY_RADIUS)
-                && feetHeight < roofHeight(g.vehicleType) - 0.06f) return true;
+        if (insideVehicle(x, z, g.cx, g.cz, g.cyaw, g.vehicleType, BODY_RADIUS)) {
+            float roof = world.heightAt(g.cx, g.cz) - world.heightAt(x, z) + roofHeight(g.vehicleType);
+            if (feetHeight < roof - 0.06f) return true;
+        }
         for (int i = 0; i < g.agents.size(); i++) {
             Game.Agent a = g.agents.get(i);
-            if (a.car && insideVehicle(x, z, a.x, a.z, a.yaw, a.vehicleType, BODY_RADIUS)
-                    && feetHeight < roofHeight(a.vehicleType) - 0.06f) return true;
+            if (a.car && insideVehicle(x, z, a.x, a.z, a.yaw, a.vehicleType, BODY_RADIUS)) {
+                float roof = world.heightAt(a.x, a.z) - world.heightAt(x, z) + roofHeight(a.vehicleType);
+                if (feetHeight < roof - 0.06f) return true;
+            }
         }
         return false;
     }
 
     private static float roofHeightAt(float x, float z, float vx, float vz, float yaw,
-                                      int type, Game.World world, float playerGround) {
-        if (!insideVehicle(x, z, vx, vz, yaw, type, -0.02f)) return 0f;
+                                      int type, Game.World world, float playerGround,
+                                      float playerFeetHeight) {
+        // A roof is a one-way landing platform: it supports the character only
+        // while descending from above, never lifts a player walking beside/under it.
+        if (!insideVehicle(x, z, vx, vz, yaw, type, 0.08f)) return 0f;
         float vehicleGround = world.heightAt(vx, vz);
-        return Math.max(0f, vehicleGround - playerGround + roofHeight(type));
+        float roof = Math.max(0f, vehicleGround - playerGround + roofHeight(type));
+        return playerFeetHeight >= roof - 0.15f ? roof : 0f;
     }
 
     private static boolean insideVehicle(float x, float z, float vx, float vz,
@@ -200,11 +208,11 @@ final class PlayerMotionSystem {
     }
 
     private static float roofHeight(int type) {
-        if (type == ProceduralVehicleModels.BUS) return 2.75f;
-        if (type == ProceduralVehicleModels.TANK) return 1.85f;
-        if (type == ProceduralVehicleModels.MOTORBIKE || type == ProceduralVehicleModels.BICYCLE) return 1.05f;
-        if (type == ProceduralVehicleModels.SUV || type == ProceduralVehicleModels.PICKUP) return 1.62f;
-        return 1.38f;
+        if (type == ProceduralVehicleModels.BUS) return 2.90f;
+        if (type == ProceduralVehicleModels.TANK) return 2.00f;
+        if (type == ProceduralVehicleModels.MOTORBIKE || type == ProceduralVehicleModels.BICYCLE) return 1.18f;
+        if (type == ProceduralVehicleModels.SUV || type == ProceduralVehicleModels.PICKUP) return 1.72f;
+        return 1.55f;
     }
 
     private static float approach(float value, float target, float amount) {
