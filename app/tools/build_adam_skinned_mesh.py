@@ -9,6 +9,8 @@ import json, math, struct, io, os
 from pathlib import Path
 from urllib.parse import unquote
 import numpy as np
+import trimesh
+from scipy.spatial import cKDTree
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -17,6 +19,7 @@ OUT = Path(os.environ.get("ADAM_OUTPUT_MESH", str(ROOT / "app/src/main/assets/mo
 MAX_BONES = 24
 MAX_VERTICES = 250000
 MAX_KEYS_TOTAL = 20000
+TARGET_FACES = max(0, int(os.environ.get("ADAM_TARGET_FACES", "0")))
 
 def glb_parts(path):
     raw = path.read_bytes()
@@ -385,6 +388,16 @@ def main():
         bone_parent.append(parent_new);bind_t.extend(t);bind_r.extend(q);bind_s.extend(s)
         # Vertices are stored in mesh-node world coordinates, so remove mesh transform here.
         inverse_bind.extend((ibm[old_to_new[old]]@inv_mesh).reshape(16,order="F"))
+    total_source_faces=0
+    if TARGET_FACES>0:
+        for node_id,node_mesh,node_skin in candidates:
+            if node_skin!=skin_index: continue
+            for primitive in doc["meshes"][node_mesh]["primitives"]:
+                if primitive.get("mode",4)!=4: continue
+                if "indices" in primitive:
+                    total_source_faces+=len(accessor(doc,binary,primitive["indices"]))//3
+                else:
+                    total_source_faces+=len(accessor(doc,binary,primitive["attributes"]["POSITION"]))//3
     vertices=[];triangles=[];base_vertex=0
     for node_id,node_mesh,node_skin in candidates:
         if node_skin!=skin_index:continue
@@ -428,6 +441,12 @@ def main():
                 vertices.append([*p[k],*n[k],*uv[k],*col[k,:3],*ids,*weights])
             idx=accessor(doc,binary,primitive["indices"]) if "indices" in primitive else np.arange(len(p))
             if len(idx)%3:raise ValueError("triangle index count is not divisible by three")
+            if TARGET_FACES>0 and total_source_faces>0:
+                face_count=len(idx)//3
+                face_budget=max(100,int(TARGET_FACES*face_count/total_source_faces))
+                if face_count>face_budget:
+                    p,idx,j,w,n,uv,col=simplify_skinned_primitive(p,idx,j,w,n,uv,col,face_budget)
+                    print(f"ADAM_SKIN_PRIMITIVE faces={face_count}->{len(idx)//3} vertices={len(p)}",flush=True)
             triangles.extend((idx.astype(np.int64)+base_vertex).tolist())
             base_vertex+=len(p)
     if not vertices:raise ValueError("no renderable skinned vertices")
