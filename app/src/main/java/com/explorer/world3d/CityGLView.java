@@ -10,7 +10,8 @@ import android.view.ScaleGestureDetector;
 public class CityGLView extends GLSurfaceView {
     final CityRenderer renderer;
     private int lookId = -1;
-    private boolean triggerDodgeDown;
+    private WeaponWheelView weaponWheelView;
+    private volatile boolean weaponWheelOpen;
     private float lx, ly;
     private final ScaleGestureDetector scaleDetector;
 
@@ -44,10 +45,13 @@ public class CityGLView extends GLSurfaceView {
         return Math.abs(primary) > 0.08f ? primary : fallback;
     }
 
+    void setWeaponWheelView(WeaponWheelView wheel) { weaponWheelView = wheel; }
+    void setWeaponWheelOpen(boolean open) { weaponWheelOpen = open; }
+
     private static float trigger(MotionEvent e, int axis, int fallback) {
         float v = e.getAxisValue(axis);
         if (Math.abs(v) < 0.08f) v = e.getAxisValue(fallback);
-        return Math.max(0f, Math.min(1f, v));
+        return v < 0f ? (v + 1f) * 0.5f : Math.min(1f, v);
     }
 
     /** USB/Bluetooth pads: left stick + hat move, right stick looks, triggers throttle/brake. */
@@ -56,26 +60,41 @@ public class CityGLView extends GLSurfaceView {
         boolean joystick = (source & InputDevice.SOURCE_CLASS_JOYSTICK)
                 == InputDevice.SOURCE_CLASS_JOYSTICK;
         if (joystick && e.getAction() == MotionEvent.ACTION_MOVE) {
-            float rawX = e.getAxisValue(MotionEvent.AXIS_X);
-            float rawY = e.getAxisValue(MotionEvent.AXIS_Y);
-            float hatX = e.getAxisValue(MotionEvent.AXIS_HAT_X);
-            float hatY = e.getAxisValue(MotionEvent.AXIS_HAT_Y);
-            float moveX = stick(firstActive(rawX, hatX));
-            float moveY = renderer.isGamepadZoomModifier() ? 0f : stick(firstActive(rawY, hatY));
-            if (renderer.isGamepadZoomModifier()) renderer.game.cameraZoomInput = -hatY;
-
+            float moveX = stick(firstActive(e.getAxisValue(MotionEvent.AXIS_X), e.getAxisValue(MotionEvent.AXIS_HAT_X)));
+            float moveY = stick(firstActive(e.getAxisValue(MotionEvent.AXIS_Y), e.getAxisValue(MotionEvent.AXIS_HAT_Y)));
+            float lookX = stick(firstActive(e.getAxisValue(MotionEvent.AXIS_RX), e.getAxisValue(MotionEvent.AXIS_Z)));
+            float lookY = stick(-firstActive(e.getAxisValue(MotionEvent.AXIS_RY), e.getAxisValue(MotionEvent.AXIS_RZ)));
             float gas = trigger(e, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS);
             float brake = trigger(e, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE);
-            if(renderer.game.driving){if(Math.abs(moveY)<.12f&&Math.max(gas,brake)>.12f)moveY=brake>gas?brake:-gas;renderer.game.guardRequested=false;}
-            else {renderer.game.guardRequested=false;renderer.game.weaponAimHeld=brake>.08f;renderer.game.weaponFireHeld=gas>.08f;triggerDodgeDown=false;}
-            renderer.game.sx = moveX;
-            renderer.game.sy = -moveY;
+            float hatX = e.getAxisValue(MotionEvent.AXIS_HAT_X);
+            float hatY = e.getAxisValue(MotionEvent.AXIS_HAT_Y);
 
-            float lookX = stick(firstActive(e.getAxisValue(MotionEvent.AXIS_RX),
-                    e.getAxisValue(MotionEvent.AXIS_Z)));
-            float lookY = stick(-firstActive(e.getAxisValue(MotionEvent.AXIS_RY),
-                    e.getAxisValue(MotionEvent.AXIS_RZ)));
-            renderer.setGamepadLook(lookX, lookY);
+            if (weaponWheelOpen && weaponWheelView != null) {
+                if (Math.abs(lookX)+Math.abs(lookY) > 0.28f) weaponWheelView.selectDirection(lookX, lookY);
+                else if (Math.abs(hatX)+Math.abs(hatY) > 0.5f) weaponWheelView.selectDirection(hatX, -hatY);
+            } else renderer.setGamepadLook(lookX, lookY);
+
+            renderer.game.sx = moveX;
+            if (renderer.game.driving) {
+                renderer.game.guardRequested = false;
+                renderer.game.weaponAimHeld = false;
+                renderer.game.weaponFireHeld = false;
+                if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
+                    renderer.game.sy = -moveY;
+                    renderer.game.throttleInput = gas;
+                    renderer.game.brakeRequested = brake > 0.08f;
+                } else if (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
+                    renderer.game.sy = -moveY;
+                    renderer.game.throttleInput = gas - brake;
+                } else {
+                    renderer.game.sy = (gas + brake > 0.08f) ? gas - brake : -moveY;
+                }
+            } else {
+                renderer.game.sy = -moveY;
+                renderer.game.weaponAimHeld = brake > 0.08f;
+                renderer.game.weaponFireHeld = gas > 0.08f;
+                renderer.game.guardRequested = false;
+            }
             return true;
         }
         return super.onGenericMotionEvent(e);

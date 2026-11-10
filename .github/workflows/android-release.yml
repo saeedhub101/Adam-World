@@ -1,52 +1,156 @@
-package com.explorer.world3d;
+name: Adam World Android Release
 
-/** يبني شبكة أرض (Terrain) لمربع واحد من الارتفاعات الحقيقية. */
-final class TerrainMesh {
-    static final int N = 32;
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+      - "data/offline-city-stream/manila/**"
+      - "data/offline-city-stream/amman/**"
+      - "data/offline-world/manila/**"
+      - "data/offline-world/tabarbour/stream/**"
+      - ".github/workflows/android-release.yml"
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+      - ".github/workflows/android-release.yml"
 
-    private TerrainMesh() {}
+permissions:
+  contents: write
 
-    static GeoBuf build(int ix, int iz) { return build(ix, iz, false); }
+concurrency:
+  group: adam-world-android-release
+  cancel-in-progress: false
 
-    static GeoBuf build(int ix, int iz, boolean tabarbour) {
-        double west = ix * Geo.dLon, east = (ix + 1) * Geo.dLon, south = iz * Geo.D_LAT, north = (iz + 1) * Geo.D_LAT;
-        float xMin = Geo.x(west), xMax = Geo.x(east), zMin = Geo.z(north), zMax = Geo.z(south);
-        int V = N + 1;
-        float[] hx = new float[V * V], nx = new float[V * V], ny = new float[V * V], nz = new float[V * V];
-        float dx = (xMax - xMin) / N, dz = (zMax - zMin) / N;
-        for (int j = 0; j < V; j++) {
-            for (int i = 0; i < V; i++) {
-                float x = xMin + i * dx, z = zMin + j * dz;
-                int k = j * V + i;
-                hx[k] = Terrain.h(x, z);
-                float hl = Terrain.h(x - 3f, z), hr = Terrain.h(x + 3f, z), hu = Terrain.h(x, z - 3f), hd = Terrain.h(x, z + 3f);
-                float gx = (hl - hr) / 6f, gz = (hu - hd) / 6f;
-                float l = (float) Math.sqrt(gx * gx + 1f + gz * gz);
-                nx[k] = gx / l; ny[k] = 1f / l; nz[k] = gz / l;
-            }
-        }
-        GeoBuf b = new GeoBuf();
-        float sea = Terrain.seaY();
-        int[][] cell = {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {1, 1}, {0, 1}};
-        for (int j = 0; j < N; j++) {
-            for (int i = 0; i < N; i++) {
-                for (int[] c : cell) {
-                    int ii = i + c[0], jj = j + c[1], k = jj * V + ii;
-                    float x = xMin + ii * dx, z = zMin + jj * dz, y = hx[k];
-                    float slope = 1f - ny[k];
-                    float tone = 0.94f + 0.06f * (float) Math.sin(x * 0.21f) * (float) Math.sin(z * 0.17f);
-                    float r = tabarbour ? 0.76f : 0.60f, g = tabarbour ? 0.65f : 0.56f, bl = tabarbour ? 0.43f : 0.46f;
-                    float t = Math.min(1f, Math.max(0f, (slope - 0.10f) / 0.30f));
-                    r = r * (1 - t) + (tabarbour ? 0.57f : 0.50f) * t; g = g * (1 - t) + (tabarbour ? 0.53f : 0.49f) * t; bl = bl * (1 - t) + 0.44f * t;
-                    float near = Math.abs(y - sea);
-                    if (near < 3f) {
-                        float s = 1f - near / 3f;
-                        r = r * (1 - s) + 0.83f * s; g = g * (1 - s) + 0.76f * s; bl = bl * (1 - s) + 0.58f * s;
-                    }
-                    b.vn(x, y, z, nx[k], ny[k], nz[k], x / 13.3333f, z / 13.3333f, r * tone, g * tone, bl * tone);
-                }
-            }
-        }
-        return b;
-    }
-}
+jobs:
+  release:
+    if: github.event_name != 'pull_request' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout only runtime and build inputs
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            /app/
+            /Adam_Walking.glb
+            /data/offline-city-stream/amman/
+            /data/offline-city-stream/manila/
+            /data/offline-world/manila/
+            /data/offline-world/tabarbour/stream/
+            /build.gradle
+            /settings.gradle
+            /gradle.properties
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.5"
+
+      - name: Set up Python for model conversion
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Convert licensed vehicle models to Adam World binary meshes
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input numpy trimesh pillow
+          python app/tools/build_runtime_meshes.py
+          python app/tools/build_adam_skinned_mesh.py
+
+          # CC0 adult pedestrian with a real skinned walk cycle. The source is converted
+          # at build time; only the compact runtime mesh can enter the APK.
+          PED_SOURCE="$RUNNER_TEMP/adam-world-pedestrian.glb"
+          PED_OUTPUT="app/src/main/assets/models/runtime/characters/pedestrian.awmesh5"
+          mkdir -p "$(dirname "$PED_OUTPUT")"
+          rm -f "$PED_OUTPUT"
+          PED_URL="https://files.innerscene.com/library/relaxed-walk-sam-3d-person-animated-732f1206/b11d02f72ad777e03d68/relaxed-walk-sam-3d-person-animated.glb"
+          if curl -fL --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 180 "$PED_URL" -o "$PED_SOURCE"; then
+            if ADAM_SOURCE_GLTF="$PED_SOURCE" ADAM_OUTPUT_MESH="$PED_OUTPUT" python app/tools/build_adam_skinned_mesh.py; then
+              PED_BYTES="$(stat -c%s "$PED_OUTPUT")"
+              if [ "$PED_BYTES" -gt 12000000 ]; then
+                rm -f "$PED_OUTPUT"
+                echo "::warning::Pedestrian mesh exceeded 12 MB and was omitted to protect APK and memory budgets."
+              else
+                echo "Pedestrian runtime mesh ready: $PED_BYTES bytes"
+              fi
+            else
+              rm -f "$PED_OUTPUT"
+              echo "::warning::Optional CC0 pedestrian conversion failed; procedural fallback remains enabled."
+            fi
+          else
+            echo "::warning::Optional CC0 pedestrian source was unavailable; procedural fallback remains enabled."
+          fi
+
+      - name: Prepare signing and calculate release version
+        env:
+          ADAM_WORLD_KEYSTORE_BASE64: ${{ secrets.ADAM_WORLD_KEYSTORE_BASE64 }}
+          ADAM_WORLD_KEYSTORE_PASSWORD: ${{ secrets.ADAM_WORLD_KEYSTORE_PASSWORD }}
+          ADAM_WORLD_KEY_ALIAS: ${{ secrets.ADAM_WORLD_KEY_ALIAS }}
+          ADAM_WORLD_KEY_PASSWORD: ${{ secrets.ADAM_WORLD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${ADAM_WORLD_KEYSTORE_BASE64:?Missing ADAM_WORLD_KEYSTORE_BASE64}"
+          : "${ADAM_WORLD_KEYSTORE_PASSWORD:?Missing ADAM_WORLD_KEYSTORE_PASSWORD}"
+          : "${ADAM_WORLD_KEY_ALIAS:?Missing ADAM_WORLD_KEY_ALIAS}"
+          : "${ADAM_WORLD_KEY_PASSWORD:?Missing ADAM_WORLD_KEY_PASSWORD}"
+          KEYSTORE="$RUNNER_TEMP/adam-world-release.jks"
+          printf '%s' "$ADAM_WORLD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          echo "ADAM_WORLD_KEYSTORE_FILE=$KEYSTORE" >> "$GITHUB_ENV"
+
+          git fetch --force --tags origin
+          LAST_TAG="$(git tag --list 'adam-world-v[0-9]*' | sort -V | tail -n 1)"
+          LAST_VERSION="${LAST_TAG##*v}"
+          LAST_VERSION="${LAST_VERSION:-0}"
+          VERSION_CODE="$((LAST_VERSION + 1))"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=adam-world-v$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "Building package version $VERSION_CODE"
+
+      - name: Build and verify signed APK and AAB
+        env:
+          ADAM_WORLD_KEYSTORE_PASSWORD: ${{ secrets.ADAM_WORLD_KEYSTORE_PASSWORD }}
+          ADAM_WORLD_KEY_ALIAS: ${{ secrets.ADAM_WORLD_KEY_ALIAS }}
+          ADAM_WORLD_KEY_PASSWORD: ${{ secrets.ADAM_WORLD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          gradle --no-daemon --stacktrace -PVERSION_CODE="$VERSION_CODE" assembleRelease bundleRelease
+
+          APK="app/build/outputs/apk/release/app-release.apk"
+          AAB="app/build/outputs/bundle/release/app-release.aab"
+          test -s "$APK"
+          test -s "$AAB"
+          cp "$APK" Adam-World.apk
+          cp "$AAB" Adam-World.aab
+          sha256sum Adam-World.apk Adam-World.aab
+
+      - name: Publish release with APK and AAB
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: Adam World v${{ env.VERSION_CODE }}
+          make_latest: true
+          generate_release_notes: true
+          files: |
+            Adam-World.apk
+            Adam-World.aab
+          fail_on_unmatched_files: true
