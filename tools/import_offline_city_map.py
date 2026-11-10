@@ -36,6 +36,7 @@ def query_for(city, lat=None, lon=None, radius=None):
         "[out:json][timeout:25];("
         f'way["building"]{around};'
         f'way["highway"]{around};'
+        f'way["aeroway"]{around};'
         f'way["leisure"~"park|garden|pitch|playground"]{around};'
         f'way["landuse"~"grass|forest|recreation_ground|village_green|meadow|farmland|orchard|vineyard|plant_nursery|reservoir|basin|salt_pond"]{around};'
         f'way["natural"~"water|wood|scrub|sand|beach|desert|bare_rock|scree|shingle|rock|heath|wetland|marsh|mud|grassland"]{around};'
