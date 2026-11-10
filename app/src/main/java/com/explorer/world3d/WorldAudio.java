@@ -59,7 +59,7 @@ final class WorldAudio {
         speed = Math.min(1f, Math.abs(g.cv) / (helicopter ? 48f : airplane ? 92f : 32f));
         throttle = Math.max(Math.abs(g.sy), g.engineThrottle);
         moving = g.driving ? speed > 0.025f : Math.abs(g.sx) + Math.abs(g.sy) > 0.15f;
-        wind = Math.min(1f, speed * (airplane ? 1.0f : 0.65f) + (g.altitude > 1f ? 0.25f : 0f));
+        wind = Math.min(1f, speed * (airplane ? 1.0f : 0.65f) + (g.driving && g.altitude > 1f ? 0.18f : 0f));
         float nearest = 0f, pan = 0f;
         float px = g.focusX(), pz = g.focusZ();
         for (Game.Agent a : g.agents) {
@@ -121,14 +121,14 @@ final class WorldAudio {
                 }
                 if (audible) {
                     windPhase += 2.0 * Math.PI * 73.0 / RATE;
-                    double n = noise();
-                    // Never synthesize broadband hiss while the world is still. Wind noise scales only with actual vehicle/flight speed.
-                    ambience = n * wind * 0.045 * ambienceVolume;
-                    ambience += Math.sin(windPhase) * wind * 0.018;
-                    if (traffic > 0.01f) {
+                    // Avoid broadband noise: the previous white-noise wind bed sounded like a constant hiss on phone speakers.
+                    // Use a quiet, filtered tonal wind bed only while the player is actually moving fast.
+                    ambience = Math.sin(windPhase) * wind * 0.010 * ambienceVolume;
+                    ambience += Math.sin(windPhase * 0.47 + 0.8) * wind * 0.004 * ambienceVolume;
+                    if (traffic > 0.08f) {
                         trafficPhase += 2.0 * Math.PI * (62.0 + traffic * 95.0) / RATE;
                         trafficSound = (Math.sin(trafficPhase) * 0.10 + Math.sin(trafficPhase * 2.2) * 0.035)
-                                * traffic * ambienceVolume;
+                                * traffic * ambienceVolume * 0.42;
                     }
                     if (moving && !driving) {
                         stepPhase += 2.0 * Math.PI * 2.1 / RATE;
