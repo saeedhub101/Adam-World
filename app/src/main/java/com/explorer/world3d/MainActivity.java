@@ -471,7 +471,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             super.onDraw(c);
             float cx=getWidth()/2f,cy=getHeight()/2f;
             paint.setColor(aiming?0xfffff1c2:0xddefffff);paint.setStrokeWidth(dp(1.5f));paint.setStyle(Paint.Style.STROKE);
-            float r=aiming?dp(8):dp(5),gap=aiming?dp(5):dp(3),len=aiming?dp(8):dp(5);
+            float r=aiming?dp(10):dp(7),gap=aiming?dp(6):dp(4),len=aiming?dp(10):dp(7);
             c.drawCircle(cx,cy,r,paint);
             c.drawLine(cx-len-gap,cy,cx-gap,cy,paint);c.drawLine(cx+gap,cy,cx+len+gap,cy,paint);
             c.drawLine(cx,cy-len-gap,cx,cy-gap,paint);c.drawLine(cx,cy+gap,cx,cy+len+gap,paint);
@@ -489,8 +489,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     offsetY=Math.max(-getRootView().getHeight()*.34f,Math.min(getRootView().getHeight()*.34f,offsetY+dy));
                     setTranslationX(offsetX);setTranslationY(offsetY);
                     if(renderer!=null) {
-                        final float yawDelta=dx*0.0032f;
-                        runOnGl(()->renderer.game.aimYawOffset=Game.clamp(renderer.game.aimYawOffset+yawDelta,-1.15f,1.15f));
+                        final float yawDelta=dx*0.0036f;
+                        final float pitchDelta=-dy*0.0028f;
+                        runOnGl(()->{
+                            Game g=renderer.game;
+                            g.aimYawOffset=Game.clamp(g.aimYawOffset+yawDelta,-1.25f,1.25f);
+                            g.aimPitchOffset=Game.clamp(g.aimPitchOffset+pitchDelta,-0.62f,0.62f);
+                        });
                     }
                     invalidate();return true;
                 case MotionEvent.ACTION_UP:
@@ -1007,7 +1012,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.addView(miniMap, miniParams);
 
         aimReticle = new AimReticleView(this);
-        FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(dp(76),dp(76),Gravity.CENTER);
+        FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(dp(112),dp(112),Gravity.CENTER);
         root.addView(aimReticle,reticleParams);
 
         Button settings = btn("⚙");
