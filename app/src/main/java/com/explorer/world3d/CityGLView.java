@@ -52,6 +52,15 @@ public class CityGLView extends GLSurfaceView {
     void setWeaponWheelView(WeaponWheelView wheel) { weaponWheelView = wheel; }
     void setWeaponWheelOpen(boolean open) { weaponWheelOpen = open; }
 
+    private static float readAxis(MotionEvent event, int primary, int fallback) {
+        InputDevice device = event.getDevice();
+        if (device != null && device.getMotionRange(primary, event.getSource()) != null)
+            return event.getAxisValue(primary);
+        if (device != null && device.getMotionRange(fallback, event.getSource()) != null)
+            return event.getAxisValue(fallback);
+        return 0f;
+    }
+
     private static float trigger(MotionEvent e, int axis, int fallback) {
         float v = readAxis(e, axis, fallback);
         return v < 0f ? (v + 1f) * 0.5f : Math.min(1f, v);
@@ -81,23 +90,26 @@ public class CityGLView extends GLSurfaceView {
                 renderer.setGamepadLook(lookX, lookY);
             }
 
-            renderer.game.sx = moveX;
             if (renderer.game.driving) {
+                renderer.game.vehicleSteeringInput = moveX;
+                renderer.game.sx = renderer.game.sy = 0f;
                 renderer.game.guardRequested = false;
                 renderer.game.weaponAimHeld = false;
                 renderer.game.weaponFireHeld = false;
                 if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
-                    renderer.game.sy = -moveY;
+                    renderer.game.vehicleForwardInput = -moveY;
                     renderer.game.throttleInput = gas;
                     renderer.game.brakeRequested = brake > 0.08f;
                 } else if (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
-                    renderer.game.sy = -moveY;
+                    renderer.game.vehicleForwardInput = -moveY;
                     renderer.game.throttleInput = gas - brake;
                 } else {
-                    renderer.game.sy = (gas + brake > 0.08f) ? gas - brake : -moveY;
+                    renderer.game.vehicleForwardInput = (gas + brake > 0.08f) ? gas - brake : -moveY;
                 }
             } else {
+                renderer.game.sx = moveX;
                 renderer.game.sy = -moveY;
+                renderer.game.vehicleSteeringInput = renderer.game.vehicleForwardInput = 0f;
                 renderer.game.weaponAimHeld = brake > 0.08f;
                 renderer.game.weaponFireHeld = gas > 0.08f;
                 renderer.game.guardRequested = false;

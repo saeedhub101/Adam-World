@@ -71,7 +71,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private AlertDialog mapDialog;
     private FullMapView fullMapView;
     private long lastHudRefresh;
-    private LinearLayout touchActionPad, touchCombatRow, touchFlightRow;
+    private LinearLayout touchActionPad, touchCombatRow, touchFlightRow, touchGroundVehicleRow;
+    private View touchMoveJoystick;
+    private boolean touchSteerLeftHeld, touchSteerRightHeld, touchVehicleGasHeld, touchVehicleBrakeHeld;
     private Button touchVehicleButton, touchVehicleTypeButton, touchSprintButton, touchDodgeButton;
     private Button flightSchoolButton, returnCityButton, touchGearButton, touchFlightUpButton, touchFlightDownButton, touchBrakeButton;
     private LinearLayout touchFlightUtilityRow;
@@ -81,8 +83,26 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private int dp(float v) { return (int) (v * getResources().getDisplayMetrics().density + 0.5f); }
     private void updateRemoteMovement() {
         if (renderer == null) return;
-        renderer.game.sx = (keyRight ? 1f : 0f) - (keyLeft ? 1f : 0f);
-        renderer.game.sy = (keyUp ? 1f : 0f) - (keyDown ? 1f : 0f);
+        float x = (keyRight ? 1f : 0f) - (keyLeft ? 1f : 0f);
+        float y = (keyUp ? 1f : 0f) - (keyDown ? 1f : 0f);
+        if (renderer.game.driving) {
+            renderer.game.vehicleSteeringInput = x;
+            renderer.game.vehicleForwardInput = y;
+            renderer.game.sx = renderer.game.sy = 0f;
+        } else {
+            renderer.game.sx = x; renderer.game.sy = y;
+            renderer.game.vehicleSteeringInput = renderer.game.vehicleForwardInput = 0f;
+        }
+    }
+    private void refreshTouchVehicleSteering() {
+        if (renderer == null) return;
+        float value = (touchSteerRightHeld ? 1f : 0f) - (touchSteerLeftHeld ? 1f : 0f);
+        runOnGl(() -> renderer.game.vehicleSteeringInput = value);
+    }
+    private void refreshTouchVehicleThrottle() {
+        if (renderer == null) return;
+        float value = (touchVehicleGasHeld ? 1f : 0f) - (touchVehicleBrakeHeld ? 1f : 0f);
+        runOnGl(() -> renderer.game.vehicleForwardInput = value);
     }
 
     private void runOnGl(final Runnable action) { if (glView != null) glView.queueEvent(action); }
@@ -392,7 +412,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     game.throttleInput = 0f;
                     game.liftInput = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
                 } else {
-                    game.sy = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
+                    game.vehicleForwardInput = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
                 }
             } else {
                 game.weaponAimHeld = padL2;
@@ -456,11 +476,15 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         rx = applyStickDeadZone(rx, dead);
         ry = applyStickDeadZone(ry, dead);
         Game game = renderer.game;
-        game.sx = lx;
-        if (game.driving && (game.vehicleType == ProceduralVehicleModels.AIRPLANE
-                || game.vehicleType == ProceduralVehicleModels.HELICOPTER)) {
-            game.sy = ly;
-        } else if (!game.driving) game.sy = ly;
+        if (game.driving) {
+            game.vehicleSteeringInput = lx;
+            game.sx = game.sy = 0f;
+            if (game.vehicleType == ProceduralVehicleModels.AIRPLANE
+                    || game.vehicleType == ProceduralVehicleModels.HELICOPTER) game.vehicleForwardInput = ly;
+        } else {
+            game.sx = lx; game.sy = ly;
+            game.vehicleSteeringInput = game.vehicleForwardInput = 0f;
+        }
 
         int leftAxis = device == null ? -1 : firstAvailableAxis(device, source,
                 android.view.MotionEvent.AXIS_LTRIGGER, android.view.MotionEvent.AXIS_BRAKE);
@@ -481,7 +505,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 if (hasLeft || hasRight) game.liftInput = right - left;
             } else {
                 float drive = right - left;
-                if (hasLeft || hasRight) game.sy = Math.abs(drive) > 0.04f ? drive : 0f;
+                if (hasLeft || hasRight) game.vehicleForwardInput = Math.abs(drive) > 0.04f ? drive : 0f;
+                else game.vehicleForwardInput = ly;
             }
         } else {
             game.weaponAimHeld = padL2;
@@ -890,8 +915,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
 
         // العصا
         JoystickView js = new JoystickView(this);
+        touchMoveJoystick = js;
         js.setListener(new JoystickView.Listener() {
-            @Override public void onMove(float x, float y) { renderer.game.sx = x; renderer.game.sy = y; }
+            @Override public void onMove(float x, float y) {
+                if (!renderer.game.driving) { renderer.game.sx = x; renderer.game.sy = y; }
+            }
         });
         FrameLayout.LayoutParams jp = new FrameLayout.LayoutParams(dp(150), dp(150), Gravity.BOTTOM | Gravity.START);
         jp.setMargins(dp(20), 0, 0, dp(30));
@@ -968,6 +996,38 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         vehicleRow.addView(vehicleTouch, new LinearLayout.LayoutParams(0, dp(46), 1.45f));
         vehicleRow.addView(vehicleTypeTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
         actionPad.addView(vehicleRow);
+
+        LinearLayout groundVehicleRow = new LinearLayout(this);
+        groundVehicleRow.setOrientation(LinearLayout.VERTICAL);
+        groundVehicleRow.setGravity(Gravity.CENTER);
+        LinearLayout steeringRow = new LinearLayout(this);
+        steeringRow.setGravity(Gravity.CENTER);
+        Button steerLeftTouch = touchAction("◀", () -> { touchSteerLeftHeld = true; refreshTouchVehicleSteering(); },
+                () -> { touchSteerLeftHeld = false; refreshTouchVehicleSteering(); });
+        Button steerRightTouch = touchAction("▶", () -> { touchSteerRightHeld = true; refreshTouchVehicleSteering(); },
+                () -> { touchSteerRightHeld = false; refreshTouchVehicleSteering(); });
+        steeringRow.addView(steerLeftTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        steeringRow.addView(steerRightTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        groundVehicleRow.addView(steeringRow);
+        LinearLayout pedalRow = new LinearLayout(this);
+        pedalRow.setGravity(Gravity.CENTER);
+        Button gasTouch = touchAction("تسارع", () -> { touchVehicleGasHeld = true; refreshTouchVehicleThrottle(); },
+                () -> { touchVehicleGasHeld = false; refreshTouchVehicleThrottle(); });
+        Button brakeTouch = touchAction("فرامل / رجوع", () -> { touchVehicleBrakeHeld = true; refreshTouchVehicleThrottle(); },
+                () -> { touchVehicleBrakeHeld = false; refreshTouchVehicleThrottle(); });
+        pedalRow.addView(gasTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        pedalRow.addView(brakeTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        groundVehicleRow.addView(pedalRow);
+        LinearLayout utilityRow = new LinearLayout(this);
+        utilityRow.setGravity(Gravity.CENTER);
+        Button handbrakeTouch = touchAction("فرامل يد", () -> runOnGl(() -> renderer.game.handbrake = true),
+                () -> runOnGl(() -> renderer.game.handbrake = false));
+        Button hornTouch = touchAction("زامور", () -> renderer.playHorn(), null);
+        utilityRow.addView(handbrakeTouch, new LinearLayout.LayoutParams(0, dp(44), 1f));
+        utilityRow.addView(hornTouch, new LinearLayout.LayoutParams(0, dp(44), 1f));
+        groundVehicleRow.addView(utilityRow);
+        touchGroundVehicleRow = groundVehicleRow;
+        actionPad.addView(groundVehicleRow);
 
         LinearLayout flightRow = new LinearLayout(this);
         flightRow.setOrientation(LinearLayout.VERTICAL);
@@ -1263,6 +1323,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         boolean driving = renderer.game.driving;
         boolean aircraft = driving && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
                 || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE);
+        if (touchMoveJoystick != null) touchMoveJoystick.setVisibility(driving ? View.GONE : View.VISIBLE);
         if (touchCombatRow != null) {
             for (int i = 0; i < touchCombatRow.getChildCount(); i++) {
                 View child = touchCombatRow.getChildAt(i);
@@ -1275,8 +1336,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
         if (touchSprintButton != null) touchSprintButton.setVisibility(driving ? View.GONE : View.VISIBLE);
         if (touchDodgeButton != null) touchDodgeButton.setVisibility(driving ? View.GONE : View.VISIBLE);
-        if (touchVehicleButton != null) touchVehicleButton.setText(driving ? "خروج من المركبة" : "استدعاء / دخول");
+        if (touchVehicleButton != null) touchVehicleButton.setText(driving ? "خروج من المركبة" : "دخول أقرب سيارة");
         if (touchVehicleTypeButton != null) touchVehicleTypeButton.setVisibility(driving ? View.GONE : View.VISIBLE);
+        if (touchGroundVehicleRow != null) touchGroundVehicleRow.setVisibility(driving && !aircraft ? View.VISIBLE : View.GONE);
         if (touchFlightRow != null) touchFlightRow.setVisibility(aircraft ? View.VISIBLE : View.GONE);
         boolean airplane = aircraft && renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE;
         if (touchGearButton != null) {

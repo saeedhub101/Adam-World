@@ -8,6 +8,10 @@ final class Game {
 
     static final class Agent {
         boolean car;
+        boolean parked, trafficStopped, driverPresent = true;
+        float cruiseSpeed;
+        long stopStartedMs, lastHornMs;
+        int hornCount;
         int vehicleType = ProceduralVehicleModels.SEDAN;
         int humanType = 0;
         RoadPath path;
@@ -66,6 +70,10 @@ final class Game {
     float camYaw, camPitch = 0.38f, camDistance = 5.2f, camX, camY = 3f, camZ, tgtX, tgtY = 1.5f, tgtZ;
     long lastLookMs;
     volatile float sx, sy;
+    // Independent driving channel: walking input never mutates vehicle steering/throttle.
+    volatile float vehicleSteeringInput, vehicleForwardInput;
+    volatile long trafficHornEvents;
+    float vehicleY;
     volatile boolean sprint, jogging, stealthMode;
     volatile long lastSprintTapMs;
     volatile boolean cinematicCamera;
@@ -86,7 +94,7 @@ final class Game {
     }
 
     void reset() {
-        sx = sy = 0f; sprint = false; jogging = false; stealthMode = false; lastSprintTapMs = 0L;
+        sx = sy = vehicleSteeringInput = vehicleForwardInput = 0f; vehicleY = 0f; trafficHornEvents = 0L; sprint = false; jogging = false; stealthMode = false; lastSprintTapMs = 0L;
         cinematicCamera = false; cameraMode = 1;
         playerMotion.reset();
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
@@ -353,20 +361,31 @@ final class Game {
                 }
             }
         }
-        float jx = sx, jy = sy;
+        // Character and vehicle consume different input channels.
+        float jx = driving ? vehicleSteeringInput : sx;
+        float jy = driving ? vehicleForwardInput : sy;
+        if (driving) {
+            // Drop character-only actions while seated so they cannot fire after exiting.
+            jumpRequested = punchRequested = kickRequested = attackRequested = dodgeRequested = false;
+            guardRequested = false; weaponAimHeld = weaponFireHeld = reloadRequested = false;
+            sx = sy = 0f;
+        }
         if(playerPose==2||playerPose==3||playerPose==4){jx=0f;jy=0f;}
         float mag = Math.min(1f, (float) Math.hypot(jx, jy));
         if (!driving) {
             playerMotion.update(this, dt, w);
+            // The parked car keeps its own ground height; character jump/height never moves it.
+            vehicleY = (w instanceof CityRenderer)
+                    ? ((CityRenderer) w).baseHeightAt(cx, cz) : w.heightAt(cx, cz);
         } else {
             boolean aircraft = vehicleType == ProceduralVehicleModels.HELICOPTER || vehicleType == ProceduralVehicleModels.AIRPLANE;
             if (aircraft) updateAircraft(dt, jx, jy);
             else updateGroundVehicle(dt, w, jx, jy);
-            px = cx; pz = cz;
             float ground = (w instanceof CityRenderer && !aircraft)
                     ? ((CityRenderer) w).baseHeightAt(cx, cz) + vehicleWheelBodyLift
                     : w.heightAt(cx, cz);
-            py += (ground + altitude - py) * Math.min(1f, dt * (aircraft ? 4f : 10f));
+            // Vehicle elevation is independent from the on-foot character transform.
+            vehicleY = ground + altitude;
             if (System.currentTimeMillis() - lastLookMs > 2500) {
                 camYaw += angDiff(camYaw, cyaw) * Math.min(1f, dt * 2.5f);
             }
@@ -394,15 +413,36 @@ final class Game {
             if (a.tile.dead) { agents.remove(i); continue; }
             if (a.car) {
                 a.hitFlash = Math.max(0f, a.hitFlash - dt);
-                if (a.knockedOut) {
+                if (a.knockedOut || a.parked) {
                     a.sp = 0f;
                 } else {
-                    a.s += a.dir * a.sp * dt;
-                    if (a.s > a.path.total) { a.s = a.path.total; a.dir = -1; }
-                    else if (a.s < 0f) { a.s = 0f; a.dir = 1; }
-                    a.path.posAt(a.s, a.off * a.dir, tmp);
-                    a.x = tmp[0]; a.z = tmp[1];
-                    a.yaw = (float)Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
+                    if (!driving && !a.trafficStopped) {
+                        float dx = px - a.x, dz = pz - a.z;
+                        float forward = (float)Math.sin(a.yaw), forwardZ = (float)Math.cos(a.yaw);
+                        float longitudinal = dx * forward + dz * forwardZ;
+                        float lateral = Math.abs(dx * forwardZ - dz * forward);
+                        if (longitudinal > 0.55f && longitudinal < 7.2f && lateral < 1.75f) {
+                            a.trafficStopped = true; a.stopStartedMs = now; a.hornCount = 1; a.lastHornMs = now;
+                            a.sp = 0f; trafficHornEvents++;
+                        }
+                    }
+                    if (a.trafficStopped) {
+                        a.sp = 0f;
+                        float distanceToPlayer = (float)Math.hypot(px - a.x, pz - a.z);
+                        if (now - a.stopStartedMs > 850L && a.hornCount < 2) {
+                            a.hornCount = 2; a.lastHornMs = now; trafficHornEvents++;
+                        }
+                        if (driving || distanceToPlayer > 8.5f) {
+                            a.trafficStopped = false; a.hornCount = 0; a.sp = a.cruiseSpeed;
+                        }
+                    } else {
+                        a.s += a.dir * a.sp * dt;
+                        if (a.s > a.path.total) { a.s = a.path.total; a.dir = -1; }
+                        else if (a.s < 0f) { a.s = 0f; a.dir = 1; }
+                        a.path.posAt(a.s, a.off * a.dir, tmp);
+                        a.x = tmp[0]; a.z = tmp[1];
+                        a.yaw = (float)Math.atan2(tmp[2] * a.dir, tmp[3] * a.dir);
+                    }
                 }
             }
             if (!a.car) {
@@ -534,6 +574,7 @@ final class Game {
 
     private void updateCamera(float dt) {
         float tx = focusX(), tz = focusZ();
+        float focusY = driving ? vehicleY : py;
         boolean aircraft = driving && (vehicleType == ProceduralVehicleModels.HELICOPTER || vehicleType == ProceduralVehicleModels.AIRPLANE);
         float modeScale = cameraMode == 0 ? 0.72f : cameraMode == 2 ? 1.55f : 1f;
         float dist = camDistance * modeScale * (driving ? (aircraft ? 2.15f : 1.6f) : 1f), th = driving ? (aircraft ? 3.0f : 1.6f) : 1.55f;
@@ -543,15 +584,16 @@ final class Game {
         float effectiveYaw = camYaw + cameraLookOffset + cinematicYaw;
         float dx = tx - (float) Math.sin(effectiveYaw) * dist * cp;
         float dz = tz - (float) Math.cos(effectiveYaw) * dist * cp;
-        float dy = Math.max(py + 0.6f, py + th + dist * sp);
+        float dy = Math.max(focusY + 0.6f, focusY + th + dist * sp);
         float k = 1f - (float) Math.exp(-dt * 14f);
         camX += (dx - camX) * k; camY += (dy - camY) * k; camZ += (dz - camZ) * k;
-        tgtX = tx; tgtY = th + py; tgtZ = tz;
+        tgtX = tx; tgtY = th + focusY; tgtZ = tz;
     }
 
     void snapCamera() {
         float tx = focusX(), tz = focusZ();
+        float focusY = driving ? vehicleY : py;
         float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);
-        camX = tx - (float) Math.sin(camYaw) * camDistance * cp; camZ = tz - (float) Math.cos(camYaw) * camDistance * cp; camY = py + 1.55f + camDistance * sp;
+        camX = tx - (float) Math.sin(camYaw) * camDistance * cp; camZ = tz - (float) Math.cos(camYaw) * camDistance * cp; camY = focusY + 1.55f + camDistance * sp;
     }
 }

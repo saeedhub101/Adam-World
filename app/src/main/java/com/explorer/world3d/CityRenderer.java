@@ -163,7 +163,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private final float[] proj = new float[16], view = new float[16], vp = new float[16];
     private final float[] ident = new float[16], tmp = new float[16], base = new float[16];
     private float aspect = 1f;
-    private long lastN = System.nanoTime(), lastUnload, lastAgentMs, lastHudMs, spawnDeadline, lastAudioWeaponShot, lastMiniMapUpdate, lastAudioExplosionEvent;
+    private long lastN = System.nanoTime(), lastUnload, lastAgentMs, lastHudMs, spawnDeadline, lastAudioWeaponShot, lastMiniMapUpdate, lastAudioExplosionEvent, lastTrafficHornEvents;
     private long lastTerrainBuildMs;
     private volatile float[] miniMapRoadSnapshot = new float[0];
     private volatile float[] fullMapRoadSnapshot = new float[0];
@@ -569,8 +569,9 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
     private static void clearContextualControlState(Game g) {
         // Prevent held on-foot or vehicle inputs from leaking across a successful enter/exit transition.
         g.sprint = false; g.jogging = false; g.stealthMode = false;
-        g.sx = g.sy = 0f; g.cameraLookOffset = 0f; g.cameraZoomInput = 0f;
-        g.weaponAimHeld = false; g.weaponFireHeld = false;
+        g.sx = g.sy = g.vehicleSteeringInput = g.vehicleForwardInput = 0f; g.cameraLookOffset = 0f; g.cameraZoomInput = 0f;
+        g.jumpRequested = g.punchRequested = g.kickRequested = g.attackRequested = g.dodgeRequested = false;
+        g.reloadRequested = false; g.weaponAimHeld = false; g.weaponFireHeld = false;
         g.handbrake = false; g.brakeRequested = false;
         g.liftInput = 0f; g.rudderInput = 0f; g.throttleInput = 0f;
     }
@@ -583,54 +584,58 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 boolean aircraft = g.vehicleType == ProceduralVehicleModels.HELICOPTER || g.vehicleType == ProceduralVehicleModels.AIRPLANE;
                 if (Math.abs(g.cv) > 3f || g.altitude > 1f) { L.onToast("أوقف المركبة واهبط قبل الخروج"); return; }
                 clearContextualControlState(g);
-                g.driving = false; g.cv = 0f; g.engineThrottle = g.vehicleType == ProceduralVehicleModels.HELICOPTER ? 0.52f : 0f;
+                g.driving = false; g.cv = 0f; g.vehicleSteeringInput = g.vehicleForwardInput = 0f;
+                g.vehicleY = g.py;
+                g.engineThrottle = g.vehicleType == ProceduralVehicleModels.HELICOPTER ? 0.52f : 0f;
                 g.px = g.cx + 3.2f; g.pz = g.cz; g.py = 0f;
             } else { clearContextualControlState(g); spawnFlightSchoolVehicle(true); }
             return;
         }
         if (!g.driving) {
-            float d = (float) Math.hypot(g.px - g.cx, g.pz - g.cz);
-            Game.Agent nearestTrafficCar = null;
-            float nearestTrafficDistance = 8f;
+            Game.Agent nearest = null;
+            float nearestDistance = 3.35f;
             for (Game.Agent agent : g.agents) {
                 if (!agent.car || agent.knockedOut) continue;
                 float distance = (float)Math.hypot(g.px - agent.x, g.pz - agent.z);
-                if (distance < nearestTrafficDistance) {
-                    nearestTrafficDistance = distance;
-                    nearestTrafficCar = agent;
-                }
+                if (distance < nearestDistance) { nearestDistance = distance; nearest = agent; }
             }
-            if (nearestTrafficCar != null && nearestTrafficDistance < d) {
-                g.cx = nearestTrafficCar.x; g.cz = nearestTrafficCar.z; g.cyaw = nearestTrafficCar.yaw;
-                g.cv = nearestTrafficCar.sp * nearestTrafficCar.dir;
-                g.vehicleType = nearestTrafficCar.vehicleType;
-                playerVehicleType = nearestTrafficCar.vehicleType;
+            if (nearest != null) {
+                if (!nearest.parked && !nearest.trafficStopped) {
+                    L.onToast("قف أمام السيارة أولاً حتى تتوقف، ثم اقترب من باب السائق");
+                    return;
+                }
+                if (nearest.driverPresent) {
+                    Game.Agent driver = new Game.Agent();
+                    driver.car = false; driver.tile = nearest.tile; driver.path = nearest.path;
+                    driver.s = nearest.s; driver.dir = nearest.dir; driver.off = nearest.off;
+                    float sideX = -(float)Math.cos(nearest.yaw), sideZ = (float)Math.sin(nearest.yaw);
+                    driver.x = nearest.x + sideX * 1.35f; driver.z = nearest.z + sideZ * 1.35f;
+                    driver.yaw = nearest.yaw; driver.humanType = 1; driver.cr = 0.25f; driver.cg = 0.34f; driver.cb = 0.48f;
+                    driver.knockedOut = true; driver.knockdownSeconds = 2.6f; driver.state = 3; driver.sp = 0f;
+                    g.agents.add(driver);
+                }
+                g.cx = nearest.x; g.cz = nearest.z; g.cyaw = nearest.yaw;
+                g.cv = 0f; g.vehicleType = nearest.vehicleType; playerVehicleType = nearest.vehicleType;
+                g.vehicleY = baseHeightAt(g.cx, g.cz);
                 clearContextualControlState(g);
                 g.driving = true; g.altitude = 0f; g.engineThrottle = 0f;
                 g.aircraftVerticalSpeed = 0f; g.aircraftOnGround = true; g.landingGearDown = true;
-                g.agents.remove(nearestTrafficCar);
-                L.onToast("تم ركوب سيارة الشارع");
+                g.agents.remove(nearest);
+                L.onToast(nearest.driverPresent ? "دفعت السائق خارج السيارة واستوليت عليها" : "ركبت السيارة المتوقفة");
                 return;
             }
-            if (d < 8f) {
+            float ownDistance = (float)Math.hypot(g.px - g.cx, g.pz - g.cz);
+            if (ownDistance < 4.8f) {
                 clearContextualControlState(g);
-                g.driving = true; g.cv = 0; g.vehicleType = playerVehicleType; g.altitude = 0f; g.liftInput = g.throttleInput = 0f; g.brakeRequested = false; g.engineThrottle = playerVehicleType == ProceduralVehicleModels.HELICOPTER ? 0.52f : 0f; g.aircraftVerticalSpeed = 0f; g.aircraftOnGround = true; g.aircraftDamage = 0f; g.landingGearDown = true; g.aircraftPitch = g.aircraftRoll = 0f;
-                L.onToast("قيادة: العصا للتسارع والتوجيه");
+                g.driving = true; g.cv = 0f; g.vehicleType = playerVehicleType;
+                g.vehicleY = baseHeightAt(g.cx, g.cz);
+                g.altitude = 0f; g.liftInput = g.throttleInput = 0f; g.brakeRequested = false;
+                g.engineThrottle = playerVehicleType == ProceduralVehicleModels.HELICOPTER ? 0.52f : 0f;
+                g.aircraftVerticalSpeed = 0f; g.aircraftOnGround = true; g.aircraftDamage = 0f;
+                g.landingGearDown = true; g.aircraftPitch = g.aircraftRoll = 0f;
+                L.onToast("أنت الآن في مقعد القيادة");
             } else {
-                float fx = (float) Math.sin(g.pyaw), fz = (float) Math.cos(g.pyaw);
-                float[][] tries = {{fx * 5, fz * 5}, {-fz * 4, fx * 4}, {fz * 4, -fx * 4}, {-fx * 5, -fz * 5}};
-                boolean ok = false;
-                for (float[] t : tries) {
-                    float x = g.px + t[0], z = g.pz + t[1];
-                    if (!blocked(x, z, 2.2f)) { g.cx = x; g.cz = z; g.cyaw = g.pyaw; g.cv = 0; ok = true; break; }
-                }
-                if (ok) {
-                    clearContextualControlState(g);
-                    g.driving = true; g.vehicleType = playerVehicleType; g.cv = 0f;
-                    g.altitude = 0f; g.engineThrottle = 0f; g.aircraftVerticalSpeed = 0f;
-                    g.landingGearDown = true; g.aircraftOnGround = true;
-                    L.onToast("تم استدعاء المركبة — أنت الآن تقودها");
-                } else L.onToast("لا توجد مساحة آمنة لاستدعاء المركبة");
+                L.onToast("اقترب من سيارة متوقفة أو قف أمام سيارة متحركة لإيقافها");
             }
         } else {
             boolean aircraft = g.vehicleType == ProceduralVehicleModels.HELICOPTER || g.vehicleType == ProceduralVehicleModels.AIRPLANE;
@@ -640,7 +645,11 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             float x = g.cx + rx * 2.6f, z = g.cz + rz * 2.6f;
             if (blocked(x, z, 0.5f)) { x = g.cx - rx * 2.6f; z = g.cz - rz * 2.6f; }
             if (blocked(x, z, 0.5f)) { x = g.cx; z = g.cz; }
-            g.px = x; g.pz = z; g.pyaw = g.cyaw; g.driving = false; g.cv = 0; g.altitude = 0f; g.liftInput = g.throttleInput = 0f; g.brakeRequested = false; g.engineThrottle = 0f; g.aircraftVerticalSpeed = 0f; g.aircraftOnGround = true; g.aircraftPitch = g.aircraftRoll = 0f;
+            g.px = x; g.pz = z; g.pyaw = g.cyaw; g.driving = false; g.cv = 0f;
+            g.vehicleSteeringInput = g.vehicleForwardInput = 0f;
+            g.vehicleY = baseHeightAt(g.cx, g.cz);
+            g.altitude = 0f; g.liftInput = g.throttleInput = 0f; g.brakeRequested = false;
+            g.engineThrottle = 0f; g.aircraftVerticalSpeed = 0f; g.aircraftOnGround = true; g.aircraftPitch = g.aircraftRoll = 0f;
             g.vehicleBumpAmplitude = g.vehicleBumpTime = g.vehicleBumpOffset = g.vehicleBumpRoll = g.vehicleBumpPitch = 0f;
             g.vehicleWheelFL = g.vehicleWheelFR = g.vehicleWheelRL = g.vehicleWheelRR = 0f;
             g.vehicleWheelBodyLift = g.vehicleWheelBodyRoll = g.vehicleWheelBodyPitch = 0f;
@@ -857,7 +866,14 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         if (a.car) {
             int[] roadTypes = {ProceduralVehicleModels.SEDAN, ProceduralVehicleModels.SUV, ProceduralVehicleModels.PICKUP, ProceduralVehicleModels.BUS, ProceduralVehicleModels.POLICE, ProceduralVehicleModels.MOTORBIKE, ProceduralVehicleModels.BICYCLE};
             a.vehicleType = roadTypes[rng.nextInt(roadTypes.length)];
-            a.off = p.w / 4f; a.sp = 7f + rng.nextFloat() * 7f;
+            a.off = p.w / 4f;
+            a.parked = rng.nextFloat() < 0.16f;
+            a.driverPresent = !a.parked;
+            a.cruiseSpeed = 7f + rng.nextFloat() * 7f;
+            a.sp = a.parked ? 0f : a.cruiseSpeed;
+            p.posAt(a.s, a.off * a.dir, o);
+            a.x = o[0]; a.z = o[1];
+            a.yaw = (float)Math.atan2(o[2] * a.dir, o[3] * a.dir);
             float[][] cols = {{.93f, .94f, .95f}, {.17f, .24f, .31f}, {.5f, .55f, .55f}, {.95f, .77f, .06f}, {.16f, .5f, .74f}, {.83f, .33f, 0f}, {.15f, .68f, .38f}, {.07f, .07f, .07f}};
             float[] c = cols[rng.nextInt(cols.length)];
             a.cr = c[0]; a.cg = c[1]; a.cb = c[2];
@@ -956,6 +972,11 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         if (!flightSchoolMode) refreshMiniMapRoads(nowMs);
         if (spawned) {
             game.update(dt, this);
+            if (game.trafficHornEvents != lastTrafficHornEvents) {
+                long newHorns = Math.min(2L, Math.max(0L, game.trafficHornEvents - lastTrafficHornEvents));
+                lastTrafficHornEvents = game.trafficHornEvents;
+                for (int i = 0; i < newHorns; i++) worldAudio.playHorn();
+            }
             if (game.lastWeaponShotMs != 0L && game.lastWeaponShotMs != lastAudioWeaponShot) {
                 lastAudioWeaponShot = game.lastWeaponShotMs;
                 worldAudio.playEffect(game.equippedWeapon);
@@ -1131,11 +1152,16 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         }
         drawProjectileEffects();
         if (spawned) {
-            drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.py - Terrain.h(g.cx, g.cz), 0.75f, 0.22f, 0.17f, g.cv, g.sx,
-                    g.vehicleBumpOffset, g.vehicleBumpRoll + g.vehicleWheelBodyRoll + g.aircraftRoll,
-                    g.vehicleBumpPitch + g.vehicleWheelBodyPitch + g.aircraftPitch,
-                    g.vehicleWheelFL - g.vehicleWheelBodyLift, g.vehicleWheelFR - g.vehicleWheelBodyLift,
-                    g.vehicleWheelRL - g.vehicleWheelBodyLift, g.vehicleWheelRR - g.vehicleWheelBodyLift);
+            float parkedGroundOffset = g.vehicleY - Terrain.h(g.cx, g.cz);
+            drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, parkedGroundOffset,
+                    0.75f, 0.22f, 0.17f, g.driving ? g.cv : 0f, g.driving ? g.vehicleSteeringInput : 0f,
+                    g.driving ? g.vehicleBumpOffset : 0f,
+                    g.driving ? g.vehicleBumpRoll + g.vehicleWheelBodyRoll + g.aircraftRoll : 0f,
+                    g.driving ? g.vehicleBumpPitch + g.vehicleWheelBodyPitch + g.aircraftPitch : 0f,
+                    g.driving ? g.vehicleWheelFL - g.vehicleWheelBodyLift : 0f,
+                    g.driving ? g.vehicleWheelFR - g.vehicleWheelBodyLift : 0f,
+                    g.driving ? g.vehicleWheelRL - g.vehicleWheelBodyLift : 0f,
+                    g.driving ? g.vehicleWheelRR - g.vehicleWheelBodyLift : 0f);
             if (!g.driving) drawKid(g.px,g.py,g.pz,g.pyaw,g.phase,g.swingAmp,g.attackSeconds,g.attackType,g.playerPose,g.playerPoseTime,g.guardBlend,g.hurtFlash,g.equippedWeapon,g.weaponAimHeld,g.weaponRecoil,g.muzzleFlashSeconds,g.weaponReloadSeconds,g.weaponReloadDuration);
         }
     }
