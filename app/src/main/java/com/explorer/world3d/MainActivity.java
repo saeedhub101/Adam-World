@@ -372,7 +372,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             else if (pressed) runOnGl(() -> renderer.game.dodgeRequested = true);
             return true;
         }
-        if (code == KeyEvent.KEYCODE_BUTTON_SELECT || code == KeyEvent.KEYCODE_BACK) {
+        if (code == KeyEvent.KEYCODE_BUTTON_SELECT) {
             if (pressed) showMapDialog(false);
             return true;
         }

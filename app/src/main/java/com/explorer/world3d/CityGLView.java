@@ -76,13 +76,6 @@ public class CityGLView extends GLSurfaceView {
                 else if (Math.abs(hatX)+Math.abs(hatY) > 0.5f) weaponWheelView.selectDirection(hatX, -hatY);
             } else {
                 renderer.setGamepadLook(lookX, lookY);
-                // Some Android TV pads report the D-pad as HAT axes instead of key events.
-                if (Math.abs(hatY) > 0.5f) {
-                    if (renderer.game.driving && (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE
-                            || renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER))
-                        renderer.game.liftInput = -hatY;
-                    else renderer.game.cameraZoomInput = -hatY;
-                }
             }
 
             renderer.game.sx = moveX;
