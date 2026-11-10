@@ -112,12 +112,15 @@ final class Terrain {
     }
 
     static void ensure(double lat, double lon) throws IOException {
-        if (!enabled) return;
+        if (!covers(lat, lon)) return;
         int tx = (int) Math.floor(gx(lon) / 256.0), ty = (int) Math.floor(gy(lat) / 256.0);
         long k = key(tx, ty);
+        // Never hold Terrain.class while reading files, downloading PNGs or decoding.
+        // The render thread samples this cache; holding its monitor during network I/O
+        // made a slow DEM server stall the entire game loop.
         synchronized (Terrain.class) {
             if (dem.containsKey(k)) return;
-            if (dem.containsKey(k)) return;
+        }
             File f = cacheDir == null ? null : new File(cacheDir, "d_" + Z + "_" + tx + "_" + ty + ".png");
             boolean tabarbourSource = isTabarbour(Geo.lat0, Geo.lon0);
             byte[] data = null;
@@ -173,9 +176,10 @@ final class Terrain {
                     try (FileOutputStream o = new FileOutputStream(f)) { o.write(data); } catch (IOException ignore) {}
                 }
             }
-            float[] arr = decoder.decode(data);
-            if (arr == null || arr.length != 65536) throw new IOException("bad DEM tile");
-            dem.put(k, arr);
+        float[] arr = decoder.decode(data);
+        if (arr == null || arr.length != 65536) throw new IOException("bad DEM tile");
+        synchronized (Terrain.class) {
+            if (!dem.containsKey(k)) dem.put(k, arr);
         }
     }
 
@@ -194,7 +198,7 @@ final class Terrain {
                 double lon = ((tx + 0.5) / scale) * 360.0 - 180.0;
                 double merc = Math.PI - 2.0 * Math.PI * (ty + 0.5) / scale;
                 double lat = Math.toDegrees(Math.atan(Math.sinh(merc)));
-                ensure(lat, lon);
+                if (covers(lat, lon)) ensure(lat, lon);
             }
         }
     }
