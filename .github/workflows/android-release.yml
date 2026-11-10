@@ -147,7 +147,19 @@ jobs:
           cp "$AAB" Adam-World.aab
           sha256sum Adam-World.apk Adam-World.aab
 
+      - name: Upload signed APK and AAB as downloadable workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Adam-World-v${{ env.VERSION_CODE }}-android
+          path: |
+            Adam-World.apk
+            Adam-World.aab
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Publish release with APK and AAB
+        id: publish_release
+        continue-on-error: true
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
@@ -159,3 +171,10 @@ jobs:
             Adam-World.apk
             Adam-World.aab
           fail_on_unmatched_files: true
+
+      - name: Report artifact fallback if release API is restricted
+        if: steps.publish_release.outcome == 'failure'
+        run: |
+          echo "GitHub denied Release creation for this integration token." >> "$GITHUB_STEP_SUMMARY"
+          echo "The signed APK and AAB were uploaded above as workflow artifacts." >> "$GITHUB_STEP_SUMMARY"
+
