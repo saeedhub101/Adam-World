@@ -21,7 +21,8 @@ final class Game {
         int health = 100;
         boolean hostile, knockedOut;
         long lastAttackMs;
-        float stunSeconds, knockdownSeconds, stateTime, hitFlash;
+        float stunSeconds, knockdownSeconds, stateTime, hitFlash, interactionSeconds;
+        int interactionType; // 1 attack gesture, 2 hit reaction
         float knockbackX, knockbackZ;
         int state; // 0 patrol, 1 hostile, 2 flee, 3 down, 4 recovery
         float cr, cg, cb;
@@ -351,7 +352,7 @@ final class Game {
                     target.health = Math.max(0, target.health-damage);
                     target.hostile = true; target.state=1; target.stateTime=0f;
                     target.stunSeconds = kick ? 0.78f : comboStep == 3 ? 0.58f : 0.38f;
-                    target.hitFlash=.30f;
+                    target.hitFlash=.30f; target.interactionSeconds=.48f; target.interactionType=2;
                     float impulse = kick ? 5.8f : comboStep == 3 ? 4.2f : 2.5f;
                     target.knockbackX += dx/len*impulse; target.knockbackZ += dz/len*impulse;
                     if (target.health == 0) {
@@ -447,6 +448,7 @@ final class Game {
             }
             if (!a.car) {
                 a.stateTime+=dt; a.hitFlash=Math.max(0f,a.hitFlash-dt);
+                a.interactionSeconds=Math.max(0f,a.interactionSeconds-dt);
                 if (Math.abs(a.knockbackX)+Math.abs(a.knockbackZ)>0.015f) {
                     float kx=a.x+a.knockbackX*dt, kz=a.z+a.knockbackZ*dt;
                     if (!w.blocked(kx,kz,0.36f)) { a.x=kx; a.z=kz; }
@@ -465,7 +467,7 @@ final class Game {
                         a.yaw=(float)Math.atan2(dx,dz);
                     }
                     if (d < 1.15f && now-a.lastAttackMs>1350L && now-lastDamageMs>700L) {
-                        a.lastAttackMs=now;
+                        a.lastAttackMs=now; a.interactionSeconds=.62f; a.interactionType=1;
                         if (dodgeSeconds <= 0f) {
                             boolean blocked=guardRequested && stamina>=8f;
                             health=Math.max(0,health-(blocked?2:9)); lastDamageMs=now; hurtFlash=.3f;

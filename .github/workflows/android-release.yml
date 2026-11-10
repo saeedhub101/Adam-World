@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "app/**"
+      - "3D/**"
       - "build.gradle"
       - "settings.gradle"
       - "gradle.properties"
@@ -14,6 +15,7 @@ on:
     branches: [main]
     paths:
       - "app/**"
+      - "3D/**"
       - "build.gradle"
       - "settings.gradle"
       - "gradle.properties"
@@ -39,6 +41,7 @@ jobs:
           filter: blob:none
           sparse-checkout: |
             /app/
+            /3D/
             /Adam_Walking.glb
             /build.gradle
             /settings.gradle
@@ -96,6 +99,34 @@ jobs:
           elder|https://gobkit.com/freebies/human001/GrandmaShopper.glb
           manager|https://gobkit.com/freebies/human001/StoreManager.glb
           PED_MODELS
+
+      - name: Build the user's VRM and GLB as separate animated pedestrians
+        run: |
+          set -euo pipefail
+          while IFS='|' read -r NAME SOURCE_REL; do
+            PED_SOURCE="$GITHUB_WORKSPACE/$SOURCE_REL"
+            PED_OUTPUT="app/src/main/assets/models/runtime/characters/pedestrian-$NAME.awmesh5"
+            rm -f "$PED_OUTPUT"
+            if [ ! -s "$PED_SOURCE" ]; then
+              echo "::warning::Pedestrian source missing: $SOURCE_REL"
+              continue
+            fi
+            if ADAM_SOURCE_GLTF="$PED_SOURCE" ADAM_OUTPUT_MESH="$PED_OUTPUT" python app/tools/build_adam_skinned_mesh.py; then
+              PED_BYTES="$(stat -c%s "$PED_OUTPUT")"
+              if [ "$PED_BYTES" -gt 3145728 ]; then
+                rm -f "$PED_OUTPUT"
+                echo "::warning::Pedestrian $NAME exceeded the 3 MB runtime budget and was omitted."
+              else
+                echo "User pedestrian $NAME ready: $PED_BYTES bytes"
+              fi
+            else
+              rm -f "$PED_OUTPUT"
+              echo "::warning::Pedestrian $NAME conversion failed; its model will use the existing fallback."
+            fi
+          done <<'USER_PED_MODELS'
+          saeed-glb|3D/Saeed_NoAnimation.glb
+          saeed-vrm|3D/Saeed_NoAnimation.vrm
+          USER_PED_MODELS
 
       - name: Prepare signing and calculate release version
         env:

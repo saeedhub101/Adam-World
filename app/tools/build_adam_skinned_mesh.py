@@ -485,9 +485,18 @@ def main():
                 else:S=sampled
             tracks.append((old_to_new[old],all_times,T,R,S))
         if tracks:clips.append((anim.get("name",f"animation_{ai}"),max_time,tracks))
-    if not clips:
-        clips=make_procedural_clips(ordered,doc["nodes"],parents,globals_,bind_t,bind_r,bind_s)
-        print(f"ADAM_PROCEDURAL_ANIMATIONS clips={len(clips)} names={','.join(x[0] for x in clips)}",flush=True)
+    # Always provide canonical locomotion and interaction clips. A source may contain
+    # a static pose or an unrelated single clip; that must not leave a pedestrian frozen.
+    procedural=make_procedural_clips(ordered,doc["nodes"],parents,globals_,bind_t,bind_r,bind_s)
+    existing_names={name.lower() for name,_,_ in clips}
+    added=[]
+    for generated in procedural:
+        if generated[0].lower() not in existing_names:
+            clips.append(generated)
+            existing_names.add(generated[0].lower())
+            added.append(generated[0])
+    if added:
+        print(f"ADAM_PROCEDURAL_ANIMATIONS added={len(added)} names={','.join(added)}",flush=True)
     total_keys=sum(len(t[1]) for _,_,tr in clips for t in tr)
     if total_keys>MAX_KEYS_TOTAL:raise ValueError(f"animation keys {total_keys} exceed runtime cap {MAX_KEYS_TOTAL}")
     OUT.parent.mkdir(parents=True,exist_ok=True)

@@ -144,6 +144,9 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private SkinnedAssetLoader.Asset playerCharacterAsset;
     private SkinnedAssetLoader.Asset[] pedestrianCharacterAssets = new SkinnedAssetLoader.Asset[0];
     private int[] pedestrianWalkClips = new int[0];
+    private int[] pedestrianIdleClips = new int[0], pedestrianRunClips = new int[0];
+    private int[] pedestrianPunchClips = new int[0], pedestrianHurtClips = new int[0];
+    private int[] pedestrianFallClips = new int[0], pedestrianGetupClips = new int[0];
     private final WeakHashMap<Game.Agent, SkeletalAnimationRuntime.Animator> pedestrianAnimators = new WeakHashMap<>();
     private long lastCharacterAnimationNanos;
     private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN;
@@ -394,24 +397,41 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         String[] pedestrianFiles = {
                 "models/runtime/characters/pedestrian-office.awmesh5",
                 "models/runtime/characters/pedestrian-elder.awmesh5",
-                "models/runtime/characters/pedestrian-manager.awmesh5"
+                "models/runtime/characters/pedestrian-manager.awmesh5",
+                "models/runtime/characters/pedestrian-saeed-glb.awmesh5",
+                "models/runtime/characters/pedestrian-saeed-vrm.awmesh5"
         };
         pedestrianCharacterAssets = new SkinnedAssetLoader.Asset[pedestrianFiles.length];
         pedestrianWalkClips = new int[pedestrianFiles.length];
+        pedestrianIdleClips = new int[pedestrianFiles.length];
+        pedestrianRunClips = new int[pedestrianFiles.length];
+        pedestrianPunchClips = new int[pedestrianFiles.length];
+        pedestrianHurtClips = new int[pedestrianFiles.length];
+        pedestrianFallClips = new int[pedestrianFiles.length];
+        pedestrianGetupClips = new int[pedestrianFiles.length];
         java.util.Arrays.fill(pedestrianWalkClips, -1);
+        java.util.Arrays.fill(pedestrianIdleClips, -1);
+        java.util.Arrays.fill(pedestrianRunClips, -1);
+        java.util.Arrays.fill(pedestrianPunchClips, -1);
+        java.util.Arrays.fill(pedestrianHurtClips, -1);
+        java.util.Arrays.fill(pedestrianFallClips, -1);
+        java.util.Arrays.fill(pedestrianGetupClips, -1);
         pedestrianAnimators.clear();
         for (int p = 0; p < pedestrianFiles.length; p++) {
             SkinnedAssetLoader.Asset asset = SkinnedAssetLoader.load(ctx, pedestrianFiles[p]);
             pedestrianCharacterAssets[p] = asset;
             if (asset == null) continue;
-            SkeletalAnimationRuntime.Clip[] clips = asset.animator.clips;
-            for (int i = 0; i < clips.length; i++) {
-                if (clips[i].name.toLowerCase(java.util.Locale.ROOT).contains("walk")) {
-                    pedestrianWalkClips[p] = i;
-                    break;
-                }
-            }
-            if (pedestrianWalkClips[p] < 0 && clips.length > 0) pedestrianWalkClips[p] = 0;
+            SkeletalAnimationRuntime.Animator sourceAnimator = asset.animator;
+            pedestrianWalkClips[p] = sourceAnimator.findClip("walk");
+            pedestrianIdleClips[p] = sourceAnimator.findClip("idle");
+            pedestrianRunClips[p] = sourceAnimator.findClip("run");
+            pedestrianPunchClips[p] = sourceAnimator.findClip("punch");
+            pedestrianHurtClips[p] = sourceAnimator.findClip("hurt");
+            pedestrianFallClips[p] = sourceAnimator.findClip("fall");
+            pedestrianGetupClips[p] = sourceAnimator.findClip("getup");
+            if (pedestrianWalkClips[p] < 0 && sourceAnimator.clips.length > 0) pedestrianWalkClips[p] = 0;
+            if (pedestrianIdleClips[p] < 0) pedestrianIdleClips[p] = pedestrianWalkClips[p];
+            if (pedestrianRunClips[p] < 0) pedestrianRunClips[p] = pedestrianWalkClips[p];
         }
         importedVehicleModels[ProceduralVehicleModels.SEDAN] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/sedan.awmesh");
         importedVehicleModels[ProceduralVehicleModels.PICKUP] = AssetMeshLoader.load(ctx, "models/runtime/vehicles/pickup.awmesh");
@@ -878,7 +898,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             float[] c = cols[rng.nextInt(cols.length)];
             a.cr = c[0]; a.cg = c[1]; a.cb = c[2];
         } else {
-            a.humanType = rng.nextInt(3);
+            a.humanType = rng.nextInt(5);
             a.off = p.veh ? (p.w / 2f + 1.6f) * (rng.nextBoolean() ? 1 : -1) : (rng.nextFloat() - 0.5f) * 0.8f;
             a.sp = 1.1f + rng.nextFloat() * 0.7f; a.ph = rng.nextFloat() * 6f;
             float[][] cols = {{.2f, .6f, .86f}, {.9f, .5f, .15f}, {.1f, .74f, .6f}, {.6f, .35f, .72f}, {.93f, .94f, .95f}, {.95f, .6f, .07f}};
@@ -1142,7 +1162,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, cr, cg, cb,
                         a.sp * a.dir, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
             } else if (pedestrianCharacterAssets.length > 0 && detailedPedestrians < pedestrianBudget
-                    && agentDistance < 42f && !a.knockedOut && a.state != 3
+                    && agentDistance < 42f
                     && pedestrianCharacterAssets[Math.floorMod(a.humanType, pedestrianCharacterAssets.length)] != null
                     && pedestrianWalkClips[Math.floorMod(a.humanType, pedestrianWalkClips.length)] >= 0) {
                 drawSkinnedPerson(a, Terrain.h(a.x,a.z), frameDeltaSeconds,
@@ -1465,7 +1485,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         Matrix.setIdentityM(base,0);
         Matrix.translateM(base,0,x,y,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
-        Matrix.scaleM(base,0,1.28f,1.28f,1.28f);
+        Matrix.scaleM(base,0,1.52f,1.52f,1.52f);
         GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
         GLES20.glUniformMatrix4fv(uBones,animator.boneCount(),false,animator.skinMatrices(),0);
         GLES20.glUniform1f(uSkinning,1f);
@@ -1489,7 +1509,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
         float fall=pose==2?Math.min(1f,poseTime/.25f):pose==3?1f:pose==4?Math.max(0f,1f-poseTime/.55f):0f;
         Matrix.translateM(base,0,0f,.82f*fall,0f); Matrix.rotateM(base,0,-82f*fall,0f,0f,1f); Matrix.translateM(base,0,0f,-.82f*fall,0f);
-        Matrix.scaleM(base,0,1.08f,1.08f,1.08f);
+        Matrix.scaleM(base,0,1.25f,1.25f,1.25f);
         float attackDuration = attackType == 3 ? .62f : .42f;
         float attackPhase = attack > 0f ? Math.max(0f,Math.min(1f,1f-attack/attackDuration)) : 0f;
         float attackPulse = attack > 0f ? (float)Math.sin(attackPhase*Math.PI) : 0f;
@@ -1586,21 +1606,36 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         mesh.draw();
     }
 
-    /** Render nearby pedestrians with one shared textured rig and an independent animator per agent. */
+    /** Render each imported pedestrian with its own skeletal state and contextual animation. */
     private void drawSkinnedPerson(Game.Agent agent, float y, float dt, int modelIndex) {
         SkinnedAssetLoader.Asset asset = pedestrianCharacterAssets[modelIndex];
         int walkClip = pedestrianWalkClips[modelIndex];
         if (asset == null || walkClip < 0) return;
+        int clip = walkClip;
+        boolean repeat = true;
+        if (agent.knockedOut || agent.state == 3) {
+            if (pedestrianFallClips[modelIndex] >= 0) { clip = pedestrianFallClips[modelIndex]; repeat = false; }
+        } else if (agent.state == 4) {
+            if (pedestrianGetupClips[modelIndex] >= 0) { clip = pedestrianGetupClips[modelIndex]; repeat = false; }
+        } else if (agent.interactionSeconds > 0.01f) {
+            int interaction = agent.interactionType == 2
+                    ? pedestrianHurtClips[modelIndex] : pedestrianPunchClips[modelIndex];
+            if (interaction >= 0) { clip = interaction; repeat = false; }
+        } else if (agent.state == 2 || agent.sp > 2.2f) {
+            if (pedestrianRunClips[modelIndex] >= 0) clip = pedestrianRunClips[modelIndex];
+        } else if (agent.sp < 0.08f) {
+            if (pedestrianIdleClips[modelIndex] >= 0) clip = pedestrianIdleClips[modelIndex];
+        }
         SkeletalAnimationRuntime.Animator animator = pedestrianAnimators.get(agent);
         if (animator == null) {
             SkeletalAnimationRuntime.Animator template = asset.animator;
             animator = new SkeletalAnimationRuntime.Animator(template.skeleton, template.clips);
-            animator.play(walkClip, 0f, true);
+            animator.play(clip, 0f, repeat);
             pedestrianAnimators.put(agent, animator);
-        } else if (animator.current != walkClip) {
-            animator.play(walkClip, 0.12f, true);
+        } else if (animator.current != clip) {
+            animator.play(clip, 0.16f, repeat);
         }
-        animator.speed = agent.state == 2 ? 1.12f : 1f;
+        animator.speed = agent.state == 2 ? 1.18f : agent.state == 1 ? 1.04f : 1f;
         animator.update(dt);
         Matrix.setIdentityM(base, 0);
         Matrix.translateM(base, 0, agent.x, y, agent.z);
