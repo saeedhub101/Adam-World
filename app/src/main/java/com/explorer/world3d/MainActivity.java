@@ -62,6 +62,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private TextView healthHud, weaponHud;
     private MiniMapView miniMap;
     private AimReticleView aimReticle;
+    private WeaponWheelView weaponWheelView;
+    private boolean weaponWheelOpen;
     private long lastHudRefresh;
     private LinearLayout touchActionPad, touchCombatRow, touchFlightRow;
     private Button touchVehicleButton, touchVehicleTypeButton, touchSprintButton, touchDodgeButton;
@@ -182,6 +184,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         int code = event.getKeyCode();
         boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
         boolean pressed = down && event.getRepeatCount() == 0;
+        if (weaponWheelOpen && down && pressed && (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_RIGHT
+                || code == KeyEvent.KEYCODE_DPAD_DOWN || code == KeyEvent.KEYCODE_DPAD_LEFT)) {
+            weaponWheelView.moveSelection((code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_RIGHT) ? 1 : -1);
+            return true;
+        }
         if (padCameraModifier && (code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN)) {
             if (renderer != null) renderer.game.cameraZoomInput = down
                     ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
@@ -224,7 +231,17 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         if (code == KeyEvent.KEYCODE_BUTTON_Y) { if (pressed) runOnGl(new Runnable() { @Override public void run() { renderer.toggleCar(); } }); return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_L1) { if (!renderer.game.driving) renderer.game.weaponAimHeld = down; else renderer.game.cameraLookOffset = down ? -0.95f : 0f; return true; }
         if (code == KeyEvent.KEYCODE_BUTTON_R1) {
-            if (pressed && !renderer.game.driving) runOnGl(() -> { renderer.game.cycleWeapon(); runOnUiThread(this::saveWeaponState); });
+            if (!renderer.game.driving) {
+                if (down && !weaponWheelOpen) {
+                    weaponWheelOpen = true;
+                    runOnUiThread(() -> weaponWheelView.showWheel());
+                } else if (!down && weaponWheelOpen) {
+                    weaponWheelOpen = false;
+                    final int chosen = weaponWheelView.selectedWeapon();
+                    runOnGl(() -> { renderer.game.equipWeapon(chosen); runOnUiThread(this::saveWeaponState); });
+                    runOnUiThread(() -> weaponWheelView.hideWheel());
+                }
+            }
             padCameraModifier = down;
             if (!down) renderer.game.cameraZoomInput = 0f;
             return true;
@@ -381,6 +398,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         loadWeaponState();
         glView = new CityGLView(this, renderer);
         root.addView(glView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        weaponWheelView = new WeaponWheelView(this);
+        weaponWheelView.setGame(renderer.game);
+        weaponWheelView.setListener(id -> runOnGl(() -> {
+            renderer.game.equipWeapon(id);
+            runOnUiThread(this::saveWeaponState);
+        }));
+        FrameLayout.LayoutParams wheelParams = new FrameLayout.LayoutParams(dp(320), dp(320), Gravity.CENTER);
+        root.addView(weaponWheelView, wheelParams);
 
         // الشريط العلوي
         LinearLayout top = new LinearLayout(this);
