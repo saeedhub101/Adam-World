@@ -316,6 +316,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         // Face buttons: GTA defaults on foot; contextual vehicle equivalents.
         if (code == KeyEvent.KEYCODE_BUTTON_A) {
             if (!game.driving) {
+                game.jogging = down;
                 if (pressed) {
                     long now = System.currentTimeMillis();
                     if (game.lastSprintTapMs > 0L && now - game.lastSprintTapMs <= 430L) game.sprint = true;
@@ -1146,6 +1147,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             renderer.game.cameraLookOffset = 0f;
             renderer.setGamepadLook(0f, 0f);
             renderer.game.sprint = false;
+            renderer.game.jogging = false;
             renderer.game.stealthMode = false;
             renderer.game.guardRequested = false;
             renderer.game.handbrake = false;
