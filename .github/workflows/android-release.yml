@@ -64,7 +64,7 @@ jobs:
       - name: Convert licensed vehicle models to Adam World binary meshes
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check --no-input numpy trimesh pillow
+          python -m pip install --disable-pip-version-check --no-input numpy trimesh pillow scipy fast-simplification
           python app/tools/build_runtime_meshes.py
           python app/tools/build_adam_skinned_mesh.py
 

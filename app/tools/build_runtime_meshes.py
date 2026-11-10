@@ -17,6 +17,8 @@ from pathlib import Path
 
 import numpy as np
 import trimesh
+from scipy.spatial import cKDTree
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "app/src/main/assets/models/runtime/vehicles"
@@ -25,31 +27,43 @@ ASSETS = {
         "url": "https://files.innerscene.com/library/sedan-car-42109739/75c64c1b3c8b03734314/sedan-original.glb",
         "length": 4.45,
         "fallback": (0.16, 0.30, 0.48),
+        "target_faces": 10000,
+        "max_bytes": 3000000,
     },
     "pickup": {
         "url": "https://files.innerscene.com/library/pickup-truck-da45aa3f/aef5bc0897dcaebfa6a2/pickup-original.glb",
         "length": 5.20,
         "fallback": (0.20, 0.27, 0.34),
+        "target_faces": 12000,
+        "max_bytes": 3200000,
     },
     "suv": {
         "url": "https://grab3d.com/dl/1990s-suv/1990s-suv.glb",
         "length": 4.69,
         "fallback": (0.34, 0.42, 0.28),
+        "target_faces": 12000,
+        "max_bytes": 3200000,
     },
     "police": {
         "url": "https://grab3d.com/dl/1990s-police-car/1990s-police-car.glb",
         "length": 5.09,
         "fallback": (0.82, 0.86, 0.90),
+        "target_faces": 12000,
+        "max_bytes": 3200000,
     },
     "city-bus": {
         "url": "https://files.innerscene.com/library/low-floor-city-bus-9e7ce899/9c3a0074b0e553ba181a/city-bus-original.glb",
         "length": 8.30,
         "fallback": (0.82, 0.70, 0.16),
+        "target_faces": 10000,
+        "max_bytes": 3000000,
     },
     "motorcycle": {
         "url": "https://files.innerscene.com/library/race-replica-superbike-fully-faired-badbd83b/9ce443dc7d0c14f443e9/race-replica-superbike-fully-faired.glb",
         "length": 2.10,
         "fallback": (0.72, 0.08, 0.06),
+        "target_faces": 8000,
+        "max_bytes": 2200000,
     },
 }
 
@@ -68,20 +82,65 @@ def fetch(url: str) -> bytes:
     return raw
 
 
-def scene_meshes(raw: bytes):
+def simplify_visual_mesh(mesh: trimesh.Trimesh, target_faces: int) -> trimesh.Trimesh:
+    """Decimate geometry while carrying UVs/materials or vertex colors to new vertices."""
+    if len(mesh.faces) <= target_faces:
+        return mesh
+    visual = mesh.visual
+    uv = getattr(visual, "uv", None)
+    material = getattr(visual, "material", None)
+    kind = getattr(visual, "kind", None)
+    vertex_colors = None
+    if kind == "vertex":
+        vertex_colors = np.asarray(visual.vertex_colors)
+    elif kind == "face":
+        vertex_colors = color_for(mesh, (1.0, 1.0, 1.0))
+
+    simplified = mesh.simplify_quadric_decimation(face_count=target_faces, aggression=4)
+    if len(simplified.vertices) < 3 or len(simplified.faces) < 1:
+        raise ValueError("quadric decimation returned empty geometry")
+    nearest = cKDTree(np.asarray(mesh.vertices, dtype=np.float64)).query(
+        np.asarray(simplified.vertices, dtype=np.float64), k=1, workers=-1
+    )[1]
+    if uv is not None and len(uv) == len(mesh.vertices):
+        simplified.visual = trimesh.visual.TextureVisuals(
+            uv=np.asarray(uv, dtype=np.float32)[nearest], material=material
+        )
+    elif vertex_colors is not None and len(vertex_colors) == len(mesh.vertices):
+        simplified.visual = trimesh.visual.ColorVisuals(
+            mesh=simplified, vertex_colors=vertex_colors[nearest]
+        )
+    elif material is not None:
+        simplified.visual = trimesh.visual.TextureVisuals(
+            uv=np.zeros((len(simplified.vertices), 2), dtype=np.float32), material=material
+        )
+    return simplified
+
+
+def scene_meshes(raw: bytes, target_faces: int):
     loaded = trimesh.load(io.BytesIO(raw), file_type="glb", force="scene", process=False)
     if isinstance(loaded, trimesh.Trimesh):
-        return [loaded]
-    result = []
-    for node in loaded.graph.nodes_geometry:
-        transform, geometry_name = loaded.graph[node]
-        geometry = loaded.geometry[geometry_name].copy()
-        geometry.apply_transform(transform)
-        if len(geometry.vertices) and len(geometry.faces):
-            result.append(geometry)
+        result = [loaded]
+    else:
+        result = []
+        for node in loaded.graph.nodes_geometry:
+            transform, geometry_name = loaded.graph[node]
+            geometry = loaded.geometry[geometry_name].copy()
+            geometry.apply_transform(transform)
+            if len(geometry.vertices) and len(geometry.faces):
+                result.append(geometry)
     if not result:
         raise ValueError("GLB contains no renderable triangle geometry")
-    return result
+    total_faces = max(1, sum(len(mesh.faces) for mesh in result))
+    bounded = []
+    for mesh in result:
+        share = max(100, int(target_faces * len(mesh.faces) / total_faces))
+        if len(mesh.faces) > share:
+            before = len(mesh.faces)
+            mesh = simplify_visual_mesh(mesh, share)
+            print(f"AWM_DECIMATED faces={before}->{len(mesh.faces)} vertices={len(mesh.vertices)}", flush=True)
+        bounded.append(mesh)
+    return bounded
 
 
 def color_for(mesh, fallback):
@@ -134,8 +193,8 @@ def vertex_normals(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
     return np.nan_to_num(normals, nan=0.0, posinf=0.0, neginf=0.0)
 
 
-def convert(raw: bytes, target_length: float, fallback):
-    meshes = scene_meshes(raw)
+def convert(raw: bytes, target_length: float, fallback, target_faces: int):
+    meshes = scene_meshes(raw, target_faces)
     all_vertices, all_normals, all_uvs, all_colors = [], [], [], []
     face_groups, material_records = [], []
     texture_payloads, texture_ids = [], {}
@@ -180,6 +239,8 @@ def convert(raw: bytes, target_length: float, fallback):
             try:
                 if hasattr(source_image, "convert") and hasattr(source_image, "save"):
                     rgba = source_image.convert("RGBA")
+                    if max(rgba.size) > 1024:
+                        rgba.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
                     encoded = io.BytesIO()
                     rgba.save(encoded, format="PNG", optimize=True)
                     payload = encoded.getvalue()
@@ -250,7 +311,7 @@ def main():
         destination = OUT / (name + ".awmesh")
         try:
             raw = fetch(item["url"])
-            vertices, submeshes, materials, textures = convert(raw, item["length"], item["fallback"])
+            vertices, submeshes, materials, textures = convert(raw, item["length"], item["fallback"], item["target_faces"])
             with destination.open("wb") as stream:
                 stream.write(struct.pack("<4sIIIII", b"AWM4", len(vertices), len(submeshes), len(materials), 11, len(textures)))
                 stream.write(vertices.astype("<f4", copy=False).tobytes())
@@ -261,7 +322,11 @@ def main():
                 for width, height, payload in textures:
                     stream.write(struct.pack("<IIII", width, height, 1, len(payload)))
                     stream.write(payload)
-            print(f"AWM_BUILT {name} format=AWM4 textures={len(textures)} vertices={len(vertices)} submeshes={len(submeshes)} materials={len(materials)} bytes={destination.stat().st_size}", flush=True)
+            output_bytes = destination.stat().st_size
+            if output_bytes > item["max_bytes"]:
+                destination.unlink()
+                raise ValueError(f"optimized mesh still exceeds budget: {output_bytes} > {item['max_bytes']} bytes")
+            print(f"AWM_BUILT {name} format=AWM4 textures={len(textures)} vertices={len(vertices)} submeshes={len(submeshes)} materials={len(materials)} bytes={output_bytes}", flush=True)
             built += 1
         except Exception as exc:
             # Keep the release build resilient; the renderer uses its detailed procedural
