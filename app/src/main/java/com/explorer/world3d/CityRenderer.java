@@ -23,7 +23,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         void onToast(String s);
     }
 
-    static final int KEEP_R = 2;
+    static final int KEEP_R = 1; // Keep only a 3×3 GPU tile window; the loader prefetches the next ring.
     private static final String VS =
             "uniform mat4 uVP; uniform mat4 uModel; uniform vec3 uCam;\n"
             + "attribute vec3 aPos; attribute vec3 aNor; attribute vec2 aUV; attribute vec3 aCol;\n"
