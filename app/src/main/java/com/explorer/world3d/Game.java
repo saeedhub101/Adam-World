@@ -192,7 +192,7 @@ final class Game {
             cv += jy * 13f * dt;
             cv -= Math.signum(cv) * Math.min(Math.abs(cv), 4.2f * dt);
             cv = clamp(cv, -25f, 48f);
-            cyaw -= jx * 0.92f * dt + rudderInput * 0.72f * dt;
+            cyaw -= rudderInput * 0.72f * dt;
             aircraftVerticalSpeed += (engineThrottle * 19f - 9.81f + liftInput * 10.5f
                     - aircraftVerticalSpeed * 0.72f) * dt;
             aircraftVerticalSpeed = clamp(aircraftVerticalSpeed, -13f, 13f);
@@ -210,7 +210,7 @@ final class Game {
             if (brakeRequested) cv -= (aircraftOnGround ? 28f : 5.5f) * dt;
             cv = clamp(cv, 0f, 92f);
             float turnRate = aircraftOnGround ? 0.42f : 0.52f * clamp(cv / 30f, 0.25f, 1.45f);
-            cyaw -= jx * turnRate * dt + rudderInput * turnRate * 0.72f * dt;
+            cyaw -= rudderInput * turnRate * 0.72f * dt;
             if (aircraftOnGround) {
                 if (!brakeRequested && cv >= 32f && aircraftPitch < -5.5f) {
                     aircraftOnGround = false;
