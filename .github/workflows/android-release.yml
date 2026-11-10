@@ -28,7 +28,7 @@ permissions:
 
 concurrency:
   group: adam-world-android-release
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   release:
