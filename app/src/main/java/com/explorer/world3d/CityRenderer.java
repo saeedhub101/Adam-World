@@ -143,6 +143,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private final float[] ident = new float[16], tmp = new float[16], base = new float[16];
     private float aspect = 1f;
     private long lastN = System.nanoTime(), lastUnload, lastAgentMs, lastHudMs, spawnDeadline, lastAudioWeaponShot, lastMiniMapUpdate, lastAudioExplosionEvent;
+    private long lastTerrainBuildMs;
     private volatile float[] miniMapRoadSnapshot = new float[0];
     private boolean started, needSpawn, spawned, spawnTimeoutNotified;
     private float lookDx, lookDy;
@@ -534,6 +535,10 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
     /** يبني مربعات الأرض من الارتفاعات الحقيقية حول اللاعب ويحذف البعيد منها. */
     private void updateTerrain(int ptx, int ptz) {
         if (flightSchoolMode || loader.offlineManila || !Terrain.enabled || !Terrain.baseSet) return;
+        // Terrain sampling builds a complete mesh on the GL thread. Pace it so
+        // walking/driving never triggers one expensive height-grid build every frame.
+        long terrainNow = System.currentTimeMillis();
+        if (terrainNow - lastTerrainBuildMs < 100L) return;
         Iterator<Map.Entry<Long, Mesh>> it = terrain.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Long, Mesh> en = it.next();
@@ -553,6 +558,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             }
         }
         if (bd != Integer.MAX_VALUE) {
+            lastTerrainBuildMs = terrainNow;
             Mesh m = Mesh.from(TerrainMesh.build(bx, bz, "tabarbour".equals(loader.offlineCitySlug)));
             if (m != null) terrain.put(Geo.key(bx, bz), m);
         }
