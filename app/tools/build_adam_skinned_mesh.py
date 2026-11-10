@@ -187,7 +187,7 @@ def main():
         t,q,s=decompose(local)
         bone_parent.append(parent_new);bind_t.extend(t);bind_r.extend(q);bind_s.extend(s)
         # Vertices are stored in mesh-node world coordinates, so remove mesh transform here.
-        inverse_bind.extend((ibm[joint_pos[old]]@inv_mesh).reshape(16,order="F"))
+        inverse_bind.extend((ibm[old_to_new[old]]@inv_mesh).reshape(16,order="F"))
     vertices=[];triangles=[];base_vertex=0
     for node_id,node_mesh,node_skin in candidates:
         if node_skin!=skin_index:continue
