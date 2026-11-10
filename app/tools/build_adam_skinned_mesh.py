@@ -146,29 +146,59 @@ def classify_bone(name):
     if any(x in n for x in ("hand","wrist")): return "hand",side
     return "other",side
 
-def make_procedural_clips(ordered,nodes,bind_t,bind_r,bind_s):
-    """Generate deterministic full-body animation clips from the imported bind rig."""
+def quat_rotate_inverse(q, v):
+    """Rotate a world-space vector into a joint's bind-local coordinate frame."""
+    qi=np.array([-q[0],-q[1],-q[2],q[3]],dtype=np.float64)
+    p=np.array([v[0],v[1],v[2],0.0],dtype=np.float64)
+    return quat_mul(quat_mul(qi,p),q)[:3]
+
+def axis_angle_quat(axis, angle):
+    axis=np.asarray(axis,dtype=np.float64)
+    length=float(np.linalg.norm(axis))
+    if length<1e-10 or abs(angle)<1e-10:return np.array([0.,0.,0.,1.],dtype=np.float64)
+    axis/=length
+    h=angle*.5
+    return np.array([axis[0]*math.sin(h),axis[1]*math.sin(h),axis[2]*math.sin(h),math.cos(h)],dtype=np.float64)
+
+def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
+    """Generate articulated clips using each joint's real bind orientation and anatomical side."""
     specs=[("idle",1.6),("walk",1.0),("run",0.72),("jump",0.9),
            ("punch",0.72),("kick",0.9),("aim",1.0),("shoot",0.55),
            ("reload",1.35),("guard",0.9),("hurt",0.7),("fall",1.0),("getup",1.35)]
+    root_node=next((n for n in ordered if classify_bone(nodes[n].get("name",""))[0]=="root"),ordered[0])
+    root_inverse=np.linalg.inv(globals_[root_node])
     clips=[]
     for clip_name,duration in specs:
-        times=np.linspace(0.0,duration,31,dtype=np.float64)
+        times=np.linspace(0.0,duration,41,dtype=np.float64)
         tracks=[]
         for bi,node_id in enumerate(ordered):
-            role,side=classify_bone(nodes[node_id].get("name",f"bone_{bi}"))
+            bone_name=nodes[node_id].get("name",f"bone_{bi}")
+            role,side=classify_bone(bone_name)
             bt=np.asarray(bind_t[bi*3:bi*3+3],dtype=np.float64)
             bq=np.asarray(bind_r[bi*4:bi*4+4],dtype=np.float64)
             bs=np.asarray(bind_s[bi*3:bi*3+3],dtype=np.float64)
             T=np.tile(bt,(len(times),1)); R=np.tile(bq,(len(times),1)); S=np.tile(bs,(len(times),1))
+            gp=globals_[node_id][:3,3]
+            root_local=(root_inverse@np.array([gp[0],gp[1],gp[2],1.0]))[:3]
+            if side==0.0 and role in ("arm","forearm","hand","thigh","calf","foot"):
+                side=-1.0 if root_local[0]<-1e-4 else (1.0 if root_local[0]>1e-4 else (1.0 if bi%2 else -1.0))
+            # Motion is authored in character/world anatomical axes, then transformed
+            # into each joint's bind-local frame. This avoids assuming every rig uses X as its hinge.
+            bind_global_q=decompose(globals_[node_id])[1]
+            axis_world=np.array([1.0,0.0,0.0],dtype=np.float64)
+            if role in ("spine","head"):
+                axis_world=np.array([0.0,1.0,0.0],dtype=np.float64)
+            elif clip_name=="guard" and role=="arm":
+                axis_world=np.array([0.0,0.0,1.0],dtype=np.float64)
+            axis_local=quat_rotate_inverse(bind_global_q,axis_world)
             for k,t in enumerate(times):
                 phase=2.0*math.pi*t/duration
                 wave=math.sin(phase); cosine=math.cos(phase)
                 angle=0.0; dy=0.0
-                sign=side if side else (1.0 if bi%2 else -1.0)
+                sign=side if side else 1.0
                 if clip_name=="idle":
                     if role=="spine": angle=0.018*wave
-                    elif role=="head": angle=0.012*math.sin(phase*0.5)
+                    elif role=="head": angle=0.035*math.sin(phase*0.5)
                 elif clip_name in ("walk","run"):
                     amp=0.48 if clip_name=="walk" else 0.82
                     if role=="thigh": angle=amp*wave*sign
@@ -176,7 +206,7 @@ def make_procedural_clips(ordered,nodes,bind_t,bind_r,bind_s):
                     elif role=="foot": angle=-0.18*wave*sign
                     elif role=="arm": angle=-amp*0.72*wave*sign
                     elif role=="forearm": angle=0.12+0.12*max(0.0,wave*sign)
-                    elif role=="spine": angle=0.025*wave
+                    elif role=="spine": angle=0.035*wave
                     elif role=="root": dy=(0.025 if clip_name=="walk" else 0.045)*(0.5-0.5*cosine)
                 elif clip_name=="jump":
                     if role=="root": dy=0.20*max(0.0,math.sin(math.pi*t/duration))
@@ -185,13 +215,15 @@ def make_procedural_clips(ordered,nodes,bind_t,bind_r,bind_s):
                     elif role=="arm": angle=-0.72
                     elif role=="spine": angle=-0.10
                 elif clip_name=="punch":
-                    if role=="spine": angle=-0.12*max(0.0,wave)
-                    elif role=="arm" and side>=0: angle=-1.15*max(0.0,wave)
-                    elif role=="forearm" and side>=0: angle=-1.45*max(0.0,wave)
+                    pulse=max(0.0,math.sin(math.pi*min(1.0,t/duration)))
+                    if role=="spine": angle=-0.16*pulse
+                    elif role=="arm" and side>=0: angle=-1.20*pulse
+                    elif role=="forearm" and side>=0: angle=-1.50*pulse
                 elif clip_name=="kick":
-                    if role=="thigh" and side>=0: angle=1.05*max(0.0,wave)
-                    elif role=="calf" and side>=0: angle=-1.1*max(0.0,wave)
-                    elif role=="arm": angle=0.30
+                    pulse=max(0.0,math.sin(math.pi*min(1.0,t/duration)))
+                    if role=="thigh" and side>=0: angle=1.05*pulse
+                    elif role=="calf" and side>=0: angle=-1.10*pulse
+                    elif role=="arm": angle=0.30*pulse
                 elif clip_name in ("aim","shoot"):
                     if role=="arm": angle=-0.72
                     elif role=="forearm": angle=-0.45
@@ -221,13 +253,12 @@ def make_procedural_clips(ordered,nodes,bind_t,bind_r,bind_s):
                     elif role=="spine": angle=0.85*(1.0-recovery)
                     elif role=="arm": angle=0.65*(1.0-recovery)*sign
                     elif role=="thigh": angle=-0.45*(1.0-recovery)
-                dq=np.array([math.sin(angle*0.5),0.0,0.0,math.cos(angle*0.5)])
+                dq=axis_angle_quat(axis_local,angle)
                 q=quat_mul(bq,dq); q/=max(np.linalg.norm(q),1e-12)
                 R[k]=q; T[k,1]+=dy
             tracks.append((bi,times,T,R,S))
         clips.append((clip_name,duration,tracks))
     return clips
-
 def main():
     if not SOURCE.is_file(): raise FileNotFoundError(f"source missing: {SOURCE}")
     doc,binary=glb_parts(SOURCE)
@@ -275,6 +306,9 @@ def main():
         node_to_selected[old]=anc
     bone_count=len(ordered)
     print(f"ADAM_RIG_COMPRESSED source_bones={source_bone_count} runtime_bones={bone_count} mapped={sum(1 for n in joints if node_to_selected[n]!=n)}",flush=True)
+    for bi,node_id in enumerate(ordered):
+        role,side=classify_bone(doc["nodes"][node_id].get("name",f"bone_{bi}"))
+        print(f"ADAM_BONE index={bi} node={node_id} name={doc[\"nodes\"][node_id].get(\"name\",\"unnamed\")} role={role} side={side:+.0f} parent={bone_parent[bi] if bi<len(bone_parent) else -1}",flush=True)
     mesh_global=globals_[mesh_node]; inv_mesh=np.linalg.inv(mesh_global)
     ibm_source=np.asarray([np.asarray(row,dtype=np.float64).reshape((4,4),order="F") for row in accessor(doc,binary,skin["inverseBindMatrices"])]) if "inverseBindMatrices" in skin else np.repeat(np.eye(4)[None,:,:],source_bone_count,axis=0)
     if len(ibm_source)!=source_bone_count:raise ValueError("source inverse bind matrix count mismatch")
@@ -386,7 +420,7 @@ def main():
             tracks.append((old_to_new[old],all_times,T,R,S))
         if tracks:clips.append((anim.get("name",f"animation_{ai}"),max_time,tracks))
     if not clips:
-        clips=make_procedural_clips(ordered,doc["nodes"],bind_t,bind_r,bind_s)
+        clips=make_procedural_clips(ordered,doc["nodes"],parents,globals_,bind_t,bind_r,bind_s)
         print(f"ADAM_PROCEDURAL_ANIMATIONS clips={len(clips)} names={','.join(x[0] for x in clips)}",flush=True)
     total_keys=sum(len(t[1]) for _,_,tr in clips for t in tr)
     if total_keys>MAX_KEYS_TOTAL:raise ValueError(f"animation keys {total_keys} exceed runtime cap {MAX_KEYS_TOTAL}")
