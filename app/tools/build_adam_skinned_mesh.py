@@ -175,8 +175,9 @@ def main():
     bone_count=len(ordered)
     print(f"ADAM_RIG_COMPRESSED source_bones={source_bone_count} runtime_bones={bone_count} mapped={sum(1 for n in joints if node_to_selected[n]!=n)}",flush=True)
     mesh_global=globals_[mesh_node]; inv_mesh=np.linalg.inv(mesh_global)
-    ibm=np.asarray([np.asarray(row,dtype=np.float64).reshape((4,4),order="F") for row in accessor(doc,binary,skin["inverseBindMatrices"])]) if "inverseBindMatrices" in skin else np.repeat(np.eye(4)[None,:,:],bone_count,axis=0)
-    if len(ibm)!=bone_count:raise ValueError("inverse bind matrix count mismatch")
+    ibm_source=np.asarray([np.asarray(row,dtype=np.float64).reshape((4,4),order="F") for row in accessor(doc,binary,skin["inverseBindMatrices"])]) if "inverseBindMatrices" in skin else np.repeat(np.eye(4)[None,:,:],source_bone_count,axis=0)
+    if len(ibm_source)!=source_bone_count:raise ValueError("source inverse bind matrix count mismatch")
+    ibm=ibm_source[[joint_pos[n] for n in ordered]]
     bone_parent=[];bind_t=[];bind_r=[];bind_s=[];inverse_bind=[]
     for old in ordered:
         anc=parents[old]
@@ -215,7 +216,7 @@ def main():
                 accum={}
                 for ji,weight in zip(j[k],w[k]):
                     if weight<=0:continue
-                    if ji<0 or ji>=bone_count:raise ValueError("joint index outside skin")
+                    if ji<0 or ji>=source_bone_count:raise ValueError("joint index outside source skin")
                     mapped_node=node_to_selected[joints[int(ji)]]
                     new=old_to_new[mapped_node]
                     accum[new]=accum.get(new,0.0)+float(weight)
