@@ -1584,14 +1584,14 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 else arm = 34f * attackPulse;
             }
             if (attack > 0f && attackType == 3 && side > 0) leg = -104f * attackPulse;
-            drawHumanPart(rig[3],side*.21f,1.32f,0,arm,side*.075f,-.15f,0,1,1,1);
-            drawHumanPart(rig[4],side*.29f,1.00f,0,arm*.42f,side*.012f,-.12f,.01f,1,1,1);
+            drawHumanPart(rig[3],side*.27f,1.32f,0,arm,side*.075f,-.15f,0,1,1,1);
+            drawHumanPart(rig[4],side*.39f,1.00f,0,arm*.42f,side*.012f,-.12f,.01f,1,1,1);
             drawHumanPart(rig[5],side*.115f,.78f,0,leg,0,-.16f,0,1,1,1);
             drawHumanPart(rig[6],side*.115f,.44f,0,-leg*.30f,0,-.11f,0,1,1,1);
             drawHumanPart(rig[7],side*.115f,.15f,.045f,leg,0,-.02f,.06f,1,1,1);
             drawHumanPart(rig[8],side*.052f,1.645f,.127f,0,0,0,0,1,1,1);
             drawHumanPart(rig[12],side*.052f,1.667f,.137f,0,0,0,0,1,1,1);
-            drawHumanPart(rig[15],side*.31f,.78f,.02f,arm*.42f,0,0,0,1,1,1);
+            drawHumanPart(rig[15],side*.43f,.78f,.02f,arm*.42f,0,0,0,1,1,1);
             if(side>0&&weaponId>=0&&weaponId<WeaponSystem.NAME.length){
                 float gunRot=arm*.42f + recoil*10f + reloadMotion*34f;
                 if(weaponId==0){
