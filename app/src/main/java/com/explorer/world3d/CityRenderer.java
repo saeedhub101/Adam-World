@@ -1164,6 +1164,10 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         float fall=pose==2?Math.min(1f,poseTime/.25f):pose==3?1f:pose==4?Math.max(0f,1f-poseTime/.55f):0f;
         Matrix.translateM(base,0,0f,.82f*fall,0f); Matrix.rotateM(base,0,-82f*fall,0f,0f,1f); Matrix.translateM(base,0,0f,-.82f*fall,0f);
         Matrix.scaleM(base,0,.86f,.86f,.86f);
+        float attackDuration = attackType == 3 ? .62f : .42f;
+        float attackPhase = attack > 0f ? Math.max(0f,Math.min(1f,1f-attack/attackDuration)) : 0f;
+        float attackPulse = attack > 0f ? (float)Math.sin(attackPhase*Math.PI) : 0f;
+        if (attackPulse > 0f) Matrix.rotateM(base,0,-7.5f*attackPulse,1f,0f,0f);
         drawHumanPart(rig[0],0,1.08f,0,0,0,0,0,1,1,1);
         drawHumanPart(rig[1],0,1.60f,0,0,0,0,0,1.10f,1.10f,1.10f);
         drawHumanPart(rig[2],0,1.72f,-.018f,0,0,0,0,1.08f,1.05f,1.08f);
@@ -1177,9 +1181,15 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
             if(guard>.05f)arm=side>0?-72f*guard:-58f*guard;
             if(hurt>0f)arm=side>0?65f:-55f;
             if(fall>.05f)arm=side>0?-65f:55f;
-            float attackPulse = Math.min(1f, attack / (attackType == 2 ? 0.22f : 0.16f));
-            if (attack > 0f && attackType == 1 && side > 0) arm = -112f * attackPulse;
-            if (attack > 0f && attackType == 2 && side > 0) leg = -82f * attackPulse;
+            if (attack > 0f && attackType == 1) {
+                if (side > 0) arm = -128f * attackPulse;
+                else arm = 24f * attackPulse;
+            }
+            if (attack > 0f && attackType == 2) {
+                if (side > 0) arm = -158f * attackPulse;
+                else arm = 34f * attackPulse;
+            }
+            if (attack > 0f && attackType == 3 && side > 0) leg = -104f * attackPulse;
             drawHumanPart(rig[3],side*.21f,1.32f,0,arm,side*.075f,-.15f,0,1,1,1);
             drawHumanPart(rig[4],side*.29f,1.00f,0,arm*.42f,side*.012f,-.12f,.01f,1,1,1);
             drawHumanPart(rig[5],side*.115f,.78f,0,leg,0,-.16f,0,1,1,1);

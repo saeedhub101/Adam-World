@@ -18,6 +18,7 @@ final class Game {
         boolean hostile, knockedOut;
         long lastAttackMs;
         float stunSeconds, knockdownSeconds, stateTime, hitFlash;
+        float knockbackX, knockbackZ;
         int state; // 0 patrol, 1 hostile, 2 flee, 3 down, 4 recovery
         float cr, cg, cb;
     }
@@ -51,7 +52,7 @@ final class Game {
     float vehicleWheelFL, vehicleWheelFR, vehicleWheelRL, vehicleWheelRR;
     float vehicleWheelBodyLift, vehicleWheelBodyRoll, vehicleWheelBodyPitch;
     int attackType;
-    long lastPlayerAttackMs;
+    long lastPlayerAttackMs, lastComboMs;
     volatile boolean weaponFireHeld, weaponAimHeld, reloadRequested;
     int equippedWeapon=0, cash=2500, magazineAmmo=12;
     final boolean[] ownedWeapons={true,false,false,false,false};
@@ -90,7 +91,7 @@ final class Game {
         vehicleFrontStepContact = vehicleRearStepContact = false;
         vehicleWheelFL = vehicleWheelFR = vehicleWheelRL = vehicleWheelRR = 0f;
         vehicleWheelBodyLift = vehicleWheelBodyRoll = vehicleWheelBodyPitch = 0f;
-        lastPlayerAttackMs = lastDamageMs = deathStartedMs = 0L; agents.clear();
+        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; agents.clear();
     }
 
     float focusX() { return driving ? cx : px; }
@@ -294,26 +295,34 @@ final class Game {
         boolean kick = kickRequested;
         punchRequested = kickRequested = attackRequested = false;
         if ((punch || kick) && !driving && !dead && playerPose == 0) {
-            long cooldown = kick ? 620L : 280L;
+            if (punch && now - lastComboMs > 900L) comboStep = 0;
+            long cooldown = kick ? 620L : 245L;
             if (now - lastPlayerAttackMs >= cooldown) {
-                lastPlayerAttackMs = now;
-                attackType = kick ? 2 : 1;
-                comboStep = punch ? (comboStep + 1) % 3 : 0;
-                attackSeconds = kick ? 0.58f : 0.34f;
-                float range = kick ? 2.65f : 1.72f;
-                float damage = kick ? 38f : (comboStep == 2 ? 26f : 19f);
+                lastPlayerAttackMs = now; lastComboMs = now;
+                if (kick) { attackType = 3; comboStep = 0; }
+                else { comboStep = comboStep % 3 + 1; attackType = comboStep == 1 ? 1 : 2; }
+                attackSeconds = kick ? 0.62f : 0.42f;
+                float range = kick ? 2.45f : 1.82f;
+                int damage = kick ? 38 : comboStep == 3 ? 32 : comboStep == 2 ? 23 : 17;
                 float fx = (float)Math.sin(pyaw), fz = (float)Math.cos(pyaw);
                 Agent target = null; float best = range;
                 for (Agent a : agents) if (!a.car && !a.knockedOut) {
                     float dx=a.x-px, dz=a.z-pz, d=(float)Math.hypot(dx,dz);
                     float facing=(dx*fx+dz*fz)/(d+0.0001f);
-                    if (d < best && facing > (kick ? -0.05f : 0.18f)) { best=d; target=a; }
+                    if (d < best && facing > (kick ? -0.08f : 0.28f)) { best=d; target=a; }
                 }
                 if (target != null) {
-                    target.health = Math.max(0, target.health-(int)damage);
+                    float dx=target.x-px, dz=target.z-pz, len=Math.max(0.001f,(float)Math.hypot(dx,dz));
+                    target.health = Math.max(0, target.health-damage);
                     target.hostile = true; target.state=1; target.stateTime=0f;
-                    target.stunSeconds = kick ? 0.62f : 0.34f; target.hitFlash=.24f;
-                    if (target.health == 0) { target.knockedOut = true; target.hostile = false; target.state=3; target.stateTime=0f; target.knockdownSeconds = 18f; target.sp = 0f; }
+                    target.stunSeconds = kick ? 0.78f : comboStep == 3 ? 0.58f : 0.38f;
+                    target.hitFlash=.30f;
+                    float impulse = kick ? 5.8f : comboStep == 3 ? 4.2f : 2.5f;
+                    target.knockbackX += dx/len*impulse; target.knockbackZ += dz/len*impulse;
+                    if (target.health == 0) {
+                        target.knockedOut = true; target.hostile = false; target.state=3;
+                        target.stateTime=0f; target.knockdownSeconds = 22f; target.sp = 0f;
+                    }
                 }
             }
         }
@@ -396,6 +405,13 @@ final class Game {
             }
             if (!a.car) {
                 a.stateTime+=dt; a.hitFlash=Math.max(0f,a.hitFlash-dt);
+                if (Math.abs(a.knockbackX)+Math.abs(a.knockbackZ)>0.015f) {
+                    float kx=a.x+a.knockbackX*dt, kz=a.z+a.knockbackZ*dt;
+                    if (!w.blocked(kx,kz,0.36f)) { a.x=kx; a.z=kz; }
+                    else { a.knockbackX*=0.22f; a.knockbackZ*=0.22f; }
+                    float drag=(float)Math.exp(-7.5f*dt);
+                    a.knockbackX*=drag; a.knockbackZ*=drag;
+                } else { a.knockbackX=0f; a.knockbackZ=0f; }
                 if(a.knockedOut){a.state=3;a.knockdownSeconds=Math.max(0f,a.knockdownSeconds-dt);if(a.knockdownSeconds<=0f){a.knockedOut=false;a.health=55;a.hostile=false;a.state=4;a.stateTime=0f;a.sp=.7f;a.stunSeconds=1f;}}
                 else if(a.hostile && !driving){a.state=1;
                     a.stunSeconds = Math.max(0f, a.stunSeconds-dt);
