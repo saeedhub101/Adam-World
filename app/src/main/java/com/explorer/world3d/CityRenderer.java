@@ -1288,7 +1288,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         Matrix.setIdentityM(base,0);
         Matrix.translateM(base,0,x,y,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
-        Matrix.scaleM(base,0,.86f,.86f,.86f);
+        Matrix.scaleM(base,0,1.12f,1.12f,1.12f);
         GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
         GLES20.glUniformMatrix4fv(uBones,animator.boneCount(),false,animator.skinMatrices(),0);
         GLES20.glUniform1f(uSkinning,1f);
