@@ -39,3 +39,11 @@ Do not mark the full system complete until remaining requirements are implemente
 - Launcher ammunition, reload timing, purchase data and radial wheel entries use the shared weapon inventory arrays and existing SharedPreferences persistence.
 - This is an original Adam World implementation; it does not use Rockstar assets or claim to reproduce proprietary GTA V internals.
 - **Status:** gameplay and renderer code added; Android release build and in-device flight / targeting / collision behavior still require verification.
+
+
+## Detailed missile 3D models
+- Added a dedicated GL-thread-built RocketModel mesh instead of using the old scaled cube as the projectile body.
+- The model uses a 24-sided multi-section fuselage, tapered warhead, separate seeker aperture, machined tail collars, recessed nozzle, four swept stabilizer fins, service panel, warning-color strips and fastener details.
+- Unguided and guided launchers render separate material variants; the guided variant has an olive finish and additional seeker-band details.
+- The model is uploaded once to a GPU mesh and reused by every active projectile; no per-frame geometry allocation or external GLB dependency is introduced.
+- **Asset note:** these are original custom-built in-engine meshes with detailed geometry and vertex materials, not photogrammetry or a licensed photorealistic third-party missile asset. Final visual validation still requires the Android build and an in-game camera check.
