@@ -421,8 +421,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         Button garage = btn("المركبات");
         garage.setOnClickListener(v -> showVehicleSelector());
         chips.addView(garage);
-        flightSchoolButton = btn("مطار الطيران");
-        flightSchoolButton.setOnClickListener(v -> runOnGl(() -> renderer.enterFlightSchool()));
+        flightSchoolButton = btn("المطارات");
+        flightSchoolButton.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("اختر المطار الحقيقي")
+                .setItems(new String[]{"مطار عمان المدني — ماركا","مطار الملكة علياء الدولي"},(dialog,which)->{
+                    if(which==0)runOnGl(()->renderer.enterAirport(31.9726,35.9916));
+                    else runOnGl(()->renderer.enterAirport(31.7226,35.9932));
+                }).show());
         chips.addView(flightSchoolButton);
         returnCityButton = btn("عودة للمدينة");
         returnCityButton.setVisibility(View.GONE);
