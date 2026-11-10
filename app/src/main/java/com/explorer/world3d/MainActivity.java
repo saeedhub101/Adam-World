@@ -61,6 +61,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private boolean keyUp, keyDown, keyLeft, keyRight;
     private AlertDialog pauseDialog;
     private boolean padL2, padR2, padCameraModifier;
+    private float padHatX, padHatY;
     private TextView healthHud, weaponHud;
     private MiniMapView miniMap;
     private AimReticleView aimReticle;
@@ -261,7 +262,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
-        final int code = event.getKeyCode();
+        final int rawCode = event.getKeyCode();
+        final int code = normalizeGamepadKeyCode(rawCode);
         final boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
         final boolean pressed = down && event.getRepeatCount() == 0;
         if (renderer == null) return super.dispatchKeyEvent(event);
@@ -283,10 +285,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 weaponWheelView.moveSelection(code == KeyEvent.KEYCODE_DPAD_UP ? 1 : -1);
                 return true;
             }
-            if (renderer.game.driving && (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE
-                    || renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER))
-                renderer.game.liftInput = down ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
-            else renderer.game.cameraZoomInput = down ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
+            renderer.game.cameraZoomInput = down ? (code == KeyEvent.KEYCODE_DPAD_UP ? 1f : -1f) : 0f;
             return true;
         }
         if (code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_DPAD_RIGHT) {
@@ -315,7 +314,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if (renderer.game.driving && renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE && pressed)
                 runOnGl(() -> renderer.toggleAircraftGear());
             else if (renderer.game.driving) renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f;
-            else if (pressed) runOnGl(() -> renderer.game.kickRequested = true);
+            else if (pressed) runOnGl(() -> renderer.game.punchRequested = true);
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_X) {
@@ -343,7 +342,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     });
                     runOnUiThread(() -> weaponWheelView.hideWheel());
                 }
-            } else renderer.game.weaponAimHeld = down;
+            } else renderer.game.cameraLookOffset = down ? (float)Math.PI : 0f;
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_R1) {
@@ -392,9 +391,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     // Android TV / Bluetooth / USB gamepads: left stick moves, right stick looks.
     // While LB is held, the right stick selects a weapon instead of rotating the camera.
     @Override public boolean onGenericMotionEvent(android.view.MotionEvent event) {
+        final int source = event.getSource();
         if (renderer == null || event.getActionMasked() != android.view.MotionEvent.ACTION_MOVE
-                || (event.getSource() & android.view.InputDevice.SOURCE_JOYSTICK)
-                != android.view.InputDevice.SOURCE_JOYSTICK) {
+                || (source & android.view.InputDevice.SOURCE_CLASS_JOYSTICK) == 0) {
             return super.onGenericMotionEvent(event);
         }
         android.view.InputDevice device = event.getDevice();
@@ -402,7 +401,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         float ly = -event.getAxisValue(android.view.MotionEvent.AXIS_Y); // stick-up is negative on Android
         float rx = event.getAxisValue(android.view.MotionEvent.AXIS_RX);
         float ry = event.getAxisValue(android.view.MotionEvent.AXIS_RY);
-        if (device != null && Math.abs(rx) < 0.08f && Math.abs(ry) < 0.08f) {
+        final boolean hasDedicatedTriggers = device != null && (hasMotionRange(device, android.view.MotionEvent.AXIS_LTRIGGER, source)
+                || hasMotionRange(device, android.view.MotionEvent.AXIS_RTRIGGER, source)
+                || hasMotionRange(device, android.view.MotionEvent.AXIS_BRAKE, source)
+                || hasMotionRange(device, android.view.MotionEvent.AXIS_GAS, source));
+        if (device != null && Math.abs(rx) < 0.08f && Math.abs(ry) < 0.08f && !hasDedicatedTriggers
+                && hasMotionRange(device, android.view.MotionEvent.AXIS_Z, source)
+                && hasMotionRange(device, android.view.MotionEvent.AXIS_RZ, source)) {
             rx = event.getAxisValue(android.view.MotionEvent.AXIS_Z);
             ry = event.getAxisValue(android.view.MotionEvent.AXIS_RZ);
         }
@@ -413,18 +418,16 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         ry = applyStickDeadZone(ry, dead);
         renderer.game.sx = lx;
         renderer.game.sy = ly;
-        boolean hasLeftTrigger = device != null
-                && (device.getMotionRange(android.view.MotionEvent.AXIS_LTRIGGER, event.getSource()) != null
-                || device.getMotionRange(android.view.MotionEvent.AXIS_BRAKE, event.getSource()) != null);
-        boolean hasRightTrigger = device != null
-                && (device.getMotionRange(android.view.MotionEvent.AXIS_RTRIGGER, event.getSource()) != null
-                || device.getMotionRange(android.view.MotionEvent.AXIS_GAS, event.getSource()) != null);
-        float leftTrigger = Math.max(event.getAxisValue(android.view.MotionEvent.AXIS_LTRIGGER),
-                event.getAxisValue(android.view.MotionEvent.AXIS_BRAKE));
-        float rightTrigger = Math.max(event.getAxisValue(android.view.MotionEvent.AXIS_RTRIGGER),
-                event.getAxisValue(android.view.MotionEvent.AXIS_GAS));
-        if (hasLeftTrigger) padL2 = leftTrigger > 0.35f;
-        if (hasRightTrigger) padR2 = rightTrigger > 0.35f;
+        int leftTriggerAxis = device == null ? -1 : firstAvailableAxis(device, source,
+                android.view.MotionEvent.AXIS_LTRIGGER, android.view.MotionEvent.AXIS_BRAKE);
+        int rightTriggerAxis = device == null ? -1 : firstAvailableAxis(device, source,
+                android.view.MotionEvent.AXIS_RTRIGGER, android.view.MotionEvent.AXIS_GAS);
+        boolean hasLeftTrigger = leftTriggerAxis >= 0;
+        boolean hasRightTrigger = rightTriggerAxis >= 0;
+        float leftTrigger = hasLeftTrigger ? readTriggerAxis(event, device, leftTriggerAxis, source) : 0f;
+        float rightTrigger = hasRightTrigger ? readTriggerAxis(event, device, rightTriggerAxis, source) : 0f;
+        if (hasLeftTrigger) padL2 = leftTrigger > 0.18f;
+        if (hasRightTrigger) padR2 = rightTrigger > 0.18f;
         if (hasLeftTrigger || hasRightTrigger || padL2 || padR2) {
             if (renderer.game.driving) {
                 if (renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE) {
@@ -443,15 +446,69 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 renderer.game.weaponFireHeld = padR2;
             }
         }
+        float hx = event.getAxisValue(android.view.MotionEvent.AXIS_HAT_X);
+        float hy = event.getAxisValue(android.view.MotionEvent.AXIS_HAT_Y);
+        handleHatDpad(hx, hy);
         if (weaponWheelOpen && weaponWheelView != null) {
-            if (Math.abs(rx) > 0.01f || Math.abs(ry) > 0.01f) {
-                weaponWheelView.selectDirection(rx, ry);
-            }
+            if (Math.abs(rx) > 0.01f || Math.abs(ry) > 0.01f) weaponWheelView.selectDirection(rx, ry);
             renderer.setGamepadLook(0f, 0f);
-        } else {
-            renderer.setGamepadLook(rx, ry);
-        }
+        } else renderer.setGamepadLook(rx, ry);
         return true;
+    }
+
+    private void handleHatDpad(float x, float y) {
+        float nx = Math.abs(x) > 0.5f ? Math.signum(x) : 0f;
+        float ny = Math.abs(y) > 0.5f ? Math.signum(y) : 0f;
+        if (mapOpen && fullMapView != null) {
+            if (nx != padHatX && nx != 0f) fullMapView.panBy(nx < 0f ? dp(72) : -dp(72), 0f);
+            if (ny != padHatY && ny != 0f) fullMapView.panBy(0f, ny < 0f ? dp(72) : -dp(72));
+        } else {
+            renderer.game.cameraZoomInput = ny == 0f ? 0f : (ny < 0f ? 1f : -1f);
+            if (nx != padHatX && nx != 0f) {
+                if (weaponWheelOpen && weaponWheelView != null) weaponWheelView.moveSelection(nx > 0f ? 1 : -1);
+                else if (!renderer.game.driving) cycleEquippedWeapon(nx > 0f ? 1 : -1);
+            }
+            if (weaponWheelOpen && weaponWheelView != null && ny != padHatY && ny != 0f)
+                weaponWheelView.moveSelection(ny < 0f ? 1 : -1);
+        }
+        padHatX = nx; padHatY = ny;
+    }
+
+    private static boolean hasMotionRange(android.view.InputDevice device, int axis, int source) {
+        return device != null && device.getMotionRange(axis, source) != null;
+    }
+
+    private static int firstAvailableAxis(android.view.InputDevice device, int source, int first, int second) {
+        if (hasMotionRange(device, first, source)) return first;
+        if (hasMotionRange(device, second, source)) return second;
+        return -1;
+    }
+
+    private static float readTriggerAxis(android.view.MotionEvent event, android.view.InputDevice device, int axis, int source) {
+        android.view.InputDevice.MotionRange range = device.getMotionRange(axis, source);
+        if (range == null) return 0f;
+        float span = range.getMax() - range.getMin();
+        if (span <= 0.0001f) return 0f;
+        float value = (event.getAxisValue(axis) - range.getMin()) / span;
+        return Math.max(0f, Math.min(1f, value));
+    }
+
+    private static int normalizeGamepadKeyCode(int code) {
+        switch (code) {
+            case KeyEvent.KEYCODE_BUTTON_1: return KeyEvent.KEYCODE_BUTTON_A;
+            case KeyEvent.KEYCODE_BUTTON_2: return KeyEvent.KEYCODE_BUTTON_B;
+            case KeyEvent.KEYCODE_BUTTON_3: return KeyEvent.KEYCODE_BUTTON_X;
+            case KeyEvent.KEYCODE_BUTTON_4: return KeyEvent.KEYCODE_BUTTON_Y;
+            case KeyEvent.KEYCODE_BUTTON_5: return KeyEvent.KEYCODE_BUTTON_L1;
+            case KeyEvent.KEYCODE_BUTTON_6: return KeyEvent.KEYCODE_BUTTON_R1;
+            case KeyEvent.KEYCODE_BUTTON_7: return KeyEvent.KEYCODE_BUTTON_L2;
+            case KeyEvent.KEYCODE_BUTTON_8: return KeyEvent.KEYCODE_BUTTON_R2;
+            case KeyEvent.KEYCODE_BUTTON_9: return KeyEvent.KEYCODE_BUTTON_THUMBL;
+            case KeyEvent.KEYCODE_BUTTON_10: return KeyEvent.KEYCODE_BUTTON_THUMBR;
+            case KeyEvent.KEYCODE_BUTTON_11: return KeyEvent.KEYCODE_BUTTON_SELECT;
+            case KeyEvent.KEYCODE_BUTTON_12: return KeyEvent.KEYCODE_BUTTON_START;
+            default: return code;
+        }
     }
 
     private static float applyStickDeadZone(float value, float deadZone) {
@@ -1022,12 +1079,17 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     @Override protected void onPause() {
         // Never leave held touch/gamepad actions latched when Android interrupts the activity.
         padL2 = padR2 = padCameraModifier = false;
+        padHatX = padHatY = 0f;
         weaponWheelOpen = false;
         if (glView != null) glView.setWeaponWheelOpen(false);
         keyUp = keyDown = keyLeft = keyRight = false;
         if (renderer != null) {
             renderer.pauseAudio();
             saveWeaponState();
+            renderer.game.sx = renderer.game.sy = 0f;
+            renderer.game.cameraZoomInput = 0f;
+            renderer.game.cameraLookOffset = 0f;
+            renderer.setGamepadLook(0f, 0f);
             renderer.game.sprint = false;
             renderer.game.guardRequested = false;
             renderer.game.brakeRequested = false;
