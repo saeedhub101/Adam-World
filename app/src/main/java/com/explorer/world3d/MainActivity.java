@@ -910,15 +910,26 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.addView(hud, hp);
 
         weaponHud = new TextView(this);
-        weaponHud.setTextColor(Color.WHITE);
-        weaponHud.setTextSize(12);
-        weaponHud.setTypeface(android.graphics.Typeface.MONOSPACE);
-        weaponHud.setShadowLayer(2,0,1,Color.BLACK);
-        weaponHud.setPadding(dp(10),dp(6),dp(10),dp(6));
-        weaponHud.setBackgroundColor(0xb318202a);
-        weaponHud.setText("Pistol   12 / 48");
-        FrameLayout.LayoutParams weaponParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT,Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);
-        weaponParams.setMargins(0,0,0,dp(142));
+        weaponHud.setTextColor(0xfff4f7fb);
+        weaponHud.setTextSize(13);
+        weaponHud.setTypeface(android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD));
+        weaponHud.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        weaponHud.setTextDirection(View.TEXT_DIRECTION_RTL);
+        weaponHud.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+        weaponHud.setIncludeFontPadding(false);
+        weaponHud.setLineSpacing(dp(3), 1.0f);
+        weaponHud.setShadowLayer(1.5f, 0, 1, 0x99000000);
+        weaponHud.setMinWidth(dp(154));
+        weaponHud.setPadding(dp(14),dp(10),dp(14),dp(10));
+        android.graphics.drawable.GradientDrawable weaponCard = new android.graphics.drawable.GradientDrawable();
+        weaponCard.setColor(0xe615202d);
+        weaponCard.setCornerRadius(dp(12));
+        weaponCard.setStroke(dp(1), 0xff53677d);
+        weaponHud.setBackground(weaponCard);
+        weaponHud.setElevation(dp(8));
+        weaponHud.setText("مسدس\\n12   /   48");
+        FrameLayout.LayoutParams weaponParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT,Gravity.TOP|Gravity.END);
+        weaponParams.setMargins(0,dp(112),dp(18),0);
         root.addView(weaponHud,weaponParams);
 
         healthHud = new TextView(this);
@@ -1170,8 +1181,17 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 int hp=renderer.game.health;
                 healthHud.setText("♥ "+hp+" / 100     ⚡ "+(int)renderer.game.stamina+" / 100"+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
                 Game game=renderer.game;
-                String ammo=WeaponSystem.NAME[game.equippedWeapon]+"   "+game.magazineAmmo+" / "+game.reserveAmmo[game.equippedWeapon]+"     $"+game.cash;
-                if(weaponHud!=null&&!ammo.equals(weaponHud.getText().toString()))weaponHud.setText(ammo);
+                String weaponName=WeaponSystem.NAME[game.equippedWeapon];
+                String ammo=weaponName+"\\n"+game.magazineAmmo+"   /   "+game.reserveAmmo[game.equippedWeapon];
+                if(weaponHud!=null&&!ammo.equals(weaponHud.getText().toString())){
+                    android.text.SpannableStringBuilder styled=new android.text.SpannableStringBuilder(ammo);
+                    int split=weaponName.length();
+                    styled.setSpan(new android.text.style.ForegroundColorSpan(0xffffc857),0,split,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    styled.setSpan(new android.text.style.RelativeSizeSpan(0.78f),0,split,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    styled.setSpan(new android.text.style.ForegroundColorSpan(0xfff4f7fb),split+1,styled.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    styled.setSpan(new android.text.style.RelativeSizeSpan(1.22f),split+1,styled.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    weaponHud.setText(styled);
+                }
                 if(aimReticle!=null){aimReticle.setAiming(game.weaponAimHeld);aimReticle.invalidate();}
                 healthHud.setTextColor(hp>60?0xff65e58b:hp>25?0xffffc857:0xffff5555);
                 miniMap.invalidate();
