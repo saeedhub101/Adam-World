@@ -77,6 +77,22 @@ final class Terrain {
         return distance <= 4500.0;
     }
 
+    /**
+     * Terrain coverage is geographic, not merely a property of the selected
+     * starting city. A player can drive tens of kilometres away from Amman;
+     * those distant areas must use the flat world and must not trigger DEM I/O.
+     * Equirectangular distance keeps this check cheap enough for per-frame use.
+     */
+    static boolean covers(double lat, double lon) {
+        if (!enabled) return false;
+        double ax = (lon - 35.9389907) * 95000.0;
+        double ay = (lat - 31.9522646) * 111132.0;
+        if (ax * ax + ay * ay <= 12000.0 * 12000.0) return true;
+        double tx = (lon - 35.940358) * 95000.0;
+        double ty = (lat - 31.997579) * 111132.0;
+        return tx * tx + ty * ty <= 4500.0 * 4500.0;
+    }
+
     static void configureForCity(double lat, double lon) {
         enabled = isAmman(lat, lon) || isTabarbour(lat, lon);
         if (!enabled) { base = 0f; baseSet = false; }
@@ -212,7 +228,7 @@ final class Terrain {
 
     /** الارتفاع النسبي لنقطة بداية المدينة (م). */
     static float h(float x, float z) {
-        if (!enabled || !baseSet) return 0f;
+        if (!baseSet || !covers(Geo.latOf(z), Geo.lonOf(x))) return 0f;
         float e = rawElev(Geo.latOf(z), Geo.lonOf(x));
         return Float.isNaN(e) ? 0f : e - base;
     }
