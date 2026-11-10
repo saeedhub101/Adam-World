@@ -323,6 +323,34 @@ def make_procedural_clips(ordered,nodes,parents,globals_,bind_t,bind_r,bind_s):
             tracks.append((bi,times,T,R,S))
         clips.append((clip_name,duration,tracks))
     return clips
+
+def simplify_skinned_primitive(positions, indices, joints, weights, normals, uv, colors, target_faces):
+    """Decimate a skinned primitive while remapping UVs, colors and four-bone weights."""
+    faces=np.asarray(indices,dtype=np.int64).reshape(-1,3)
+    if len(faces)<=target_faces:
+        return positions,faces.reshape(-1),joints,weights,normals,uv,colors
+    current=trimesh.Trimesh(vertices=np.asarray(positions,dtype=np.float64),faces=faces,process=False)
+    current_to_original=np.arange(len(positions),dtype=np.int64)
+    for attempt in range(5):
+        if len(current.faces)<=target_faces: break
+        next_target=max(target_faces,int(len(current.faces)*0.52))
+        candidate=current.simplify_quadric_decimation(face_count=next_target,aggression=10)
+        if len(candidate.vertices)<3 or len(candidate.faces)<1 or len(candidate.faces)>=len(current.faces):
+            break
+        nearest_current=cKDTree(np.asarray(current.vertices,dtype=np.float64)).query(
+            np.asarray(candidate.vertices,dtype=np.float64),k=1,workers=-1
+        )[1]
+        current_to_original=current_to_original[nearest_current]
+        current=candidate
+        print(f"ADAM_SKIN_DECIMATION pass={attempt+1} faces={len(current.faces)}",flush=True)
+    nearest=current_to_original
+    simplified_positions=np.asarray(current.vertices,dtype=np.float64)
+    simplified_normals=np.asarray(current.vertex_normals,dtype=np.float64)
+    simplified_normals/=np.maximum(np.linalg.norm(simplified_normals,axis=1,keepdims=True),1e-10)
+    return (simplified_positions,np.asarray(current.faces,dtype=np.int64).reshape(-1),
+            np.asarray(joints)[nearest],np.asarray(weights)[nearest],simplified_normals,
+            np.asarray(uv)[nearest],np.asarray(colors)[nearest])
+
 def main():
     if not SOURCE.is_file(): raise FileNotFoundError(f"source missing: {SOURCE}")
     doc,binary=glb_parts(SOURCE)
@@ -425,6 +453,14 @@ def main():
             # base color into vertex colors so the player is never rendered as a white mannequin.
             baked=material_base_color(doc,binary,primitive,uv)
             col[:,:3]*=baked
+            idx=accessor(doc,binary,primitive["indices"]) if "indices" in primitive else np.arange(len(p))
+            if len(idx)%3:raise ValueError("triangle index count is not divisible by three")
+            if TARGET_FACES>0 and total_source_faces>0:
+                face_count=len(idx)//3
+                face_budget=max(100,int(TARGET_FACES*face_count/total_source_faces))
+                if face_count>face_budget:
+                    p,idx,j,w,n,uv,col=simplify_skinned_primitive(p,idx,j,w,n,uv,col,face_budget)
+                    print(f"ADAM_SKIN_PRIMITIVE faces={face_count}->{len(idx)//3} vertices={len(p)}",flush=True)
             if len(p)+len(vertices)>MAX_VERTICES:raise ValueError("Adam mesh exceeds runtime vertex budget")
             for k in range(len(p)):
                 accum={}
@@ -439,14 +475,6 @@ def main():
                 if total<1e-8:ranked=[(0,1.0)];total=1.0
                 ids=[x[0] for x in ranked]+[0]*(4-len(ranked));weights=[x[1]/total for x in ranked]+[0.]*(4-len(ranked))
                 vertices.append([*p[k],*n[k],*uv[k],*col[k,:3],*ids,*weights])
-            idx=accessor(doc,binary,primitive["indices"]) if "indices" in primitive else np.arange(len(p))
-            if len(idx)%3:raise ValueError("triangle index count is not divisible by three")
-            if TARGET_FACES>0 and total_source_faces>0:
-                face_count=len(idx)//3
-                face_budget=max(100,int(TARGET_FACES*face_count/total_source_faces))
-                if face_count>face_budget:
-                    p,idx,j,w,n,uv,col=simplify_skinned_primitive(p,idx,j,w,n,uv,col,face_budget)
-                    print(f"ADAM_SKIN_PRIMITIVE faces={face_count}->{len(idx)//3} vertices={len(p)}",flush=True)
             triangles.extend((idx.astype(np.int64)+base_vertex).tolist())
             base_vertex+=len(p)
     if not vertices:raise ValueError("no renderable skinned vertices")
