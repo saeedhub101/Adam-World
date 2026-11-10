@@ -920,8 +920,14 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         GLES20.glUniform1f(uEmisK, 0f);
         for (Game.Agent a : g.agents) {
             if (Math.hypot(a.x - g.camX, a.z - g.camZ) > 350) continue;
-            if (a.car) drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, a.cr, a.cg, a.cb, a.sp * a.dir, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
-            else drawPerson(a.x,Terrain.h(a.x,a.z),a.z,a.yaw,a.ph,a.humanType,a.hostile,a.knockedOut,a.state,a.stateTime,a.hitFlash);
+            if (a.car) {
+                float damageTint = a.knockedOut ? 0.48f : a.hitFlash > 0f ? 0.72f : 0f;
+                float cr = a.cr * (1f-damageTint) + damageTint;
+                float cg = a.cg * (1f-damageTint) + damageTint * 0.28f;
+                float cb = a.cb * (1f-damageTint) + damageTint * 0.22f;
+                drawVehicle(a.x, a.z, a.yaw, a.vehicleType, 0f, cr, cg, cb,
+                        a.sp * a.dir, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
+            } else drawPerson(a.x,Terrain.h(a.x,a.z),a.z,a.yaw,a.ph,a.humanType,a.hostile,a.knockedOut,a.state,a.stateTime,a.hitFlash);
         }
         if (spawned) {
             drawVehicle(g.cx, g.cz, g.cyaw, playerVehicleType, g.py - Terrain.h(g.cx, g.cz), 0.75f, 0.22f, 0.17f, g.cv, g.sx,
