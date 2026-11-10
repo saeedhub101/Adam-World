@@ -569,6 +569,11 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
     public void toggleCar() {
         Game g = game;
         if (!spawned) return;
+        // Prevent held on-foot or vehicle inputs from leaking across the enter/exit transition.
+        g.sprint = false; g.stealthMode = false;
+        g.weaponAimHeld = false; g.weaponFireHeld = false;
+        g.handbrake = false; g.brakeRequested = false;
+        g.liftInput = 0f; g.rudderInput = 0f; g.throttleInput = 0f;
         if (flightSchoolMode) {
             if (g.driving) {
                 boolean aircraft = g.vehicleType == ProceduralVehicleModels.HELICOPTER || g.vehicleType == ProceduralVehicleModels.AIRPLANE;
