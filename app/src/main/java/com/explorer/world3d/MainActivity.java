@@ -277,6 +277,37 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
         return super.dispatchKeyEvent(event);
     }
+    @Override public boolean onGenericMotionEvent(MotionEvent event) {
+        if ((event.getSource() & android.view.InputDevice.SOURCE_JOYSTICK) != android.view.InputDevice.SOURCE_JOYSTICK
+                || event.getAction() != MotionEvent.ACTION_MOVE || renderer == null) {
+            return super.onGenericMotionEvent(event);
+        }
+        float lx = gamepadAxis(event.getAxisValue(MotionEvent.AXIS_X));
+        float ly = -gamepadAxis(event.getAxisValue(MotionEvent.AXIS_Y));
+        float rx = gamepadAxis(event.getAxisValue(MotionEvent.AXIS_Z));
+        float ry = gamepadAxis(event.getAxisValue(MotionEvent.AXIS_RZ));
+        if (Math.abs(rx) + Math.abs(ry) < 0.04f) {
+            rx = gamepadAxis(event.getAxisValue(MotionEvent.AXIS_RX));
+            ry = gamepadAxis(event.getAxisValue(MotionEvent.AXIS_RY));
+        }
+        // Left stick drives the player; right stick always controls the camera.
+        if (!renderer.game.driving) {
+            renderer.game.sx = lx;
+            renderer.game.sy = ly;
+        } else {
+            renderer.game.sx = lx;
+            renderer.game.sy = ly;
+        }
+        renderer.setGamepadLook(rx, ry);
+        return true;
+    }
+
+    private static float gamepadAxis(float value) {
+        float a = Math.abs(value);
+        if (a < 0.16f) return 0f;
+        return Math.copySign((a - 0.16f) / 0.84f, value);
+    }
+
     @Override public void onBackPressed() {
         if (pauseDialog != null && pauseDialog.isShowing()) { pauseDialog.dismiss(); setGamePaused(false); }
         else showPauseMenu();
