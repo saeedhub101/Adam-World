@@ -30,7 +30,7 @@ final class Game {
     long lastDamageMs, deathStartedMs;
     int vehicleType = ProceduralVehicleModels.SEDAN;
     float altitude, aircraftPitch, aircraftRoll;
-    volatile float liftInput, throttleInput;
+    volatile float liftInput, throttleInput, rudderInput;
     volatile boolean brakeRequested;
     float engineThrottle, aircraftVerticalSpeed, aircraftDamage;
     boolean landingGearDown = true, aircraftOnGround = true, aircraftStall;
@@ -87,7 +87,7 @@ final class Game {
         playerMotion.reset();
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = 0; brakeRequested = false; camYaw = 0; health = 100; dead = false;
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; dead = false;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
         weaponFireHeld=weaponAimHeld=reloadRequested=false;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
@@ -192,7 +192,7 @@ final class Game {
             cv += jy * 13f * dt;
             cv -= Math.signum(cv) * Math.min(Math.abs(cv), 4.2f * dt);
             cv = clamp(cv, -25f, 48f);
-            cyaw -= jx * 0.92f * dt;
+            cyaw -= jx * 0.92f * dt + rudderInput * 0.72f * dt;
             aircraftVerticalSpeed += (engineThrottle * 19f - 9.81f + liftInput * 10.5f
                     - aircraftVerticalSpeed * 0.72f) * dt;
             aircraftVerticalSpeed = clamp(aircraftVerticalSpeed, -13f, 13f);
@@ -210,7 +210,7 @@ final class Game {
             if (brakeRequested) cv -= (aircraftOnGround ? 28f : 5.5f) * dt;
             cv = clamp(cv, 0f, 92f);
             float turnRate = aircraftOnGround ? 0.42f : 0.52f * clamp(cv / 30f, 0.25f, 1.45f);
-            cyaw -= jx * turnRate * dt;
+            cyaw -= jx * turnRate * dt + rudderInput * turnRate * 0.72f * dt;
             if (aircraftOnGround) {
                 if (!brakeRequested && cv >= 32f && aircraftPitch < -5.5f) {
                     aircraftOnGround = false;
