@@ -227,7 +227,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("على التلفاز: العصا اليسرى للحركة أو توجيه المركبة، واليمنى للكاميرا. أثناء المشي: A للركض، X للقفز، B لإعادة التلقيم أو اللكم حسب الحالة، Y للدخول والخروج، LT للتصويب، RT لإطلاق النار، LB لعجلة الأسلحة (اضغط مطولاً)، RB للاحتماء، L3 لتبديل وضع التخفي والمشي البطيء، R3 للنظر خلفك. أثناء قيادة السيارة: RT للتسارع، LT للفرملة والرجوع، العصا اليسرى للتوجيه، RB لفرامل اليد، L3 للبوق، R3 للنظر للخلف، Y للخروج. الطائرة: RT لقوة المحرك، LT للفرامل، العصا اليسرى للميل والتوجيه، LB/RB لدفة الاتجاه، L3 للعجلات. الهليكوبتر: RT لقوة المحرك، LT لخفض الارتفاع، الأسهم أعلى/أسفل للتحكم بالارتفاع، العصا اليسرى للحركة والميل، LB/RB للاتجاه. View للخريطة وMenu للإيقاف. على الهاتف تظهر أزرار اللمس المناسبة للحالة فقط.")
+                .setMessage("على التلفاز: العصا اليسرى للحركة أو توجيه المركبة، واليمنى للكاميرا. أثناء المشي: A للركض، X للقفز، B لإعادة التلقيم أو اللكم حسب الحالة، Y للدخول والخروج، LT للتصويب، RT لإطلاق النار، LB لعجلة الأسلحة (اضغط مطولاً)، RB للاحتماء، L3 لتبديل وضع التخفي والمشي البطيء، R3 للنظر خلفك. أثناء قيادة السيارة: RT للتسارع، LT للفرملة والرجوع، العصا اليسرى للتوجيه، RB لفرامل اليد، L3 للبوق، R3 للنظر للخلف، B لتبديل مسافة الكاميرا، Y للخروج. الطائرة: RT لقوة المحرك، LT للفرامل، العصا اليسرى للميل والتوجيه، LB/RB لدفة الاتجاه، L3 للعجلات. الهليكوبتر: RT لقوة المحرك، LT لخفض الارتفاع، الأسهم أعلى/أسفل للتحكم بالارتفاع، العصا اليسرى للحركة والميل، LB/RB للاتجاه. View للخريطة وMenu للإيقاف. على الهاتف تظهر أزرار اللمس المناسبة للحالة فقط.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
@@ -320,7 +320,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_B) {
-            if (!game.driving && pressed) {
+            if (game.driving && pressed) {
+                game.camDistance = game.camDistance < 7f ? 10f : 5.2f;
+            } else if (!game.driving && pressed) {
                 int weapon = Math.max(0, Math.min(game.equippedWeapon, WeaponSystem.MAGAZINE.length - 1));
                 if (game.weaponAimHeld || game.magazineAmmo < WeaponSystem.MAGAZINE[weapon])
                     runOnGl(() -> game.reloadRequested = true);
