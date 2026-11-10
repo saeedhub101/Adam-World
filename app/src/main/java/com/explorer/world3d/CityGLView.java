@@ -61,12 +61,13 @@ public class CityGLView extends GLSurfaceView {
             float hatX = e.getAxisValue(MotionEvent.AXIS_HAT_X);
             float hatY = e.getAxisValue(MotionEvent.AXIS_HAT_Y);
             float moveX = stick(firstActive(rawX, hatX));
-            float moveY = stick(firstActive(rawY, hatY));
+            float moveY = renderer.isGamepadZoomModifier() ? 0f : stick(firstActive(rawY, hatY));
+            if (renderer.isGamepadZoomModifier()) renderer.game.cameraZoomInput = -hatY;
 
             float gas = trigger(e, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS);
             float brake = trigger(e, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE);
             if(renderer.game.driving){if(Math.abs(moveY)<.12f&&Math.max(gas,brake)>.12f)moveY=brake>gas?brake:-gas;renderer.game.guardRequested=false;}
-            else {renderer.game.guardRequested=brake>.18f;boolean dodgeNow=gas>.72f;if(dodgeNow&&!triggerDodgeDown)renderer.game.dodgeRequested=true;triggerDodgeDown=dodgeNow;}
+            else {renderer.game.guardRequested=false;renderer.game.weaponAimHeld=brake>.08f;renderer.game.weaponFireHeld=gas>.08f;triggerDodgeDown=false;}
             renderer.game.sx = moveX;
             renderer.game.sy = -moveY;
 
