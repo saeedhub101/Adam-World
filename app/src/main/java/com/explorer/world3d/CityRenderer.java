@@ -139,7 +139,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private final float[] proj = new float[16], view = new float[16], vp = new float[16];
     private final float[] ident = new float[16], tmp = new float[16], base = new float[16];
     private float aspect = 1f;
-    private long lastN = System.nanoTime(), lastUnload, lastAgentMs, lastHudMs, spawnDeadline, lastAudioWeaponShot, lastMiniMapUpdate;
+    private long lastN = System.nanoTime(), lastUnload, lastAgentMs, lastHudMs, spawnDeadline, lastAudioWeaponShot, lastMiniMapUpdate, lastAudioExplosionEvent;
     private volatile float[] miniMapRoadSnapshot = new float[0];
     private boolean started, needSpawn, spawned, spawnTimeoutNotified;
     private float lookDx, lookDy;
