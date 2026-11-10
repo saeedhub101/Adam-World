@@ -369,8 +369,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     game.brakeRequested = padL2 || game.handbrake;
                     game.throttleInput = padR2 ? 1f : 0f;
                 } else if (game.vehicleType == ProceduralVehicleModels.HELICOPTER) {
-                    // Trigger controls engine power; collective is on D-pad up/down.
                     game.throttleInput = padR2 ? 1f : 0f;
+                    game.liftInput = padL2 ? -1f : 0f;
                 } else {
                     game.sy = (padR2 ? 1f : 0f) - (padL2 ? 1f : 0f);
                 }
