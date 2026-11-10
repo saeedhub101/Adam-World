@@ -275,12 +275,12 @@ final class TileLoader extends Thread {
             // from appearing or block a switch to another city.
             try {
                 if (!Terrain.ready()) {
-                    synchronized (Terrain.class) {
-                        if (Terrain.enabled && !Terrain.ready()) {
-                            Terrain.ensureRect(Geo.lat0 - 0.00001, Geo.lon0 - 0.00001,
-                                    Geo.lat0 + 0.00001, Geo.lon0 + 0.00001);
-                            Terrain.setBaseAt(Geo.lat0, Geo.lon0);
-                        }
+                    if (Terrain.enabled && !Terrain.ready()) {
+                        // ensureRect performs disk/network I/O; never hold the terrain
+                        // cache monitor while doing it or rendering can block on h().
+                        Terrain.ensureRect(Geo.lat0 - 0.00001, Geo.lon0 - 0.00001,
+                                Geo.lat0 + 0.00001, Geo.lon0 + 0.00001);
+                        Terrain.setBaseAt(Geo.lat0, Geo.lon0);
                     }
                 }
                 if (Terrain.enabled && Terrain.ready()) {
