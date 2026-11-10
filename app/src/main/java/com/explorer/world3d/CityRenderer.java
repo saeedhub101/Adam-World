@@ -1271,6 +1271,14 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
                     drawHumanPartY(cube,.53f,.93f,.19f,gunRot,-90f,0,0,0,.13f,.035f,.038f);
                     drawHumanPartY(cube,.34f,.82f,.20f,gunRot,-90f,0,0,0,.075f,.15f,.060f);
                     if(muzzleFlash>0.02f) drawHumanPartY(cube,.70f,.93f,.19f,gunRot,-90f,0,0,0,.10f*muzzleFlash,.10f*muzzleFlash,.10f*muzzleFlash);
+                }else if(weaponId>=5){
+                    // Shoulder-fired launcher: long reinforced tube, muzzle ring, rear cap and stabilizing fins.
+                    drawHumanPartY(cube,.48f,1.00f,.18f,gunRot,-90f,0,0,0,.62f,.125f,.125f);
+                    drawHumanPartY(cube,.91f,1.00f,.18f,gunRot,-90f,0,0,0,.095f,.17f,.17f);
+                    drawHumanPartY(cube,.02f,1.00f,.18f,gunRot,-90f,0,0,0,.12f,.15f,.15f);
+                    drawHumanPartY(cube,.36f,.85f,.20f,gunRot,-90f,0,0,0,.12f,.20f,.075f);
+                    drawHumanPartY(cube,.74f,.88f,.18f,gunRot,-90f,0,0,0,.10f,.08f,.24f);
+                    if(muzzleFlash>0.02f)drawHumanPartY(cube,1.04f,1.00f,.18f,gunRot,-90f,0,0,0,.18f*muzzleFlash,.18f*muzzleFlash,.18f*muzzleFlash);
                 }else{
                     // Long guns: receiver, barrel, stock, foregrip and magazine create a readable silhouette.
                     drawHumanPartY(cube,.43f,.94f,.19f,gunRot,-90f,0,0,0,.30f,.085f,.070f);
