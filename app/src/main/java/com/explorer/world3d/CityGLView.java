@@ -41,11 +41,12 @@ public class CityGLView extends GLSurfaceView {
         return Math.signum(value) * Math.min(1f, (a - 0.16f) / 0.84f);
     }
 
-    private static float readAxis(MotionEvent event, int primary, int fallback) {
+    // Never guess that Z/RZ are camera axes: on several USB/Bluetooth pads
+    // they are triggers or auxiliary axes. Only use a reported right-stick axis.
+    private static float readStickAxis(MotionEvent event, int axis) {
         android.view.InputDevice device = event.getDevice();
-        if (device != null && device.getMotionRange(primary, event.getSource()) != null)
-            return event.getAxisValue(primary);
-        return event.getAxisValue(fallback);
+        return device != null && device.getMotionRange(axis, event.getSource()) != null
+                ? event.getAxisValue(axis) : 0f;
     }
 
     void setWeaponWheelView(WeaponWheelView wheel) { weaponWheelView = wheel; }
@@ -64,8 +65,10 @@ public class CityGLView extends GLSurfaceView {
         if (joystick && e.getAction() == MotionEvent.ACTION_MOVE) {
             float moveX = stick(e.getAxisValue(MotionEvent.AXIS_X));
             float moveY = stick(e.getAxisValue(MotionEvent.AXIS_Y));
-            float lookX = stick(readAxis(e, MotionEvent.AXIS_RX, MotionEvent.AXIS_Z));
-            float lookY = stick(-readAxis(e, MotionEvent.AXIS_RY, MotionEvent.AXIS_RZ));
+            // Right stick controls camera; do not fall back to Z/RZ because
+            // those axes are not consistently mapped across Android controllers.
+            float lookX = stick(readStickAxis(e, MotionEvent.AXIS_RX));
+            float lookY = stick(-readStickAxis(e, MotionEvent.AXIS_RY));
             float gas = trigger(e, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS);
             float brake = trigger(e, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE);
             float hatX = e.getAxisValue(MotionEvent.AXIS_HAT_X);
