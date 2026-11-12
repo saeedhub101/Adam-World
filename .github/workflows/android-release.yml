@@ -82,7 +82,9 @@ jobs:
           emulator-boot-timeout: 900
           disable-linux-hw-accel: false
           script: |
-            set -euo pipefail
+            # android-emulator-runner executes this script with /bin/sh, not Bash.
+            # POSIX set -e/-u are portable; pipefail is not supported by dash.
+            set -eu
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell monkey -p com.explorer.world3d 1
             sleep 20
