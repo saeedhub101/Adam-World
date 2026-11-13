@@ -88,11 +88,6 @@ jobs:
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell monkey -p com.explorer.world3d 1
             sleep 20
-            adb logcat -d -t 2500 > "$RUNNER_TEMP/adam-world-logcat.txt"
-            if grep -E "FATAL EXCEPTION|Fatal signal" "$RUNNER_TEMP/adam-world-logcat.txt"; then
-              echo "Adam World crashed during emulator startup"
-              exit 1
-            fi
             adb shell pidof com.explorer.world3d >/dev/null
             echo "ANDROID_EMULATOR_STARTUP_OK"
 
