@@ -49,7 +49,8 @@ final class Game {
     volatile int health = 100;
     volatile int shield = 0;
     volatile boolean dead;
-    volatile boolean buildMode, buildEditMode, buildRequested, editRequested, cycleBuildTypeRequested;
+    volatile boolean buildMode, buildEditMode, buildRequested, editRequested, cycleBuildTypeRequested, removeBuildRequested;
+    int selectedBuildPieceIndex=-1;
     int selectedBuildType, woodMaterials=250;
     final ArrayList<BuildPiece> buildPieces = new ArrayList<>();
     long lastDamageMs, deathStartedMs;
@@ -130,7 +131,7 @@ final class Game {
         playerMotion.reset();
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false; buildMode=buildEditMode=buildRequested=editRequested=cycleBuildTypeRequested=false; selectedBuildType=0; woodMaterials=250;
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false; buildMode=buildEditMode=buildRequested=editRequested=cycleBuildTypeRequested=removeBuildRequested=false; selectedBuildPieceIndex=-1; selectedBuildType=0; woodMaterials=250;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
         weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;aimYawOffset=aimPitchOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
@@ -190,15 +191,34 @@ final class Game {
 
     private void processBuildActions(World world) {
         updateBuildPreview(world);
-        if(editRequested){editRequested=false;if(buildMode&&!driving)buildEditMode=!buildEditMode;
-        if(cycleBuildTypeRequested){cycleBuildTypeRequested=false;selectedBuildType=(selectedBuildType+1)%3;}
+        if(editRequested){
+            editRequested=false;
+            if(buildMode&&!driving){buildEditMode=!buildEditMode;selectedBuildPieceIndex=-1;}
+        }
+        if(cycleBuildTypeRequested){
+            cycleBuildTypeRequested=false;
+            if(buildEditMode&&selectedBuildPieceIndex>=0&&selectedBuildPieceIndex<buildPieces.size())
+                buildPieces.get(selectedBuildPieceIndex).type=(buildPieces.get(selectedBuildPieceIndex).type+1)%3;
+            else selectedBuildType=(selectedBuildType+1)%3;
+        }
+        if(removeBuildRequested){
+            removeBuildRequested=false;
+            if(buildEditMode&&selectedBuildPieceIndex>=0&&selectedBuildPieceIndex<buildPieces.size()){
+                buildPieces.remove(selectedBuildPieceIndex);selectedBuildPieceIndex=-1;
+            }
+        }
         if(!buildRequested)return;
         buildRequested=false;
         if(!buildMode||driving||dead)return;
         if(buildEditMode){
-            BuildPiece nearest=null;float best=4.5f;
-            for(BuildPiece piece:buildPieces){float d=(float)Math.hypot(piece.x-px,piece.z-pz);if(d<best){best=d;nearest=piece;}}
-            if(nearest!=null){nearest.yaw+=(float)Math.PI*.25f;nearest.type=(nearest.type+1)%3;}
+            if(selectedBuildPieceIndex<0||selectedBuildPieceIndex>=buildPieces.size()){
+                float best=4.5f;selectedBuildPieceIndex=-1;
+                for(int i=0;i<buildPieces.size();i++){
+                    BuildPiece piece=buildPieces.get(i);
+                    float d=(float)Math.hypot(piece.x-px,piece.z-pz);
+                    if(d<best){best=d;selectedBuildPieceIndex=i;}
+                }
+            }else buildPieces.get(selectedBuildPieceIndex).yaw+=(float)Math.PI*.25f;
             return;
         }
         if(!buildPreviewValid)return;
@@ -214,7 +234,15 @@ final class Game {
         buildPreviewValid=buildMode&&!buildEditMode&&!driving&&!dead&&woodMaterials>=10
                 &&buildPieces.size()<64&&Math.hypot(buildPreviewX-px,buildPreviewZ-pz)>=2.0f
                 &&!world.blocked(buildPreviewX,buildPreviewZ,0.82f)
-                &&!buildBlocked(buildPreviewX,buildPreviewZ,0.82f,0f);
+                &&!buildBlocked(buildPreviewX,buildPreviewZ,0.82f,0f)
+                &&!buildPlacementOverlap(buildPreviewX,buildPreviewZ,1.42f);
+    }
+
+    private boolean buildPlacementOverlap(float x,float z,float halfExtent){
+        for(BuildPiece piece:buildPieces){
+            if(Math.abs(x-piece.x)<halfExtent+1.25f&&Math.abs(z-piece.z)<halfExtent+1.25f)return true;
+        }
+        return false;
     }
 
     float buildSupportHeight(float x,float z,float groundY){
