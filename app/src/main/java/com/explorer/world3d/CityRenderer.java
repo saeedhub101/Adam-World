@@ -1278,14 +1278,14 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             Matrix.setIdentityM(tmp,0);
             Matrix.translateM(tmp,0,item.x,Terrain.h(item.x,item.z)+0.48f+bob,item.z);
             Matrix.rotateM(tmp,0,(float)(System.currentTimeMillis()*0.045%360),0f,1f,0f);
-            Matrix.scaleM(tmp,0,item.type==Game.LootPickup.SHIELD?0.28f:0.23f,0.34f,item.type==Game.LootPickup.SHIELD?0.28f:0.23f);
+            if(item.type==Game.LootPickup.CHEST)Matrix.scaleM(tmp,0,0.58f,0.34f,0.42f);
+            else Matrix.scaleM(tmp,0,item.type==Game.LootPickup.SHIELD?0.28f:0.23f,0.34f,item.type==Game.LootPickup.SHIELD?0.28f:0.23f);
             GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
             if(item.type==Game.LootPickup.SHIELD)GLES20.glUniform3f(uTint,.10f,.48f,1f);
             else if(item.type==Game.LootPickup.CHEST)GLES20.glUniform3f(uTint,.68f,.34f,.08f);
             else if(item.type==Game.LootPickup.MATERIAL)GLES20.glUniform3f(uTint,.22f,.72f,.34f);
             else GLES20.glUniform3f(uTint,1f,.72f,.12f);
             GLES20.glUniform1f(uEmisK,item.type==Game.LootPickup.CHEST?.12f:.32f);
-            if(item.type==Game.LootPickup.CHEST)Matrix.scaleM(tmp,0,1.45f,0.72f,1.05f);
             cube.draw();
         }
         GLES20.glUniformMatrix4fv(uModel,1,false,ident,0);
