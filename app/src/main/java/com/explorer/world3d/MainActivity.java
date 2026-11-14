@@ -1187,9 +1187,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     }
                 }
                 if (group.getChildCount()>0) utilityRows.add(0,hudSourceRow);
-            } else if (row instanceof Button && row.getContentDescription()!=null) {
-                actionButtons.add((Button)row);
-            } else utilityRows.add(0,row);
+            } else if (hudSourceRow instanceof Button && hudSourceRow.getContentDescription()!=null) {
+                actionButtons.add((Button)hudSourceRow);
+            } else utilityRows.add(0,hudSourceRow);
         }
         combatControls.removeAllViews();
         for (Button control : actionButtons) {
