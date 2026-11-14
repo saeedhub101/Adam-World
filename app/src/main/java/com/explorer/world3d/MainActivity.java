@@ -788,41 +788,49 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     }
 
     private String touchControlIcon(String label) {
-        if (label.contains("قفز")) return "⬆";
-        if (label.contains("لكم")) return "拳";
+        if (label.contains("قفز")) return "↟";
+        if (label.contains("لكم")) return "✊";
         if (label.contains("ركل")) return "🦶";
         if (label.contains("حراسة") || label.contains("دفاع")) return "🛡";
         if (label.contains("ركض") || label.contains("جري")) return "⚡";
-        if (label.contains("مراوغة")) return "↗";
-        if (label.contains("تصويب") || label.contains("هدف")) return "◎";
+        if (label.contains("مراوغة") || label.contains("انزلاق")) return "➤";
+        if (label.contains("تصويب") || label.contains("هدف")) return "⌖";
         if (label.contains("إطلاق") || label.contains("نار")) return "●";
-        if (label.contains("مركبة") || label.contains("دخول") || label.contains("خروج")) return "🚗";
-        if (label.contains("مكابح")) return "■";
+        if (label.contains("مركبة") || label.contains("دخول") || label.contains("خروج")) return "🚙";
+        if (label.contains("مكابح") || label.contains("فرامل")) return "▣";
+        if (label.contains("تسارع")) return "▲";
         if (label.contains("صعود") || label.contains("رفع")) return "⬆";
         if (label.contains("هبوط") || label.contains("خفض")) return "⬇";
-        if (label.contains("سلاح")) return "✦";
-        return "";
+        if (label.contains("تلقيم")) return "↻";
+        if (label.contains("سلاح")) return "⚔";
+        if (label.contains("التقاط") || label.contains("تبديل")) return "＋";
+        if (label.contains("علاج")) return "✚";
+        if (label.contains("درع")) return "⬡";
+        if (label.contains("الحقيبة")) return "▤";
+        if (label.contains("خانة 1")) return "1";
+        if (label.contains("خانة 2")) return "2";
+        if (label.contains("خانة 3")) return "3";
+        if (label.contains("خانة 4")) return "4";
+        if (label.contains("خانة 5")) return "5";
+        if (label.equals("◀") || label.equals("▶")) return label;
+        if (label.contains("زامور")) return "♫";
+        return "•";
     }
 
     private Button touchAction(String label, final Runnable press, final Runnable release) {
         Button b=btn(label);
-        String icon = touchControlIcon(label);
-        if (!icon.isEmpty()) {
-            b.setText(icon);
-            b.setTextSize(23);
-            b.setContentDescription(label);
-            android.graphics.drawable.GradientDrawable face = new android.graphics.drawable.GradientDrawable();
-            face.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
-            face.setCornerRadius(dp(24));
-            face.setColor(0xCC172536);
-            face.setStroke(dp(1.5f), 0xB8D6E8F5);
-            b.setBackground(face);
-            b.setPadding(dp(3), 0, dp(3), 0);
-        } else {
-            b.setTextSize(12);
-            b.setBackgroundColor(0xB91B2634);
-        }
-        b.setMinHeight(dp(54));
+        String icon=touchControlIcon(label);
+        b.setText(icon);
+        b.setTextSize(label.contains("إطلاق")?30:22);
+        b.setContentDescription(label);
+        b.setTextColor(Color.WHITE);
+        android.graphics.drawable.GradientDrawable face=new android.graphics.drawable.GradientDrawable();
+        face.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        face.setColor(label.contains("إطلاق")?0xD9B83A32:0xA9233448);
+        face.setStroke(dp(1.5f),label.contains("إطلاق")?0xFFFFD7C9:0xB8D6E8F5);
+        b.setBackground(face);
+        b.setPadding(dp(2),0,dp(2),0);
+        b.setMinHeight(dp(48));b.setMinimumHeight(dp(48));
         b.setClickable(true);b.setFocusable(false);
         final String key="hud_"+Integer.toHexString(label.hashCode());b.setTag(key);
         SharedPreferences hp=getSharedPreferences("adam_world_hud",MODE_PRIVATE);
@@ -830,13 +838,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         b.setAlpha(hp.getFloat(key+"_alpha",1f));b.setTranslationX(hp.getFloat(key+"_x",0f));b.setTranslationY(hp.getFloat(key+"_y",0f));
         b.setOnTouchListener(new View.OnTouchListener(){
             private int activePointerId=MotionEvent.INVALID_POINTER_ID;
-            private boolean held,moved;
-            private float downX,downY,startX,startY;
-            private void finishPress(View view){
-                if(!held)return;held=false;activePointerId=MotionEvent.INVALID_POINTER_ID;
-                if(release!=null)release.run();
-                view.setAlpha(getSharedPreferences("adam_world_hud",MODE_PRIVATE).getFloat(key+"_alpha",1f));
-            }
+            private boolean held,moved;private float downX,downY,startX,startY;
+            private void finishPress(View view){if(!held)return;held=false;activePointerId=MotionEvent.INVALID_POINTER_ID;if(release!=null)release.run();view.setAlpha(getSharedPreferences("adam_world_hud",MODE_PRIVATE).getFloat(key+"_alpha",1f));}
             @Override public boolean onTouch(View v,MotionEvent e){
                 int action=e.getActionMasked();
                 if(hudEditMode){
@@ -1044,7 +1047,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         actionPad.setOrientation(LinearLayout.VERTICAL);
         actionPad.setGravity(Gravity.CENTER);
         actionPad.setPadding(dp(4), dp(4), dp(4), dp(4));
-        actionPad.setBackgroundColor(0x30000000);
+        actionPad.setBackgroundColor(Color.TRANSPARENT);
         // Keep the action HUD inside the visible safe area on small phones.
         // A scroll container prevents the lower controls from being clipped off-screen.
         ScrollView actionScroll = new ScrollView(this);
@@ -1056,7 +1059,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         tapFireMode = getSharedPreferences("adam_world_controls", MODE_PRIVATE).getBoolean("tap_fire", false);
         touchHudLeft = getSharedPreferences("adam_world_controls", MODE_PRIVATE).getBoolean("hud_left", false);
         FrameLayout.LayoutParams actionParams = new FrameLayout.LayoutParams(
-                dp(194), dp(360), Gravity.BOTTOM | (touchHudLeft ? Gravity.START : Gravity.END));
+                dp(224), dp(410), Gravity.BOTTOM | (touchHudLeft ? Gravity.START : Gravity.END));
         actionParams.setMargins(touchHudLeft ? dp(8) : 0, 0, touchHudLeft ? 0 : dp(8), dp(16));
         touchActionScrollParams = actionParams;
         touchActionPad = actionPad;
@@ -1109,7 +1112,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         LinearLayout weaponRow=new LinearLayout(this); weaponRow.setGravity(Gravity.CENTER);
         Button aimTouch=touchAction("تصويب",()->runOnGl(()->renderer.game.weaponAimHeld=true),()->runOnGl(()->renderer.game.weaponAimHeld=false));
         Button fireTouch=touchAction("إطلاق",()->runOnGl(()->{if(tapFireMode)renderer.game.weaponFireRequested=true;else renderer.game.weaponFireHeld=true;}),()->{if(!tapFireMode)runOnGl(()->renderer.game.weaponFireHeld=false);});
-        weaponRow.addView(aimTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); weaponRow.addView(fireTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); combatControls.addView(weaponRow);
+        weaponRow.addView(aimTouch,new LinearLayout.LayoutParams(0,dp(58),1f)); weaponRow.addView(fireTouch,new LinearLayout.LayoutParams(dp(68),dp(68))); combatControls.addView(weaponRow);
         LinearLayout quickbarRow=new LinearLayout(this);quickbarRow.setGravity(Gravity.CENTER);
         for(int slot=0;slot<5;slot++){
             final int quickSlot=slot;
