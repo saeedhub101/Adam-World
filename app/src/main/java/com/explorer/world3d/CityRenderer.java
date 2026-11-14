@@ -151,6 +151,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private long lastCharacterAnimationNanos;
     private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN;
     private final HashMap<Long, Mesh> terrain = new HashMap<>();
+    private final java.util.HashSet<Long> harvestableIds = new java.util.HashSet<>();
     private static final class TerrainBuild {
         final long key; final int generation; final GeoBuf geometry;
         TerrainBuild(long key, int generation, GeoBuf geometry) { this.key=key; this.generation=generation; this.geometry=geometry; }
@@ -1016,6 +1017,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         }
 
         updateTerrain(ptx, ptz);
+        ensureHarvestables();
 
         if (needSpawn) {
             Tile c = tiles.get(Geo.key(Geo.tileX(0f), Geo.tileZ(0f)));
@@ -1227,6 +1229,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 detailedPedestrians++;
             } else drawPerson(a.x,Terrain.h(a.x,a.z),a.z,a.yaw,a.ph,a.humanType,a.hostile,a.knockedOut,a.state,a.stateTime,a.hitFlash);
         }
+        drawHarvestables();
         drawLootPickups();
         drawBuildPieces();
         drawBuildPreview();
@@ -1272,6 +1275,65 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
     private boolean iBuildSelected(Game.BuildPiece piece){
         int index=game.buildPieces.indexOf(piece);
         return game.buildEditMode&&index==game.selectedBuildPieceIndex;
+    }
+
+    private void ensureHarvestables(){
+        float focusX=game.focusX(),focusZ=game.focusZ();
+        int gx=(int)Math.floor(focusX/24f),gz=(int)Math.floor(focusZ/24f);
+        for(int ix=gx-2;ix<=gx+2;ix++)for(int iz=gz-2;iz<=gz+2;iz++){
+            long id=(((long)ix)<<32)^(iz&0xffffffffL);
+            if(harvestableIds.contains(id))continue;
+            int hash=(int)(id^(id>>>33));hash^=hash<<13;hash^=hash>>>17;hash^=hash<<5;
+            float x=ix*24f+5f+((hash&1023)/1023f)*13f;
+            float z=iz*24f+5f+(((hash>>>10)&1023)/1023f)*13f;
+            if(Math.hypot(x-focusX,z-focusZ)>64f||blockedAtHeight(x,z,1.0f,0.1f)||nearRoadForHarvest(x,z))continue;
+            game.harvestables.add(new Game.Harvestable(id,x,z,(hash>>>20)&1));
+            harvestableIds.add(id);
+        }
+        for(int i=game.harvestables.size()-1;i>=0;i--){
+            Game.Harvestable node=game.harvestables.get(i);
+            if(Math.hypot(node.x-focusX,node.z-focusZ)>115f){
+                harvestableIds.remove(node.id);game.harvestables.remove(i);
+            }
+        }
+    }
+
+    private boolean nearRoadForHarvest(float x,float z){
+        for(Tile tile:tiles.values())for(RoadPath path:tile.paths){
+            if(path==null||path.xs==null)continue;
+            for(int i=0;i<path.xs.length-1;i++){
+                float ax=path.xs[i],az=path.zs[i],bx=path.xs[i+1],bz=path.zs[i+1];
+                float dx=bx-ax,dz=bz-az,len2=dx*dx+dz*dz;
+                float t=len2>0f?Math.max(0f,Math.min(1f,((x-ax)*dx+(z-az)*dz)/len2)):0f;
+                if(Math.hypot(x-(ax+dx*t),z-(az+dz*t))<path.w*0.5f+3.2f)return true;
+            }
+        }
+        return false;
+    }
+
+    private void drawHarvestables(){
+        if(cube==null||game.harvestables.isEmpty())return;
+        GLES20.glUniform1f(uWater,0f);GLES20.glUniform1f(uGlass,0f);GLES20.glUniform1f(uPbr,0f);
+        bindTex(tex.white,tex.black);
+        for(Game.Harvestable node:game.harvestables){
+            if(Math.hypot(node.x-game.camX,node.z-game.camZ)>95f)continue;
+            float ground=Terrain.h(node.x,node.z);
+            if(node.type==0){
+                Matrix.setIdentityM(tmp,0);Matrix.translateM(tmp,0,node.x,ground+0.78f,node.z);
+                Matrix.scaleM(tmp,0,0.18f,0.78f,0.18f);
+                GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);GLES20.glUniform3f(uTint,node.hitFlash>0f?1f:.38f,.24f,.12f);cube.draw();
+                Matrix.setIdentityM(tmp,0);Matrix.translateM(tmp,0,node.x,ground+1.72f,node.z);
+                Matrix.scaleM(tmp,0,node.health<65?0.62f:0.78f,node.health<35?0.65f:0.92f,node.health<65?0.62f:0.78f);
+                GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);GLES20.glUniform3f(uTint,node.hitFlash>0f?1f:.12f,.48f,.18f);cube.draw();
+            }else{
+                Matrix.setIdentityM(tmp,0);Matrix.translateM(tmp,0,node.x,ground+0.38f,node.z);
+                Matrix.rotateM(tmp,0,17f,0f,1f,0f);
+                Matrix.scaleM(tmp,0,node.health<65?.48f:.66f,node.health<35?.22f:.42f,node.health<65?.40f:.58f);
+                GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);GLES20.glUniform3f(uTint,node.hitFlash>0f?1f:.43f,.46f,.48f);cube.draw();
+            }
+            node.hitFlash=Math.max(0f,node.hitFlash-frameDeltaSeconds);
+        }
+        GLES20.glUniformMatrix4fv(uModel,1,false,ident,0);GLES20.glUniform3f(uTint,1f,1f,1f);
     }
 
     private void drawLootPickups() {
