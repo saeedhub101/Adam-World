@@ -1288,7 +1288,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             @Override public void reload() { runOnGl(() -> renderer.game.reloadRequested = true); }
             @Override public void interact() { runOnGl(() -> renderer.game.lootInteractionRequested = true); }
             @Override public void melee() { runOnGl(() -> renderer.game.punchRequested = true); }
-            @Override public void swapWeapon() { runOnGl(() -> renderer.game.cycleWeapon()); runOnUiThread(this::saveWeaponState); }
+            @Override public void swapWeapon() { runOnGl(() -> renderer.game.cycleWeapon()); MainActivity.this.runOnUiThread(MainActivity.this::saveWeaponState); }
             @Override public void heal() { runOnGl(() -> renderer.game.useMedkitRequested = true); }
             @Override public void shield() { runOnGl(() -> renderer.game.useShieldPotionRequested = true); }
             @Override public void vehicle() { runOnGl(() -> renderer.toggleCar()); }
