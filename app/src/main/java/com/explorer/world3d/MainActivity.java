@@ -76,6 +76,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private LinearLayout touchActionPad, touchCombatRow, touchFlightRow, touchGroundVehicleRow;
     private View touchActionScroll;
     private FrameLayout battleHudOverlay;
+    private java.util.ArrayList<Button> battleHudButtons;
     private FrameLayout.LayoutParams touchActionScrollParams;
     private boolean tapFireMode, touchHudLeft, hudEditMode;
     private View touchMoveJoystick;
@@ -1206,6 +1207,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         // Responsive Battle Royale HUD: controls use normalized display coordinates.
         FrameLayout battleHud = new FrameLayout(this);
         battleHudOverlay = battleHud;
+        battleHudButtons = actionButtons;
         battleHud.setClipChildren(false);
         battleHud.setClipToPadding(false);
         battleHud.setBackgroundColor(Color.TRANSPARENT);
@@ -1642,6 +1644,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             updateTouchActionVisibility();
             if (System.currentTimeMillis()-lastHudRefresh>250 && renderer!=null) {
                 lastHudRefresh=System.currentTimeMillis();
+                if(battleHudOverlay!=null && battleHudButtons!=null) layoutBattleHudControls(battleHudOverlay,battleHudButtons);
                 int hp=renderer.game.health;
                 healthHud.setText("♥ "+hp+" / 100     🛡 "+renderer.game.shield+" / 100     ⚡ "+(int)renderer.game.stamina+" / 100"+(renderer.game.buildMode?"     🪵 "+renderer.game.woodMaterials:"" )+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
                 Game game=renderer.game;
