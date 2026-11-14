@@ -783,6 +783,36 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         return b;
     }
 
+    private void makeHudElementEditable(final View view,String key){
+        final SharedPreferences prefs=getSharedPreferences("adam_world_hud",MODE_PRIVATE);
+        view.setTag(key);
+        view.setScaleX(prefs.getFloat(key+"_scale",1f));view.setScaleY(prefs.getFloat(key+"_scale",1f));
+        view.setAlpha(prefs.getFloat(key+"_alpha",1f));
+        view.setTranslationX(prefs.getFloat(key+"_x",0f));view.setTranslationY(prefs.getFloat(key+"_y",0f));
+        view.setClickable(true);
+        view.setOnTouchListener(new View.OnTouchListener(){
+            float downX,downY,startX,startY;boolean moved;
+            @Override public boolean onTouch(View v,MotionEvent e){
+                if(!hudEditMode)return false;
+                int action=e.getActionMasked();
+                if(action==MotionEvent.ACTION_DOWN){
+                    downX=e.getRawX();downY=e.getRawY();startX=v.getTranslationX();startY=v.getTranslationY();moved=false;return true;
+                }
+                if(action==MotionEvent.ACTION_MOVE){
+                    float dx=e.getRawX()-downX,dy=e.getRawY()-downY;
+                    if(Math.abs(dx)+Math.abs(dy)>5f)moved=true;
+                    if(moved){v.setTranslationX(startX+dx);v.setTranslationY(startY+dy);}return true;
+                }
+                if(action==MotionEvent.ACTION_UP){
+                    if(moved)prefs.edit().putFloat(key+"_x",v.getTranslationX()).putFloat(key+"_y",v.getTranslationY()).apply();
+                    else showHudButtonEditor(v);
+                    return true;
+                }
+                return true;
+            }
+        });
+    }
+
     private Button btn(String t) {
         Button b = new Button(this);
         b.setText(t);
@@ -795,6 +825,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         b.setMinimumWidth(0);
         b.setMinHeight(dp(40));
         b.setMinimumHeight(dp(40));
+        makeHudElementEditable(b,"admin_"+Integer.toHexString(t.hashCode()));
         return b;
     }
 
@@ -1134,6 +1165,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         hud.setSingleLine(false);
         hud.setPadding(dp(9),dp(5),dp(9),dp(5));
         hud.setBackgroundColor(0x990d141c);
+        makeHudElementEditable(hud,"hud_status_panel");
         FrameLayout.LayoutParams hp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.END);
         hp.setMargins(0, 0, dp(24), dp(190));
         root.addView(hud, hp);
@@ -1157,6 +1189,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         weaponHud.setBackground(weaponCard);
         weaponHud.setElevation(dp(8));
         weaponHud.setText("مسدس\n12   /   48");
+        makeHudElementEditable(weaponHud,"hud_weapon_panel");
         FrameLayout.LayoutParams weaponParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT,Gravity.TOP|Gravity.END);
         weaponParams.setMargins(0,dp(112),dp(18),0);
         root.addView(weaponHud,weaponParams);
@@ -1166,12 +1199,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         healthHud.setTextSize(16);
         healthHud.setShadowLayer(4,0,0,Color.BLACK);
         healthHud.setText("♥ 100 / 100");
+        makeHudElementEditable(healthHud,"hud_health_panel");
         FrameLayout.LayoutParams healthParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
         healthParams.setMargins(0, dp(62), dp(18), 0);
         root.addView(healthHud, healthParams);
 
         miniMap = new MiniMapView(this);
         miniMap.setOnClickListener(v -> showMapDialog(false));
+        makeHudElementEditable(miniMap,"hud_minimap");
         FrameLayout.LayoutParams miniParams = new FrameLayout.LayoutParams(dp(142), dp(142), Gravity.TOP | Gravity.START);
         miniParams.setMargins(dp(14), dp(18), 0, 0);
         root.addView(miniMap, miniParams);
