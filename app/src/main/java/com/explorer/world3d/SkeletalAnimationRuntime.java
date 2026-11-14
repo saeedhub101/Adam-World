@@ -54,7 +54,59 @@ final class SkeletalAnimationRuntime {
         final float[] global, skin, matrixScratch = new float[16];
         int current=-1, previous=-1;
         float time, previousTime, fade, fadeDuration, speed=1f;
+        float proceduralCrouch, proceduralMantle, proceduralMantlePhase, proceduralWalk;
         boolean loop=true;
+
+        /** Semantic retargeting overlay: imported rigs need no authored crouch/mantle clips. */
+        void setProceduralPose(float crouch,float mantle,float mantlePhase,float walk){
+            proceduralCrouch=clamp(crouch,0f,1f);
+            proceduralMantle=clamp(mantle,0f,1f);
+            proceduralMantlePhase=clamp(mantlePhase,0f,1f);
+            proceduralWalk=clamp(walk,0f,1f);
+        }
+
+        private void applyProceduralPose(){
+            for(int i=0;i<skeleton.count;i++){
+                String n=skeleton.names[i]==null?"":skeleton.names[i].toLowerCase(java.util.Locale.US)
+                        .replace("-","").replace("_","").replace(" ","").replace(".","");
+                if(n.isEmpty())continue;
+                boolean left=containsAny(n,"left","lupper","lthigh","arm_l","leg_l");
+                boolean right=containsAny(n,"right","rupper","rthigh","arm_r","leg_r");
+                float side=left?-1f:right?1f:0f,x=0f,z=0f;
+                if(containsAny(n,"pelvis","hips","hip")){x+=proceduralCrouch*18f; x+=proceduralMantle*(8f-18f*proceduralMantlePhase);}
+                else if(containsAny(n,"spine","chest","torso","abdomen")){x+=proceduralCrouch*24f; x+=proceduralMantle*(-24f+42f*proceduralMantlePhase);}
+                else if(containsAny(n,"neck","head")){x-=proceduralCrouch*8f; x+=proceduralMantle*8f;}
+                else if(containsAny(n,"thigh","upleg","upperleg","femur","legupper")){
+                    x-=proceduralCrouch*38f;
+                    x+=proceduralMantle*(side==0f?0f:(side>0?1f:-1f)*(18f+12f*(float)Math.sin(proceduralMantlePhase*Math.PI)));
+                    z+=proceduralWalk*(side==0f?0f:side*18f);
+                }else if(containsAny(n,"calf","lowerleg","shin","leglower")){x+=proceduralCrouch*68f; x+=proceduralMantle*24f;}
+                else if(containsAny(n,"upperarm","shoulder","arm")){
+                    if(side!=0f){x+=proceduralCrouch*(side>0?-20f:-14f);x+=proceduralMantle*(side>0?-105f:-92f)*(0.65f+0.35f*(float)Math.sin(proceduralMantlePhase*Math.PI));z+=side*proceduralMantle*12f;}
+                }else if(containsAny(n,"forearm","lowerarm","elbow")){x+=proceduralCrouch*(side==0f?-8f:-12f);x+=proceduralMantle*(side>0?-38f:-32f);}
+                else if(containsAny(n,"foot","ankle")){x+=proceduralCrouch*12f;x+=proceduralMantle*-12f;}
+                if(Math.abs(x)>0.01f||Math.abs(z)>0.01f)rotateLocal(i,(float)Math.toRadians(x),(float)Math.toRadians(z));
+            }
+        }
+
+        private void rotateLocal(int bone,float rx,float rz){
+            float hx=(float)Math.sin(rx*.5f),hz=(float)Math.sin(rz*.5f);
+            float cx=(float)Math.cos(rx*.5f),cz=(float)Math.cos(rz*.5f);
+            float[] q=localR;int o=bone*4;
+            float ax=q[o],ay=q[o+1],az=q[o+2],aw=q[o+3];
+            float bx=hx*cz,by=-hx*hz,bz=cx*hz,bw=cx*cz;
+            q[o]=aw*bx+ax*bw+ay*bz-az*by;
+            q[o+1]=aw*by-ax*bz+ay*bw+az*bx;
+            q[o+2]=aw*bz+ax*by-ay*bx+az*bw;
+            q[o+3]=aw*bw-ax*bx-ay*by-az*bz;
+            float inv=1f/(float)Math.sqrt(Math.max(1e-12f,q[o]*q[o]+q[o+1]*q[o+1]+q[o+2]*q[o+2]+q[o+3]*q[o+3]));
+            q[o]*=inv;q[o+1]*=inv;q[o+2]*=inv;q[o+3]*=inv;
+        }
+
+        private static boolean containsAny(String value,String... terms){
+            for(String term:terms)if(value.contains(term))return true;
+            return false;
+        }
 
         Animator(Skeleton skeleton, Clip[] clips) {
             this.skeleton=skeleton; this.clips=clips;
@@ -89,7 +141,12 @@ final class SkeletalAnimationRuntime {
         }
 
         void update(float dt) {
-            if (current < 0 || clips.length == 0) { resetBindPose(); return; }
+            if (current < 0 || clips.length == 0) {
+                resetBindPose();
+                applyProceduralPose();
+                evaluateMatrices();
+                return;
+            }
             dt=Math.max(0f,Math.min(.05f,dt));
             Clip c=clips[current]; time=advance(time,dt*speed,c.duration,loop);
             sample(c,time,targetT,targetR,targetS);
@@ -104,6 +161,7 @@ final class SkeletalAnimationRuntime {
                 System.arraycopy(targetR,0,localR,0,localR.length);
                 System.arraycopy(targetS,0,localS,0,localS.length);
             }
+            applyProceduralPose();
             evaluateMatrices();
         }
 
