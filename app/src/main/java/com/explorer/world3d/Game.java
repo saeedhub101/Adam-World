@@ -13,10 +13,12 @@ final class Game {
     }
 
     static final class LootPickup {
-        static final int AMMO=0, SHIELD=1;
-        float x,z,life=75f;
-        int type,amount;
+        static final int AMMO=0, SHIELD=1, CHEST=2, MATERIAL=3;
+        float x,z,life=90f;
+        int type,amount,rarity;
+        boolean opened;
         LootPickup(float x,float z,int type,int amount){this.x=x;this.z=z;this.type=type;this.amount=amount;}
+        LootPickup(float x,float z,int type,int amount,int rarity){this(x,z,type,amount);this.rarity=rarity;}
     }
 
     static final class Agent {
@@ -100,6 +102,9 @@ final class Game {
     volatile boolean sprint, jogging, stealthMode, crouching;
     float slideSeconds, slideX, slideZ;
     float mantleSeconds, mantleCooldown;
+    float mantleStartX,mantleStartZ,mantleEndX,mantleEndZ,mantleStartY,mantleArc=0.72f;
+    float buildPreviewX,buildPreviewZ,buildPreviewYaw;
+    boolean buildPreviewValid;
     volatile long lastSprintTapMs;
     volatile boolean cinematicCamera;
     volatile int cameraMode = 1;
@@ -147,24 +152,43 @@ final class Game {
     }
 
     private void dropLoot(Agent a) {
-        loot.add(new LootPickup(a.x,a.z,LootPickup.AMMO,12));
+        loot.add(new LootPickup(a.x,a.z,LootPickup.AMMO,18));
         loot.add(new LootPickup(a.x+0.38f,a.z-0.22f,LootPickup.SHIELD,25));
+        loot.add(new LootPickup(a.x-0.42f,a.z+0.28f,LootPickup.CHEST,1));
     }
 
     private void updateLoot(float dt) {
         for(int i=loot.size()-1;i>=0;i--){
             LootPickup item=loot.get(i); item.life-=dt;
             if(item.life<=0f){loot.remove(i);continue;}
-            if(!driving && Math.hypot(item.x-px,item.z-pz)<1.55f){
-                if(item.type==LootPickup.SHIELD){int before=shield;shield=Math.min(100,shield+item.amount);if(shield==before){item.life=Math.min(item.life,3f);continue;}}
-                else reserveAmmo[equippedWeapon]=Math.min(999,reserveAmmo[equippedWeapon]+item.amount);
-                loot.remove(i);
+            if(driving||Math.hypot(item.x-px,item.z-pz)>=1.55f)continue;
+            if(item.type==LootPickup.CHEST){
+                if(item.opened){loot.remove(i);continue;}
+                item.opened=true;
+                int roll=(int)((System.nanoTime()>>>7)&7L);
+                int weapon=roll<4?1:roll<6?2:roll==6?3:4;
+                if(!ownedWeapons[weapon]){
+                    ownedWeapons[weapon]=true;
+                    weaponMagazines[weapon]=WeaponSystem.MAGAZINE[weapon];
+                    reserveAmmo[weapon]=WeaponSystem.START_AMMO[weapon];
+                    equipWeapon(weapon);
+                }else reserveAmmo[weapon]=Math.min(999,reserveAmmo[weapon]+WeaponSystem.AMMO_PACK[weapon]*2);
+                shield=Math.min(100,shield+15);
+                item.life=0.55f;
+                continue;
             }
+            if(item.type==LootPickup.SHIELD){
+                int before=shield;shield=Math.min(100,shield+item.amount);
+                if(shield==before){item.life=Math.min(item.life,3f);continue;}
+            }else if(item.type==LootPickup.MATERIAL)woodMaterials=Math.min(999,woodMaterials+item.amount);
+            else reserveAmmo[equippedWeapon]=Math.min(999,reserveAmmo[equippedWeapon]+item.amount);
+            loot.remove(i);
         }
     }
 
     private void processBuildActions(World world) {
-        if(editRequested){editRequested=false;if(buildMode&&!driving)buildEditMode=!buildEditMode;}
+        updateBuildPreview(world);
+        if(editRequested){editRequested=false;if(buildMode&&!driving)buildEditMode=!buildEditMode;
         if(cycleBuildTypeRequested){cycleBuildTypeRequested=false;selectedBuildType=(selectedBuildType+1)%3;}
         if(!buildRequested)return;
         buildRequested=false;
@@ -175,14 +199,20 @@ final class Game {
             if(nearest!=null){nearest.yaw+=(float)Math.PI*.25f;nearest.type=(nearest.type+1)%3;}
             return;
         }
-        if(woodMaterials<10||buildPieces.size()>=64)return;
-        float fx=(float)Math.sin(camYaw),fz=(float)Math.cos(camYaw);
-        float x=(float)Math.floor((px+fx*2.85f)*2f+0.5f)*0.5f;
-        float z=(float)Math.floor((pz+fz*2.85f)*2f+0.5f)*0.5f;
-        if(Math.hypot(x-px,z-pz)<2.0f||world.blocked(x,z,0.82f)||buildBlocked(x,z,0.82f,0f))return;
-        float yaw=(float)(Math.round(camYaw/(Math.PI/4.0))*(Math.PI/4.0));
-        buildPieces.add(new BuildPiece(x,z,yaw,selectedBuildType,0));
+        if(!buildPreviewValid)return;
+        buildPieces.add(new BuildPiece(buildPreviewX,buildPreviewZ,buildPreviewYaw,selectedBuildType,0));
         woodMaterials-=10;
+    }
+
+    private void updateBuildPreview(World world){
+        float fx=(float)Math.sin(camYaw),fz=(float)Math.cos(camYaw);
+        buildPreviewX=(float)Math.floor((px+fx*2.85f)*2f+0.5f)*0.5f;
+        buildPreviewZ=(float)Math.floor((pz+fz*2.85f)*2f+0.5f)*0.5f;
+        buildPreviewYaw=(float)(Math.round(camYaw/(Math.PI/4.0))*(Math.PI/4.0));
+        buildPreviewValid=buildMode&&!buildEditMode&&!driving&&!dead&&woodMaterials>=10
+                &&buildPieces.size()<64&&Math.hypot(buildPreviewX-px,buildPreviewZ-pz)>=2.0f
+                &&!world.blocked(buildPreviewX,buildPreviewZ,0.82f)
+                &&!buildBlocked(buildPreviewX,buildPreviewZ,0.82f,0f);
     }
 
     boolean buildBlocked(float x,float z,float radius,float feetHeight){
@@ -698,7 +728,7 @@ final class Game {
         if(magazineAmmo<=0){reloadWeapon();return;}
         lastWeaponShotMs=now;magazineAmmo--;weaponMagazines[id]=magazineAmmo;
         reportCrime(id>=5?2:1);
-        weaponRecoil=1f; muzzleFlashSeconds=1f;
+        weaponRecoil=Math.min(1.8f,weaponRecoil+WeaponSystem.RECOIL_IMPULSE[id]); muzzleFlashSeconds=1f;
         if(id>=5){ ProjectileSystem.launch(this,id); return; }
 
         // Hitscan with deterministic weapon-specific dispersion and world occlusion.
@@ -708,6 +738,7 @@ final class Game {
         float horizontalScale=(float)Math.cos(shotPitch);
         float verticalScale=(float)Math.sin(shotPitch);
         float spread=(weaponAimHeld?0.006f:0.022f)+weaponRecoil*(weaponAimHeld?0.0045f:0.009f);
+        spread*=WeaponSystem.SPREAD_MULTIPLIER[id];
         if(id==3)spread*=2.8f;       // shotgun pellet cone
         if(id==4)spread*=0.22f;      // precision rifle
         long seed=now^(id*0x9E3779B97F4A7C15L);
