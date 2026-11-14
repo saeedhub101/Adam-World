@@ -32,6 +32,7 @@ import android.widget.Toast;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
 import android.widget.SeekBar;
+import android.widget.ScrollView;
 import android.widget.CheckBox;
 
 import org.json.JSONArray;
@@ -332,10 +333,26 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if (pressed) runOnGl(() -> renderer.toggleCar());
             return true;
         }
-        // A/B/X are digital camera directions; the right stick retains all four directions.
+        // GTA-style face-button actions: A jump, B kick, X punch, Y enter/exit.
+        // Camera movement is exclusively on the right analogue stick / look surface.
         if (code == KeyEvent.KEYCODE_BUTTON_A || code == KeyEvent.KEYCODE_BUTTON_B
                 || code == KeyEvent.KEYCODE_BUTTON_X) {
-            if (glView != null) glView.setDigitalLookDirection(code, down);
+            if (pressed) runOnGl(() -> {
+                if (game.driving || game.dead) return;
+                if (code == KeyEvent.KEYCODE_BUTTON_A) game.jumpRequested = true;
+                else if (code == KeyEvent.KEYCODE_BUTTON_B) game.kickRequested = true;
+                else game.punchRequested = true;
+            });
+            return true;
+        }
+        // Keyboard fallback for testing and external keyboards.
+        if (code == KeyEvent.KEYCODE_SPACE || code == KeyEvent.KEYCODE_Z || code == KeyEvent.KEYCODE_C) {
+            if (pressed) runOnGl(() -> {
+                if (game.driving || game.dead) return;
+                if (code == KeyEvent.KEYCODE_SPACE) game.jumpRequested = true;
+                else if (code == KeyEvent.KEYCODE_Z) game.punchRequested = true;
+                else game.kickRequested = true;
+            });
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_L1) {
@@ -646,18 +663,41 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         b.setTextSize(12);
         b.setMinHeight(dp(46));
         b.setBackgroundColor(0xB91B2634);
+        b.setClickable(true);
+        b.setFocusable(false);
         b.setOnTouchListener(new View.OnTouchListener() {
+            private int activePointerId = MotionEvent.INVALID_POINTER_ID;
+            private boolean held;
+
+            private void finishPress(View view) {
+                if (!held) return;
+                held = false;
+                activePointerId = MotionEvent.INVALID_POINTER_ID;
+                if (release != null) release.run();
+                view.setAlpha(1f);
+            }
+
             @Override public boolean onTouch(View v, MotionEvent e) {
-                if (e.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                final int action = e.getActionMasked();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    activePointerId = e.getPointerId(e.getActionIndex());
+                    held = true;
                     if (press != null) press.run();
                     v.setAlpha(0.72f);
                     return true;
                 }
-                if (e.getActionMasked() == MotionEvent.ACTION_UP
-                        || e.getActionMasked() == MotionEvent.ACTION_CANCEL) {
-                    if (release != null) release.run();
-                    v.setAlpha(1f);
+                if (action == MotionEvent.ACTION_POINTER_UP
+                        && e.getPointerId(e.getActionIndex()) == activePointerId) {
+                    finishPress(v);
                     return true;
+                }
+                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                    finishPress(v);
+                    return true;
+                }
+                if (action == MotionEvent.ACTION_MOVE && held
+                        && e.findPointerIndex(activePointerId) < 0) {
+                    finishPress(v);
                 }
                 return true;
             }
@@ -823,14 +863,22 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         actionPad.setGravity(Gravity.CENTER);
         actionPad.setPadding(dp(4), dp(4), dp(4), dp(4));
         actionPad.setBackgroundColor(0x30000000);
+        // Keep the action HUD inside the visible safe area on small phones.
+        // A scroll container prevents the lower controls from being clipped off-screen.
+        ScrollView actionScroll = new ScrollView(this);
+        actionScroll.setFillViewport(false);
+        actionScroll.setVerticalScrollBarEnabled(false);
+        actionScroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        actionScroll.addView(actionPad, new ScrollView.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         FrameLayout.LayoutParams actionParams = new FrameLayout.LayoutParams(
-                dp(174), ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.END);
-        actionParams.setMargins(0, 0, dp(10), dp(22));
+                dp(194), dp(360), Gravity.BOTTOM | Gravity.END);
+        actionParams.setMargins(0, 0, dp(8), dp(16));
         touchActionPad = actionPad;
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) {
-            root.addView(actionPad, actionParams);
+            root.addView(actionScroll, actionParams);
         } else {
-            actionPad.setVisibility(View.GONE);
+            actionScroll.setVisibility(View.GONE);
         }
 
         LinearLayout combatControls = new LinearLayout(this);
