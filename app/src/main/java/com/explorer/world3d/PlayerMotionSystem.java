@@ -210,6 +210,7 @@ final class PlayerMotionSystem {
                         a.vehicleType, world, playerGround, g.jumpHeight));
             }
         }
+        support=Math.max(support,g.buildSupportHeight(x,z,playerGround));
         return support;
     }
 
