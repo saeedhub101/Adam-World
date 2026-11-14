@@ -220,47 +220,21 @@ final class TileBuilder {
                     continue; // A balcony is a suspended slab/railing, never a ground-level building/collision.
                 }
                 addBuilding(td, tags, id, bld, px, pz, tabarbour, manila, mappedShopNodes);
-                int poi = poiCategory(tags);
-                String buildingLabel = poiName(tags);
+                // Facade identification is deliberately limited to a real building name
+                // and/or a real house number. Street addresses, street names, POI types,
+                // floor/height metadata, refs and OSM identifiers never become facade text.
+                String buildingName = tg(tags, "name:ar");
+                if (buildingName.isEmpty()) buildingName = tg(tags, "name");
+                if (buildingName.isEmpty()) buildingName = tg(tags, "name:en");
+                if (buildingName.isEmpty()) buildingName = tg(tags, "brand");
                 String houseNumber = tg(tags, "addr:housenumber");
                 if (houseNumber.isEmpty()) houseNumber = mappedHouseNumber(mappedAddressNodes, px, pz);
-                String streetName = tg(tags, "addr:street:ar");
-                if (streetName.isEmpty()) streetName = tg(tags, "addr:street");
-                if (streetName.isEmpty()) streetName = tg(tags, "addr:street:en");
-                if (!houseNumber.isEmpty()) {
-                    if (buildingLabel.equals(houseNumber)) buildingLabel = "رقم " + houseNumber;
-                    else buildingLabel = buildingLabel.isEmpty() ? "رقم " + houseNumber : buildingLabel + " · رقم " + houseNumber;
-                }
-                // Do not turn internal OSM IDs into fictional storefront signs.
-                // Only mapped names, brands, business names or real house numbers
-                // are eligible for a facade label.
-                if (houseNumber.isEmpty() && buildingLabel.isEmpty()) {
-                    String explicitRef = tg(tags, "ref");
-                    if (!explicitRef.isEmpty()) buildingLabel = explicitRef;
-                }
-                if (!streetName.isEmpty() && !buildingLabel.contains(streetName))
-                    buildingLabel += " · " + streetName;
-                if (poi == 1) buildingLabel = "مستشفى · " + buildingLabel;
-                else if (poi == 8) buildingLabel = "مدرسة · " + buildingLabel;
-                else if (poi == 9) buildingLabel = "صيدلية · " + buildingLabel;
-                float mappedFloors = measure(tg(tags, "building:levels"));
-                boolean estimatedFloors = tg(tags, "adam:floors_quality").equals("estimated_range");
-                String floorLabel = mappedFloors > 0f
-                        ? (estimatedFloors ? "≈" : "") + Math.round(mappedFloors) + " طوابق"
-                        : (bHeight(tags, id, bld, tabarbour) > 0f
-                            ? "≈" + Math.max(1, Math.round(bHeight(tags, id, bld, tabarbour) / 3.2f)) + " طوابق"
-                            : "الطوابق غير موثقة");
-                float shownHeight = bHeight(tags, id, bld, tabarbour);
-                float mappedHeight = metricMeasure(tg(tags, "height"));
-                if (!(mappedHeight > 0f)) mappedHeight = metricMeasure(tg(tags, "building:height"));
-                boolean estimatedHeight = !(mappedHeight > 0f)
-                        || tg(tags, "adam:height_source").contains("OpenBuildingMap/GHSL");
-                String heightLabel = shownHeight > 0f
-                        ? (estimatedHeight ? "≈" : "") + (Math.round(shownHeight * 10f) / 10f) + " م"
-                        : "الارتفاع غير موثق";
-                buildingLabel += " · " + floorLabel + " · " + heightLabel;
-                if (!buildingLabel.trim().isEmpty()) {
-                    addFacadeLabel(td, px, pz, buildingLabel, bMinHeight(tags, bHeight(tags, id, bld, tabarbour)), poi);
+                String buildingLabel = houseNumber.isEmpty() ? buildingName.trim()
+                        : buildingName.trim().isEmpty() ? houseNumber.trim()
+                        : houseNumber.trim() + "  " + buildingName.trim();
+                if (!buildingLabel.isEmpty()) {
+                    addFacadeLabel(td, px, pz, buildingLabel,
+                            bMinHeight(tags, bHeight(tags, id, bld, tabarbour)), 0);
                 }
             } else if (amenity.equals("parking") || tg(tags, "parking").matches("surface|multi-storey")) {
                 float[][] lot = clean(xs, zs);
