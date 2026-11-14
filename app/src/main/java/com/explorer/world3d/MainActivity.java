@@ -674,13 +674,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             String label=String.valueOf(button.getContentDescription());
             float x=.88f,y=.72f; int size=46; boolean visible=true;
             if(label.startsWith("خانة ")){ int slot=0; try{slot=Integer.parseInt(label.substring(5))-1;}catch(Exception ignored){} x=.31f+slot*.095f; y=.925f; size=34; }
-            else if(label.contains("إطلاق")){x=.91f;y=.735f;size=68;}
+            else if(label.contains("إطلاق")){x=.93f;y=.76f;size=68;}
             else if(label.contains("تصويب")){x=.775f;y=.80f;size=48;}
             else if(label.contains("قفز")){x=.925f;y=.585f;size=52;}
             else if(label.contains("انحناء")){x=.835f;y=.665f;size=46;}
             else if(label.contains("تلقيم")){x=.895f;y=.475f;size=42;}
-            else if(label.equals("ركض")){x=.225f;y=.34f;size=44;}
-            else if(label.contains("انزلاق سريع")){x=.315f;y=.34f;size=42;}
+            else if(label.equals("ركض")){x=.225f;y=.44f;size=44;}
+            else if(label.contains("انزلاق سريع")){x=.315f;y=.44f;size=42;}
             else if(label.contains("لكم")){x=.755f;y=.585f;size=44;}
             else if(label.contains("التقاط")){x=.755f;y=.475f;size=44;}
             else if(label.contains("علاج")){x=.575f;y=.875f;size=38;}
