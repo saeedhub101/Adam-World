@@ -990,7 +990,7 @@ final class Game {
         float effectiveYaw = camYaw + cameraLookOffset + cinematicYaw;
         // Fortnite-style over-the-shoulder framing while aiming, with the reticle
         // remaining camera-centred instead of a fixed world-space weapon direction.
-        float shoulder = weaponAimHeld && !driving ? 0.48f : 0f;
+        float shoulder = !driving ? (weaponAimHeld ? 0.62f : 0.18f) : 0f;
         float targetX = tx + (float)Math.cos(effectiveYaw) * shoulder;
         float targetZ = tz - (float)Math.sin(effectiveYaw) * shoulder;
         float dx = targetX - (float) Math.sin(effectiveYaw) * dist * cp;
