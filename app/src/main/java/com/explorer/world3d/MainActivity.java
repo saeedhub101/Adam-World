@@ -702,7 +702,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     +"\n"+game.weaponMagazines[i]+" / "+game.reserveAmmo[i]);
         }
         if(ids.isEmpty())return;
-        new AlertDialog.Builder(this).setTitle("الحقيبة · الأسلحة والذخيرة · علاج "+game.medkits+" · جرعات الدرع "+game.shieldPotions+" · مواد "+game.woodMaterials)
+        new AlertDialog.Builder(this).setTitle("الحقيبة · الأسلحة والذخيرة")
+                .setMessage("علاجات: "+game.medkits+"   |   جرعات الدرع: "+game.shieldPotions+"   |   مواد البناء: "+game.woodMaterials)
                 .setItems(labels.toArray(new String[0]),(d,which)->{
                     int id=ids.get(which);
                     String[] slots={"الخانة 1","الخانة 2","الخانة 3","الخانة 4","الخانة 5"};
@@ -1081,7 +1082,16 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         Button hudSideButton=btn("مكان الأزرار: "+(touchHudLeft?"يسار":"يمين"));
         hudSideButton.setTextSize(11);hudSideButton.setMinHeight(dp(44));
         Button hudEditButton=btn("تخصيص HUD");hudEditButton.setTextSize(11);hudEditButton.setMinHeight(dp(44));
-        hudEditButton.setOnClickListener(v->{hudEditMode=!hudEditMode;hudEditButton.setText(hudEditMode?"إنهاء التخصيص":"تخصيص HUD");Toast.makeText(this,hudEditMode?"اسحب أي زر لتغيير مكانه أو اضغطه لتغيير الحجم والشفافية":"تم حفظ تخصيص الأزرار",Toast.LENGTH_SHORT).show();});
+        hudEditButton.setOnClickListener(v->{hudEditMode=true;hudEditButton.setText("إنهاء التخصيص");Toast.makeText(this,"اسحب الأزرار والعناصر لتغيير أماكنها، واضغط العنصر لتغيير الحجم والشفافية",Toast.LENGTH_SHORT).show();});
+        hudEditButton.setOnTouchListener((v,e)->{
+            if(!hudEditMode)return false;
+            if(e.getActionMasked()==MotionEvent.ACTION_DOWN)return true;
+            if(e.getActionMasked()==MotionEvent.ACTION_UP){
+                hudEditMode=false;hudEditButton.setText("تخصيص HUD");
+                Toast.makeText(this,"تم حفظ تخصيص HUD",Toast.LENGTH_SHORT).show();return true;
+            }
+            return true;
+        });
         hudSideButton.setOnClickListener(v->{touchHudLeft=!touchHudLeft;getSharedPreferences("adam_world_controls",MODE_PRIVATE).edit().putBoolean("hud_left",touchHudLeft).apply();touchActionScrollParams.gravity=Gravity.BOTTOM|(touchHudLeft?Gravity.START:Gravity.END);touchActionScrollParams.setMargins(touchHudLeft?dp(8):0,0,touchHudLeft?0:dp(8),dp(16));touchActionScroll.setLayoutParams(touchActionScrollParams);hudSideButton.setText("مكان الأزرار: "+(touchHudLeft?"يسار":"يمين"));});
         hudRow.addView(fireModeButton,new LinearLayout.LayoutParams(0,dp(44),1f));hudRow.addView(hudSideButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(hudRow);
         LinearLayout hudEditRow=new LinearLayout(this);hudEditRow.setGravity(Gravity.CENTER);
