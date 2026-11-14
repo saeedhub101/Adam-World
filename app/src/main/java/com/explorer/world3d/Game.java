@@ -91,6 +91,8 @@ final class Game {
     // Horizontal offset of the movable on-screen aiming reticle, in radians.
     volatile float aimYawOffset, aimPitchOffset;
     int equippedWeapon=0, cash=100000, magazineAmmo=12;
+    volatile boolean useMedkitRequested,useShieldPotionRequested;
+    int medkits=0,shieldPotions=0;
     final boolean[] ownedWeapons={true,false,false,false,false,false,false};
     final int[] reserveAmmo={48,0,0,0,0,0,0};
     final int[] weaponMagazines={12,0,0,0,0,0,0};
@@ -142,7 +144,7 @@ final class Game {
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false; buildMode=buildEditMode=buildRequested=editRequested=cycleBuildTypeRequested=removeBuildRequested=harvestRequested=false; selectedBuildPieceIndex=-1; selectedBuildType=0; woodMaterials=250;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
-        weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;aimYawOffset=aimPitchOffset=0f;activeQuickbarSlot=0;quickbarWeapons[0]=0;for(int i=1;i<quickbarWeapons.length;i++)quickbarWeapons[i]=-1;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
+        weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;useMedkitRequested=useShieldPotionRequested=false;medkits=0;shieldPotions=0;aimYawOffset=aimPitchOffset=0f;activeQuickbarSlot=0;quickbarWeapons[0]=0;for(int i=1;i<quickbarWeapons.length;i++)quickbarWeapons[i]=-1;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
@@ -187,6 +189,8 @@ final class Game {
                     equipWeapon(weapon);
                 }else reserveAmmo[weapon]=Math.min(999,reserveAmmo[weapon]+WeaponSystem.AMMO_PACK[weapon]*2);
                 shield=Math.min(100,shield+15);
+                medkits=Math.min(5,medkits+1);
+                shieldPotions=Math.min(5,shieldPotions+1);
                 item.life=0.55f;
                 continue;
             }
@@ -560,6 +564,8 @@ final class Game {
         if(reloadRequested){reloadRequested=false;reloadWeapon();}
         processBuildActions(w);
         processHarvest(w);
+        if(useMedkitRequested){useMedkitRequested=false;if(medkits>0&&health<100){medkits--;health=Math.min(100,health+50);}}
+        if(useShieldPotionRequested){useShieldPotionRequested=false;if(shieldPotions>0&&shield<100){shieldPotions--;shield=Math.min(100,shield+25);}}
         if(weaponFireRequested){weaponFireRequested=false;if(!driving&&weaponReloadSeconds<=0f)fireWeapon(now,w);}
         if(weaponFireHeld&&!driving&&weaponReloadSeconds<=0f)fireWeapon(now,w);
         dodgeSeconds = Math.max(0f, dodgeSeconds - dt);
