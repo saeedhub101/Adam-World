@@ -1207,11 +1207,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         // Responsive Battle Royale HUD: controls use normalized display coordinates.
         FrameLayout battleHud = new FrameLayout(this);
         battleHudOverlay = battleHud;
-        battleHudButtons = actionButtons;
         battleHud.setClipChildren(false);
         battleHud.setClipToPadding(false);
         battleHud.setBackgroundColor(Color.TRANSPARENT);
         java.util.ArrayList<Button> actionButtons = new java.util.ArrayList<>();
+        battleHudButtons = actionButtons;
         for (int ri=0; ri<combatControls.getChildCount(); ri++) {
             View sourceRow=combatControls.getChildAt(ri);
             if (sourceRow instanceof ViewGroup) {
