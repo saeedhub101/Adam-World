@@ -19,12 +19,16 @@ final class Game {
     }
 
     static final class LootPickup {
-        static final int AMMO=0, SHIELD=1, CHEST=2, MATERIAL=3;
+        static final int AMMO=0, SHIELD=1, CHEST=2, MATERIAL=3, WEAPON=4;
         float x,z,life=90f;
-        int type,amount,rarity;
+        int type,amount,rarity,weaponId=-1,weaponMagazine,weaponReserve;
         boolean opened;
         LootPickup(float x,float z,int type,int amount){this.x=x;this.z=z;this.type=type;this.amount=amount;}
         LootPickup(float x,float z,int type,int amount,int rarity){this(x,z,type,amount);this.rarity=rarity;}
+        LootPickup(float x,float z,int weaponId,int magazine,int reserve){
+            this(x,z,WEAPON,1,WeaponSystem.RARITY[weaponId]);
+            this.weaponId=weaponId;this.weaponMagazine=magazine;this.weaponReserve=reserve;
+        }
     }
 
     static final class Agent {
@@ -91,7 +95,7 @@ final class Game {
     // Horizontal offset of the movable on-screen aiming reticle, in radians.
     volatile float aimYawOffset, aimPitchOffset;
     int equippedWeapon=0, cash=100000, magazineAmmo=12;
-    volatile boolean useMedkitRequested,useShieldPotionRequested;
+    volatile boolean useMedkitRequested,useShieldPotionRequested,lootInteractionRequested;
     int medkits=0,shieldPotions=0;
     final boolean[] ownedWeapons={true,false,false,false,false,false,false};
     final int[] reserveAmmo={48,0,0,0,0,0,0};
@@ -172,11 +176,40 @@ final class Game {
         loot.add(new LootPickup(a.x+0.55f,a.z+0.35f,LootPickup.MATERIAL,20));
     }
 
+    boolean dropWeapon(int weaponId){
+        if(weaponId<=0||weaponId>=ownedWeapons.length||!ownedWeapons[weaponId])return false;
+        int mag=weaponId==equippedWeapon?magazineAmmo:weaponMagazines[weaponId];
+        loot.add(new LootPickup(px+0.45f*(float)Math.sin(pyaw),pz-0.45f*(float)Math.cos(pyaw),weaponId,mag,reserveAmmo[weaponId]));
+        ownedWeapons[weaponId]=false;weaponMagazines[weaponId]=0;reserveAmmo[weaponId]=0;unassignQuickbarWeapon(weaponId);
+        if(equippedWeapon==weaponId){equippedWeapon=0;magazineAmmo=weaponMagazines[0];}
+        return true;
+    }
+
     private void updateLoot(float dt) {
+        boolean interactWeapon=lootInteractionRequested;
+        lootInteractionRequested=false;
         for(int i=loot.size()-1;i>=0;i--){
             LootPickup item=loot.get(i); item.life-=dt;
             if(item.life<=0f){loot.remove(i);continue;}
             if(driving||Math.hypot(item.x-px,item.z-pz)>=1.55f)continue;
+            if(item.type==LootPickup.WEAPON){
+                if(!interactWeapon)continue;
+                int incoming=item.weaponId;
+                if(incoming<0||incoming>=ownedWeapons.length){loot.remove(i);continue;}
+                int outgoing=equippedWeapon;
+                if(outgoing>0&&outgoing!=incoming){
+                    int outMag=magazineAmmo,outReserve=reserveAmmo[outgoing];
+                    loot.set(i,new LootPickup(px+0.35f,pz+0.35f,outgoing,outMag,outReserve));
+                }else loot.remove(i);
+                if(!ownedWeapons[incoming])assignFirstQuickbarSlot(incoming);
+                ownedWeapons[incoming]=true;
+                weaponMagazines[incoming]=item.weaponMagazine;
+                reserveAmmo[incoming]=item.weaponReserve;
+                equipWeapon(incoming);
+                activeQuickbarSlot=0;
+                for(int slot=0;slot<quickbarWeapons.length;slot++)if(quickbarWeapons[slot]==incoming){activeQuickbarSlot=slot;break;}
+                continue;
+            }
             if(item.type==LootPickup.CHEST){
                 if(item.opened){loot.remove(i);continue;}
                 item.opened=true;
