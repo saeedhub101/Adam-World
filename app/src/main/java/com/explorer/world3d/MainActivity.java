@@ -72,6 +72,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private AlertDialog mapDialog;
     private FullMapView fullMapView;
     private long lastHudRefresh;
+    private final Button[] quickbarButtons=new Button[5];
     private LinearLayout touchActionPad, touchCombatRow, touchFlightRow, touchGroundVehicleRow;
     private View touchActionScroll;
     private FrameLayout.LayoutParams touchActionScrollParams;
@@ -1042,9 +1043,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             Button quick=touchAction("خانة "+(slot+1),()->runOnGl(()->{
                 if(renderer.game.selectQuickbarSlot(quickSlot))runOnUiThread(this::saveWeaponState);
             }),null);
+            quickbarButtons[slot]=quick;
             quickbarRow.addView(quick,new LinearLayout.LayoutParams(0,dp(40),1f));
         }
         combatControls.addView(quickbarRow);
+        LinearLayout consumableRow=new LinearLayout(this);consumableRow.setGravity(Gravity.CENTER);
+        consumableRow.addView(touchAction("علاج +50",()->runOnGl(()->renderer.game.useMedkitRequested=true),null),new LinearLayout.LayoutParams(0,dp(40),1f));
+        consumableRow.addView(touchAction("درع +25",()->runOnGl(()->renderer.game.useShieldPotionRequested=true),null),new LinearLayout.LayoutParams(0,dp(40),1f));
+        combatControls.addView(consumableRow);
         LinearLayout weaponRow2=new LinearLayout(this); weaponRow2.setGravity(Gravity.CENTER);
         weaponRow2.addView(touchAction("الحقيبة",()->showInventory(),null),new LinearLayout.LayoutParams(0,dp(44),0.9f));
         weaponRow2.addView(touchAction("عجلة السلاح",()->{weaponWheelOpen=true;weaponWheelView.showWheel();},null),new LinearLayout.LayoutParams(0,dp(44),1f));
@@ -1486,6 +1492,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     styled.setSpan(new android.text.style.ForegroundColorSpan(0xfff4f7fb),split+1,styled.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     styled.setSpan(new android.text.style.RelativeSizeSpan(1.22f),split+1,styled.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     weaponHud.setText(styled);
+                }
+                for(int slot=0;slot<quickbarButtons.length;slot++){
+                    int weapon=game.quickbarWeapons[slot];
+                    String label=(slot==game.activeQuickbarSlot?"▶ ":"")+(weapon>=0?WeaponSystem.NAME[weapon]:"فارغة")+"\n"+(slot+1);
+                    if(quickbarButtons[slot]!=null&&!label.equals(quickbarButtons[slot].getText().toString()))quickbarButtons[slot].setText(label);
                 }
                 if(aimReticle!=null){aimReticle.setAiming(game.weaponAimHeld);aimReticle.invalidate();}
                 healthHud.setTextColor(hp>60?0xff65e58b:hp>25?0xffffc857:0xffff5555);
