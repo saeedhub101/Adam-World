@@ -175,7 +175,8 @@ final class PlayerMotionSystem {
         boolean worldBlocked = world instanceof CityRenderer
                 ? ((CityRenderer)world).blockedAtHeight(x, z, BODY_RADIUS, stepClearance)
                 : world.blocked(x, z, BODY_RADIUS);
-        return worldBlocked || vehicleSideBlocked(g, world, x, z, g.jumpHeight);
+        return worldBlocked || vehicleSideBlocked(g, world, x, z, g.jumpHeight)
+                || g.buildBlocked(x,z,BODY_RADIUS,g.jumpHeight);
     }
 
     /*
