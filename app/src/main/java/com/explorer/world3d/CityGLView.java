@@ -92,7 +92,7 @@ public class CityGLView extends GLSurfaceView {
         applyControllerState();
     }
 
-    /** A/B/X provide digital camera directions; Y is reserved for vehicle interaction. */
+    /** Legacy digital-look adapter retained for compatibility; gameplay face buttons are handled by MainActivity. */
     void setDigitalLookDirection(int keyCode, boolean pressed) {
         if (keyCode == KeyEvent.KEYCODE_BUTTON_A) digitalLookDown = pressed;
         else if (keyCode == KeyEvent.KEYCODE_BUTTON_X) digitalLookLeft = pressed;
@@ -145,7 +145,7 @@ public class CityGLView extends GLSurfaceView {
         }
     }
 
-    /** One input path: left stick + D-pad move; right stick + Y/X/A/B look. */
+    /** One input path: left stick + D-pad move; right stick controls camera look. Face buttons are handled by MainActivity as gameplay actions. */
     @Override public boolean onGenericMotionEvent(MotionEvent e) {
         int source = e.getSource();
         boolean joystick = (source & InputDevice.SOURCE_CLASS_JOYSTICK)
