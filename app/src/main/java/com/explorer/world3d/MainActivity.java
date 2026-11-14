@@ -955,9 +955,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         weaponRow2.addView(touchAction("عجلة السلاح",()->{weaponWheelOpen=true;weaponWheelView.showWheel();},null),new LinearLayout.LayoutParams(0,dp(44),1f));
         weaponRow2.addView(touchAction("متجر الأسلحة",()->showWeaponShop(),null),new LinearLayout.LayoutParams(0,dp(44),1.35f)); combatControls.addView(weaponRow2);
         LinearLayout hudRow=new LinearLayout(this);hudRow.setGravity(Gravity.CENTER);
-        Button fireModeButton=touchAction("إطلاق: "+(tapFireMode?"نقرة":"مستمر"),()->{
-            tapFireMode=!tapFireMode;getSharedPreferences("adam_world_controls",MODE_PRIVATE).edit().putBoolean("tap_fire",tapFireMode).apply();
-        },null);
+        Button fireModeButton=btn("إطلاق: "+(tapFireMode?"نقرة":"مستمر"));
+        fireModeButton.setTextSize(11);fireModeButton.setMinHeight(dp(44));
         fireModeButton.setOnClickListener(v->{tapFireMode=!tapFireMode;getSharedPreferences("adam_world_controls",MODE_PRIVATE).edit().putBoolean("tap_fire",tapFireMode).apply();fireModeButton.setText("إطلاق: "+(tapFireMode?"نقرة":"مستمر"));});
         Button hudSideButton=btn("مكان الأزرار: "+(touchHudLeft?"يسار":"يمين"));
         hudSideButton.setTextSize(11);hudSideButton.setMinHeight(dp(44));
