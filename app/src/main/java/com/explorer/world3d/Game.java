@@ -82,6 +82,7 @@ final class Game {
     float vehicleY;
     volatile boolean sprint, jogging, stealthMode, crouching;
     float slideSeconds, slideX, slideZ;
+    float mantleSeconds, mantleCooldown;
     volatile long lastSprintTapMs;
     volatile boolean cinematicCamera;
     volatile int cameraMode = 1;
@@ -101,7 +102,7 @@ final class Game {
     }
 
     void reset() {
-        sx = sy = vehicleSteeringInput = vehicleForwardInput = 0f; vehicleY = 0f; trafficHornEvents = 0L; sprint = false; jogging = false; stealthMode = false; crouching = false; slideSeconds = slideX = slideZ = 0f; lastSprintTapMs = 0L;
+        sx = sy = vehicleSteeringInput = vehicleForwardInput = 0f; vehicleY = 0f; trafficHornEvents = 0L; sprint = false; jogging = false; stealthMode = false; crouching = false; slideSeconds = slideX = slideZ = mantleSeconds = mantleCooldown = 0f; lastSprintTapMs = 0L;
         cinematicCamera = false; cameraMode = 1;
         playerMotion.reset();
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
@@ -413,6 +414,8 @@ final class Game {
             stamina = Math.max(0f, stamina - 14f);
         }
         slideSeconds = Math.max(0f, slideSeconds - dt);
+        mantleSeconds = Math.max(0f, mantleSeconds - dt);
+        mantleCooldown = Math.max(0f, mantleCooldown - dt);
         if (stamina <= 0f) guardRequested = false;
         // Character locomotion owns jump buffering, coyote time and vertical integration.
         // Consume the input here only through PlayerMotionSystem so touch/gamepad share one path.
