@@ -2292,21 +2292,11 @@ final class TileBuilder {
         float width=Math.min(3.6f,Math.max(1.8f,Math.min(longest-0.25f,3.6f)));
         float half=width*0.5f, height=1.15f;
         float lx=x-dx*half, lz=z-dz*half, rx=x+dx*half, rz=z+dz*half;
-        float cr=0.34f,cg=0.28f,cb=0.22f;
-        if(category==1){cr=0.12f;cg=0.38f;cb=0.72f;}
-        else if(category==2){cr=0.78f;cg=0.25f;cb=0.10f;}
-        else if(category==3){cr=0.43f;cg=0.25f;cb=0.14f;}
-        else if(category==4){cr=0.42f;cg=0.20f;cb=0.62f;}
-        else if(category==5){cr=0.12f;cg=0.48f;cb=0.28f;}
-        else if(category==8){cr=0.12f;cg=0.32f;cb=0.72f;}
-        else if(category==9){cr=0.10f;cg=0.58f;cb=0.28f;}
-        GeoBuf sign=td.bufs[B_SIGN];
-        sign.v(lx,y,lz,0,1,cr,cg,cb); sign.v(rx,y,rz,1,1,cr,cg,cb);
-        sign.v(rx,y+height,rz,1,0,cr,cg,cb); sign.fixTri();
-        sign.v(lx,y,lz,0,1,cr,cg,cb); sign.v(rx,y+height,rz,1,0,cr,cg,cb);
-        sign.v(lx,y+height,lz,0,0,cr,cg,cb); sign.fixTri();
+        // Render the identifier directly on the stone facade; do not add a billboard/sign plaque.
         if(name!=null&&!name.trim().isEmpty()){
-            Decal d=new Decal(); d.text=name.trim(); d.x=x; d.z=z; d.dx=dx; d.dz=dz; d.y=y+0.08f; d.vertical=true;
+            Decal d=new Decal();
+            d.text=name.trim(); d.x=x; d.z=z; d.dx=dx; d.dz=dz;
+            d.y=y+0.08f; d.vertical=true;
             td.decals.add(d);
         }
     }
