@@ -969,6 +969,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 }
             }
         });
+        makeHudElementEditable(js,"hud_movement_joystick");
         FrameLayout.LayoutParams jp = new FrameLayout.LayoutParams(dp(150), dp(150), Gravity.BOTTOM | Gravity.START);
         jp.setMargins(dp(20), 0, 0, dp(30));
         root.addView(js, jp);
@@ -995,6 +996,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         touchActionScrollParams = actionParams;
         touchActionPad = actionPad;
         touchActionScroll = actionScroll;
+        makeHudElementEditable(actionScroll,"hud_action_controls_panel");
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) {
             root.addView(actionScroll, actionParams);
         } else {
