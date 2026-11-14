@@ -69,7 +69,7 @@ final class Game {
     float vehicleWheelBodyLift, vehicleWheelBodyRoll, vehicleWheelBodyPitch;
     int attackType;
     long lastPlayerAttackMs, lastComboMs;
-    volatile boolean weaponFireHeld, weaponAimHeld, reloadRequested;
+    volatile boolean weaponFireHeld, weaponFireRequested, weaponAimHeld, reloadRequested;
     // Horizontal offset of the movable on-screen aiming reticle, in radians.
     volatile float aimYawOffset, aimPitchOffset;
     int equippedWeapon=0, cash=100000, magazineAmmo=12;
@@ -118,7 +118,7 @@ final class Game {
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
-        weaponFireHeld=weaponAimHeld=reloadRequested=false;aimYawOffset=aimPitchOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
+        weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;aimYawOffset=aimPitchOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
@@ -412,6 +412,7 @@ final class Game {
         muzzleFlashSeconds=Math.max(0f,muzzleFlashSeconds-dt*8.5f);
         if(weaponAimHeld&&!driving)pyaw+=angDiff(pyaw,camYaw)*Math.min(1f,dt*10f);
         if(reloadRequested){reloadRequested=false;reloadWeapon();}
+        if(weaponFireRequested){weaponFireRequested=false;if(!driving&&weaponReloadSeconds<=0f)fireWeapon(now,w);}
         if(weaponFireHeld&&!driving&&weaponReloadSeconds<=0f)fireWeapon(now,w);
         dodgeSeconds = Math.max(0f, dodgeSeconds - dt);
         hurtFlash=Math.max(0f,hurtFlash-dt);
@@ -659,11 +660,11 @@ final class Game {
 
         // Hitscan with deterministic weapon-specific dispersion and world occlusion.
         // A target behind a building/wall can no longer be damaged through geometry.
-        float baseYaw=weaponAimHeld?camYaw:pyaw;
-        float shotPitch=weaponAimHeld?Game.clamp(0.38f-camPitch,-0.78f,0.78f):0f;
+        float baseYaw=weaponAimHeld?camYaw+aimYawOffset:pyaw;
+        float shotPitch=weaponAimHeld?Game.clamp(0.38f-camPitch+aimPitchOffset+weaponRecoil*0.018f,-0.78f,0.78f):0f;
         float horizontalScale=(float)Math.cos(shotPitch);
         float verticalScale=(float)Math.sin(shotPitch);
-        float spread=weaponAimHeld?0.006f:0.022f;
+        float spread=(weaponAimHeld?0.006f:0.022f)+weaponRecoil*(weaponAimHeld?0.0045f:0.009f);
         if(id==3)spread*=2.8f;       // shotgun pellet cone
         if(id==4)spread*=0.22f;      // precision rifle
         long seed=now^(id*0x9E3779B97F4A7C15L);
