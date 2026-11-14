@@ -12,6 +12,12 @@ final class Game {
         BuildPiece(float x,float z,float yaw,int type,int material){this.x=x;this.z=z;this.yaw=yaw;this.type=type;this.material=material;}
     }
 
+    static final class Harvestable {
+        final long id; final float x,z; final int type;
+        int health=100; float hitFlash;
+        Harvestable(long id,float x,float z,int type){this.id=id;this.x=x;this.z=z;this.type=type;}
+    }
+
     static final class LootPickup {
         static final int AMMO=0, SHIELD=1, CHEST=2, MATERIAL=3;
         float x,z,life=90f;
@@ -49,7 +55,7 @@ final class Game {
     volatile int health = 100;
     volatile int shield = 0;
     volatile boolean dead;
-    volatile boolean buildMode, buildEditMode, buildRequested, editRequested, cycleBuildTypeRequested, removeBuildRequested;
+    volatile boolean buildMode, buildEditMode, buildRequested, editRequested, cycleBuildTypeRequested, removeBuildRequested, harvestRequested;
     int selectedBuildPieceIndex=-1;
     int selectedBuildType, woodMaterials=250;
     final ArrayList<BuildPiece> buildPieces = new ArrayList<>();
@@ -113,6 +119,7 @@ final class Game {
     final ArrayList<ProjectileSystem.Rocket> rockets = new ArrayList<>();
     final ArrayList<ProjectileSystem.Blast> blasts = new ArrayList<>();
     final ArrayList<LootPickup> loot = new ArrayList<>();
+    final ArrayList<Harvestable> harvestables = new ArrayList<>();
     private final float[] tmp = new float[4];
     private final PlayerMotionSystem playerMotion = new PlayerMotionSystem();
 
@@ -131,7 +138,7 @@ final class Game {
         playerMotion.reset();
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false; buildMode=buildEditMode=buildRequested=editRequested=cycleBuildTypeRequested=removeBuildRequested=false; selectedBuildPieceIndex=-1; selectedBuildType=0; woodMaterials=250;
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false; buildMode=buildEditMode=buildRequested=editRequested=cycleBuildTypeRequested=removeBuildRequested=harvestRequested=false; selectedBuildPieceIndex=-1; selectedBuildType=0; woodMaterials=250;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
         weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;aimYawOffset=aimPitchOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
@@ -141,7 +148,7 @@ final class Game {
         vehicleFrontStepContact = vehicleRearStepContact = false;
         vehicleWheelFL = vehicleWheelFR = vehicleWheelRL = vehicleWheelRR = 0f;
         vehicleWheelBodyLift = vehicleWheelBodyRoll = vehicleWheelBodyPitch = 0f;
-        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; wantedLevel=0; lastCrimeMs=nextWantedDecayMs=0L; explosionEventCount=0L; agents.clear(); rockets.clear(); blasts.clear(); loot.clear(); buildPieces.clear();
+        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; wantedLevel=0; lastCrimeMs=nextWantedDecayMs=0L; explosionEventCount=0L; agents.clear(); rockets.clear(); blasts.clear(); loot.clear(); harvestables.clear(); buildPieces.clear();
     }
 
     void applyPlayerDamage(int damage, long now) {
@@ -186,6 +193,24 @@ final class Game {
             }else if(item.type==LootPickup.MATERIAL)woodMaterials=Math.min(999,woodMaterials+item.amount);
             else reserveAmmo[equippedWeapon]=Math.min(999,reserveAmmo[equippedWeapon]+item.amount);
             loot.remove(i);
+        }
+    }
+
+    private void processHarvest(World world){
+        if(!harvestRequested)return;
+        harvestRequested=false;
+        if(driving||dead)return;
+        Harvestable target=null;float best=2.75f;
+        for(Harvestable node:harvestables){
+            float d=(float)Math.hypot(node.x-px,node.z-pz);
+            if(d<best){best=d;target=node;}
+        }
+        if(target==null)return;
+        target.health=Math.max(0,target.health-36);
+        target.hitFlash=0.22f;
+        if(target.health==0){
+            loot.add(new LootPickup(target.x,target.z,LootPickup.MATERIAL,target.type==0?35:45));
+            harvestables.remove(target);
         }
     }
 
@@ -531,6 +556,7 @@ final class Game {
         if(weaponAimHeld&&!driving)pyaw+=angDiff(pyaw,camYaw)*Math.min(1f,dt*10f);
         if(reloadRequested){reloadRequested=false;reloadWeapon();}
         processBuildActions(w);
+        processHarvest(w);
         if(weaponFireRequested){weaponFireRequested=false;if(!driving&&weaponReloadSeconds<=0f)fireWeapon(now,w);}
         if(weaponFireHeld&&!driving&&weaponReloadSeconds<=0f)fireWeapon(now,w);
         dodgeSeconds = Math.max(0f, dodgeSeconds - dt);
