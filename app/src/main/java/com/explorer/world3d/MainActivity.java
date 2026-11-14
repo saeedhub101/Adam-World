@@ -503,10 +503,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         @Override public boolean onTouchEvent(MotionEvent e){
             float x=e.getX(),y=e.getY();
             if(e.getActionMasked()==MotionEvent.ACTION_DOWN){
-                if(!aiming)return false;tracking=true;lastX=x;lastY=y;return true;
+                if(!aiming)return false;
+                float cx=getWidth()/2f+offsetX,cy=getHeight()/2f+offsetY;
+                if(Math.hypot(x-cx,y-cy)>dp(58))return false;
+                tracking=true;lastX=x;lastY=y;return true;
             }
             if(e.getActionMasked()==MotionEvent.ACTION_MOVE&&tracking){
-                offsetX=Math.max(-getWidth()*.42f,Math.min(getWidth()*.42f,offsetX+x-lastX));
+                offsetX=Math.max(-getWidth()*.46f,Math.min(getWidth()*.46f,offsetX+x-lastX));
                 offsetY=Math.max(-getHeight()*.42f,Math.min(getHeight()*.42f,offsetY+y-lastY));lastX=x;lastY=y;
                 if(renderer!=null){final float yaw=offsetX/Math.max(1f,getWidth())*.95f;final float pitch=-offsetY/Math.max(1f,getHeight())*.72f;runOnGl(()->{renderer.game.aimYawOffset=yaw;renderer.game.aimPitchOffset=pitch;});}
                 invalidate();return true;
@@ -1107,7 +1110,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         CameraLookSurface cameraLookSurface=new CameraLookSurface(this);
         root.addView(cameraLookSurface,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
         aimReticle = new AimReticleView(this);
-        FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(dp(76),dp(76),Gravity.CENTER);
+        FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT,Gravity.FILL);
         root.addView(aimReticle,reticleParams);
 
         Button settings = btn("⚙");
