@@ -495,33 +495,16 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         else showPauseMenu();
     }
 
-    /** Fortnite-style movable reticle: drag it while aiming to steer the shot ray. */
+    /** Battle Royale reticle: remains camera-centred; the right look zone moves the aim naturally. */
     private final class AimReticleView extends View {
         private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
-        private boolean aiming,tracking;
-        private float offsetX,offsetY,lastX,lastY;
-        AimReticleView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setClickable(true);setFocusable(false);}
-        void setAiming(boolean value){aiming=value;if(!value){offsetX=offsetY=0f;if(renderer!=null)runOnGl(()->{renderer.game.aimYawOffset=0f;renderer.game.aimPitchOffset=0f;});}invalidate();}
-        @Override public boolean onTouchEvent(MotionEvent e){
-            float x=e.getX(),y=e.getY();
-            if(e.getActionMasked()==MotionEvent.ACTION_DOWN){
-                if(!aiming)return false;
-                float cx=getWidth()/2f+offsetX,cy=getHeight()/2f+offsetY;
-                if(Math.hypot(x-cx,y-cy)>dp(58))return false;
-                tracking=true;lastX=x;lastY=y;return true;
-            }
-            if(e.getActionMasked()==MotionEvent.ACTION_MOVE&&tracking){
-                offsetX=Math.max(-getWidth()*.46f,Math.min(getWidth()*.46f,offsetX+x-lastX));
-                offsetY=Math.max(-getHeight()*.42f,Math.min(getHeight()*.42f,offsetY+y-lastY));lastX=x;lastY=y;
-                if(renderer!=null){final float yaw=offsetX/Math.max(1f,getWidth())*.95f;final float pitch=-offsetY/Math.max(1f,getHeight())*.72f;runOnGl(()->{renderer.game.aimYawOffset=yaw;renderer.game.aimPitchOffset=pitch;});}
-                invalidate();return true;
-            }
-            if(e.getActionMasked()==MotionEvent.ACTION_UP||e.getActionMasked()==MotionEvent.ACTION_CANCEL){tracking=false;return true;}
-            return tracking;
-        }
+        private boolean aiming;
+        AimReticleView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setClickable(false);setFocusable(false);}
+        void setAiming(boolean value){aiming=value;if(renderer!=null)runOnGl(()->{renderer.game.aimYawOffset=0f;renderer.game.aimPitchOffset=0f;});invalidate();}
+        @Override public boolean onTouchEvent(MotionEvent e){return false;}
         @Override protected void onDraw(Canvas c){
             super.onDraw(c);
-            float cx=getWidth()/2f+(aiming?offsetX:0f),cy=getHeight()/2f+(aiming?offsetY:0f);
+            float cx=getWidth()/2f,cy=getHeight()/2f;
             paint.setColor(aiming?0xffffe6a3:0xddefffff);paint.setStrokeWidth(dp(1.6f));paint.setStyle(Paint.Style.STROKE);
             float r=aiming?dp(9):dp(6),gap=aiming?dp(6):dp(4),len=aiming?dp(10):dp(7);
             c.drawCircle(cx,cy,r,paint);c.drawLine(cx-len-gap,cy,cx-gap,cy,paint);c.drawLine(cx+gap,cy,cx+len+gap,cy,paint);
