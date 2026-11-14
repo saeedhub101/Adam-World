@@ -36,8 +36,6 @@ final class PlayerMotionSystem {
         if (dt <= 0f) return;
         if(g.mantleSeconds>0f){
             float t=Game.clamp(1f-g.mantleSeconds/Math.max(0.35f,g.mantleDuration),0f,1f);
-            float next=Math.min(g.mantleDuration,g.mantleSeconds+dt);
-            float nextT=Game.clamp(next/Math.max(0.35f,g.mantleDuration),0f,1f);
             float smooth=t*t*(3f-2f*t);
             g.px=g.mantleStartX+(g.mantleEndX-g.mantleStartX)*smooth;
             g.pz=g.mantleStartZ+(g.mantleEndZ-g.mantleStartZ)*smooth;
