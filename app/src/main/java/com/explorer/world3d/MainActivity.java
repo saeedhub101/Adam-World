@@ -73,6 +73,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private FullMapView fullMapView;
     private long lastHudRefresh;
     private LinearLayout touchActionPad, touchCombatRow, touchFlightRow, touchGroundVehicleRow;
+    private View touchActionScroll;
+    private FrameLayout.LayoutParams touchActionScrollParams;
+    private boolean tapFireMode, touchHudLeft;
     private View touchMoveJoystick;
     private boolean touchSteerLeftHeld, touchSteerRightHeld, touchVehicleGasHeld, touchVehicleBrakeHeld;
     private Button touchVehicleButton, touchVehicleTypeButton, touchSprintButton, touchDodgeButton;
@@ -490,20 +493,33 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         else showPauseMenu();
     }
 
-    /** Fixed GTA-style centre reticle. Camera look is handled by the right-side look surface. */
+    /** Fortnite-style movable reticle: drag it while aiming to steer the shot ray. */
     private final class AimReticleView extends View {
         private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
-        private boolean aiming;
-        AimReticleView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setClickable(false);setFocusable(false);}
-        void setAiming(boolean value){aiming=value;}
+        private boolean aiming,tracking;
+        private float offsetX,offsetY,lastX,lastY;
+        AimReticleView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setClickable(true);setFocusable(false);}
+        void setAiming(boolean value){aiming=value;if(!value){offsetX=offsetY=0f;if(renderer!=null)runOnGl(()->{renderer.game.aimYawOffset=0f;renderer.game.aimPitchOffset=0f;});}invalidate();}
+        @Override public boolean onTouchEvent(MotionEvent e){
+            float x=e.getX(),y=e.getY();
+            if(e.getActionMasked()==MotionEvent.ACTION_DOWN){
+                if(!aiming)return false;tracking=true;lastX=x;lastY=y;return true;
+            }
+            if(e.getActionMasked()==MotionEvent.ACTION_MOVE&&tracking){
+                offsetX=Math.max(-getWidth()*.42f,Math.min(getWidth()*.42f,offsetX+x-lastX));
+                offsetY=Math.max(-getHeight()*.42f,Math.min(getHeight()*.42f,offsetY+y-lastY));lastX=x;lastY=y;
+                if(renderer!=null){final float yaw=offsetX/Math.max(1f,getWidth())*.95f;final float pitch=-offsetY/Math.max(1f,getHeight())*.72f;runOnGl(()->{renderer.game.aimYawOffset=yaw;renderer.game.aimPitchOffset=pitch;});}
+                invalidate();return true;
+            }
+            if(e.getActionMasked()==MotionEvent.ACTION_UP||e.getActionMasked()==MotionEvent.ACTION_CANCEL){tracking=false;return true;}
+            return tracking;
+        }
         @Override protected void onDraw(Canvas c){
             super.onDraw(c);
-            float cx=getWidth()/2f,cy=getHeight()/2f;
-            paint.setColor(aiming?0xffffe6a3:0xddefffff);
-            paint.setStrokeWidth(dp(1.6f));paint.setStyle(Paint.Style.STROKE);
+            float cx=getWidth()/2f+(aiming?offsetX:0f),cy=getHeight()/2f+(aiming?offsetY:0f);
+            paint.setColor(aiming?0xffffe6a3:0xddefffff);paint.setStrokeWidth(dp(1.6f));paint.setStyle(Paint.Style.STROKE);
             float r=aiming?dp(9):dp(6),gap=aiming?dp(6):dp(4),len=aiming?dp(10):dp(7);
-            c.drawCircle(cx,cy,r,paint);
-            c.drawLine(cx-len-gap,cy,cx-gap,cy,paint);c.drawLine(cx+gap,cy,cx+len+gap,cy,paint);
+            c.drawCircle(cx,cy,r,paint);c.drawLine(cx-len-gap,cy,cx-gap,cy,paint);c.drawLine(cx+gap,cy,cx+len+gap,cy,paint);
             c.drawLine(cx,cy-len-gap,cx,cy-gap,paint);c.drawLine(cx,cy+gap,cx,cy+len+gap,paint);
             paint.setStyle(Paint.Style.FILL);c.drawCircle(cx,cy,dp(1.3f),paint);
         }
@@ -883,10 +899,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         actionScroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
         actionScroll.addView(actionPad, new ScrollView.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        tapFireMode = getSharedPreferences("adam_world_controls", MODE_PRIVATE).getBoolean("tap_fire", false);
+        touchHudLeft = getSharedPreferences("adam_world_controls", MODE_PRIVATE).getBoolean("hud_left", false);
         FrameLayout.LayoutParams actionParams = new FrameLayout.LayoutParams(
-                dp(194), dp(360), Gravity.BOTTOM | Gravity.END);
-        actionParams.setMargins(0, 0, dp(8), dp(16));
+                dp(194), dp(360), Gravity.BOTTOM | (touchHudLeft ? Gravity.START : Gravity.END));
+        actionParams.setMargins(touchHudLeft ? dp(8) : 0, 0, touchHudLeft ? 0 : dp(8), dp(16));
+        touchActionScrollParams = actionParams;
         touchActionPad = actionPad;
+        touchActionScroll = actionScroll;
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) {
             root.addView(actionScroll, actionParams);
         } else {
@@ -929,11 +949,20 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         combatControls.addView(runRow);
         LinearLayout weaponRow=new LinearLayout(this); weaponRow.setGravity(Gravity.CENTER);
         Button aimTouch=touchAction("تصويب",()->runOnGl(()->renderer.game.weaponAimHeld=true),()->runOnGl(()->renderer.game.weaponAimHeld=false));
-        Button fireTouch=touchAction("إطلاق",()->runOnGl(()->renderer.game.weaponFireHeld=true),()->runOnGl(()->renderer.game.weaponFireHeld=false));
+        Button fireTouch=touchAction("إطلاق",()->runOnGl(()->{if(tapFireMode)renderer.game.weaponFireRequested=true;else renderer.game.weaponFireHeld=true;}),()->{if(!tapFireMode)runOnGl(()->renderer.game.weaponFireHeld=false);});
         weaponRow.addView(aimTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); weaponRow.addView(fireTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); combatControls.addView(weaponRow);
         LinearLayout weaponRow2=new LinearLayout(this); weaponRow2.setGravity(Gravity.CENTER);
         weaponRow2.addView(touchAction("عجلة السلاح",()->{weaponWheelOpen=true;weaponWheelView.showWheel();},null),new LinearLayout.LayoutParams(0,dp(44),1f));
         weaponRow2.addView(touchAction("متجر الأسلحة",()->showWeaponShop(),null),new LinearLayout.LayoutParams(0,dp(44),1.35f)); combatControls.addView(weaponRow2);
+        LinearLayout hudRow=new LinearLayout(this);hudRow.setGravity(Gravity.CENTER);
+        Button fireModeButton=touchAction("إطلاق: "+(tapFireMode?"نقرة":"مستمر"),()->{
+            tapFireMode=!tapFireMode;getSharedPreferences("adam_world_controls",MODE_PRIVATE).edit().putBoolean("tap_fire",tapFireMode).apply();
+        },null);
+        fireModeButton.setOnClickListener(v->{tapFireMode=!tapFireMode;getSharedPreferences("adam_world_controls",MODE_PRIVATE).edit().putBoolean("tap_fire",tapFireMode).apply();fireModeButton.setText("إطلاق: "+(tapFireMode?"نقرة":"مستمر"));});
+        Button hudSideButton=btn("مكان الأزرار: "+(touchHudLeft?"يسار":"يمين"));
+        hudSideButton.setTextSize(11);hudSideButton.setMinHeight(dp(44));
+        hudSideButton.setOnClickListener(v->{touchHudLeft=!touchHudLeft;getSharedPreferences("adam_world_controls",MODE_PRIVATE).edit().putBoolean("hud_left",touchHudLeft).apply();touchActionScrollParams.gravity=Gravity.BOTTOM|(touchHudLeft?Gravity.START:Gravity.END);touchActionScrollParams.setMargins(touchHudLeft?dp(8):0,0,touchHudLeft?0:dp(8),dp(16));touchActionScroll.setLayoutParams(touchActionScrollParams);hudSideButton.setText("مكان الأزرار: "+(touchHudLeft?"يسار":"يمين"));});
+        hudRow.addView(fireModeButton,new LinearLayout.LayoutParams(0,dp(44),1f));hudRow.addView(hudSideButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(hudRow);
         touchCombatRow = combatControls;
         actionPad.addView(combatControls);
 
@@ -1066,11 +1095,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         miniParams.setMargins(dp(14), dp(18), 0, 0);
         root.addView(miniMap, miniParams);
 
+        CameraLookSurface cameraLookSurface=new CameraLookSurface(this);
+        root.addView(cameraLookSurface,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
         aimReticle = new AimReticleView(this);
         FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(dp(76),dp(76),Gravity.CENTER);
         root.addView(aimReticle,reticleParams);
-        CameraLookSurface cameraLookSurface=new CameraLookSurface(this);
-        root.addView(cameraLookSurface,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
 
         Button settings = btn("⚙");
         settings.setOnClickListener(v -> showGameSettings());
@@ -1168,6 +1197,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             renderer.game.dodgeRequested = false;
             renderer.game.weaponAimHeld = false;
             renderer.game.weaponFireHeld = false;
+            renderer.game.weaponFireRequested = false;
             renderer.game.reloadRequested = false;
             renderer.game.handbrake = false;
             renderer.game.brakeRequested = false;
