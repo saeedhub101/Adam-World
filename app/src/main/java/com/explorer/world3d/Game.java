@@ -25,7 +25,7 @@ final class Game {
         boolean opened;
         LootPickup(float x,float z,int type,int amount){this.x=x;this.z=z;this.type=type;this.amount=amount;}
         LootPickup(float x,float z,int type,int amount,int rarity){this(x,z,type,amount);this.rarity=rarity;}
-        LootPickup(float x,float z,int weaponId,int magazine,int reserve){
+        LootPickup(float x,float z,int weaponId,int magazine,int reserve,boolean weaponDrop){
             this(x,z,WEAPON,1,WeaponSystem.RARITY[weaponId]);
             this.weaponId=weaponId;this.weaponMagazine=magazine;this.weaponReserve=reserve;
         }
@@ -179,7 +179,7 @@ final class Game {
     boolean dropWeapon(int weaponId){
         if(weaponId<=0||weaponId>=ownedWeapons.length||!ownedWeapons[weaponId])return false;
         int mag=weaponId==equippedWeapon?magazineAmmo:weaponMagazines[weaponId];
-        loot.add(new LootPickup(px+0.45f*(float)Math.sin(pyaw),pz-0.45f*(float)Math.cos(pyaw),weaponId,mag,reserveAmmo[weaponId]));
+        loot.add(new LootPickup(px+0.45f*(float)Math.sin(pyaw),pz-0.45f*(float)Math.cos(pyaw),weaponId,mag,reserveAmmo[weaponId],true));
         ownedWeapons[weaponId]=false;weaponMagazines[weaponId]=0;reserveAmmo[weaponId]=0;unassignQuickbarWeapon(weaponId);
         if(equippedWeapon==weaponId){equippedWeapon=0;magazineAmmo=weaponMagazines[0];}
         return true;
@@ -199,7 +199,7 @@ final class Game {
                 int outgoing=equippedWeapon;
                 if(outgoing>0&&outgoing!=incoming){
                     int outMag=magazineAmmo,outReserve=reserveAmmo[outgoing];
-                    loot.set(i,new LootPickup(px+0.35f,pz+0.35f,outgoing,outMag,outReserve));
+                    loot.set(i,new LootPickup(px+0.35f,pz+0.35f,outgoing,outMag,outReserve,true));
                 }else loot.remove(i);
                 if(!ownedWeapons[incoming])assignFirstQuickbarSlot(incoming);
                 ownedWeapons[incoming]=true;
