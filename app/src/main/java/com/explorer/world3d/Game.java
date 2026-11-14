@@ -6,6 +6,12 @@ import java.util.ArrayList;
 final class Game {
     interface World { boolean blocked(float x, float z, float r); float heightAt(float x, float z); }
 
+    static final class BuildPiece {
+        float x,z,yaw;
+        int type,material,health=100;
+        BuildPiece(float x,float z,float yaw,int type,int material){this.x=x;this.z=z;this.yaw=yaw;this.type=type;this.material=material;}
+    }
+
     static final class LootPickup {
         static final int AMMO=0, SHIELD=1;
         float x,z,life=75f;
@@ -41,6 +47,9 @@ final class Game {
     volatile int health = 100;
     volatile int shield = 0;
     volatile boolean dead;
+    volatile boolean buildMode, buildEditMode, buildRequested, editRequested, cycleBuildTypeRequested;
+    int selectedBuildType, woodMaterials=250;
+    final ArrayList<BuildPiece> buildPieces = new ArrayList<>();
     long lastDamageMs, deathStartedMs;
     int wantedLevel;
     long lastCrimeMs, nextWantedDecayMs;
@@ -116,7 +125,7 @@ final class Game {
         playerMotion.reset();
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false;
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false; buildMode=buildEditMode=buildRequested=editRequested=cycleBuildTypeRequested=false; selectedBuildType=0; woodMaterials=250;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
         weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;aimYawOffset=aimPitchOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
@@ -126,7 +135,7 @@ final class Game {
         vehicleFrontStepContact = vehicleRearStepContact = false;
         vehicleWheelFL = vehicleWheelFR = vehicleWheelRL = vehicleWheelRR = 0f;
         vehicleWheelBodyLift = vehicleWheelBodyRoll = vehicleWheelBodyPitch = 0f;
-        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; wantedLevel=0; lastCrimeMs=nextWantedDecayMs=0L; explosionEventCount=0L; agents.clear(); rockets.clear(); blasts.clear(); loot.clear();
+        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; wantedLevel=0; lastCrimeMs=nextWantedDecayMs=0L; explosionEventCount=0L; agents.clear(); rockets.clear(); blasts.clear(); loot.clear(); buildPieces.clear();
     }
 
     void applyPlayerDamage(int damage, long now) {
@@ -152,6 +161,39 @@ final class Game {
                 loot.remove(i);
             }
         }
+    }
+
+    private void processBuildActions(World world) {
+        if(editRequested){editRequested=false;buildEditMode=!buildEditMode;}
+        if(cycleBuildTypeRequested){cycleBuildTypeRequested=false;selectedBuildType=(selectedBuildType+1)%3;}
+        if(!buildRequested)return;
+        buildRequested=false;
+        if(!buildMode||driving||dead)return;
+        if(buildEditMode){
+            BuildPiece nearest=null;float best=4.5f;
+            for(BuildPiece piece:buildPieces){float d=(float)Math.hypot(piece.x-px,piece.z-pz);if(d<best){best=d;nearest=piece;}}
+            if(nearest!=null){nearest.yaw+=(float)Math.PI*.25f;nearest.type=(nearest.type+1)%3;}
+            return;
+        }
+        if(woodMaterials<10||buildPieces.size()>=64)return;
+        float fx=(float)Math.sin(camYaw),fz=(float)Math.cos(camYaw);
+        float x=(float)Math.floor((px+fx*2.85f)*2f+0.5f)*0.5f;
+        float z=(float)Math.floor((pz+fz*2.85f)*2f+0.5f)*0.5f;
+        if(Math.hypot(x-px,z-pz)<2.0f||world.blocked(x,z,0.82f))return;
+        float yaw=(float)(Math.round(camYaw/(Math.PI/4.0))*(Math.PI/4.0));
+        buildPieces.add(new BuildPiece(x,z,yaw,selectedBuildType,0));
+        woodMaterials-=10;
+    }
+
+    boolean buildBlocked(float x,float z,float radius,float feetHeight){
+        for(BuildPiece piece:buildPieces){
+            if(piece.type!=0||feetHeight>2.55f)continue;
+            float dx=x-piece.x,dz=z-piece.z;
+            float forward=dx*(float)Math.sin(piece.yaw)+dz*(float)Math.cos(piece.yaw);
+            float side=dx*(float)Math.cos(piece.yaw)-dz*(float)Math.sin(piece.yaw);
+            if(Math.abs(forward)<=1.48f+radius&&Math.abs(side)<=0.24f+radius)return true;
+        }
+        return false;
     }
 
     void reportCrime(int severity) {
@@ -412,6 +454,7 @@ final class Game {
         muzzleFlashSeconds=Math.max(0f,muzzleFlashSeconds-dt*8.5f);
         if(weaponAimHeld&&!driving)pyaw+=angDiff(pyaw,camYaw)*Math.min(1f,dt*10f);
         if(reloadRequested){reloadRequested=false;reloadWeapon();}
+        processBuildActions(w);
         if(weaponFireRequested){weaponFireRequested=false;if(!driving&&weaponReloadSeconds<=0f)fireWeapon(now,w);}
         if(weaponFireHeld&&!driving&&weaponReloadSeconds<=0f)fireWeapon(now,w);
         dodgeSeconds = Math.max(0f, dodgeSeconds - dt);
