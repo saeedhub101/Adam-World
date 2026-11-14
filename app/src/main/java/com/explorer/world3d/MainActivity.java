@@ -713,7 +713,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 .setMessage(summary)
                 .setItems(labels.toArray(new String[0]),(d,which)->{
                     int id=ids.get(which);
-                    String[] actions={"تجهيز السلاح الآن","تعيين إلى خانة سريعة","إزالة السلاح من الخانات السريعة"};
+                    String[] actions={"تجهيز السلاح الآن","تعيين إلى خانة سريعة","إزالة السلاح من الخانات السريعة","إسقاط السلاح على الأرض"};
                     new AlertDialog.Builder(this).setTitle(WeaponSystem.NAME[id]+" · "+WeaponSystem.RARITY_LABEL[WeaponSystem.RARITY[id]])
                             .setItems(actions,(dialog,action)->{
                                 if(action==0)runOnGl(()->{
@@ -730,10 +730,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                                                 saveWeaponState();
                                                 onToast("تم تعيين السلاح إلى الخانة "+(slot+1));
                                             })).setNegativeButton("إلغاء",null).show();
-                                }else runOnGl(()->{
+                                }else if(action==2)runOnGl(()->{
                                     boolean removed=renderer.game.unassignQuickbarWeapon(id);
                                     saveWeaponState();
                                     onToast(removed?"تمت إزالة السلاح من الخانات":"السلاح غير معيّن في أي خانة");
+                                });else runOnGl(()->{
+                                    boolean dropped=renderer.game.dropWeapon(id);
+                                    saveWeaponState();
+                                    onToast(dropped?"تم إسقاط السلاح على الأرض":"لا يمكن إسقاط هذا السلاح");
                                 });
                             }).setNegativeButton("إلغاء",null).show();
                 }).setPositiveButton("استخدام علاج +50", (d,w)->runOnGl(()->{
@@ -1082,6 +1086,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             quickbarRow.addView(quick,new LinearLayout.LayoutParams(0,dp(40),1f));
         }
         combatControls.addView(quickbarRow);
+        Button lootInteractButton=touchAction("التقاط / تبديل السلاح",()->runOnGl(()->renderer.game.lootInteractionRequested=true),null);
+        combatControls.addView(lootInteractButton,new LinearLayout.LayoutParams(-1,dp(40)));
         LinearLayout consumableRow=new LinearLayout(this);consumableRow.setGravity(Gravity.CENTER);
         consumableRow.addView(touchAction("علاج +50",()->runOnGl(()->renderer.game.useMedkitRequested=true),null),new LinearLayout.LayoutParams(0,dp(40),1f));
         consumableRow.addView(touchAction("درع +25",()->runOnGl(()->renderer.game.useShieldPotionRequested=true),null),new LinearLayout.LayoutParams(0,dp(40),1f));
