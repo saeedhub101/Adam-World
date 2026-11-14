@@ -1637,8 +1637,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     weaponHud.setText(styled);
                 }
                 for(int slot=0;slot<quickbarButtons.length;slot++){
-                    int weapon=game.quickbarWeapons[slot];
-                    String label=(slot==game.activeQuickbarSlot?"▶ ":"")+(weapon>=0?WeaponSystem.NAME[weapon]:"فارغة")+"\n"+(slot+1);
+                    String label=(slot==game.activeQuickbarSlot?"● ":"")+(slot+1);
                     if(quickbarButtons[slot]!=null&&!label.equals(quickbarButtons[slot].getText().toString()))quickbarButtons[slot].setText(label);
                 }
                 if(aimReticle!=null){aimReticle.setAiming(game.weaponAimHeld);aimReticle.invalidate();}
