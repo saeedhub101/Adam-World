@@ -226,7 +226,6 @@ final class TileBuilder {
                 String buildingName = tg(tags, "name:ar");
                 if (buildingName.isEmpty()) buildingName = tg(tags, "name");
                 if (buildingName.isEmpty()) buildingName = tg(tags, "name:en");
-                if (buildingName.isEmpty()) buildingName = tg(tags, "brand");
                 String houseNumber = tg(tags, "addr:housenumber");
                 if (houseNumber.isEmpty()) houseNumber = mappedHouseNumber(mappedAddressNodes, px, pz);
                 String buildingLabel = houseNumber.isEmpty() ? buildingName.trim()
