@@ -1586,7 +1586,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         if(authoredMantle<0)authoredMantle=animator.findClip("vault");
         float crouchBlend=(game.crouching||game.slideSeconds>0f)&&authoredCrouch<0?1f:0f;
         float mantleBlend=game.mantleSeconds>0.001f&&authoredMantle<0?1f:0f;
-        float mantlePhase=Game.clamp(1f-game.mantleSeconds/0.48f,0f,1f);
+        float mantlePhase=Game.clamp(1f-game.mantleSeconds/Math.max(0.35f,game.mantleDuration),0f,1f);
         float walkBlend=Math.min(1f,movement)*((float)Math.sin(game.phase)*0.5f+0.5f);
         animator.setProceduralPose(crouchBlend,mantleBlend,mantlePhase,walkBlend);
         // Combat and recovery take priority over locomotion; clip names are optional
