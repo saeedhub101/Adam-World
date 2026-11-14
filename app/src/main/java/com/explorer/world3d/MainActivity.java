@@ -78,6 +78,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private FrameLayout.LayoutParams touchActionScrollParams;
     private boolean tapFireMode, touchHudLeft, hudEditMode;
     private View touchMoveJoystick;
+    private BattleRoyaleHudView battleRoyaleHud;
     private boolean touchSteerLeftHeld, touchSteerRightHeld, touchVehicleGasHeld, touchVehicleBrakeHeld;
     private Button touchVehicleButton, touchVehicleTypeButton, touchSprintButton, touchDodgeButton;
     private Button flightSchoolButton, returnCityButton, touchGearButton, touchFlightUpButton, touchFlightDownButton, touchBrakeButton;
@@ -1029,7 +1030,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         touchActionScroll = actionScroll;
         makeHudElementEditable(actionScroll,"hud_action_controls_panel");
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) {
-            root.addView(actionScroll, actionParams);
+            actionScroll.setVisibility(View.GONE); // Replaced by the custom multi-touch Battle Royale HUD.
         } else {
             actionScroll.setVisibility(View.GONE);
         }
@@ -1272,6 +1273,29 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         aimReticle = new AimReticleView(this);
         FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT,Gravity.FILL);
         root.addView(aimReticle,reticleParams);
+
+        battleRoyaleHud = new BattleRoyaleHudView(this, new BattleRoyaleHudView.Listener() {
+            @Override public void jump() { runOnGl(() -> { if (!renderer.game.driving && !renderer.game.dead) renderer.game.jumpRequested = true; }); }
+            @Override public void aim(boolean down) { runOnGl(() -> renderer.game.weaponAimHeld = down); }
+            @Override public void fire(boolean down) {
+                runOnGl(() -> {
+                    if (tapFireMode) { if (down) renderer.game.weaponFireRequested = true; }
+                    else renderer.game.weaponFireHeld = down;
+                });
+            }
+            @Override public void crouch(boolean down) { runOnGl(() -> { if (!renderer.game.driving) renderer.game.crouching = down; }); }
+            @Override public void sprint(boolean down) { runOnGl(() -> { if (!renderer.game.driving) renderer.game.sprint = down; }); }
+            @Override public void reload() { runOnGl(() -> renderer.game.reloadRequested = true); }
+            @Override public void interact() { runOnGl(() -> renderer.game.lootInteractionRequested = true); }
+            @Override public void melee() { runOnGl(() -> renderer.game.punchRequested = true); }
+            @Override public void swapWeapon() { runOnGl(() -> renderer.game.cycleWeapon()); runOnUiThread(this::saveWeaponState); }
+            @Override public void heal() { runOnGl(() -> renderer.game.useMedkitRequested = true); }
+            @Override public void shield() { runOnGl(() -> renderer.game.useShieldPotionRequested = true); }
+            @Override public void vehicle() { runOnGl(() -> renderer.toggleCar()); }
+            @Override public void inventory() { showInventory(); }
+        });
+        root.addView(battleRoyaleHud, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         Button settings = btn("⚙");
         settings.setOnClickListener(v -> showGameSettings());
