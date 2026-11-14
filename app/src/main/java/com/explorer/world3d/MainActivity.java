@@ -1149,6 +1149,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             renderer.game.cameraLookOffset = 0f;
             renderer.setGamepadLook(0f, 0f);
             renderer.game.sprint = false;
+            renderer.game.crouching = false;
+            renderer.game.slideSeconds = 0f;
             renderer.game.jogging = false;
             renderer.game.stealthMode = false;
             renderer.game.guardRequested = false;
