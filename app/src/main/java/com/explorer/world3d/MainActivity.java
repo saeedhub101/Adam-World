@@ -1176,9 +1176,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         java.util.ArrayList<Button> actionButtons = new java.util.ArrayList<>();
         java.util.ArrayList<View> utilityRows = new java.util.ArrayList<>();
         for (int ri=0; ri<combatControls.getChildCount(); ri++) {
-            View row=combatControls.getChildAt(ri);
-            if (row instanceof ViewGroup) {
-                ViewGroup group=(ViewGroup)row;
+            View hudSourceRow=combatControls.getChildAt(ri);
+            if (hudSourceRow instanceof ViewGroup) {
+                ViewGroup group=(ViewGroup)hudSourceRow;
                 for (int bi=group.getChildCount()-1; bi>=0; bi--) {
                     View child=group.getChildAt(bi);
                     if (child instanceof Button && child.getContentDescription()!=null) {
@@ -1186,7 +1186,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                         group.removeViewAt(bi);
                     }
                 }
-                if (group.getChildCount()>0) utilityRows.add(0,row);
+                if (group.getChildCount()>0) utilityRows.add(0,hudSourceRow);
             } else if (row instanceof Button && row.getContentDescription()!=null) {
                 actionButtons.add((Button)row);
             } else utilityRows.add(0,row);
@@ -1220,7 +1220,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             battleHud.addView(control);
         }
         combatControls.addView(battleHud,new LinearLayout.LayoutParams(dp(224),dp(410)));
-        for (View utilityRow : utilityRows) combatControls.addView(utilityRow);
+        for (View retainedUtilityRow : utilityRows) combatControls.addView(retainedUtilityRow);
         touchCombatRow = combatControls;
         actionPad.addView(combatControls);
 
