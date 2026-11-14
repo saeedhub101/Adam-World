@@ -787,8 +787,42 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 .setNegativeButton("إلغاء",(d,w)->{target.setScaleX(oldScale);target.setScaleY(oldScale);target.setAlpha(oldAlpha);}).show();
     }
 
+    private String touchControlIcon(String label) {
+        if (label.contains("قفز")) return "⬆";
+        if (label.contains("لكم")) return "拳";
+        if (label.contains("ركل")) return "🦶";
+        if (label.contains("حراسة") || label.contains("دفاع")) return "🛡";
+        if (label.contains("ركض") || label.contains("جري")) return "⚡";
+        if (label.contains("مراوغة")) return "↗";
+        if (label.contains("تصويب") || label.contains("هدف")) return "◎";
+        if (label.contains("إطلاق") || label.contains("نار")) return "●";
+        if (label.contains("مركبة") || label.contains("دخول") || label.contains("خروج")) return "🚗";
+        if (label.contains("مكابح")) return "■";
+        if (label.contains("صعود") || label.contains("رفع")) return "⬆";
+        if (label.contains("هبوط") || label.contains("خفض")) return "⬇";
+        if (label.contains("سلاح")) return "✦";
+        return "";
+    }
+
     private Button touchAction(String label, final Runnable press, final Runnable release) {
-        Button b=btn(label);b.setTextSize(12);b.setMinHeight(dp(46));b.setBackgroundColor(0xB91B2634);
+        Button b=btn(label);
+        String icon = touchControlIcon(label);
+        if (!icon.isEmpty()) {
+            b.setText(icon);
+            b.setTextSize(23);
+            b.setContentDescription(label);
+            android.graphics.drawable.GradientDrawable face = new android.graphics.drawable.GradientDrawable();
+            face.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+            face.setCornerRadius(dp(24));
+            face.setColor(0xCC172536);
+            face.setStroke(dp(1.5f), 0xB8D6E8F5);
+            b.setBackground(face);
+            b.setPadding(dp(3), 0, dp(3), 0);
+        } else {
+            b.setTextSize(12);
+            b.setBackgroundColor(0xB91B2634);
+        }
+        b.setMinHeight(dp(54));
         b.setClickable(true);b.setFocusable(false);
         final String key="hud_"+Integer.toHexString(label.hashCode());b.setTag(key);
         SharedPreferences hp=getSharedPreferences("adam_world_hud",MODE_PRIVATE);
