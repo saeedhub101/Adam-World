@@ -75,7 +75,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private LinearLayout touchActionPad, touchCombatRow, touchFlightRow, touchGroundVehicleRow;
     private View touchActionScroll;
     private FrameLayout.LayoutParams touchActionScrollParams;
-    private boolean tapFireMode, touchHudLeft;
+    private boolean tapFireMode, touchHudLeft, hudEditMode;
     private View touchMoveJoystick;
     private boolean touchSteerLeftHeld, touchSteerRightHeld, touchVehicleGasHeld, touchVehicleBrakeHeld;
     private Button touchVehicleButton, touchVehicleTypeButton, touchSprintButton, touchDodgeButton;
@@ -701,47 +701,58 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         dialog.show();
     }
 
+    private void showHudButtonEditor(final View target) {
+        final String key=String.valueOf(target.getTag());
+        final SharedPreferences prefs=getSharedPreferences("adam_world_hud",MODE_PRIVATE);
+        final SeekBar size=new SeekBar(this),opacity=new SeekBar(this);
+        size.setMax(80);size.setProgress(Math.max(0,Math.min(80,Math.round((target.getScaleX()-0.7f)*100f))));
+        opacity.setMax(70);opacity.setProgress(Math.max(0,Math.min(70,Math.round((target.getAlpha()-0.3f)*100f))));
+        LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(18),dp(8),dp(18),dp(8));
+        TextView sizeLabel=new TextView(this);sizeLabel.setText("حجم الزر");panel.addView(sizeLabel);panel.addView(size);
+        TextView opacityLabel=new TextView(this);opacityLabel.setText("شفافية الزر");panel.addView(opacityLabel);panel.addView(opacity);
+        final float oldScale=target.getScaleX(),oldAlpha=target.getAlpha();
+        size.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            public void onProgressChanged(SeekBar bar,int value,boolean user){float s=0.7f+value/100f;target.setScaleX(s);target.setScaleY(s);}
+            public void onStartTrackingTouch(SeekBar bar){} public void onStopTrackingTouch(SeekBar bar){}
+        });
+        opacity.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            public void onProgressChanged(SeekBar bar,int value,boolean user){target.setAlpha(0.3f+value/100f);}
+            public void onStartTrackingTouch(SeekBar bar){} public void onStopTrackingTouch(SeekBar bar){}
+        });
+        new AlertDialog.Builder(this).setTitle("تخصيص: "+((target instanceof Button)?((Button)target).getText():"زر التحكم"))
+                .setView(panel).setPositiveButton("حفظ",(d,w)->prefs.edit()
+                        .putFloat(key+"_scale",target.getScaleX()).putFloat(key+"_alpha",target.getAlpha()).apply())
+                .setNegativeButton("إلغاء",(d,w)->{target.setScaleX(oldScale);target.setScaleY(oldScale);target.setAlpha(oldAlpha);}).show();
+    }
+
     private Button touchAction(String label, final Runnable press, final Runnable release) {
-        Button b = btn(label);
-        b.setTextSize(12);
-        b.setMinHeight(dp(46));
-        b.setBackgroundColor(0xB91B2634);
-        b.setClickable(true);
-        b.setFocusable(false);
-        b.setOnTouchListener(new View.OnTouchListener() {
-            private int activePointerId = MotionEvent.INVALID_POINTER_ID;
-            private boolean held;
-
-            private void finishPress(View view) {
-                if (!held) return;
-                held = false;
-                activePointerId = MotionEvent.INVALID_POINTER_ID;
-                if (release != null) release.run();
-                view.setAlpha(1f);
+        Button b=btn(label);b.setTextSize(12);b.setMinHeight(dp(46));b.setBackgroundColor(0xB91B2634);
+        b.setClickable(true);b.setFocusable(false);
+        final String key="hud_"+Integer.toHexString(label.hashCode());b.setTag(key);
+        SharedPreferences hp=getSharedPreferences("adam_world_hud",MODE_PRIVATE);
+        b.setScaleX(hp.getFloat(key+"_scale",1f));b.setScaleY(hp.getFloat(key+"_scale",1f));
+        b.setAlpha(hp.getFloat(key+"_alpha",1f));b.setTranslationX(hp.getFloat(key+"_x",0f));b.setTranslationY(hp.getFloat(key+"_y",0f));
+        b.setOnTouchListener(new View.OnTouchListener(){
+            private int activePointerId=MotionEvent.INVALID_POINTER_ID;
+            private boolean held,moved;
+            private float downX,downY,startX,startY;
+            private void finishPress(View view){
+                if(!held)return;held=false;activePointerId=MotionEvent.INVALID_POINTER_ID;
+                if(release!=null)release.run();
+                view.setAlpha(getSharedPreferences("adam_world_hud",MODE_PRIVATE).getFloat(key+"_alpha",1f));
             }
-
-            @Override public boolean onTouch(View v, MotionEvent e) {
-                final int action = e.getActionMasked();
-                if (action == MotionEvent.ACTION_DOWN) {
-                    activePointerId = e.getPointerId(e.getActionIndex());
-                    held = true;
-                    if (press != null) press.run();
-                    v.setAlpha(0.72f);
+            @Override public boolean onTouch(View v,MotionEvent e){
+                int action=e.getActionMasked();
+                if(hudEditMode){
+                    if(action==MotionEvent.ACTION_DOWN){downX=e.getRawX();downY=e.getRawY();startX=v.getTranslationX();startY=v.getTranslationY();moved=false;return true;}
+                    if(action==MotionEvent.ACTION_MOVE){float dx=e.getRawX()-downX,dy=e.getRawY()-downY;if(Math.abs(dx)+Math.abs(dy)>5f)moved=true;if(moved){v.setTranslationX(startX+dx);v.setTranslationY(startY+dy);}return true;}
+                    if(action==MotionEvent.ACTION_UP){if(moved)getSharedPreferences("adam_world_hud",MODE_PRIVATE).edit().putFloat(key+"_x",v.getTranslationX()).putFloat(key+"_y",v.getTranslationY()).apply();else showHudButtonEditor(v);return true;}
                     return true;
                 }
-                if (action == MotionEvent.ACTION_POINTER_UP
-                        && e.getPointerId(e.getActionIndex()) == activePointerId) {
-                    finishPress(v);
-                    return true;
-                }
-                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                    finishPress(v);
-                    return true;
-                }
-                if (action == MotionEvent.ACTION_MOVE && held
-                        && e.findPointerIndex(activePointerId) < 0) {
-                    finishPress(v);
-                }
+                if(action==MotionEvent.ACTION_DOWN){activePointerId=e.getPointerId(e.getActionIndex());held=true;if(press!=null)press.run();v.setAlpha(0.72f);return true;}
+                if(action==MotionEvent.ACTION_POINTER_UP&&e.getPointerId(e.getActionIndex())==activePointerId){finishPress(v);return true;}
+                if(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_CANCEL){finishPress(v);return true;}
+                if(action==MotionEvent.ACTION_MOVE&&held&&e.findPointerIndex(activePointerId)<0)finishPress(v);
                 return true;
             }
         });
@@ -985,8 +996,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         buildRow2.addView(placeBuildButton,new LinearLayout.LayoutParams(0,dp(44),1f));buildRow2.addView(editBuildButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(buildRow2);
         Button hudSideButton=btn("مكان الأزرار: "+(touchHudLeft?"يسار":"يمين"));
         hudSideButton.setTextSize(11);hudSideButton.setMinHeight(dp(44));
+        Button hudEditButton=btn("تخصيص HUD");hudEditButton.setTextSize(11);hudEditButton.setMinHeight(dp(44));
+        hudEditButton.setOnClickListener(v->{hudEditMode=!hudEditMode;hudEditButton.setText(hudEditMode?"إنهاء التخصيص":"تخصيص HUD");Toast.makeText(this,hudEditMode?"اسحب أي زر لتغيير مكانه أو اضغطه لتغيير الحجم والشفافية":"تم حفظ تخصيص الأزرار",Toast.LENGTH_SHORT).show();});
         hudSideButton.setOnClickListener(v->{touchHudLeft=!touchHudLeft;getSharedPreferences("adam_world_controls",MODE_PRIVATE).edit().putBoolean("hud_left",touchHudLeft).apply();touchActionScrollParams.gravity=Gravity.BOTTOM|(touchHudLeft?Gravity.START:Gravity.END);touchActionScrollParams.setMargins(touchHudLeft?dp(8):0,0,touchHudLeft?0:dp(8),dp(16));touchActionScroll.setLayoutParams(touchActionScrollParams);hudSideButton.setText("مكان الأزرار: "+(touchHudLeft?"يسار":"يمين"));});
         hudRow.addView(fireModeButton,new LinearLayout.LayoutParams(0,dp(44),1f));hudRow.addView(hudSideButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(hudRow);
+        LinearLayout hudEditRow=new LinearLayout(this);hudEditRow.setGravity(Gravity.CENTER);
+        hudEditRow.addView(hudEditButton,new LinearLayout.LayoutParams(0,dp(42),1f));combatControls.addView(hudEditRow);
         touchCombatRow = combatControls;
         actionPad.addView(combatControls);
 
