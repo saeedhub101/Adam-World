@@ -1282,7 +1282,13 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             else Matrix.scaleM(tmp,0,item.type==Game.LootPickup.SHIELD?0.28f:0.23f,0.34f,item.type==Game.LootPickup.SHIELD?0.28f:0.23f);
             GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
             if(item.type==Game.LootPickup.SHIELD)GLES20.glUniform3f(uTint,.10f,.48f,1f);
-            else if(item.type==Game.LootPickup.CHEST)GLES20.glUniform3f(uTint,.68f,.34f,.08f);
+            else if(item.type==Game.LootPickup.CHEST){
+                if(item.rarity>=4)GLES20.glUniform3f(uTint,.95f,.72f,.16f);
+                else if(item.rarity==3)GLES20.glUniform3f(uTint,.68f,.24f,.92f);
+                else if(item.rarity==2)GLES20.glUniform3f(uTint,.12f,.42f,.95f);
+                else if(item.rarity==1)GLES20.glUniform3f(uTint,.18f,.72f,.38f);
+                else GLES20.glUniform3f(uTint,.65f,.43f,.22f);
+            }
             else if(item.type==Game.LootPickup.MATERIAL)GLES20.glUniform3f(uTint,.22f,.72f,.34f);
             else GLES20.glUniform3f(uTint,1f,.72f,.12f);
             GLES20.glUniform1f(uEmisK,item.type==Game.LootPickup.CHEST?.12f:.32f);
