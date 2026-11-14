@@ -979,6 +979,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         combatRow2.addView(crouchTouch, new LinearLayout.LayoutParams(0, dp(46), 1.2f));
         combatRow2.addView(reloadQuickTouch, new LinearLayout.LayoutParams(0, dp(46), 0.8f));
         combatControls.addView(combatRow2);
+        LinearLayout harvestRow=new LinearLayout(this);harvestRow.setGravity(Gravity.CENTER);
+        Button harvestTouch=touchAction("جمع الموارد / تحطيم",()->runOnGl(()->renderer.game.harvestRequested=true),null);
+        harvestRow.addView(harvestTouch,new LinearLayout.LayoutParams(0,dp(44),1f));
+        combatControls.addView(harvestRow);
 
         LinearLayout runRow = new LinearLayout(this);
         runRow.setGravity(Gravity.CENTER);
