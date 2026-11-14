@@ -432,7 +432,7 @@ final class Game {
         if (dead) {
             crouching = false; slideSeconds = 0f; sprint = false;
             sx = sy = 0f;
-            if (now - deathStartedMs >= 4500L) { dead = false; health = 50; px = cx; pz = cz; cv = 0f; altitude = 0f; aircraftDamage = 0f; engineThrottle = 0f; aircraftOnGround = true; playerPose=4; playerPoseTime=0f; playerFall=1f; }
+            if (now - deathStartedMs >= 4500L) { dead = false; health = 50; shield = 0; px = cx; pz = cz; cv = 0f; altitude = 0f; aircraftDamage = 0f; engineThrottle = 0f; aircraftOnGround = true; playerPose=4; playerPoseTime=0f; playerFall=1f; }
             updateCamera(dt);
             return;
         }
