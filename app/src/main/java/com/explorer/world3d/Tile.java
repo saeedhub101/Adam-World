@@ -44,7 +44,7 @@ final class Tile {
     /** Text atlases are paged so every sourced building name/address can be rendered. */
     private void buildDecals(TileData d) {
         if (d.decals.isEmpty()) return;
-        final int labelsPerPage = 64;
+        final int labelsPerPage = 32;
         ArrayList<ArrayList<String>> pages = new ArrayList<>();
         HashMap<String, Integer> pageByName = new HashMap<>();
         for (Decal dc : d.decals) {
@@ -71,7 +71,7 @@ final class Tile {
                 p.setTextSize(fontSize);
                 float w = p.measureText(names.get(i));
                 if (w > 1000f) { p.setTextSize(fontSize * 1000f / w); w = 1000f; }
-                canvas.drawText(names.get(i), 8f, i * 32f + 25f, p);
+                canvas.drawText(names.get(i), 8f, i * 64f + 46f, p);
                 wpx[i] = w + 8f;
             }
             int texture = Textures.upload(bmp);
@@ -93,7 +93,7 @@ final class Tile {
                 float tsx = sx + lx * hw, tsz = sz + lz * hw;
                 float baseY = Float.isFinite(dc.y) ? dc.y : Float.NaN;
                 float u1 = wpx[idx] / 1024f;
-                float v0 = idx / 64f + 0.002f, v1 = (idx + 1) / 64f - 0.002f;
+                float v0 = idx / 32f + 0.002f, v1 = (idx + 1) / 32f - 0.002f;
                 if (dc.vertical && Float.isFinite(baseY)) {
                     float vlx = dc.x - dx * len / 2f, vlz = dc.z - dz * len / 2f;
                     float vrx = dc.x + dx * len / 2f, vrz = dc.z + dz * len / 2f;
