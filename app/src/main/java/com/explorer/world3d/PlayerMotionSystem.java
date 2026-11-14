@@ -63,8 +63,14 @@ final class PlayerMotionSystem {
             float len = Math.max(0.0001f, (float)Math.hypot(desiredX, desiredZ));
             desiredX /= len;
             desiredZ /= len;
-            float locomotionSpeed = g.sprint ? RUN_SPEED : (g.jogging ? WALK_SPEED * 1.32f : WALK_SPEED);
+            float locomotionSpeed = g.sprint ? 10.2f : (g.jogging ? WALK_SPEED * 1.32f : WALK_SPEED);
+            if (g.crouching) locomotionSpeed = 2.35f;
             desiredSpeed = (g.stealthMode ? locomotionSpeed * 0.58f : locomotionSpeed) * magnitude;
+        }
+        if (g.slideSeconds > 0f) {
+            desiredX = g.slideX;
+            desiredZ = g.slideZ;
+            desiredSpeed = 11.4f * Math.min(1f, g.slideSeconds / 0.24f);
         }
         if (g.dodgeSeconds > 0f) {
             desiredX = g.dodgeX;
