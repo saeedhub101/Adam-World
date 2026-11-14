@@ -166,7 +166,7 @@ final class PlayerMotionSystem {
         g.jumpVelocity = verticalVelocity;
     }
 
-    private static boolean tryMantle(Game g, Game.World world, float dirX, float dirZ, float nx, float nz) {
+    private boolean tryMantle(Game g, Game.World world, float dirX, float dirZ, float nx, float nz) {
         if (!(world instanceof CityRenderer) || g.driving || g.dead || g.mantleCooldown > 0f
                 || g.jumpHeight > 0.35f || Math.hypot(dirX, dirZ) < 0.5f) return false;
         CityRenderer city=(CityRenderer)world;
