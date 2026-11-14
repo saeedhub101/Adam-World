@@ -697,10 +697,17 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
         if(ids.isEmpty())return;
         new AlertDialog.Builder(this).setTitle("الحقيبة · الأسلحة والذخيرة")
-                .setItems(labels.toArray(new String[0]),(d,which)->runOnGl(()->{
+                .setItems(labels.toArray(new String[0]),(d,which)->{
                     int id=ids.get(which);
-                    if(renderer.game.equipWeapon(id)){saveWeaponState();onToast("تم التبديل إلى "+WeaponSystem.NAME[id]);}
-                })).setNegativeButton("إغلاق",null).show();
+                    String[] slots={"الخانة 1","الخانة 2","الخانة 3","الخانة 4","الخانة 5"};
+                    new AlertDialog.Builder(this).setTitle("تعيين "+WeaponSystem.NAME[id]+" إلى خانة سريعة")
+                            .setItems(slots,(dialog,slot)->runOnGl(()->{
+                                renderer.game.assignQuickbarWeapon(slot,id);
+                                renderer.game.selectQuickbarSlot(slot);
+                                saveWeaponState();
+                                onToast("تم تعيين السلاح إلى الخانة "+(slot+1));
+                            })).setNegativeButton("إلغاء",null).show();
+                }).setNegativeButton("إغلاق",null).show();
     }
 
     private void showVehicleSelector() {
@@ -998,6 +1005,15 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         Button aimTouch=touchAction("تصويب",()->runOnGl(()->renderer.game.weaponAimHeld=true),()->runOnGl(()->renderer.game.weaponAimHeld=false));
         Button fireTouch=touchAction("إطلاق",()->runOnGl(()->{if(tapFireMode)renderer.game.weaponFireRequested=true;else renderer.game.weaponFireHeld=true;}),()->{if(!tapFireMode)runOnGl(()->renderer.game.weaponFireHeld=false);});
         weaponRow.addView(aimTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); weaponRow.addView(fireTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); combatControls.addView(weaponRow);
+        LinearLayout quickbarRow=new LinearLayout(this);quickbarRow.setGravity(Gravity.CENTER);
+        for(int slot=0;slot<5;slot++){
+            final int quickSlot=slot;
+            Button quick=touchAction("خانة "+(slot+1),()->runOnGl(()->{
+                if(renderer.game.selectQuickbarSlot(quickSlot))runOnUiThread(this::saveWeaponState);
+            }),null);
+            quickbarRow.addView(quick,new LinearLayout.LayoutParams(0,dp(40),1f));
+        }
+        combatControls.addView(quickbarRow);
         LinearLayout weaponRow2=new LinearLayout(this); weaponRow2.setGravity(Gravity.CENTER);
         weaponRow2.addView(touchAction("الحقيبة",()->showInventory(),null),new LinearLayout.LayoutParams(0,dp(44),0.9f));
         weaponRow2.addView(touchAction("عجلة السلاح",()->{weaponWheelOpen=true;weaponWheelView.showWheel();},null),new LinearLayout.LayoutParams(0,dp(44),1f));
