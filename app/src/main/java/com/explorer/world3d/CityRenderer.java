@@ -1499,7 +1499,16 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         boolean repeat=true;
         // Combat and recovery take priority over locomotion; clip names are optional
         // so packs with a smaller animation set still degrade to a valid idle/walk cycle.
-        if(pose==2 || pose==3) {
+        if(game.mantleSeconds>0.02f) {
+            clip=animator.findClip("mantle");
+            if(clip<0) clip=animator.findClip("vault");
+            if(clip<0) clip=animator.findClip("climb");
+            repeat=false;
+        } else if(game.crouching || game.slideSeconds>0f) {
+            clip=animator.findClip(game.sx*game.sx+game.sy*game.sy>0.02f?"crouch_walk":"crouch");
+            if(clip<0) clip=animator.findClip("crouch_idle");
+            if(clip<0) clip=animator.findClip("crouch");
+        } else if(pose==2 || pose==3) {
             clip=animator.findClip(pose==3?"down":"fall");
             if(clip<0) clip=animator.findClip("knockdown");
             if(clip<0) clip=animator.findClip("hit");
@@ -1542,7 +1551,8 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         Matrix.setIdentityM(base,0);
         Matrix.translateM(base,0,x,y,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
-        Matrix.scaleM(base,0,1.0f,1.0f,1.0f);
+        float crouchScale = game.crouching || game.slideSeconds>0f ? 0.80f : 1.0f;
+        Matrix.scaleM(base,0,1.0f,crouchScale,1.0f);
         GLES20.glUniformMatrix4fv(uModel,1,false,base,0);
         GLES20.glUniformMatrix4fv(uBones,animator.boneCount(),false,animator.skinMatrices(),0);
         GLES20.glUniform1f(uSkinning,1f);
@@ -1561,6 +1571,8 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         Mesh[] rig=humanRigModels[0];
         float swing=(float)Math.sin(ph)*amp*.58f;
         float bob=(float)Math.sin(ph*2f)*.018f;
+        float crouch = game.crouching || game.slideSeconds>0f ? 1f : 0f;
+        float crouchDrop = 0.27f*crouch;
         Matrix.setIdentityM(base,0);
         Matrix.translateM(base,0,x,y+bob,z);
         Matrix.rotateM(base,0,(float)Math.toDegrees(yaw),0f,1f,0f);
@@ -1571,17 +1583,18 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         float attackPhase = attack > 0f ? Math.max(0f,Math.min(1f,1f-attack/attackDuration)) : 0f;
         float attackPulse = attack > 0f ? (float)Math.sin(attackPhase*Math.PI) : 0f;
         if (attackPulse > 0f) Matrix.rotateM(base,0,-7.5f*attackPulse,1f,0f,0f);
-        drawHumanPart(rig[0],0,1.08f,0,0,0,0,0,1,1,1);
-        drawHumanPart(rig[1],0,1.60f,0,0,0,0,0,1.10f,1.10f,1.10f);
-        drawHumanPart(rig[2],0,1.72f,-.018f,0,0,0,0,1.08f,1.05f,1.08f);
-        drawHumanPart(rig[10],0,1.39f,.10f,0,0,0,0,1,1,1);
-        drawHumanPart(rig[11],0,1.59f,.145f,0,0,0,0,1.10f,1.10f,1.10f);
-        drawHumanPart(rig[13],.13f,1.18f,.14f,0,0,0,0,1,1,1);
-        drawHumanPart(rig[14],0,1.25f,.151f,0,0,0,0,1,1,1);
+        drawHumanPart(rig[0],0,1.08f-crouchDrop,0,0,0,0,0,1,1,1);
+        drawHumanPart(rig[1],0,1.60f-crouchDrop,0,0,0,0,0,1.10f,1.10f,1.10f);
+        drawHumanPart(rig[2],0,1.72f-crouchDrop,-.018f,0,0,0,0,1.08f,1.05f,1.08f);
+        drawHumanPart(rig[10],0,1.39f-crouchDrop,.10f,0,0,0,0,1,1,1);
+        drawHumanPart(rig[11],0,1.59f-crouchDrop,.145f,0,0,0,0,1.10f,1.10f,1.10f);
+        drawHumanPart(rig[13],.13f,1.18f-crouchDrop,.14f,0,0,0,0,1,1,1);
+        drawHumanPart(rig[14],0,1.25f-crouchDrop,.151f,0,0,0,0,1,1,1);
         for(int side=-1;side<=1;side+=2) {
             float leg=(side<0?swing:-swing)*57.29578f;
             float arm=(side<0?-swing:swing)*42f;
             if(guard>.05f)arm=side>0?-72f*guard:-58f*guard;
+            if(crouch>0f) arm += side>0?-24f:-18f;
             if(aiming && weaponId>=0 && weaponId<WeaponSystem.NAME.length) arm=side>0?-104f:-76f;
             float reloadProgress=reloadDuration>0f?Math.max(0f,Math.min(1f,1f-reloadSeconds/reloadDuration)):0f;
             float reloadMotion=reloadSeconds>0f?(float)Math.sin(reloadProgress*Math.PI):0f;
@@ -1597,11 +1610,11 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 else arm = 34f * attackPulse;
             }
             if (attack > 0f && attackType == 3 && side > 0) leg = -104f * attackPulse;
-            drawHumanPart(rig[3],side*.27f,1.32f,0,arm,side*.075f,-.15f,0,1,1,1);
-            drawHumanPart(rig[4],side*.39f,1.00f,0,arm*.42f,side*.012f,-.12f,.01f,1,1,1);
-            drawHumanPart(rig[5],side*.115f,.78f,0,leg,0,-.16f,0,1,1,1);
-            drawHumanPart(rig[6],side*.115f,.44f,0,-leg*.30f,0,-.11f,0,1,1,1);
-            drawHumanPart(rig[7],side*.115f,.15f,.045f,leg,0,-.02f,.06f,1,1,1);
+            drawHumanPart(rig[3],side*.27f,1.32f-crouchDrop*.75f,0,arm,side*.075f,-.15f,0,1,1,1);
+            drawHumanPart(rig[4],side*.39f,1.00f-crouchDrop*.65f,0,arm*.42f,side*.012f,-.12f,.01f,1,1,1);
+            drawHumanPart(rig[5],side*.115f,.78f,0,leg+42f*crouch,0,-.16f,0,1,1,1);
+            drawHumanPart(rig[6],side*.115f,.44f,0,-leg*.30f-62f*crouch,0,-.11f,0,1,1,1);
+            drawHumanPart(rig[7],side*.115f,.15f,.045f,leg+12f*crouch,0,-.02f,.06f,1,1,1);
             drawHumanPart(rig[8],side*.052f,1.645f,.127f,0,0,0,0,1,1,1);
             drawHumanPart(rig[12],side*.052f,1.667f,.137f,0,0,0,0,1,1,1);
             drawHumanPart(rig[15],side*.43f,.78f,.02f,arm*.42f,0,0,0,1,1,1);
