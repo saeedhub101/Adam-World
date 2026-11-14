@@ -144,7 +144,7 @@ final class Game {
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false; buildMode=buildEditMode=buildRequested=editRequested=cycleBuildTypeRequested=removeBuildRequested=harvestRequested=false; selectedBuildPieceIndex=-1; selectedBuildType=0; woodMaterials=250;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
-        weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;useMedkitRequested=useShieldPotionRequested=false;medkits=0;shieldPotions=0;aimYawOffset=aimPitchOffset=0f;activeQuickbarSlot=0;quickbarWeapons[0]=0;for(int i=1;i<quickbarWeapons.length;i++)quickbarWeapons[i]=-1;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
+        weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;useMedkitRequested=useShieldPotionRequested=false;medkits=0;shieldPotions=0;aimYawOffset=aimPitchOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
@@ -891,7 +891,9 @@ final class Game {
         if(weaponReloadWeaponId>=0&&weaponReloadPendingAmmo>0)reserveAmmo[weaponReloadWeaponId]+=weaponReloadPendingAmmo;
         weaponReloadSeconds=weaponReloadDuration=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         weaponMagazines[equippedWeapon]=magazineAmmo;equippedWeapon=id;
-        magazineAmmo=Math.min(WeaponSystem.MAGAZINE[id],Math.max(0,weaponMagazines[id]));weaponFireHeld=false;return true;
+        magazineAmmo=Math.min(WeaponSystem.MAGAZINE[id],Math.max(0,weaponMagazines[id]));weaponFireHeld=false;
+        for(int slot=0;slot<quickbarWeapons.length;slot++)if(quickbarWeapons[slot]==id){activeQuickbarSlot=slot;break;}
+        return true;
     }
     boolean purchaseWeapon(int id){if(id<0||id>=ownedWeapons.length||ownedWeapons[id]||cash<WeaponSystem.PRICE[id])return false;cash-=WeaponSystem.PRICE[id];ownedWeapons[id]=true;reserveAmmo[id]=WeaponSystem.START_AMMO[id];weaponMagazines[id]=WeaponSystem.MAGAZINE[id];weaponMagazines[equippedWeapon]=magazineAmmo;equippedWeapon=id;magazineAmmo=weaponMagazines[id];assignFirstQuickbarSlot(id);return true;}
     boolean assignQuickbarWeapon(int slot,int id){
