@@ -155,6 +155,7 @@ final class Game {
         loot.add(new LootPickup(a.x,a.z,LootPickup.AMMO,18));
         loot.add(new LootPickup(a.x+0.38f,a.z-0.22f,LootPickup.SHIELD,25));
         loot.add(new LootPickup(a.x-0.42f,a.z+0.28f,LootPickup.CHEST,1));
+        loot.add(new LootPickup(a.x+0.55f,a.z+0.35f,LootPickup.MATERIAL,20));
     }
 
     private void updateLoot(float dt) {
@@ -213,6 +214,22 @@ final class Game {
                 &&buildPieces.size()<64&&Math.hypot(buildPreviewX-px,buildPreviewZ-pz)>=2.0f
                 &&!world.blocked(buildPreviewX,buildPreviewZ,0.82f)
                 &&!buildBlocked(buildPreviewX,buildPreviewZ,0.82f,0f);
+    }
+
+    float buildSupportHeight(float x,float z,float groundY){
+        float support=0f;
+        for(BuildPiece piece:buildPieces){
+            float dx=x-piece.x,dz=z-piece.z;
+            float c=(float)Math.cos(piece.yaw),s=(float)Math.sin(piece.yaw);
+            float localX=dx*c-dz*s,localZ=dx*s+dz*c;
+            if(Math.abs(localX)>1.42f||Math.abs(localZ)>1.42f)continue;
+            if(piece.type==1)support=Math.max(support,0.28f);
+            else if(piece.type==2){
+                float rampY=0.78f+localX*0.62f;
+                support=Math.max(support,Math.max(0.12f,rampY));
+            }
+        }
+        return support;
     }
 
     boolean buildBlocked(float x,float z,float radius,float feetHeight){
