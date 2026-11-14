@@ -248,7 +248,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("على التلفاز: العصا اليسرى والأسهم الأربعة (D-pad) للحركة وتوجيه المركبة. العصا اليمنى لتحريك الكاميرا في الاتجاهات الأربعة. زر Y للدخول إلى المركبة والخروج منها. A/B/X للاتجاهات الرقمية المتاحة للكاميرا. LT للتصويب/الفرملة، RT لإطلاق النار/التسارع، LB لعجلة الأسلحة (اضغط مطولاً)، RB للغطاء أو فرامل اليد، L3 للركض، R3 للنظر خلفك، View لتغيير أوضاع الكاميرا، وMenu للإيقاف. استخدم أزرار اللمس للقفز والاشتباك وإعادة التلقيم.")
+                .setMessage("على التلفاز: العصا اليسرى أو الأسهم للحركة والقيادة، والعصا اليمنى لتحريك الكاميرا. A للقفز، B للركل، X للكم، وY للدخول إلى المركبة أو الخروج منها. LT للتصويب/الفرملة، RT لإطلاق النار/التسارع، LB لعجلة الأسلحة (اضغط مطولاً)، RB للصد أو فرامل اليد، L3 للركض، R3 للنظر خلفك، View لتغيير أوضاع الكاميرا، وMenu للإيقاف. على الهاتف استخدم عصا الحركة وأزرار القفز واللكم والركل والمركبة الظاهرة على الشاشة.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
@@ -1149,6 +1149,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             renderer.game.jogging = false;
             renderer.game.stealthMode = false;
             renderer.game.guardRequested = false;
+            renderer.game.jumpRequested = false;
+            renderer.game.punchRequested = false;
+            renderer.game.kickRequested = false;
+            renderer.game.attackRequested = false;
+            renderer.game.dodgeRequested = false;
+            renderer.game.weaponAimHeld = false;
+            renderer.game.weaponFireHeld = false;
+            renderer.game.reloadRequested = false;
             renderer.game.handbrake = false;
             renderer.game.brakeRequested = false;
             renderer.game.liftInput = 0f;
