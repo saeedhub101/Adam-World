@@ -75,6 +75,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private final Button[] quickbarButtons=new Button[5];
     private LinearLayout touchActionPad, touchCombatRow, touchFlightRow, touchGroundVehicleRow;
     private View touchActionScroll;
+    private FrameLayout battleHudOverlay;
     private FrameLayout.LayoutParams touchActionScrollParams;
     private boolean tapFireMode, touchHudLeft, hudEditMode;
     private View touchMoveJoystick;
@@ -664,6 +665,39 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
     }
 
+    /** Responsive, clamped placement for all mobile Battle Royale touch controls. */
+    private void layoutBattleHudControls(FrameLayout panel, java.util.ArrayList<Button> controls) {
+        int w=panel.getWidth(), h=panel.getHeight();
+        if(w<=0 || h<=0) return;
+        for(Button button:controls){
+            String label=String.valueOf(button.getContentDescription());
+            float x=.88f,y=.72f; int size=46; boolean visible=true;
+            if(label.startsWith("خانة ")){ int slot=0; try{slot=Integer.parseInt(label.substring(5))-1;}catch(Exception ignored){} x=.335f+slot*.083f; y=.925f; size=36; }
+            else if(label.contains("إطلاق")){x=.91f;y=.735f;size=68;}
+            else if(label.contains("تصويب")){x=.805f;y=.785f;size=50;}
+            else if(label.contains("قفز")){x=.925f;y=.585f;size=52;}
+            else if(label.contains("انحناء")){x=.835f;y=.665f;size=46;}
+            else if(label.contains("تلقيم")){x=.895f;y=.475f;size=42;}
+            else if(label.equals("ركض")){x=.285f;y=.755f;size=46;}
+            else if(label.contains("انزلاق سريع")){x=.335f;y=.655f;size=44;}
+            else if(label.contains("لكم")){x=.755f;y=.585f;size=44;}
+            else if(label.contains("التقاط")){x=.755f;y=.475f;size=44;}
+            else if(label.contains("علاج")){x=.575f;y=.875f;size=38;}
+            else if(label.contains("درع")){x=.655f;y=.875f;size=38;}
+            else if(label.contains("جمع الموارد")){x=.875f;y=.385f;size=44;}
+            else if(label.equals("بناء")){x=.705f;y=.875f;size=40;}
+            else if(label.equals("قطعة البناء")){x=.785f;y=.875f;size=40;}
+            else if(label.equals("تأكيد البناء")){x=.865f;y=.875f;size=44;}
+            else visible=false;
+            if(!visible){button.setVisibility(View.GONE);continue;}
+            button.setVisibility(View.VISIBLE);
+            int px=dp(size), py=dp(size), cx=Math.round(w*x), cy=Math.round(h*y);
+            FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(px,py,Gravity.TOP|Gravity.START);
+            lp.leftMargin=Math.max(dp(4),Math.min(Math.max(dp(4),w-px-dp(4)),cx-px/2));
+            lp.topMargin=Math.max(dp(4),Math.min(Math.max(dp(4),h-py-dp(4)),cy-py/2));
+            button.setLayoutParams(lp);
+        }
+    }
     private void loadWeaponState(){
         SharedPreferences p=getSharedPreferences("adam_world_weapons",MODE_PRIVATE);Game g=renderer.game;g.cash=p.getInt("cash",g.cash);g.medkits=Math.max(0,Math.min(5,p.getInt("medkits",g.medkits)));g.shieldPotions=Math.max(0,Math.min(5,p.getInt("shield_potions",g.shieldPotions)));g.woodMaterials=Math.max(0,Math.min(999,p.getInt("wood_materials",g.woodMaterials)));if(!p.getBoolean("weapon_cash_boost_v1",false)){g.cash=Math.max(g.cash,100000);p.edit().putBoolean("weapon_cash_boost_v1",true).putInt("cash",g.cash).apply();}
         for(int i=0;i<WeaponSystem.NAME.length;i++){g.ownedWeapons[i]=p.getBoolean("owned_"+i,g.ownedWeapons[i]);g.reserveAmmo[i]=p.getInt("reserve_"+i,g.reserveAmmo[i]);g.weaponMagazines[i]=p.getInt("magazine_"+i,g.weaponMagazines[i]);}
@@ -1168,17 +1202,17 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         hudRow.addView(fireModeButton,new LinearLayout.LayoutParams(0,dp(44),1f));hudRow.addView(hudSideButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(hudRow);
         LinearLayout hudEditRow=new LinearLayout(this);hudEditRow.setGravity(Gravity.CENTER);
         hudEditRow.addView(hudEditButton,new LinearLayout.LayoutParams(0,dp(42),1f));combatControls.addView(hudEditRow);
-        // PUBG/Battle-Royale touch layout: fixed combat cluster with independent
-        // thumb zones. Keep non-combat utility rows available below the HUD.
+        // Responsive Battle Royale HUD: controls use normalized display coordinates.
         FrameLayout battleHud = new FrameLayout(this);
+        battleHudOverlay = battleHud;
         battleHud.setClipChildren(false);
         battleHud.setClipToPadding(false);
+        battleHud.setBackgroundColor(Color.TRANSPARENT);
         java.util.ArrayList<Button> actionButtons = new java.util.ArrayList<>();
-        java.util.ArrayList<View> utilityRows = new java.util.ArrayList<>();
         for (int ri=0; ri<combatControls.getChildCount(); ri++) {
-            View hudSourceRow=combatControls.getChildAt(ri);
-            if (hudSourceRow instanceof ViewGroup) {
-                ViewGroup group=(ViewGroup)hudSourceRow;
+            View sourceRow=combatControls.getChildAt(ri);
+            if (sourceRow instanceof ViewGroup) {
+                ViewGroup group=(ViewGroup)sourceRow;
                 for (int bi=group.getChildCount()-1; bi>=0; bi--) {
                     View child=group.getChildAt(bi);
                     if (child instanceof Button && child.getContentDescription()!=null) {
@@ -1186,43 +1220,27 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                         group.removeViewAt(bi);
                     }
                 }
-                if (group.getChildCount()>0) utilityRows.add(0,hudSourceRow);
-            } else if (hudSourceRow instanceof Button && hudSourceRow.getContentDescription()!=null) {
-                actionButtons.add((Button)hudSourceRow);
-            } else utilityRows.add(0,hudSourceRow);
+            }
         }
         combatControls.removeAllViews();
+        Button buildModeTouch=touchAction("بناء",()->runOnGl(()->{ renderer.game.buildMode=!renderer.game.buildMode; renderer.game.buildEditMode=false; }),null);
+        Button buildPieceTouch=touchAction("قطعة البناء",()->runOnGl(()->renderer.game.cycleBuildTypeRequested=true),null);
+        Button buildPlaceTouch=touchAction("تأكيد البناء",()->runOnGl(()->renderer.game.buildRequested=true),null);
+        actionButtons.add(buildModeTouch); actionButtons.add(buildPieceTouch); actionButtons.add(buildPlaceTouch);
         for (Button control : actionButtons) {
             String label=String.valueOf(control.getContentDescription());
-            int x=8,y=8,size=46;
-            if (label.contains("إطلاق")) { x=164; y=220; size=78; }
-            else if (label.contains("تصويب")) { x=108; y=232; size=54; }
-            else if (label.contains("قفز")) { x=174; y=310; size=54; }
-            else if (label.contains("انحناء")) { x=116; y=342; size=48; }
-            else if (label.contains("تلقيم")) { x=164; y=164; size=44; }
-            else if (label.equals("ركض")) { x=8; y=294; size=48; }
-            else if (label.contains("انزلاق سريع")) { x=58; y=348; size=46; }
-            else if (label.contains("لكم")) { x=112; y=174; size=44; }
-            else if (label.startsWith("خانة ")) {
-                int slot=0; try { slot=Integer.parseInt(label.substring(5))-1; } catch(Exception ignored) {}
-                x=5+slot*43; y=8; size=39;
-            } else if (label.contains("التقاط")) { x=8; y=58; size=42; }
-            else if (label.contains("علاج")) { x=56; y=58; size=42; }
-            else if (label.contains("درع")) { x=104; y=58; size=42; }
-            else if (label.contains("الحقيبة")) { x=8; y=108; size=42; }
-            else if (label.contains("عجلة السلاح")) { x=56; y=108; size=42; }
-            else if (label.contains("متجر")) { x=104; y=108; size=42; }
-            else if (label.contains("جمع الموارد")) { x=164; y=110; size=44; }
-            else continue;
-            FrameLayout.LayoutParams cp=new FrameLayout.LayoutParams(dp(size),dp(size),Gravity.TOP|Gravity.START);
-            cp.leftMargin=dp(x); cp.topMargin=dp(y);
-            control.setLayoutParams(cp);
-            battleHud.addView(control);
+            boolean supported = label.contains("إطلاق") || label.contains("تصويب") || label.contains("قفز")
+                    || label.contains("انحناء") || label.contains("تلقيم") || label.equals("ركض")
+                    || label.contains("انزلاق سريع") || label.contains("لكم") || label.startsWith("خانة ")
+                    || label.contains("التقاط") || label.contains("علاج") || label.contains("درع")
+                    || label.contains("جمع الموارد") || label.equals("بناء")
+                    || label.equals("قطعة البناء") || label.equals("تأكيد البناء");
+            if (supported) battleHud.addView(control,new FrameLayout.LayoutParams(dp(48),dp(48)));
         }
-        combatControls.addView(battleHud,new LinearLayout.LayoutParams(dp(224),dp(410)));
-        for (View retainedUtilityRow : utilityRows) combatControls.addView(retainedUtilityRow);
-        touchCombatRow = combatControls;
-        actionPad.addView(combatControls);
+        battleHud.addOnLayoutChangeListener((v,l,t,r,b,oldL,oldT,oldR,oldB) -> layoutBattleHudControls(battleHud,actionButtons));
+        touchCombatRow = combatControls; touchCombatRow.setVisibility(View.GONE);
+        touchActionPad = actionPad; actionScroll.setVisibility(View.GONE);
+
 
         LinearLayout vehicleRow = new LinearLayout(this);
         vehicleRow.setGravity(Gravity.CENTER);
@@ -1390,6 +1408,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         loadingParams.setMargins(dp(8), dp(104), dp(8), 0);
         root.addView(loading, loadingParams);
+        root.addView(battleHud, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         setContentView(root);
         glView.requestFocus();
@@ -1584,8 +1603,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         // Keep the movement stick mounted in both modes; its listener routes input
         // to character movement on foot and steering/throttle while seated.
         if (touchMoveJoystick != null) touchMoveJoystick.setVisibility(View.VISIBLE);
+        if (battleHudOverlay != null) battleHudOverlay.setVisibility(driving ? View.GONE : View.VISIBLE);
         if (touchCombatRow != null) {
-            touchCombatRow.setVisibility(driving ? View.GONE : View.VISIBLE);
+            touchCombatRow.setVisibility(View.GONE);
             for (int i = 0; i < touchCombatRow.getChildCount(); i++) {
                 View child = touchCombatRow.getChildAt(i);
                 if (child instanceof LinearLayout) {
