@@ -54,15 +54,15 @@ final class SkeletalAnimationRuntime {
         final float[] global, skin, matrixScratch = new float[16];
         int current=-1, previous=-1;
         float time, previousTime, fade, fadeDuration, speed=1f;
-        float proceduralCrouch, proceduralMantle, proceduralMantlePhase, proceduralWalk;
+        float proceduralCrouch, proceduralMantle, proceduralMantlePhase, proceduralWalk, proceduralAim;
         boolean loop=true;
 
         /** Semantic retargeting overlay: imported rigs need no authored crouch/mantle clips. */
-        void setProceduralPose(float crouch,float mantle,float mantlePhase,float walk){
+        void setProceduralPose(float crouch,float mantle,float mantlePhase,float walk,boolean aiming){
             proceduralCrouch=clamp(crouch,0f,1f);
             proceduralMantle=clamp(mantle,0f,1f);
             proceduralMantlePhase=clamp(mantlePhase,0f,1f);
-            proceduralWalk=clamp(walk,0f,1f);
+            proceduralWalk=clamp(walk,0f,1f);\n            proceduralAim=aiming?1f:0f;
         }
 
         private void applyProceduralPose(){
@@ -82,7 +82,7 @@ final class SkeletalAnimationRuntime {
                     z+=proceduralWalk*(side==0f?0f:side*18f);
                 }else if(containsAny(n,"calf","lowerleg","shin","leglower")){x+=proceduralCrouch*68f; x+=proceduralMantle*24f;}
                 else if(containsAny(n,"upperarm","shoulder","arm")){
-                    if(side!=0f){x+=proceduralCrouch*(side>0?-20f:-14f);x+=proceduralMantle*(side>0?-105f:-92f)*(0.65f+0.35f*(float)Math.sin(proceduralMantlePhase*Math.PI));z+=side*proceduralMantle*12f;}
+                    if(side!=0f){x+=proceduralCrouch*(side>0?-20f:-14f);x+=proceduralMantle*(side>0?-105f:-92f)*(0.65f+0.35f*(float)Math.sin(proceduralMantlePhase*Math.PI));z+=side*proceduralMantle*12f;\n                        // Relax the imported T-pose: lower the upper arms and keep a small\n                        // lateral clearance so hands do not intersect the waist/hips.\n                        x+= (1f-proceduralAim)*(side>0?5f:5f);\n                        z+=side*(1f-proceduralAim)*13f;}
                 }else if(containsAny(n,"forearm","lowerarm","elbow")){x+=proceduralCrouch*(side==0f?-8f:-12f);x+=proceduralMantle*(side>0?-38f:-32f);}
                 else if(containsAny(n,"foot","ankle")){x+=proceduralCrouch*12f;x+=proceduralMantle*-12f;}
                 if(Math.abs(x)>0.01f||Math.abs(z)>0.01f)rotateLocal(i,(float)Math.toRadians(x),(float)Math.toRadians(z));
