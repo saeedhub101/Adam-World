@@ -125,7 +125,7 @@ final class PlayerMotionSystem {
         }
 
         float horizontalSpeed = (float)Math.hypot(vx, vz);
-        if (horizontalSpeed > 0.12f && g.dodgeSeconds <= 0f) {
+        if (horizontalSpeed > 0.12f && g.dodgeSeconds <= 0f && !g.weaponAimHeld) {
             float targetYaw = (float)Math.atan2(vx, vz);
             g.pyaw += Game.angDiff(g.pyaw, targetYaw) * Math.min(1f, dt * 11.5f);
         }
