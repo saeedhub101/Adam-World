@@ -248,7 +248,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("على التلفاز: العصا اليسرى أو الأسهم للحركة والقيادة، والعصا اليمنى لتحريك الكاميرا. A للقفز، B للركل، X للكم، وY للدخول إلى المركبة أو الخروج منها. LT للتصويب/الفرملة، RT لإطلاق النار/التسارع، LB لعجلة الأسلحة (اضغط مطولاً)، RB للصد أو فرامل اليد، L3 للركض، R3 للنظر خلفك، View لتغيير أوضاع الكاميرا، وMenu للإيقاف. على الهاتف استخدم عصا الحركة وأزرار القفز واللكم والركل والمركبة الظاهرة على الشاشة.")
+                .setMessage("نمط Fortnite: العصا اليسرى للحركة واليمنى للكاميرا. A للقفز، اضغط مطولاً B للانحناء (يتحول إلى انزلاق عند الركض)، X لإعادة التلقيم، Y للدخول/الخروج من المركبة. LT للتصويب وRT للإطلاق، LB لفتح عجلة الأسلحة، L3 للركض، وMenu للإيقاف. على الهاتف استخدم عصا الحركة وأزرار الركض والانحناء/الانزلاق والقفز والتصويب والإطلاق والتلقيم الظاهرة على الشاشة.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
@@ -333,26 +333,31 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if (pressed) runOnGl(() -> renderer.toggleCar());
             return true;
         }
-        // GTA-style face-button actions: A jump, B kick, X punch, Y enter/exit.
-        // Camera movement is exclusively on the right analogue stick / look surface.
-        if (code == KeyEvent.KEYCODE_BUTTON_A || code == KeyEvent.KEYCODE_BUTTON_B
-                || code == KeyEvent.KEYCODE_BUTTON_X) {
-            if (pressed) runOnGl(() -> {
-                if (game.driving || game.dead) return;
-                if (code == KeyEvent.KEYCODE_BUTTON_A) game.jumpRequested = true;
-                else if (code == KeyEvent.KEYCODE_BUTTON_B) game.kickRequested = true;
-                else game.punchRequested = true;
-            });
+        // Fortnite combat layout: A jump, hold B crouch/slide, X reload.
+        // Aim/fire stay on LT/RT; camera is exclusively on the right stick.
+        if (code == KeyEvent.KEYCODE_BUTTON_A) {
+            if (pressed) runOnGl(() -> { if (!game.driving && !game.dead) game.jumpRequested = true; });
             return true;
         }
-        // Keyboard fallback for testing and external keyboards.
-        if (code == KeyEvent.KEYCODE_SPACE || code == KeyEvent.KEYCODE_Z || code == KeyEvent.KEYCODE_C) {
-            if (pressed) runOnGl(() -> {
-                if (game.driving || game.dead) return;
-                if (code == KeyEvent.KEYCODE_SPACE) game.jumpRequested = true;
-                else if (code == KeyEvent.KEYCODE_Z) game.punchRequested = true;
-                else game.kickRequested = true;
-            });
+        if (code == KeyEvent.KEYCODE_BUTTON_B) {
+            if (!game.driving && !game.dead) game.crouching = down;
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_BUTTON_X) {
+            if (pressed && !game.driving && !game.dead) runOnGl(() -> game.reloadRequested = true);
+            return true;
+        }
+        // Keyboard fallback: Space jump, Left Shift sprint, C/Ctrl crouch, R reload.
+        if (code == KeyEvent.KEYCODE_SPACE || code == KeyEvent.KEYCODE_C
+                || code == KeyEvent.KEYCODE_CTRL_LEFT || code == KeyEvent.KEYCODE_CTRL_RIGHT
+                || code == KeyEvent.KEYCODE_R || code == KeyEvent.KEYCODE_SHIFT_LEFT
+                || code == KeyEvent.KEYCODE_SHIFT_RIGHT) {
+            if (code == KeyEvent.KEYCODE_C || code == KeyEvent.KEYCODE_CTRL_LEFT || code == KeyEvent.KEYCODE_CTRL_RIGHT)
+                game.crouching = down;
+            else if (code == KeyEvent.KEYCODE_SHIFT_LEFT || code == KeyEvent.KEYCODE_SHIFT_RIGHT)
+                game.sprint = down;
+            else if (pressed && code == KeyEvent.KEYCODE_SPACE) runOnGl(() -> { if (!game.driving && !game.dead) game.jumpRequested = true; });
+            else if (pressed && code == KeyEvent.KEYCODE_R) runOnGl(() -> game.reloadRequested = true);
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_L1) {
@@ -897,22 +902,21 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
 
         LinearLayout combatRow2 = new LinearLayout(this);
         combatRow2.setGravity(Gravity.CENTER);
-        Button kickTouch = touchAction("ركل", () -> runOnGl(() -> {
-            if (!renderer.game.driving) renderer.game.kickRequested = true;
-        }), null);
-        Button guardTouch = touchAction("صدّ", () -> runOnGl(() -> renderer.game.guardRequested = true),
-                () -> runOnGl(() -> renderer.game.guardRequested = false));
-        combatRow2.addView(kickTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        combatRow2.addView(guardTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        Button crouchTouch = touchAction("انحناء / انزلاق", () -> runOnGl(() -> {
+            if (!renderer.game.driving) renderer.game.crouching = true;
+        }), () -> runOnGl(() -> renderer.game.crouching = false));
+        Button reloadQuickTouch = touchAction("تلقيم", () -> runOnGl(() -> renderer.game.reloadRequested = true), null);
+        combatRow2.addView(crouchTouch, new LinearLayout.LayoutParams(0, dp(46), 1.2f));
+        combatRow2.addView(reloadQuickTouch, new LinearLayout.LayoutParams(0, dp(46), 0.8f));
         combatControls.addView(combatRow2);
 
         LinearLayout runRow = new LinearLayout(this);
         runRow.setGravity(Gravity.CENTER);
         touchSprintButton = touchAction("ركض", () -> runOnGl(() -> renderer.game.sprint = true),
                 () -> runOnGl(() -> renderer.game.sprint = false));
-        touchDodgeButton = touchAction("مراوغة", () -> runOnGl(() -> {
-            if (!renderer.game.driving) renderer.game.dodgeRequested = true;
-        }), null);
+        touchDodgeButton = touchAction("انزلاق سريع", () -> runOnGl(() -> {
+            if (!renderer.game.driving) { renderer.game.crouching = true; renderer.game.sprint = true; }
+        }), () -> runOnGl(() -> { renderer.game.crouching = false; renderer.game.sprint = false; }));
         runRow.addView(touchSprintButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
         runRow.addView(touchDodgeButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
         combatControls.addView(runRow);
@@ -921,7 +925,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         Button fireTouch=touchAction("إطلاق",()->runOnGl(()->renderer.game.weaponFireHeld=true),()->runOnGl(()->renderer.game.weaponFireHeld=false));
         weaponRow.addView(aimTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); weaponRow.addView(fireTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); combatControls.addView(weaponRow);
         LinearLayout weaponRow2=new LinearLayout(this); weaponRow2.setGravity(Gravity.CENTER);
-        weaponRow2.addView(touchAction("تلقيم",()->runOnGl(()->renderer.game.reloadRequested=true),null),new LinearLayout.LayoutParams(0,dp(44),1f));
         weaponRow2.addView(touchAction("عجلة السلاح",()->{weaponWheelOpen=true;weaponWheelView.showWheel();},null),new LinearLayout.LayoutParams(0,dp(44),1f));
         weaponRow2.addView(touchAction("متجر الأسلحة",()->showWeaponShop(),null),new LinearLayout.LayoutParams(0,dp(44),1.35f)); combatControls.addView(weaponRow2);
         touchCombatRow = combatControls;
