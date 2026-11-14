@@ -70,8 +70,8 @@ final class SkeletalAnimationRuntime {
                 String n=skeleton.names[i]==null?"":skeleton.names[i].toLowerCase(java.util.Locale.US)
                         .replace("-","").replace("_","").replace(" ","").replace(".","");
                 if(n.isEmpty())continue;
-                boolean left=containsAny(n,"left","lupper","lthigh","arm_l","leg_l");
-                boolean right=containsAny(n,"right","rupper","rthigh","arm_r","leg_r");
+                boolean left=containsAny(n,"left","lupper","lthigh","arm_l","leg_l")||n.endsWith("l");
+                boolean right=containsAny(n,"right","rupper","rthigh","arm_r","leg_r")||n.endsWith("r");
                 float side=left?-1f:right?1f:0f,x=0f,z=0f;
                 if(containsAny(n,"pelvis","hips","hip")){x+=proceduralCrouch*18f; x+=proceduralMantle*(8f-18f*proceduralMantlePhase);}
                 else if(containsAny(n,"spine","chest","torso","abdomen")){x+=proceduralCrouch*24f; x+=proceduralMantle*(-24f+42f*proceduralMantlePhase);}
