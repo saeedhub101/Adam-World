@@ -248,7 +248,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void showControlsSettings() {
         // Keep the controller help free of on-screen action names and button labels.
         new AlertDialog.Builder(this).setTitle("إعدادات التحكم")
-                .setMessage("نمط Fortnite: العصا اليسرى للحركة واليمنى للكاميرا. A للقفز، اضغط مطولاً B للانحناء (يتحول إلى انزلاق عند الركض)، X لإعادة التلقيم، Y للدخول/الخروج من المركبة. LT للتصويب وRT للإطلاق، LB لفتح عجلة الأسلحة، L3 للركض، وMenu للإيقاف. على الهاتف استخدم عصا الحركة وأزرار الركض والانحناء/الانزلاق والقفز والتصويب والإطلاق والتلقيم الظاهرة على الشاشة.")
+                .setMessage("نمط Fortnite: العصا اليسرى للحركة واليمنى للكاميرا. A للقفز، اضغط مطولاً B للانحناء (يتحول إلى انزلاق عند الركض)، X لإعادة التلقيم، Y للدخول/الخروج من المركبة. LT للتصويب وRT للإطلاق، LB لعجلة الأسلحة، RB للتبديل للسلاح التالي، L3 للركض، وMenu للإيقاف. على لوحة المفاتيح: WASD للحركة، Space للقفز، Shift للركض، C/Ctrl للانحناء، R للتلقيم، والأرقام 1–7 لاختيار السلاح. على الهاتف استخدم عصا الحركة وأزرار الركض والانحناء/الانزلاق والقفز والتصويب والإطلاق والتلقيم الظاهرة على الشاشة.")
                 .setPositiveButton("إغلاق", null).show();
     }
     private void showPauseMenu() {
@@ -384,7 +384,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if (game.driving) {
                 if (aircraft) game.rudderInput = down ? 1f : 0f;
                 else game.handbrake = down;
-            } else game.guardRequested = down;
+            } else if (pressed) cycleEquippedWeapon(1);
             return true;
         }
         if (code == KeyEvent.KEYCODE_BUTTON_L2 || code == KeyEvent.KEYCODE_BUTTON_R2) {
@@ -402,6 +402,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             } else {
                 game.weaponAimHeld = padL2;
                 game.weaponFireHeld = padR2;
+            }
+            return true;
+        }
+        if (code >= KeyEvent.KEYCODE_1 && code <= KeyEvent.KEYCODE_7) {
+            if (pressed && !game.driving) {
+                final int slot = code - KeyEvent.KEYCODE_1;
+                runOnGl(() -> { if (game.equipWeapon(slot)) runOnUiThread(this::saveWeaponState); });
             }
             return true;
         }
