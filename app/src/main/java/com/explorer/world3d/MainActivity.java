@@ -538,6 +538,18 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             switch(e.getActionMasked()){
                 case MotionEvent.ACTION_DOWN:
                     if(x<getWidth()*0.48f || y>getHeight()*0.78f)return false;
+                    if(touchActionScroll!=null&&touchActionScroll.getVisibility()==View.VISIBLE){
+                        int[] pos=new int[2];touchActionScroll.getLocationOnScreen(pos);
+                        float rawX=e.getRawX(),rawY=e.getRawY();
+                        if(rawX>=pos[0]&&rawX<=pos[0]+touchActionScroll.getWidth()
+                                &&rawY>=pos[1]&&rawY<=pos[1]+touchActionScroll.getHeight())return false;
+                    }
+                    if(touchMoveJoystick!=null&&touchMoveJoystick.getVisibility()==View.VISIBLE){
+                        int[] pos=new int[2];touchMoveJoystick.getLocationOnScreen(pos);
+                        float rawX=e.getRawX(),rawY=e.getRawY();
+                        if(rawX>=pos[0]&&rawX<=pos[0]+touchMoveJoystick.getWidth()
+                                &&rawY>=pos[1]&&rawY<=pos[1]+touchMoveJoystick.getHeight())return false;
+                    }
                     tracking=true;lastX=x;lastY=y;return true;
                 case MotionEvent.ACTION_MOVE:
                     if(!tracking)return false;
