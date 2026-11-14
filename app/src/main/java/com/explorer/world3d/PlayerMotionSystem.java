@@ -34,6 +34,19 @@ final class PlayerMotionSystem {
 
     void update(Game g, float dt, Game.World world) {
         if (dt <= 0f) return;
+        if(g.mantleSeconds>0f){
+            float t=Game.clamp(1f-g.mantleSeconds/0.48f,0f,1f);
+            float smooth=t*t*(3f-2f*t);
+            g.px=g.mantleStartX+(g.mantleEndX-g.mantleStartX)*smooth;
+            g.pz=g.mantleStartZ+(g.mantleEndZ-g.mantleStartZ)*smooth;
+            g.jumpHeight=g.mantleStartY+(float)Math.sin(Math.PI*t)*g.mantleArc;
+            g.py=world.heightAt(g.px,g.pz)+g.jumpHeight;
+            float dx=g.mantleEndX-g.mantleStartX,dz=g.mantleEndZ-g.mantleStartZ;
+            if(Math.hypot(dx,dz)>0.001f)g.pyaw=(float)Math.atan2(dx,dz);
+            if(g.mantleSeconds<=0.015f){g.jumpHeight=0f;g.py=world.heightAt(g.px,g.pz);grounded=true;verticalVelocity=0f;}
+            g.swingAmp=0f;
+            return;
+        }
         if (g.jumpRequested) jumpBufferTimer = JUMP_BUFFER_SECONDS;
         else jumpBufferTimer = Math.max(0f, jumpBufferTimer - dt);
         g.jumpRequested = false;
@@ -151,23 +164,25 @@ final class PlayerMotionSystem {
     private static boolean tryMantle(Game g, Game.World world, float dirX, float dirZ, float nx, float nz) {
         if (!(world instanceof CityRenderer) || g.driving || g.dead || g.mantleCooldown > 0f
                 || g.jumpHeight > 0.25f || Math.hypot(dirX, dirZ) < 0.5f) return false;
-        CityRenderer city = (CityRenderer) world;
-        boolean lowObstacle = city.blockedAtHeight(nx, nz, BODY_RADIUS, 0.58f);
-        boolean headClear = !city.blockedAtHeight(nx, nz, BODY_RADIUS, 1.28f);
-        if (!lowObstacle || !headClear) return false;
-        float vaultX = g.px + dirX * 0.72f;
-        float vaultZ = g.pz + dirZ * 0.72f;
-        if (city.blockedAtHeight(vaultX, vaultZ, BODY_RADIUS, 1.12f)
-                || vehicleSideBlocked(g, world, vaultX, vaultZ, g.jumpHeight + 0.58f)) return false;
-        g.px = vaultX;
-        g.pz = vaultZ;
-        g.jumpHeight += 0.62f;
-        verticalVelocity = 2.35f;
-        grounded = false;
-        coyoteTimer = 0f;
-        jumpBufferTimer = 0f;
-        g.mantleSeconds = 0.38f;
-        g.mantleCooldown = 0.72f;
+        CityRenderer city=(CityRenderer)world;
+        if(!city.blockedAtHeight(nx,nz,BODY_RADIUS,0.58f))return false;
+        float obstacleTop=0f;
+        for(float h=0.85f;h<=2.45f;h+=0.4f){
+            if(!city.blockedAtHeight(nx,nz,BODY_RADIUS,h)){obstacleTop=h;break;}
+        }
+        if(obstacleTop==0f)return false;
+        float reach=0.78f+obstacleTop*0.28f;
+        float endX=g.px+dirX*reach,endZ=g.pz+dirZ*reach;
+        if(city.blockedAtHeight(endX,endZ,BODY_RADIUS,0.58f)
+                ||city.blockedAtHeight(endX,endZ,BODY_RADIUS,1.55f)
+                ||vehicleSideBlocked(g,world,endX,endZ,0.15f)
+                ||g.buildBlocked(endX,endZ,BODY_RADIUS,0f))return false;
+        g.mantleStartX=g.px;g.mantleStartZ=g.pz;
+        g.mantleEndX=endX;g.mantleEndZ=endZ;
+        g.mantleStartY=0f;g.mantleArc=Math.min(1.35f,0.55f+obstacleTop*0.22f);
+        g.mantleSeconds=0.48f;g.mantleCooldown=0.72f;
+        g.jumpHeight=0f;verticalVelocity=0f;grounded=false;
+        coyoteTimer=0f;jumpBufferTimer=0f;
         return true;
     }
 
