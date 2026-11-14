@@ -667,9 +667,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private void loadWeaponState(){
         SharedPreferences p=getSharedPreferences("adam_world_weapons",MODE_PRIVATE);Game g=renderer.game;g.cash=p.getInt("cash",g.cash);if(!p.getBoolean("weapon_cash_boost_v1",false)){g.cash=Math.max(g.cash,100000);p.edit().putBoolean("weapon_cash_boost_v1",true).putInt("cash",g.cash).apply();}
         for(int i=0;i<WeaponSystem.NAME.length;i++){g.ownedWeapons[i]=p.getBoolean("owned_"+i,g.ownedWeapons[i]);g.reserveAmmo[i]=p.getInt("reserve_"+i,g.reserveAmmo[i]);g.weaponMagazines[i]=p.getInt("magazine_"+i,g.weaponMagazines[i]);}
+        for(int slot=0;slot<g.quickbarWeapons.length;slot++){
+            int id=p.getInt("quickbar_"+slot,slot==0?0:-1);
+            g.quickbarWeapons[slot]=id>=0&&id<g.ownedWeapons.length&&g.ownedWeapons[id]?id:-1;
+        }
+        if(g.quickbarWeapons[0]<0)g.quickbarWeapons[0]=0;
         int selected=p.getInt("equipped",0);if(selected<0||selected>=g.ownedWeapons.length||!g.ownedWeapons[selected])selected=0;g.equippedWeapon=selected;g.magazineAmmo=p.contains("magazine_"+selected)?g.weaponMagazines[selected]:WeaponSystem.MAGAZINE[selected];
     }
-    private void saveWeaponState(){if(renderer==null)return;Game g=renderer.game;g.weaponMagazines[g.equippedWeapon]=g.magazineAmmo;SharedPreferences.Editor e=getSharedPreferences("adam_world_weapons",MODE_PRIVATE).edit().putInt("cash",g.cash).putInt("equipped",g.equippedWeapon);for(int i=0;i<WeaponSystem.NAME.length;i++)e.putBoolean("owned_"+i,g.ownedWeapons[i]).putInt("reserve_"+i,g.reserveAmmo[i]).putInt("magazine_"+i,g.weaponMagazines[i]);e.apply();}
+    private void saveWeaponState(){if(renderer==null)return;Game g=renderer.game;g.weaponMagazines[g.equippedWeapon]=g.magazineAmmo;SharedPreferences.Editor e=getSharedPreferences("adam_world_weapons",MODE_PRIVATE).edit().putInt("cash",g.cash).putInt("equipped",g.equippedWeapon);for(int i=0;i<WeaponSystem.NAME.length;i++)e.putBoolean("owned_"+i,g.ownedWeapons[i]).putInt("reserve_"+i,g.reserveAmmo[i]).putInt("magazine_"+i,g.weaponMagazines[i]);for(int slot=0;slot<g.quickbarWeapons.length;slot++)e.putInt("quickbar_"+slot,g.quickbarWeapons[slot]);e.apply();}
 
     private void showWeaponShop(){
         final String[] items=new String[WeaponSystem.NAME.length+1];
@@ -697,7 +702,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     +"\n"+game.weaponMagazines[i]+" / "+game.reserveAmmo[i]);
         }
         if(ids.isEmpty())return;
-        new AlertDialog.Builder(this).setTitle("الحقيبة · الأسلحة والذخيرة")
+        new AlertDialog.Builder(this).setTitle("الحقيبة · الأسلحة والذخيرة · علاج "+game.medkits+" · جرعات الدرع "+game.shieldPotions+" · مواد "+game.woodMaterials)
                 .setItems(labels.toArray(new String[0]),(d,which)->{
                     int id=ids.get(which);
                     String[] slots={"الخانة 1","الخانة 2","الخانة 3","الخانة 4","الخانة 5"};
