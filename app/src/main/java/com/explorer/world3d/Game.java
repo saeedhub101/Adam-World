@@ -148,7 +148,7 @@ final class Game {
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false; buildMode=buildEditMode=buildRequested=editRequested=cycleBuildTypeRequested=removeBuildRequested=harvestRequested=false; selectedBuildPieceIndex=-1; selectedBuildType=0;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
-        weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;useMedkitRequested=useShieldPotionRequested=false;aimYawOffset=aimPitchOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
+        weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;useMedkitRequested=useShieldPotionRequested=lootInteractionRequested=false;aimYawOffset=aimPitchOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
@@ -185,15 +185,41 @@ final class Game {
         return true;
     }
 
+    String nearbyLootHint(){
+        if(driving||dead)return "";
+        LootPickup nearest=null;
+        float best=2.45f;
+        for(LootPickup item:loot){
+            float d=(float)Math.hypot(item.x-px,item.z-pz);
+            if(d<best&&(item.type==LootPickup.WEAPON||item.type==LootPickup.CHEST)){
+                best=d;nearest=item;
+            }
+        }
+        if(nearest==null)return "";
+        if(nearest.type==LootPickup.WEAPON&&nearest.weaponId>=0&&nearest.weaponId<WeaponSystem.NAME.length)
+            return "التقاط / تبديل: "+WeaponSystem.NAME[nearest.weaponId];
+        return "صندوق غنائم قريب";
+    }
+
     private void updateLoot(float dt) {
         boolean interactWeapon=lootInteractionRequested;
         lootInteractionRequested=false;
+        int nearestWeaponIndex=-1;
+        float nearestWeaponDistance=1.55f;
+        if(interactWeapon&&!driving&&!dead){
+            for(int i=0;i<loot.size();i++){
+                LootPickup candidate=loot.get(i);
+                if(candidate.type!=LootPickup.WEAPON)continue;
+                float d=(float)Math.hypot(candidate.x-px,candidate.z-pz);
+                if(d<nearestWeaponDistance){nearestWeaponDistance=d;nearestWeaponIndex=i;}
+            }
+        }
         for(int i=loot.size()-1;i>=0;i--){
             LootPickup item=loot.get(i); item.life-=dt;
             if(item.life<=0f){loot.remove(i);continue;}
             if(driving||Math.hypot(item.x-px,item.z-pz)>=1.55f)continue;
             if(item.type==LootPickup.WEAPON){
-                if(!interactWeapon)continue;
+                if(!interactWeapon||i!=nearestWeaponIndex)continue;
                 interactWeapon=false;
                 int incoming=item.weaponId;
                 if(incoming<0||incoming>=ownedWeapons.length){loot.remove(i);continue;}
