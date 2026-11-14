@@ -1038,8 +1038,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             }
         });
         makeHudElementEditable(js,"hud_movement_joystick");
-        FrameLayout.LayoutParams jp = new FrameLayout.LayoutParams(dp(150), dp(150), Gravity.BOTTOM | Gravity.START);
-        jp.setMargins(dp(20), 0, 0, dp(30));
+        FrameLayout.LayoutParams jp = new FrameLayout.LayoutParams(dp(168), dp(168), Gravity.BOTTOM | Gravity.START);
+        jp.setMargins(dp(28), 0, 0, dp(34));
         root.addView(js, jp);
 
         // Mobile action pad: actions reuse the exact Game requests used by the gamepad.
@@ -1059,7 +1059,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         tapFireMode = getSharedPreferences("adam_world_controls", MODE_PRIVATE).getBoolean("tap_fire", false);
         touchHudLeft = getSharedPreferences("adam_world_controls", MODE_PRIVATE).getBoolean("hud_left", false);
         FrameLayout.LayoutParams actionParams = new FrameLayout.LayoutParams(
-                dp(224), dp(410), Gravity.BOTTOM | (touchHudLeft ? Gravity.START : Gravity.END));
+                dp(248), dp(430), Gravity.BOTTOM | (touchHudLeft ? Gravity.START : Gravity.END));
         actionParams.setMargins(touchHudLeft ? dp(8) : 0, 0, touchHudLeft ? 0 : dp(8), dp(16));
         touchActionScrollParams = actionParams;
         touchActionPad = actionPad;
@@ -1168,6 +1168,50 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         hudRow.addView(fireModeButton,new LinearLayout.LayoutParams(0,dp(44),1f));hudRow.addView(hudSideButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(hudRow);
         LinearLayout hudEditRow=new LinearLayout(this);hudEditRow.setGravity(Gravity.CENTER);
         hudEditRow.addView(hudEditButton,new LinearLayout.LayoutParams(0,dp(42),1f));combatControls.addView(hudEditRow);
+        // Battle Royale style: fixed right-side combat cluster, not a vertical button list.
+        FrameLayout battleHud = new FrameLayout(this);
+        battleHud.setClipChildren(false);
+        battleHud.setClipToPadding(false);
+        java.util.ArrayList<Button> hudButtons = new java.util.ArrayList<>();
+        for (int ri=0; ri<combatControls.getChildCount(); ri++) {
+            View row=combatControls.getChildAt(ri);
+            if (row instanceof ViewGroup) {
+                ViewGroup group=(ViewGroup)row;
+                for (int bi=0; bi<group.getChildCount(); bi++) {
+                    View child=group.getChildAt(bi);
+                    if (child instanceof Button) hudButtons.add((Button)child);
+                }
+            } else if (row instanceof Button) hudButtons.add((Button)row);
+        }
+        combatControls.removeAllViews();
+        for (Button control : hudButtons) {
+            String label=String.valueOf(control.getContentDescription());
+            int x=8,y=8,size=48;
+            if (label.contains("إطلاق")) { x=164; y=224; size=76; }
+            else if (label.contains("قفز")) { x=166; y=310; size=54; }
+            else if (label.contains("انحناء")) { x=104; y=342; size=48; }
+            else if (label.contains("تصويب")) { x=104; y=246; size=52; }
+            else if (label.contains("تلقيم")) { x=58; y=294; size=44; }
+            else if (label.equals("ركض")) { x=10; y=294; size=48; }
+            else if (label.contains("انزلاق سريع")) { x=48; y=350; size=46; }
+            else if (label.startsWith("خانة ")) {
+                int slot=0; try { slot=Integer.parseInt(label.substring(5))-1; } catch(Exception ignored) {}
+                x=8+slot*43; y=8; size=38;
+            } else if (label.contains("التقاط")) { x=10; y=58; size=42; }
+            else if (label.contains("علاج")) { x=58; y=58; size=42; }
+            else if (label.contains("درع")) { x=106; y=58; size=42; }
+            else if (label.contains("الحقيبة")) { x=10; y=110; size=42; }
+            else if (label.contains("عجلة السلاح")) { x=58; y=110; size=42; }
+            else if (label.contains("متجر")) { x=106; y=110; size=42; }
+            else if (label.contains("جمع الموارد")) { x=164; y=158; size=46; }
+            else continue;
+            FrameLayout.LayoutParams cp=new FrameLayout.LayoutParams(dp(size),dp(size),Gravity.TOP|Gravity.START);
+            cp.leftMargin=dp(x); cp.topMargin=dp(y);
+            control.setLayoutParams(cp);
+            battleHud.addView(control);
+        }
+        combatControls.removeAllViews();
+        combatControls.addView(battleHud,new LinearLayout.LayoutParams(dp(224),dp(410)));
         touchCombatRow = combatControls;
         actionPad.addView(combatControls);
 
@@ -1532,6 +1576,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         // to character movement on foot and steering/throttle while seated.
         if (touchMoveJoystick != null) touchMoveJoystick.setVisibility(View.VISIBLE);
         if (touchCombatRow != null) {
+            touchCombatRow.setVisibility(driving ? View.GONE : View.VISIBLE);
             for (int i = 0; i < touchCombatRow.getChildCount(); i++) {
                 View child = touchCombatRow.getChildAt(i);
                 if (child instanceof LinearLayout) {
