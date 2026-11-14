@@ -80,7 +80,8 @@ final class Game {
     volatile float vehicleSteeringInput, vehicleForwardInput;
     volatile long trafficHornEvents;
     float vehicleY;
-    volatile boolean sprint, jogging, stealthMode;
+    volatile boolean sprint, jogging, stealthMode, crouching;
+    float slideSeconds, slideX, slideZ;
     volatile long lastSprintTapMs;
     volatile boolean cinematicCamera;
     volatile int cameraMode = 1;
@@ -100,7 +101,7 @@ final class Game {
     }
 
     void reset() {
-        sx = sy = vehicleSteeringInput = vehicleForwardInput = 0f; vehicleY = 0f; trafficHornEvents = 0L; sprint = false; jogging = false; stealthMode = false; lastSprintTapMs = 0L;
+        sx = sy = vehicleSteeringInput = vehicleForwardInput = 0f; vehicleY = 0f; trafficHornEvents = 0L; sprint = false; jogging = false; stealthMode = false; crouching = false; slideSeconds = slideX = slideZ = 0f; lastSprintTapMs = 0L;
         cinematicCamera = false; cameraMode = 1;
         playerMotion.reset();
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
@@ -383,7 +384,10 @@ final class Game {
         else if(playerPose==2){playerPoseTime+=dt;playerFall=Math.min(1f,playerPoseTime/.25f);if(playerFall>=1f){playerPose=3;playerPoseTime=0f;}}
         else if(playerPose==3){playerPoseTime+=dt;if(playerPoseTime>.8f){playerPose=4;playerPoseTime=0f;}}
         else if(playerPose==4){playerPoseTime+=dt;playerFall=Math.max(0f,1f-playerPoseTime/.55f);if(playerPoseTime>=.55f){playerPose=0;playerPoseTime=0f;}}
-        if (!guardRequested && dodgeSeconds <= 0f) stamina = Math.min(100f, stamina + 18f * dt);
+        boolean movingOnFoot = !driving && Math.hypot(sx, sy) > 0.08f;
+        if (sprint && movingOnFoot) stamina = Math.max(0f, stamina - 8.5f * dt);
+        if (stamina <= 0.5f) sprint = false;
+        if (!guardRequested && dodgeSeconds <= 0f && (!sprint || !movingOnFoot)) stamina = Math.min(100f, stamina + 18f * dt);
         if (dodgeRequested) {
             dodgeRequested = false;
             if (!driving && !dead && stamina >= 24f && now - lastDodgeMs >= 650L) {
@@ -398,6 +402,16 @@ final class Game {
             }
         }
         if (guardRequested && !driving) stamina = Math.max(0f, stamina - 12f * dt);
+        if (crouching && sprint && movingOnFoot && slideSeconds <= 0f && stamina >= 14f && playerPose == 0) {
+            float fx = (float)Math.sin(camYaw), fz = (float)Math.cos(camYaw);
+            float rx = -(float)Math.cos(camYaw), rz = (float)Math.sin(camYaw);
+            float dx = fx * sy + rx * sx, dz = fz * sy + rz * sx;
+            float len = Math.max(0.001f, (float)Math.hypot(dx, dz));
+            slideX = dx / len; slideZ = dz / len;
+            slideSeconds = 0.72f;
+            stamina = Math.max(0f, stamina - 14f);
+        }
+        slideSeconds = Math.max(0f, slideSeconds - dt);
         if (stamina <= 0f) guardRequested = false;
         // Character locomotion owns jump buffering, coyote time and vertical integration.
         // Consume the input here only through PlayerMotionSystem so touch/gamepad share one path.
