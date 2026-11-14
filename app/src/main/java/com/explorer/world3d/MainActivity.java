@@ -686,6 +686,23 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         dialog.show();
     }
 
+    private void showInventory(){
+        Game game=renderer.game;
+        java.util.ArrayList<Integer> ids=new java.util.ArrayList<>();
+        java.util.ArrayList<String> labels=new java.util.ArrayList<>();
+        for(int i=0;i<WeaponSystem.NAME.length;i++)if(game.ownedWeapons[i]){
+            ids.add(i);
+            labels.add((i==game.equippedWeapon?"✓ ":"")+WeaponSystem.NAME[i]+" · "+WeaponSystem.RARITY_LABEL[WeaponSystem.RARITY[i]]
+                    +"\n"+game.weaponMagazines[i]+" / "+game.reserveAmmo[i]);
+        }
+        if(ids.isEmpty())return;
+        new AlertDialog.Builder(this).setTitle("الحقيبة · الأسلحة والذخيرة")
+                .setItems(labels.toArray(new String[0]),(d,which)->runOnGl(()->{
+                    int id=ids.get(which);
+                    if(renderer.game.equipWeapon(id)){saveWeaponState();onToast("تم التبديل إلى "+WeaponSystem.NAME[id]);}
+                })).setNegativeButton("إغلاق",null).show();
+    }
+
     private void showVehicleSelector() {
         final String[] names = {"سيدان", "SUV", "بيك أب", "باص", "شرطة", "دراجة نارية",
                 "دراجة هوائية", "دبابة", "هليكوبتر", "طائرة"};
@@ -978,8 +995,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         Button fireTouch=touchAction("إطلاق",()->runOnGl(()->{if(tapFireMode)renderer.game.weaponFireRequested=true;else renderer.game.weaponFireHeld=true;}),()->{if(!tapFireMode)runOnGl(()->renderer.game.weaponFireHeld=false);});
         weaponRow.addView(aimTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); weaponRow.addView(fireTouch,new LinearLayout.LayoutParams(0,dp(46),1f)); combatControls.addView(weaponRow);
         LinearLayout weaponRow2=new LinearLayout(this); weaponRow2.setGravity(Gravity.CENTER);
+        weaponRow2.addView(touchAction("الحقيبة",()->showInventory(),null),new LinearLayout.LayoutParams(0,dp(44),0.9f));
         weaponRow2.addView(touchAction("عجلة السلاح",()->{weaponWheelOpen=true;weaponWheelView.showWheel();},null),new LinearLayout.LayoutParams(0,dp(44),1f));
-        weaponRow2.addView(touchAction("متجر الأسلحة",()->showWeaponShop(),null),new LinearLayout.LayoutParams(0,dp(44),1.35f)); combatControls.addView(weaponRow2);
+        weaponRow2.addView(touchAction("متجر الأسلحة",()->showWeaponShop(),null),new LinearLayout.LayoutParams(0,dp(44),1.1f)); combatControls.addView(weaponRow2);
         LinearLayout hudRow=new LinearLayout(this);hudRow.setGravity(Gravity.CENTER);
         Button fireModeButton=btn("إطلاق: "+(tapFireMode?"نقرة":"مستمر"));
         fireModeButton.setTextSize(11);fireModeButton.setMinHeight(dp(44));
