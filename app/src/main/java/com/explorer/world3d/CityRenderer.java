@@ -481,6 +481,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             Geo.setOrigin(31.997579, 35.940358);
             Terrain.configureForCity(Geo.lat0, Geo.lon0);
             game.reset();
+            harvestableIds.clear();
             beginSpawn();
         }
     }
