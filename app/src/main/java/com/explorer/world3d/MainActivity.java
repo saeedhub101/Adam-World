@@ -978,8 +978,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         Button buildTypeButton=btn("قطعة: جدار");buildTypeButton.setTextSize(11);buildTypeButton.setMinHeight(dp(44));
         buildTypeButton.setOnClickListener(v->{runOnGl(()->renderer.game.cycleBuildTypeRequested=true);String[] types={"جدار","أرضية","منحدر"};int next=(buildTypeButton.getTag() instanceof Integer?(Integer)buildTypeButton.getTag()+1:1)%3;buildTypeButton.setTag(next);buildTypeButton.setText("قطعة: "+types[next]);});
         LinearLayout buildRow=new LinearLayout(this);buildRow.setGravity(Gravity.CENTER);
-        Button placeBuildButton=btn("وضع القطعة");placeBuildButton.setTextSize(11);placeBuildButton.setMinHeight(dp(44));placeBuildButton.setOnClickListener(v->runOnGl(()->renderer.game.buildRequested=true));
-        Button editBuildButton=btn("تحرير / تدوير");editBuildButton.setTextSize(11);editBuildButton.setMinHeight(dp(44));editBuildButton.setOnClickListener(v->runOnGl(()->renderer.game.editRequested=true));
+        Button placeBuildButton=btn("بناء / تأكيد التعديل");placeBuildButton.setTextSize(11);placeBuildButton.setMinHeight(dp(44));placeBuildButton.setOnClickListener(v->runOnGl(()->renderer.game.buildRequested=true));
+        Button editBuildButton=btn("تشغيل / إيقاف التحرير");editBuildButton.setTextSize(11);editBuildButton.setMinHeight(dp(44));editBuildButton.setOnClickListener(v->runOnGl(()->renderer.game.editRequested=true));
         buildRow.addView(buildModeButton,new LinearLayout.LayoutParams(0,dp(44),1f));buildRow.addView(buildTypeButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(buildRow);
         LinearLayout buildRow2=new LinearLayout(this);buildRow2.setGravity(Gravity.CENTER);
         buildRow2.addView(placeBuildButton,new LinearLayout.LayoutParams(0,dp(44),1f));buildRow2.addView(editBuildButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(buildRow2);
@@ -1222,6 +1222,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             renderer.game.weaponAimHeld = false;
             renderer.game.weaponFireHeld = false;
             renderer.game.weaponFireRequested = false;
+            renderer.game.buildRequested = false;
+            renderer.game.editRequested = false;
+            renderer.game.cycleBuildTypeRequested = false;
             renderer.game.reloadRequested = false;
             renderer.game.handbrake = false;
             renderer.game.brakeRequested = false;
