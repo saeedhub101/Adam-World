@@ -696,25 +696,54 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         Game game=renderer.game;
         java.util.ArrayList<Integer> ids=new java.util.ArrayList<>();
         java.util.ArrayList<String> labels=new java.util.ArrayList<>();
+        StringBuilder slotsText=new StringBuilder("الخانات السريعة: ");
+        for(int slot=0;slot<game.quickbarWeapons.length;slot++){
+            if(slot>0)slotsText.append("  ·  ");
+            int weapon=game.quickbarWeapons[slot];
+            slotsText.append(slot+1).append(": ").append(weapon>=0?WeaponSystem.NAME[weapon]:"فارغة");
+        }
         for(int i=0;i<WeaponSystem.NAME.length;i++)if(game.ownedWeapons[i]){
             ids.add(i);
             labels.add((i==game.equippedWeapon?"✓ ":"")+WeaponSystem.NAME[i]+" · "+WeaponSystem.RARITY_LABEL[WeaponSystem.RARITY[i]]
                     +"\n"+game.weaponMagazines[i]+" / "+game.reserveAmmo[i]);
         }
-        if(ids.isEmpty())return;
-        new AlertDialog.Builder(this).setTitle("الحقيبة · الأسلحة والذخيرة")
-                .setMessage("علاجات: "+game.medkits+"   |   جرعات الدرع: "+game.shieldPotions+"   |   مواد البناء: "+game.woodMaterials)
+        String summary=slotsText+"\nعلاجات: "+game.medkits+"   |   جرعات الدرع: "+game.shieldPotions
+                +"\nمواد البناء: "+game.woodMaterials+"   |   الرصيد: $"+game.cash;
+        new AlertDialog.Builder(this).setTitle("الحقيبة · إدارة العناصر")
+                .setMessage(summary)
                 .setItems(labels.toArray(new String[0]),(d,which)->{
                     int id=ids.get(which);
-                    String[] slots={"الخانة 1","الخانة 2","الخانة 3","الخانة 4","الخانة 5"};
-                    new AlertDialog.Builder(this).setTitle("تعيين "+WeaponSystem.NAME[id]+" إلى خانة سريعة")
-                            .setItems(slots,(dialog,slot)->runOnGl(()->{
-                                renderer.game.assignQuickbarWeapon(slot,id);
-                                renderer.game.selectQuickbarSlot(slot);
-                                saveWeaponState();
-                                onToast("تم تعيين السلاح إلى الخانة "+(slot+1));
-                            })).setNegativeButton("إلغاء",null).show();
-                }).setNegativeButton("إغلاق",null).show();
+                    String[] actions={"تجهيز السلاح الآن","تعيين إلى خانة سريعة","إزالة السلاح من الخانات السريعة"};
+                    new AlertDialog.Builder(this).setTitle(WeaponSystem.NAME[id]+" · "+WeaponSystem.RARITY_LABEL[WeaponSystem.RARITY[id]])
+                            .setItems(actions,(dialog,action)->{
+                                if(action==0)runOnGl(()->{
+                                    renderer.game.equipWeapon(id);
+                                    saveWeaponState();
+                                    onToast("تم تجهيز "+WeaponSystem.NAME[id]);
+                                });
+                                else if(action==1){
+                                    String[] slotNames={"الخانة 1","الخانة 2","الخانة 3","الخانة 4","الخانة 5"};
+                                    new AlertDialog.Builder(this).setTitle("اختر الخانة")
+                                            .setItems(slotNames,(slotDialog,slot)->runOnGl(()->{
+                                                renderer.game.assignQuickbarWeapon(slot,id);
+                                                renderer.game.selectQuickbarSlot(slot);
+                                                saveWeaponState();
+                                                onToast("تم تعيين السلاح إلى الخانة "+(slot+1));
+                                            })).setNegativeButton("إلغاء",null).show();
+                                }else runOnGl(()->{
+                                    boolean removed=renderer.game.unassignQuickbarWeapon(id);
+                                    saveWeaponState();
+                                    onToast(removed?"تمت إزالة السلاح من الخانات":"السلاح غير معيّن في أي خانة");
+                                });
+                            }).setNegativeButton("إلغاء",null).show();
+                }).setPositiveButton("استخدام علاج +50", (d,w)->runOnGl(()->{
+                    renderer.game.useMedkitRequested=true;
+                    saveWeaponState();
+                }))
+                .setNeutralButton("استخدام درع +25",(d,w)->runOnGl(()->{
+                    renderer.game.useShieldPotionRequested=true;
+                    saveWeaponState();
+                })).setNegativeButton("إغلاق",null).show();
     }
 
     private void showVehicleSelector() {
