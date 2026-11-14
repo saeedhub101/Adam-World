@@ -901,6 +901,12 @@ final class Game {
         for(int i=0;i<quickbarWeapons.length;i++)if(i!=slot&&quickbarWeapons[i]==id)quickbarWeapons[i]=-1;
         quickbarWeapons[slot]=id;return true;
     }
+    boolean unassignQuickbarWeapon(int id){
+        boolean removed=false;
+        for(int i=0;i<quickbarWeapons.length;i++)if(quickbarWeapons[i]==id){quickbarWeapons[i]=-1;removed=true;}
+        if(activeQuickbarSlot>=0&&activeQuickbarSlot<quickbarWeapons.length&&quickbarWeapons[activeQuickbarSlot]<0)activeQuickbarSlot=0;
+        return removed;
+    }
     void assignFirstQuickbarSlot(int id){
         for(int i=0;i<quickbarWeapons.length;i++)if(quickbarWeapons[i]<0){quickbarWeapons[i]=id;return;}
     }
