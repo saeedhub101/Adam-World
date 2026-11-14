@@ -1283,6 +1283,11 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
     private void ensureHarvestables(){
         float focusX=game.focusX(),focusZ=game.focusZ();
         int gx=(int)Math.floor(focusX/24f),gz=(int)Math.floor(focusZ/24f);
+        java.util.Iterator<Long> checked=harvestableCheckedIds.iterator();
+        while(checked.hasNext()){
+            long key=checked.next();int ix=(int)(key>>32),iz=(int)key;
+            if(Math.abs(ix-gx)>5||Math.abs(iz-gz)>5)checked.remove();
+        }
         for(int ix=gx-2;ix<=gx+2;ix++)for(int iz=gz-2;iz<=gz+2;iz++){
             long id=(((long)ix)<<32)^(iz&0xffffffffL);
             if(harvestableIds.contains(id)||harvestableCheckedIds.contains(id))continue;
