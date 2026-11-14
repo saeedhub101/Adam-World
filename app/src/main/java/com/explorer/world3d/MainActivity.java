@@ -674,21 +674,22 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             float x=.88f,y=.72f; int size=46; boolean visible=true;
             if(label.startsWith("خانة ")){ int slot=0; try{slot=Integer.parseInt(label.substring(5))-1;}catch(Exception ignored){} x=.335f+slot*.083f; y=.925f; size=36; }
             else if(label.contains("إطلاق")){x=.91f;y=.735f;size=68;}
-            else if(label.contains("تصويب")){x=.805f;y=.785f;size=50;}
+            else if(label.contains("تصويب")){x=.775f;y=.80f;size=48;}
             else if(label.contains("قفز")){x=.925f;y=.585f;size=52;}
             else if(label.contains("انحناء")){x=.835f;y=.665f;size=46;}
             else if(label.contains("تلقيم")){x=.895f;y=.475f;size=42;}
-            else if(label.equals("ركض")){x=.285f;y=.755f;size=46;}
-            else if(label.contains("انزلاق سريع")){x=.335f;y=.655f;size=44;}
+            else if(label.equals("ركض")){x=.225f;y=.34f;size=44;}
+            else if(label.contains("انزلاق سريع")){x=.315f;y=.34f;size=42;}
             else if(label.contains("لكم")){x=.755f;y=.585f;size=44;}
             else if(label.contains("التقاط")){x=.755f;y=.475f;size=44;}
             else if(label.contains("علاج")){x=.575f;y=.875f;size=38;}
             else if(label.contains("درع")){x=.655f;y=.875f;size=38;}
             else if(label.contains("جمع الموارد")){x=.875f;y=.385f;size=44;}
-            else if(label.equals("بناء")){x=.705f;y=.875f;size=40;}
-            else if(label.equals("قطعة البناء")){x=.785f;y=.875f;size=40;}
-            else if(label.equals("تأكيد البناء")){x=.865f;y=.875f;size=44;}
+            else if(label.equals("بناء")){x=.77f;y=.855f;size=38;}
+            else if(label.equals("قطعة البناء")){x=.85f;y=.855f;size=38;}
+            else if(label.equals("تأكيد البناء")){x=.93f;y=.855f;size=40;}
             else visible=false;
+            if(label.equals("قطعة البناء") || label.equals("تأكيد البناء")) visible = visible && renderer != null && renderer.game.buildMode;
             if(!visible){button.setVisibility(View.GONE);continue;}
             button.setVisibility(View.VISIBLE);
             int px=dp(size), py=dp(size), cx=Math.round(w*x), cy=Math.round(h*y);
