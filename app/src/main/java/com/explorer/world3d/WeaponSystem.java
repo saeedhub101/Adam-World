@@ -15,5 +15,6 @@ final class WeaponSystem {
  static final float[] RECOIL_IMPULSE={0.28f,0.12f,0.19f,0.52f,0.72f,0.88f,1.0f};
  static final float[] SPREAD_MULTIPLIER={1.0f,1.28f,0.92f,1.0f,0.48f,1.4f,1.55f};
  static final int[] RARITY={0,1,2,2,3,4,4};
+ static final String[] RARITY_LABEL={"شائع","غير شائع","نادر","ملحمي","أسطوري"};
  private WeaponSystem(){}
 }
