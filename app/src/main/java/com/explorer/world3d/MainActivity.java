@@ -1324,7 +1324,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if (System.currentTimeMillis()-lastHudRefresh>250 && renderer!=null) {
                 lastHudRefresh=System.currentTimeMillis();
                 int hp=renderer.game.health;
-                healthHud.setText("♥ "+hp+" / 100     ⚡ "+(int)renderer.game.stamina+" / 100"+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
+                healthHud.setText("♥ "+hp+" / 100     🛡 "+renderer.game.shield+" / 100     ⚡ "+(int)renderer.game.stamina+" / 100"+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
                 Game game=renderer.game;
                 String weaponName=WeaponSystem.NAME[game.equippedWeapon];
                 String ammo=weaponName+"\n"+game.magazineAmmo+"   /   "+game.reserveAmmo[game.equippedWeapon];
