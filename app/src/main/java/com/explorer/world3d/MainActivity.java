@@ -672,7 +672,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         for(Button button:controls){
             String label=String.valueOf(button.getContentDescription());
             float x=.88f,y=.72f; int size=46; boolean visible=true;
-            if(label.startsWith("خانة ")){ int slot=0; try{slot=Integer.parseInt(label.substring(5))-1;}catch(Exception ignored){} x=.335f+slot*.083f; y=.925f; size=36; }
+            if(label.startsWith("خانة ")){ int slot=0; try{slot=Integer.parseInt(label.substring(5))-1;}catch(Exception ignored){} x=.31f+slot*.095f; y=.925f; size=34; }
             else if(label.contains("إطلاق")){x=.91f;y=.735f;size=68;}
             else if(label.contains("تصويب")){x=.775f;y=.80f;size=48;}
             else if(label.contains("قفز")){x=.925f;y=.585f;size=52;}
