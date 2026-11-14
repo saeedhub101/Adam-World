@@ -97,6 +97,8 @@ final class PlayerMotionSystem {
         if (!blockedAll) {
             g.px = nx;
             g.pz = nz;
+        } else if (tryMantle(g, world, desiredX, desiredZ, nx, nz)) {
+            // The short vault clears a low obstacle only when the head-space above it is free.
         } else {
             if (!blocked(g, world, nx, g.pz, stepClearance)) g.px = nx;
             else vx = 0f;
@@ -144,6 +146,29 @@ final class PlayerMotionSystem {
         if (grounded) g.py = targetGround;
         else g.py += (targetGround - g.py) * (1f - (float)Math.exp(-dt * 7f));
         g.jumpVelocity = verticalVelocity;
+    }
+
+    private static boolean tryMantle(Game g, Game.World world, float dirX, float dirZ, float nx, float nz) {
+        if (!(world instanceof CityRenderer) || g.driving || g.dead || g.mantleCooldown > 0f
+                || g.jumpHeight > 0.25f || Math.hypot(dirX, dirZ) < 0.5f) return false;
+        CityRenderer city = (CityRenderer) world;
+        boolean lowObstacle = city.blockedAtHeight(nx, nz, BODY_RADIUS, 0.58f);
+        boolean headClear = !city.blockedAtHeight(nx, nz, BODY_RADIUS, 1.28f);
+        if (!lowObstacle || !headClear) return false;
+        float vaultX = g.px + dirX * 0.72f;
+        float vaultZ = g.pz + dirZ * 0.72f;
+        if (city.blockedAtHeight(vaultX, vaultZ, BODY_RADIUS, 1.12f)
+                || vehicleSideBlocked(g, world, vaultX, vaultZ, g.jumpHeight + 0.58f)) return false;
+        g.px = vaultX;
+        g.pz = vaultZ;
+        g.jumpHeight += 0.62f;
+        verticalVelocity = 2.35f;
+        grounded = false;
+        coyoteTimer = 0f;
+        jumpBufferTimer = 0f;
+        g.mantleSeconds = 0.38f;
+        g.mantleCooldown = 0.72f;
+        return true;
     }
 
     private static boolean blocked(Game g, Game.World world, float x, float z, float stepClearance) {
