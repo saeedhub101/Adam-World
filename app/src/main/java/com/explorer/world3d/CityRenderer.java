@@ -1229,6 +1229,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         }
         drawLootPickups();
         drawBuildPieces();
+        drawBuildPreview();
         drawProjectileEffects();
         if (spawned) {
             float parkedGroundOffset = g.vehicleY - Terrain.h(g.cx, g.cz);
@@ -1280,10 +1281,37 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             Matrix.scaleM(tmp,0,item.type==Game.LootPickup.SHIELD?0.28f:0.23f,0.34f,item.type==Game.LootPickup.SHIELD?0.28f:0.23f);
             GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
             if(item.type==Game.LootPickup.SHIELD)GLES20.glUniform3f(uTint,.10f,.48f,1f);
+            else if(item.type==Game.LootPickup.CHEST)GLES20.glUniform3f(uTint,.68f,.34f,.08f);
+            else if(item.type==Game.LootPickup.MATERIAL)GLES20.glUniform3f(uTint,.22f,.72f,.34f);
             else GLES20.glUniform3f(uTint,1f,.72f,.12f);
-            GLES20.glUniform1f(uEmisK,.32f);cube.draw();
+            GLES20.glUniform1f(uEmisK,item.type==Game.LootPickup.CHEST?.12f:.32f);
+            if(item.type==Game.LootPickup.CHEST)Matrix.scaleM(tmp,0,1.45f,0.72f,1.05f);
+            cube.draw();
         }
         GLES20.glUniformMatrix4fv(uModel,1,false,ident,0);
+        GLES20.glUniform3f(uTint,1f,1f,1f);GLES20.glUniform1f(uEmisK,0f);
+    }
+
+    private void drawBuildPreview(){
+        if(cube==null||!game.buildMode||game.buildEditMode)return;
+        GLES20.glUniform1f(uWater,0f);GLES20.glUniform1f(uPbr,0f);
+        bindTex(tex.white,tex.black);
+        Matrix.setIdentityM(tmp,0);
+        float ground=Terrain.h(game.buildPreviewX,game.buildPreviewZ);
+        int type=game.selectedBuildType;
+        Matrix.translateM(tmp,0,game.buildPreviewX,ground+(type==1?0.14f:type==2?0.78f:1.18f),game.buildPreviewZ);
+        Matrix.rotateM(tmp,0,(float)Math.toDegrees(game.buildPreviewYaw),0f,1f,0f);
+        if(type==0)Matrix.scaleM(tmp,0,1.42f,1.16f,.13f);
+        else if(type==1)Matrix.scaleM(tmp,0,1.42f,.14f,1.42f);
+        else {Matrix.rotateM(tmp,0,-32f,0f,0f,1f);Matrix.scaleM(tmp,0,1.42f,.14f,1.42f);}
+        GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
+        if(game.buildPreviewValid)GLES20.glUniform3f(uTint,.25f,.95f,.48f);
+        else GLES20.glUniform3f(uTint,1f,.18f,.16f);
+        GLES20.glUniform1f(uGlass,.62f);GLES20.glUniform1f(uEmisK,.18f);
+        GLES20.glEnable(GLES20.GL_BLEND);GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA,GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        cube.draw();
+        GLES20.glDisable(GLES20.GL_BLEND);
+        GLES20.glUniform1f(uGlass,0f);GLES20.glUniformMatrix4fv(uModel,1,false,ident,0);
         GLES20.glUniform3f(uTint,1f,1f,1f);GLES20.glUniform1f(uEmisK,0f);
     }
 
