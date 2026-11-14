@@ -738,11 +738,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                             }).setNegativeButton("إلغاء",null).show();
                 }).setPositiveButton("استخدام علاج +50", (d,w)->runOnGl(()->{
                     renderer.game.useMedkitRequested=true;
-                    saveWeaponState();
                 }))
                 .setNeutralButton("استخدام درع +25",(d,w)->runOnGl(()->{
                     renderer.game.useShieldPotionRequested=true;
-                    saveWeaponState();
                 })).setNegativeButton("إغلاق",null).show();
     }
 
