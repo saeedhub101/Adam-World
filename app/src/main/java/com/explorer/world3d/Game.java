@@ -164,7 +164,7 @@ final class Game {
     }
 
     private void processBuildActions(World world) {
-        if(editRequested){editRequested=false;buildEditMode=!buildEditMode;}
+        if(editRequested){editRequested=false;if(buildMode&&!driving)buildEditMode=!buildEditMode;}
         if(cycleBuildTypeRequested){cycleBuildTypeRequested=false;selectedBuildType=(selectedBuildType+1)%3;}
         if(!buildRequested)return;
         buildRequested=false;
@@ -179,7 +179,7 @@ final class Game {
         float fx=(float)Math.sin(camYaw),fz=(float)Math.cos(camYaw);
         float x=(float)Math.floor((px+fx*2.85f)*2f+0.5f)*0.5f;
         float z=(float)Math.floor((pz+fz*2.85f)*2f+0.5f)*0.5f;
-        if(Math.hypot(x-px,z-pz)<2.0f||world.blocked(x,z,0.82f))return;
+        if(Math.hypot(x-px,z-pz)<2.0f||world.blocked(x,z,0.82f)||buildBlocked(x,z,0.82f,0f))return;
         float yaw=(float)(Math.round(camYaw/(Math.PI/4.0))*(Math.PI/4.0));
         buildPieces.add(new BuildPiece(x,z,yaw,selectedBuildType,0));
         woodMaterials-=10;
