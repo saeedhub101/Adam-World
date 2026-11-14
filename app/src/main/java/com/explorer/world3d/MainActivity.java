@@ -1012,6 +1012,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         buildRow.addView(buildModeButton,new LinearLayout.LayoutParams(0,dp(44),1f));buildRow.addView(buildTypeButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(buildRow);
         LinearLayout buildRow2=new LinearLayout(this);buildRow2.setGravity(Gravity.CENTER);
         buildRow2.addView(placeBuildButton,new LinearLayout.LayoutParams(0,dp(44),1f));buildRow2.addView(editBuildButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(buildRow2);
+        Button deleteBuildButton=btn("حذف القطعة المحددة");deleteBuildButton.setTextSize(11);deleteBuildButton.setMinHeight(dp(42));
+        deleteBuildButton.setOnClickListener(v->runOnGl(()->renderer.game.removeBuildRequested=true));
+        LinearLayout buildRow3=new LinearLayout(this);buildRow3.setGravity(Gravity.CENTER);
+        buildRow3.addView(deleteBuildButton,new LinearLayout.LayoutParams(0,dp(42),1f));combatControls.addView(buildRow3);
         Button hudSideButton=btn("مكان الأزرار: "+(touchHudLeft?"يسار":"يمين"));
         hudSideButton.setTextSize(11);hudSideButton.setMinHeight(dp(44));
         Button hudEditButton=btn("تخصيص HUD");hudEditButton.setTextSize(11);hudEditButton.setMinHeight(dp(44));
