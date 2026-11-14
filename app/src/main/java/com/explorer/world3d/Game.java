@@ -154,7 +154,9 @@ final class Game {
     private void dropLoot(Agent a) {
         loot.add(new LootPickup(a.x,a.z,LootPickup.AMMO,18));
         loot.add(new LootPickup(a.x+0.38f,a.z-0.22f,LootPickup.SHIELD,25));
-        loot.add(new LootPickup(a.x-0.42f,a.z+0.28f,LootPickup.CHEST,1));
+        long roll=System.nanoTime()&63L;
+        int rarity=roll<32?0:roll<52?1:roll<60?2:roll<63?3:4;
+        loot.add(new LootPickup(a.x-0.42f,a.z+0.28f,LootPickup.CHEST,1,rarity));
         loot.add(new LootPickup(a.x+0.55f,a.z+0.35f,LootPickup.MATERIAL,20));
     }
 
@@ -166,8 +168,7 @@ final class Game {
             if(item.type==LootPickup.CHEST){
                 if(item.opened){loot.remove(i);continue;}
                 item.opened=true;
-                int roll=(int)((System.nanoTime()>>>7)&7L);
-                int weapon=roll<4?1:roll<6?2:roll==6?3:4;
+                int weapon=item.rarity==0?1:item.rarity==1?2:item.rarity==2?3:item.rarity==3?4:((System.nanoTime()&1L)==0L?5:6);
                 if(!ownedWeapons[weapon]){
                     ownedWeapons[weapon]=true;
                     weaponMagazines[weapon]=WeaponSystem.MAGAZINE[weapon];
