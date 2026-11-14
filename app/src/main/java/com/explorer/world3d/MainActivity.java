@@ -1398,7 +1398,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 int hp=renderer.game.health;
                 healthHud.setText("♥ "+hp+" / 100     🛡 "+renderer.game.shield+" / 100     ⚡ "+(int)renderer.game.stamina+" / 100"+(renderer.game.buildMode?"     🪵 "+renderer.game.woodMaterials:"" )+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
                 Game game=renderer.game;
-                String weaponName=WeaponSystem.NAME[game.equippedWeapon];
+                int weaponRarity=WeaponSystem.RARITY[game.equippedWeapon];
+                String weaponName=WeaponSystem.NAME[game.equippedWeapon]+" · "+WeaponSystem.RARITY_LABEL[weaponRarity];
                 String ammo=weaponName+"\n"+game.magazineAmmo+"   /   "+game.reserveAmmo[game.equippedWeapon];
                 if(weaponHud!=null&&!ammo.equals(weaponHud.getText().toString())){
                     android.text.SpannableStringBuilder styled=new android.text.SpannableStringBuilder(ammo);
