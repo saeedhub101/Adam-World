@@ -94,6 +94,8 @@ final class Game {
     final boolean[] ownedWeapons={true,false,false,false,false,false,false};
     final int[] reserveAmmo={48,0,0,0,0,0,0};
     final int[] weaponMagazines={12,0,0,0,0,0,0};
+    final int[] quickbarWeapons={0,-1,-1,-1,-1};
+    int activeQuickbarSlot;
     long lastWeaponShotMs;
     float weaponReloadSeconds, weaponReloadDuration, weaponRecoil, muzzleFlashSeconds;
     int weaponReloadPendingAmmo, weaponReloadWeaponId=-1;
@@ -140,7 +142,7 @@ final class Game {
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false; buildMode=buildEditMode=buildRequested=editRequested=cycleBuildTypeRequested=removeBuildRequested=harvestRequested=false; selectedBuildPieceIndex=-1; selectedBuildType=0; woodMaterials=250;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
-        weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;aimYawOffset=aimPitchOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
+        weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;aimYawOffset=aimPitchOffset=0f;activeQuickbarSlot=0;quickbarWeapons[0]=0;for(int i=1;i<quickbarWeapons.length;i++)quickbarWeapons[i]=-1;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
@@ -179,6 +181,7 @@ final class Game {
                 int weapon=item.rarity==0?1:item.rarity==1?2:item.rarity==2?3:item.rarity==3?4:((System.nanoTime()&1L)==0L?5:6);
                 if(!ownedWeapons[weapon]){
                     ownedWeapons[weapon]=true;
+                    assignFirstQuickbarSlot(weapon);
                     weaponMagazines[weapon]=WeaponSystem.MAGAZINE[weapon];
                     reserveAmmo[weapon]=WeaponSystem.START_AMMO[weapon];
                     equipWeapon(weapon);
@@ -884,7 +887,20 @@ final class Game {
         weaponMagazines[equippedWeapon]=magazineAmmo;equippedWeapon=id;
         magazineAmmo=Math.min(WeaponSystem.MAGAZINE[id],Math.max(0,weaponMagazines[id]));weaponFireHeld=false;return true;
     }
-    boolean purchaseWeapon(int id){if(id<0||id>=ownedWeapons.length||ownedWeapons[id]||cash<WeaponSystem.PRICE[id])return false;cash-=WeaponSystem.PRICE[id];ownedWeapons[id]=true;reserveAmmo[id]=WeaponSystem.START_AMMO[id];weaponMagazines[id]=WeaponSystem.MAGAZINE[id];weaponMagazines[equippedWeapon]=magazineAmmo;equippedWeapon=id;magazineAmmo=weaponMagazines[id];return true;}
+    boolean purchaseWeapon(int id){if(id<0||id>=ownedWeapons.length||ownedWeapons[id]||cash<WeaponSystem.PRICE[id])return false;cash-=WeaponSystem.PRICE[id];ownedWeapons[id]=true;reserveAmmo[id]=WeaponSystem.START_AMMO[id];weaponMagazines[id]=WeaponSystem.MAGAZINE[id];weaponMagazines[equippedWeapon]=magazineAmmo;equippedWeapon=id;magazineAmmo=weaponMagazines[id];assignFirstQuickbarSlot(id);return true;}
+    boolean assignQuickbarWeapon(int slot,int id){
+        if(slot<0||slot>=quickbarWeapons.length||id<0||id>=ownedWeapons.length||!ownedWeapons[id])return false;
+        for(int i=0;i<quickbarWeapons.length;i++)if(i!=slot&&quickbarWeapons[i]==id)quickbarWeapons[i]=-1;
+        quickbarWeapons[slot]=id;return true;
+    }
+    void assignFirstQuickbarSlot(int id){
+        for(int i=0;i<quickbarWeapons.length;i++)if(quickbarWeapons[i]<0){quickbarWeapons[i]=id;return;}
+    }
+    boolean selectQuickbarSlot(int slot){
+        if(slot<0||slot>=quickbarWeapons.length||quickbarWeapons[slot]<0)return false;
+        if(!equipWeapon(quickbarWeapons[slot]))return false;
+        activeQuickbarSlot=slot;return true;
+    }
     void cycleWeapon(){for(int n=1;n<=ownedWeapons.length;n++){int id=(equippedWeapon+n)%ownedWeapons.length;if(ownedWeapons[id]){equipWeapon(id);return;}}}
     boolean buyAmmo(){int id=equippedWeapon;int cost=WeaponSystem.AMMO_PACK_PRICE[id];if(cash<cost)return false;cash-=cost;reserveAmmo[id]+=WeaponSystem.AMMO_PACK[id];return true;}
 
