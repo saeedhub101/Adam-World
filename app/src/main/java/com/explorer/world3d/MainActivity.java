@@ -1524,7 +1524,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
 
     @Override public void onHud(final String s) {
         runOnUiThread(new Runnable() { @Override public void run() {
-            if (!s.equals(hud.getText().toString())) hud.setText(s);
+            String lootHint = renderer == null ? "" : renderer.game.nearbyLootHint();
+            String displayHud = lootHint.isEmpty() ? s : s + "\n" + lootHint;
+            if (!displayHud.equals(hud.getText().toString())) hud.setText(displayHud);
             updateTouchActionVisibility();
             if (System.currentTimeMillis()-lastHudRefresh>250 && renderer!=null) {
                 lastHudRefresh=System.currentTimeMillis();
