@@ -1227,6 +1227,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
                 detailedPedestrians++;
             } else drawPerson(a.x,Terrain.h(a.x,a.z),a.z,a.yaw,a.ph,a.humanType,a.hostile,a.knockedOut,a.state,a.stateTime,a.hitFlash);
         }
+        drawLootPickups();
         drawProjectileEffects();
         if (spawned) {
             float parkedGroundOffset = g.vehicleY - Terrain.h(g.cx, g.cz);
@@ -1243,6 +1244,26 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         }
     }
 
+
+    private void drawLootPickups() {
+        if(cube==null||game.loot.isEmpty())return;
+        GLES20.glUniform1f(uWater,0f);GLES20.glUniform1f(uGlass,0f);GLES20.glUniform1f(uPbr,0f);
+        bindTex(tex.white,tex.black);
+        for(Game.LootPickup item:game.loot){
+            if(Math.hypot(item.x-game.camX,item.z-game.camZ)>90f)continue;
+            float bob=(float)Math.sin(System.currentTimeMillis()*0.0035+item.x*0.17f)*0.10f;
+            Matrix.setIdentityM(tmp,0);
+            Matrix.translateM(tmp,0,item.x,Terrain.h(item.x,item.z)+0.48f+bob,item.z);
+            Matrix.rotateM(tmp,0,(float)(System.currentTimeMillis()*0.045%360),0f,1f,0f);
+            Matrix.scaleM(tmp,0,item.type==Game.LootPickup.SHIELD?0.28f:0.23f,0.34f,item.type==Game.LootPickup.SHIELD?0.28f:0.23f);
+            GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
+            if(item.type==Game.LootPickup.SHIELD)GLES20.glUniform3f(uTint,.10f,.48f,1f);
+            else GLES20.glUniform3f(uTint,1f,.72f,.12f);
+            GLES20.glUniform1f(uEmisK,.32f);cube.draw();
+        }
+        GLES20.glUniformMatrix4fv(uModel,1,false,ident,0);
+        GLES20.glUniform3f(uTint,1f,1f,1f);GLES20.glUniform1f(uEmisK,0f);
+    }
 
     /** Draw short-lived rocket meshes, exhaust and bounded smoke / blast effects. */
     private void drawProjectileEffects() {
