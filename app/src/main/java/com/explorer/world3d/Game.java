@@ -6,6 +6,13 @@ import java.util.ArrayList;
 final class Game {
     interface World { boolean blocked(float x, float z, float r); float heightAt(float x, float z); }
 
+    static final class LootPickup {
+        static final int AMMO=0, SHIELD=1;
+        float x,z,life=75f;
+        int type,amount;
+        LootPickup(float x,float z,int type,int amount){this.x=x;this.z=z;this.type=type;this.amount=amount;}
+    }
+
     static final class Agent {
         boolean car;
         boolean policeUnit;
@@ -32,6 +39,7 @@ final class Game {
     float py, px, pz, pyaw, cx, cz, cyaw, cv, phase, swingAmp;
     boolean driving;
     volatile int health = 100;
+    volatile int shield = 0;
     volatile boolean dead;
     long lastDamageMs, deathStartedMs;
     int wantedLevel;
@@ -89,6 +97,7 @@ final class Game {
     final ArrayList<Agent> agents = new ArrayList<>();
     final ArrayList<ProjectileSystem.Rocket> rockets = new ArrayList<>();
     final ArrayList<ProjectileSystem.Blast> blasts = new ArrayList<>();
+    final ArrayList<LootPickup> loot = new ArrayList<>();
     private final float[] tmp = new float[4];
     private final PlayerMotionSystem playerMotion = new PlayerMotionSystem();
 
@@ -107,7 +116,7 @@ final class Game {
         playerMotion.reset();
         aircraftPitch = aircraftRoll = aircraftVerticalSpeed = aircraftDamage = 0f;
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
-        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; dead = false;
+        py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
         weaponFireHeld=weaponAimHeld=reloadRequested=false;aimYawOffset=aimPitchOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
@@ -117,7 +126,32 @@ final class Game {
         vehicleFrontStepContact = vehicleRearStepContact = false;
         vehicleWheelFL = vehicleWheelFR = vehicleWheelRL = vehicleWheelRR = 0f;
         vehicleWheelBodyLift = vehicleWheelBodyRoll = vehicleWheelBodyPitch = 0f;
-        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; wantedLevel=0; lastCrimeMs=nextWantedDecayMs=0L; explosionEventCount=0L; agents.clear(); rockets.clear(); blasts.clear();
+        lastPlayerAttackMs = lastComboMs = lastDamageMs = deathStartedMs = 0L; wantedLevel=0; lastCrimeMs=nextWantedDecayMs=0L; explosionEventCount=0L; agents.clear(); rockets.clear(); blasts.clear(); loot.clear();
+    }
+
+    void applyPlayerDamage(int damage, long now) {
+        int remaining=Math.max(0,damage);
+        int absorbed=Math.min(shield,remaining);
+        shield-=absorbed; remaining-=absorbed;
+        if(remaining>0) health=Math.max(0,health-remaining);
+        lastDamageMs=now; hurtFlash=.3f;
+    }
+
+    private void dropLoot(Agent a) {
+        loot.add(new LootPickup(a.x,a.z,LootPickup.AMMO,12));
+        loot.add(new LootPickup(a.x+0.38f,a.z-0.22f,LootPickup.SHIELD,25));
+    }
+
+    private void updateLoot(float dt) {
+        for(int i=loot.size()-1;i>=0;i--){
+            LootPickup item=loot.get(i); item.life-=dt;
+            if(item.life<=0f){loot.remove(i);continue;}
+            if(!driving && Math.hypot(item.x-px,item.z-pz)<1.55f){
+                if(item.type==LootPickup.SHIELD){int before=shield;shield=Math.min(100,shield+item.amount);if(shield==before){item.life=Math.min(item.life,3f);continue;}}
+                else reserveAmmo[equippedWeapon]=Math.min(999,reserveAmmo[equippedWeapon]+item.amount);
+                loot.remove(i);
+            }
+        }
     }
 
     void reportCrime(int severity) {
@@ -449,6 +483,7 @@ final class Game {
                     float impulse = kick ? 5.8f : comboStep == 3 ? 4.2f : 2.5f;
                     target.knockbackX += dx/len*impulse; target.knockbackZ += dz/len*impulse;
                     if (target.health == 0) {
+                        dropLoot(target);
                         target.knockedOut = true; target.hostile = false; target.state=3;
                         target.stateTime=0f; target.knockdownSeconds = 22f; target.sp = 0f;
                     }
@@ -593,7 +628,7 @@ final class Game {
                         a.lastAttackMs=now; a.interactionSeconds=.62f; a.interactionType=1;
                         if (dodgeSeconds <= 0f) {
                             boolean blocked=guardRequested && stamina>=8f;
-                            health=Math.max(0,health-(blocked?2:9)); lastDamageMs=now; hurtFlash=.3f;
+                            applyPlayerDamage(blocked?2:9,now);
                             if(blocked) stamina=Math.max(0f,stamina-16f); else if(health>0){playerPose=1;playerPoseTime=0f;}
                         }
                         if (health==0) { dead=true; deathStartedMs=now; sx=sy=0f; playerPose=2; playerPoseTime=0f; }
@@ -608,6 +643,7 @@ final class Game {
             }
         }
 
+        updateLoot(dt);
         ProjectileSystem.update(this,dt,w);
         updateCamera(dt);
     }
@@ -668,7 +704,9 @@ final class Game {
         if(target!=null){
             int damage=WeaponSystem.DAMAGE[id];
             if(id==3)damage=Math.max(12,damage-(int)(best*2.0f));
+            int previousHealth=target.health;
             target.health=Math.max(0,target.health-damage);
+            if(previousHealth>0&&target.health==0&&!target.car)dropLoot(target);
             float hitDx=target.x-px, hitDz=target.z-pz, hitLen=Math.max(0.001f,(float)Math.hypot(hitDx,hitDz));
             target.knockbackX += hitDx/hitLen*(id==3?2.2f:id==4?3.4f:1.25f);
             target.knockbackZ += hitDz/hitLen*(id==3?2.2f:id==4?3.4f:1.25f);
