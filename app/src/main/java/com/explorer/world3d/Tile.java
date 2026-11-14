@@ -67,7 +67,12 @@ final class Tile {
             Canvas canvas = new Canvas(bmp);
             float[] wpx = new float[names.size()];
             for (int i = 0; i < names.size(); i++) {
-                float fontSize = manila ? 30f : 24f;
+                boolean facadeLabel = false;
+                String labelText = names.get(i);
+                for (Decal decal : d.decals) {
+                    if (decal.vertical && labelText.equals(decal.text)) { facadeLabel = true; break; }
+                }
+                float fontSize = facadeLabel ? 36f : (manila ? 30f : 24f);
                 p.setTextSize(fontSize);
                 float w = p.measureText(names.get(i));
                 if (w > 1000f) { p.setTextSize(fontSize * 1000f / w); w = 1000f; }
