@@ -194,6 +194,7 @@ final class Game {
             if(driving||Math.hypot(item.x-px,item.z-pz)>=1.55f)continue;
             if(item.type==LootPickup.WEAPON){
                 if(!interactWeapon)continue;
+                interactWeapon=false;
                 int incoming=item.weaponId;
                 if(incoming<0||incoming>=ownedWeapons.length){loot.remove(i);continue;}
                 int outgoing=equippedWeapon;
