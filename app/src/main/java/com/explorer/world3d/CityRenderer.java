@@ -152,6 +152,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private volatile int playerVehicleType = ProceduralVehicleModels.SEDAN;
     private final HashMap<Long, Mesh> terrain = new HashMap<>();
     private final java.util.HashSet<Long> harvestableIds = new java.util.HashSet<>();
+    private final java.util.HashSet<Long> harvestableCheckedIds = new java.util.HashSet<>();
     private static final class TerrainBuild {
         final long key; final int generation; final GeoBuf geometry;
         TerrainBuild(long key, int generation, GeoBuf geometry) { this.key=key; this.generation=generation; this.geometry=geometry; }
@@ -482,6 +483,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             Terrain.configureForCity(Geo.lat0, Geo.lon0);
             game.reset();
             harvestableIds.clear();
+            harvestableCheckedIds.clear();
             beginSpawn();
         }
     }
@@ -1283,18 +1285,20 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         int gx=(int)Math.floor(focusX/24f),gz=(int)Math.floor(focusZ/24f);
         for(int ix=gx-2;ix<=gx+2;ix++)for(int iz=gz-2;iz<=gz+2;iz++){
             long id=(((long)ix)<<32)^(iz&0xffffffffL);
-            if(harvestableIds.contains(id))continue;
+            if(harvestableIds.contains(id)||harvestableCheckedIds.contains(id))continue;
             int hash=(int)(id^(id>>>33));hash^=hash<<13;hash^=hash>>>17;hash^=hash<<5;
             float x=ix*24f+5f+((hash&1023)/1023f)*13f;
             float z=iz*24f+5f+(((hash>>>10)&1023)/1023f)*13f;
-            if(Math.hypot(x-focusX,z-focusZ)>64f||blockedAtHeight(x,z,1.0f,0.1f)||nearRoadForHarvest(x,z))continue;
+            if(Math.hypot(x-focusX,z-focusZ)>64f)continue;
+            if(!tiles.containsKey(Geo.key(Geo.tileX(x),Geo.tileZ(z))))continue;
+            if(blockedAtHeight(x,z,1.0f,0.1f)||nearRoadForHarvest(x,z)){harvestableCheckedIds.add(id);continue;}
             game.harvestables.add(new Game.Harvestable(id,x,z,(hash>>>20)&1));
-            harvestableIds.add(id);
+            harvestableIds.add(id);harvestableCheckedIds.add(id);
         }
         for(int i=game.harvestables.size()-1;i>=0;i--){
             Game.Harvestable node=game.harvestables.get(i);
             if(Math.hypot(node.x-focusX,node.z-focusZ)>115f){
-                harvestableIds.remove(node.id);game.harvestables.remove(i);
+                harvestableIds.remove(node.id);harvestableCheckedIds.remove(node.id);game.harvestables.remove(i);
             }
         }
     }
