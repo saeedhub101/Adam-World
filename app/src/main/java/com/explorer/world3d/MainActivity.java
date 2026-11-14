@@ -959,7 +959,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         fireModeButton.setTextSize(11);fireModeButton.setMinHeight(dp(44));
         fireModeButton.setOnClickListener(v->{tapFireMode=!tapFireMode;getSharedPreferences("adam_world_controls",MODE_PRIVATE).edit().putBoolean("tap_fire",tapFireMode).apply();fireModeButton.setText("إطلاق: "+(tapFireMode?"نقرة":"مستمر"));});
         Button buildModeButton=btn("بناء: متوقف");buildModeButton.setTextSize(11);buildModeButton.setMinHeight(dp(44));
-        buildModeButton.setOnClickListener(v->{runOnGl(()->{renderer.game.buildMode=!renderer.game.buildMode;renderer.game.buildEditMode=false;});buildModeButton.setText(renderer.game.buildMode?"بناء: نشط":"بناء: متوقف");});
+        buildModeButton.setOnClickListener(v->{final boolean enabled=!renderer.game.buildMode;runOnGl(()->{renderer.game.buildMode=enabled;renderer.game.buildEditMode=false;});buildModeButton.setText(enabled?"بناء: نشط":"بناء: متوقف");});
         Button buildTypeButton=btn("قطعة: جدار");buildTypeButton.setTextSize(11);buildTypeButton.setMinHeight(dp(44));
         buildTypeButton.setOnClickListener(v->{runOnGl(()->renderer.game.cycleBuildTypeRequested=true);String[] types={"جدار","أرضية","منحدر"};int next=(buildTypeButton.getTag() instanceof Integer?(Integer)buildTypeButton.getTag()+1:1)%3;buildTypeButton.setTag(next);buildTypeButton.setText("قطعة: "+types[next]);});
         LinearLayout buildRow=new LinearLayout(this);buildRow.setGravity(Gravity.CENTER);
@@ -1363,7 +1363,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if (System.currentTimeMillis()-lastHudRefresh>250 && renderer!=null) {
                 lastHudRefresh=System.currentTimeMillis();
                 int hp=renderer.game.health;
-                healthHud.setText("♥ "+hp+" / 100     🛡 "+renderer.game.shield+" / 100     ⚡ "+(int)renderer.game.stamina+" / 100"+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
+                healthHud.setText("♥ "+hp+" / 100     🛡 "+renderer.game.shield+" / 100     ⚡ "+(int)renderer.game.stamina+" / 100"+(renderer.game.buildMode?"     🪵 "+renderer.game.woodMaterials:"" )+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
                 Game game=renderer.game;
                 String weaponName=WeaponSystem.NAME[game.equippedWeapon];
                 String ammo=weaponName+"\n"+game.magazineAmmo+"   /   "+game.reserveAmmo[game.equippedWeapon];
