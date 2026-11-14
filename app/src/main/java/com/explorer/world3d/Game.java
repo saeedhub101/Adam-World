@@ -353,6 +353,7 @@ final class Game {
         }
         if (sprint && lastSprintTapMs > 0L && now - lastSprintTapMs > 430L) sprint = false;
         if (dead) {
+            crouching = false; slideSeconds = 0f; sprint = false;
             sx = sy = 0f;
             if (now - deathStartedMs >= 4500L) { dead = false; health = 50; px = cx; pz = cz; cv = 0f; altitude = 0f; aircraftDamage = 0f; engineThrottle = 0f; aircraftOnGround = true; playerPose=4; playerPoseTime=0f; playerFall=1f; }
             updateCamera(dt);
@@ -710,12 +711,17 @@ final class Game {
         float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);
         float cinematicYaw = cinematicCamera ? (float)Math.sin(System.currentTimeMillis() * 0.00022f) * 0.48f : 0f;
         float effectiveYaw = camYaw + cameraLookOffset + cinematicYaw;
-        float dx = tx - (float) Math.sin(effectiveYaw) * dist * cp;
-        float dz = tz - (float) Math.cos(effectiveYaw) * dist * cp;
+        // Fortnite-style over-the-shoulder framing while aiming, with the reticle
+        // remaining camera-centred instead of a fixed world-space weapon direction.
+        float shoulder = weaponAimHeld && !driving ? 0.48f : 0f;
+        float targetX = tx + (float)Math.cos(effectiveYaw) * shoulder;
+        float targetZ = tz - (float)Math.sin(effectiveYaw) * shoulder;
+        float dx = targetX - (float) Math.sin(effectiveYaw) * dist * cp;
+        float dz = targetZ - (float) Math.cos(effectiveYaw) * dist * cp;
         float dy = Math.max(focusY + 0.6f, focusY + th + dist * sp);
         float k = 1f - (float) Math.exp(-dt * 14f);
         camX += (dx - camX) * k; camY += (dy - camY) * k; camZ += (dz - camZ) * k;
-        tgtX = tx; tgtY = th + focusY; tgtZ = tz;
+        tgtX = targetX; tgtY = th + focusY; tgtZ = targetZ;
     }
 
     void snapCamera() {
