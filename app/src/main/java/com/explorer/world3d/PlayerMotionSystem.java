@@ -181,18 +181,20 @@ final class PlayerMotionSystem {
         }
         float obstacleTop=low;
         if(obstacleTop<0.62f||obstacleTop>2.95f)return false;
-        float reach=1.05f+obstacleTop*0.34f;
+        float reach=1.20f+obstacleTop*0.52f;
         float endX=g.px+dirX*reach,endZ=g.pz+dirZ*reach;
-        // Sample the landing corridor to avoid snapping into the far wall of a narrow alley.
-        for(int i=1;i<=4;i++){
-            float t=i/4f,sx=g.px+(endX-g.px)*t,sz=g.pz+(endZ-g.pz)*t;
-            if(city.blockedAtHeight(sx,sz,BODY_RADIUS,1.45f)
+        // Only validate the landing side; intermediate samples are intentionally
+        // allowed to overlap the obstacle because the mantle arc clears it vertically.
+        for(float t:new float[]{0.90f,1.12f}){
+            float sx=g.px+dirX*reach*t,sz=g.pz+dirZ*reach*t;
+            if(city.blockedAtHeight(sx,sz,BODY_RADIUS,0.58f)
+                    ||city.blockedAtHeight(sx,sz,BODY_RADIUS,1.45f)
                     ||vehicleSideBlocked(g,world,sx,sz,0.15f)
                     ||g.buildBlocked(sx,sz,BODY_RADIUS,0f))return false;
         }
         g.mantleStartX=g.px;g.mantleStartZ=g.pz;
         g.mantleEndX=endX;g.mantleEndZ=endZ;
-        g.mantleStartY=0f;g.mantleArc=Math.min(1.95f,0.62f+obstacleTop*0.42f);
+        g.mantleStartY=0f;g.mantleArc=Math.min(3.55f,obstacleTop+0.68f);
         g.mantleDuration=Game.clamp(0.42f+obstacleTop*0.12f,0.50f,0.82f);
         g.mantleSeconds=g.mantleDuration;g.mantleCooldown=0.62f+g.mantleDuration*0.45f;
         g.jumpHeight=0f;verticalVelocity=0f;grounded=false;
