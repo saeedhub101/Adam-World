@@ -141,7 +141,8 @@ final class BattleRoyaleHudView extends View {
         if(action==MotionEvent.ACTION_MOVE)return true;
         return true;
     }
-    @Override protected void onDetachedFromWindow(){releaseAll();super.onDetachedFromWindow();}\n    private boolean active(Action a){
+    @Override protected void onDetachedFromWindow(){releaseAll();super.onDetachedFromWindow();}
+    private boolean active(Action a){
         switch(a){case FIRE:return fireHeld;case AIM:return aimHeld;case CROUCH:return crouchHeld;case SPRINT:return sprintHeld;default:return false;}
     }
     @Override protected void onDraw(Canvas c){
