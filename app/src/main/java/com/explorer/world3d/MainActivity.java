@@ -283,7 +283,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 if (g.ownedWeapons[selected]) break;
             }
             g.equipWeapon(selected);
-            runOnUiThread(this::saveWeaponState);
+            MainActivity.this.runOnUiThread(MainActivity.this::saveWeaponState);
         });
     }
 
