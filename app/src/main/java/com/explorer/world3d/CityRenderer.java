@@ -584,7 +584,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         }
         g.py = 0f; g.pyaw = g.cyaw = 0f;
         g.driving = enter; g.landingGearDown = true; g.aircraftOnGround = true;
-        g.camYaw = 0f; g.camPitch = 0.30f; g.camDistance = 25f; g.snapCamera();
+        g.camYaw = 0f; g.camPitch = 0.28f; g.camDistance = 8.5f; g.snapCamera();
         spawned = true; needSpawn = false; spawnTimeoutNotified = false;
     }
 
@@ -1670,7 +1670,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         float mantleBlend=game.mantleSeconds>0.001f&&authoredMantle<0?1f:0f;
         float mantlePhase=Game.clamp(1f-game.mantleSeconds/Math.max(0.35f,game.mantleDuration),0f,1f);
         float walkBlend=Math.min(1f,movement)*((float)Math.sin(game.phase)*0.5f+0.5f);
-        animator.setProceduralPose(crouchBlend,mantleBlend,mantlePhase,walkBlend);
+        animator.setProceduralPose(crouchBlend,mantleBlend,mantlePhase,walkBlend,aiming);
         // Combat and recovery take priority over locomotion; clip names are optional
         // so packs with a smaller animation set still degrade to a valid idle/walk cycle.
         if(game.mantleSeconds>0.02f) {
