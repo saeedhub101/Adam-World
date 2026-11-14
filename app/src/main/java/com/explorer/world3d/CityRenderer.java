@@ -1261,11 +1261,17 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             else if(piece.type==1)Matrix.scaleM(tmp,0,1.42f,.14f,1.42f);
             else {Matrix.rotateM(tmp,0,-32f,0f,0f,1f);Matrix.scaleM(tmp,0,1.42f,.14f,1.42f);}
             GLES20.glUniformMatrix4fv(uModel,1,false,tmp,0);
-            if(piece.material==0)GLES20.glUniform3f(uTint,.62f,.38f,.17f);
+            if(iBuildSelected(piece))GLES20.glUniform3f(uTint,.20f,.82f,1f);
+            else if(piece.material==0)GLES20.glUniform3f(uTint,.62f,.38f,.17f);
             else GLES20.glUniform3f(uTint,.48f,.52f,.57f);
             GLES20.glUniform1f(uEmisK,.04f);cube.draw();
         }
         GLES20.glUniformMatrix4fv(uModel,1,false,ident,0);GLES20.glUniform3f(uTint,1f,1f,1f);GLES20.glUniform1f(uEmisK,0f);
+    }
+
+    private boolean iBuildSelected(Game.BuildPiece piece){
+        int index=game.buildPieces.indexOf(piece);
+        return game.buildEditMode&&index==game.selectedBuildPieceIndex;
     }
 
     private void drawLootPickups() {
