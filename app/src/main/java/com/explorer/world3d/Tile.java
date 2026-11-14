@@ -76,6 +76,15 @@ final class Tile {
                 p.setTextSize(fontSize);
                 float w = p.measureText(names.get(i));
                 if (w > 1000f) { p.setTextSize(fontSize * 1000f / w); w = 1000f; }
+                if (facadeLabel) {
+                    p.setStyle(Paint.Style.STROKE);
+                    p.setStrokeJoin(Paint.Join.ROUND);
+                    p.setStrokeWidth(3.2f);
+                    p.setColor(0xff24201b);
+                    canvas.drawText(names.get(i), 8f, i * 64f + 46f, p);
+                    p.setStyle(Paint.Style.FILL);
+                    p.setColor(0xffffffff);
+                }
                 canvas.drawText(names.get(i), 8f, i * 64f + 46f, p);
                 wpx[i] = w + 8f;
             }
