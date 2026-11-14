@@ -194,7 +194,7 @@ final class PlayerMotionSystem {
         }
         g.mantleStartX=g.px;g.mantleStartZ=g.pz;
         g.mantleEndX=endX;g.mantleEndZ=endZ;
-        g.mantleStartY=0f;g.mantleArc=Math.min(3.55f,obstacleTop+0.68f);
+        g.mantleStartY=0f;g.mantleArc=Math.min(4.35f,obstacleTop+1.35f);
         g.mantleDuration=Game.clamp(0.42f+obstacleTop*0.12f,0.50f,0.82f);
         g.mantleSeconds=g.mantleDuration;g.mantleCooldown=0.62f+g.mantleDuration*0.45f;
         g.jumpHeight=0f;verticalVelocity=0f;grounded=false;
