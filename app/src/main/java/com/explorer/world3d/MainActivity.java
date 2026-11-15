@@ -689,6 +689,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final float density = getResources().getDisplayMetrics().density;
         private int movePointer = -1, cameraPointer = -1;
+        private boolean pauseMenuOpen = false;
         private float cameraLastX, cameraLastY;
         private float moveX, moveY;
         private int firePointer = -1, aimPointer = -1, sprintPointer = -1, crouchPointer = -1;
@@ -720,9 +721,21 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             super.onDraw(c); w=getWidth();h=getHeight(); if(w<=0||h<=0||renderer==null)return;
             Game g=renderer.game;
             float safe=d(12), right=w-safe, bottom=h-safe;
-            // Minimal top chrome: menu and circular minimap.
+            // Battle Royale pause/menu control.
             rounded(c,safe,safe,safe+d(44),safe+d(44),d(13),0xb91b2736);
-            text(c,"Ⅱ",safe+d(13),safe+d(30),23,Color.WHITE,true);
+            text(c,"≡",safe+d(11),safe+d(31),25,Color.WHITE,true);
+            if(pauseMenuOpen){
+                float pw=Math.min(w-d(36),d(330)), ph=d(226), pl=(w-pw)/2f, pt=(h-ph)/2f;
+                rounded(c,pl,pt,pl+pw,pt+ph,d(12),0xf018222e);
+                stroke(c,0xffd5a84b,2);c.drawRoundRect(pl,pt,pl+pw,pt+ph,d(12),d(12),paint);paint.setStyle(Paint.Style.FILL);
+                text(c,"BATTLE ROYALE",pl+d(22),pt+d(36),20,Color.WHITE,true);
+                text(c,"PAUSED",pl+d(22),pt+d(61),11,0xffb7c4d2,true);
+                rounded(c,pl+d(18),pt+d(83),pl+pw-d(18),pt+d(132),d(7),0xffb58a38);
+                text(c,"RESUME",pl+d(34),pt+d(114),15,Color.WHITE,true);
+                rounded(c,pl+d(18),pt+d(145),pl+pw-d(18),pt+d(194),d(7),0xff344454);
+                text(c,"MAP",pl+d(34),pt+d(176),15,Color.WHITE,true);
+                return;
+            }
             float mr=d(61), mx=right-mr, my=safe+mr;
             circle(c,mx,my,mr,0xe516202b);ring(c,mx,my,mr,0xffe5edf5,2);
             c.save();Path clip=new Path();clip.addCircle(mx,my,mr-d(3),Path.Direction.CW);c.clipPath(clip);
@@ -789,7 +802,17 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             float x=e.getX(index),y=e.getY(index);
             if(a==MotionEvent.ACTION_DOWN||a==MotionEvent.ACTION_POINTER_DOWN){
                 float right=getWidth()-d(12);
-                if(x<d(58)&&y<d(58)){showGameSettings();return true;}
+                if(pauseMenuOpen){
+                    float pw=Math.min(getWidth()-d(36),d(330)),ph=d(226),pl=(getWidth()-pw)/2f,pt=(getHeight()-ph)/2f;
+                    if(x>=pl&&x<=pl+pw&&y>=pt+d(83)&&y<=pt+d(132)){
+                        pauseMenuOpen=false;renderer.game.paused=false;invalidate();return true;
+                    }
+                    if(x>=pl&&x<=pl+pw&&y>=pt+d(145)&&y<=pt+d(194)){
+                        pauseMenuOpen=false;invalidate();showMapDialog(true);return true;
+                    }
+                    return true;
+                }
+                if(x<d(58)&&y<d(58)){pauseMenuOpen=true;renderer.game.paused=true;invalidate();return true;}
                 float mapX=right-d(61),mapY=d(73);
                 if(inside(x,y,mapX,mapY,d(61))){showMapDialog(false);return true;}
                 float jx=d(91),jy=getHeight()-d(145);
