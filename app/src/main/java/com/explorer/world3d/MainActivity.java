@@ -774,7 +774,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if(firePointer==id){firePointer=-1;fireHeld=false;renderer.game.weaponFireHeld=false;}
             if(aimPointer==id){aimPointer=-1;aimHeld=false;renderer.game.weaponAimHeld=false;}
             if(sprintPointer==id){sprintPointer=-1;sprintHeld=false;renderer.game.sprint=false;}
-            if(crouchPointer==id){crouchPointer=-1;crouchHeld=false;renderer.game.crouching=false;}
+            if(crouchPointer==id){crouchPointer=-1;crouchHeld=false;renderer.game.crouching=false;renderer.game.sprint=sprintPointer!=-1;}
             if(jumpPointer==id){jumpPointer=-1;}
             if(reloadPointer==id)reloadPointer=-1;
             if(interactPointer==id)interactPointer=-1;
