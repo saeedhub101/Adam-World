@@ -613,10 +613,23 @@ final class Game {
             if(weaponReloadSeconds<=0f){
                 int reloadId=weaponReloadWeaponId;
                 if(reloadId>=0&&reloadId==equippedWeapon){
-                    magazineAmmo=Math.min(WeaponSystem.MAGAZINE[reloadId],magazineAmmo+weaponReloadPendingAmmo);
-                    weaponMagazines[reloadId]=magazineAmmo;
+                    if(reloadId==3){
+                        if(reserveAmmo[reloadId]>0&&magazineAmmo<WeaponSystem.MAGAZINE[reloadId]){
+                            reserveAmmo[reloadId]--;magazineAmmo++;weaponMagazines[reloadId]=magazineAmmo;
+                        }
+                        if(reserveAmmo[reloadId]>0&&magazineAmmo<WeaponSystem.MAGAZINE[reloadId]){
+                            weaponReloadDuration=weaponReloadSeconds=0.58f;
+                        }else{
+                            weaponReloadDuration=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
+                        }
+                    }else{
+                        magazineAmmo=Math.min(WeaponSystem.MAGAZINE[reloadId],magazineAmmo+weaponReloadPendingAmmo);
+                        weaponMagazines[reloadId]=magazineAmmo;
+                        weaponReloadDuration=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
+                    }
+                }else{
+                    weaponReloadDuration=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
                 }
-                weaponReloadDuration=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
             }
         }
         weaponRecoil=Math.max(0f,weaponRecoil-dt*WeaponSystem.RECOIL_RECOVERY[Math.max(0,Math.min(WeaponSystem.RECOIL_RECOVERY.length-1,equippedWeapon))]);
@@ -627,8 +640,16 @@ final class Game {
         processHarvest(w);
         if(useMedkitRequested){useMedkitRequested=false;if(medkits>0&&health<100){medkits--;health=Math.min(100,health+50);}}
         if(useShieldPotionRequested){useShieldPotionRequested=false;if(shieldPotions>0&&shield<100){shieldPotions--;shield=Math.min(100,shield+25);}}
-        if(weaponFireRequested){weaponFireRequested=false;if(!driving&&weaponReloadSeconds<=0f)fireWeapon(now,w);}
-        if(weaponFireHeld&&!driving&&weaponReloadSeconds<=0f)fireWeapon(now,w);
+        boolean fireTap=weaponFireRequested;
+        weaponFireRequested=false;
+        if(!weaponFireHeld)weaponTriggerLatched=false;
+        boolean automatic=WeaponSystem.isAutomatic(equippedWeapon);
+        if(!driving&&weaponReloadSeconds<=0f&&(fireTap||weaponFireHeld)){
+            if(automatic||!weaponTriggerLatched){
+                fireWeapon(now,w);
+                if(!automatic)weaponTriggerLatched=true;
+            }
+        }
         dodgeSeconds = Math.max(0f, dodgeSeconds - dt);
         hurtFlash=Math.max(0f,hurtFlash-dt);
         guardBlend += ((guardRequested && !driving && stamina>0f ? 1f:0f)-guardBlend)*Math.min(1f,dt*12f);
@@ -869,70 +890,66 @@ final class Game {
         if(magazineAmmo<=0){reloadWeapon();return;}
         lastWeaponShotMs=now;magazineAmmo--;weaponMagazines[id]=magazineAmmo;
         reportCrime(id>=5?2:1);
-        weaponRecoil=Math.min(1.8f,weaponRecoil+WeaponSystem.RECOIL_IMPULSE[id]); muzzleFlashSeconds=1f;
-        if(id>=5){ ProjectileSystem.launch(this,id); return; }
+        weaponRecoil=Math.min(1.8f,weaponRecoil+WeaponSystem.RECOIL_IMPULSE[id]);
+        muzzleFlashSeconds=1f;
+        if(id>=5){ProjectileSystem.launch(this,id);return;}
 
-        // Hitscan with deterministic weapon-specific dispersion and world occlusion.
-        // A target behind a building/wall can no longer be damaged through geometry.
         float baseYaw=weaponAimHeld?camYaw+aimYawOffset:pyaw;
-        float shotPitch=weaponAimHeld?Game.clamp(0.38f-camPitch+aimPitchOffset+weaponRecoil*0.018f,-0.78f,0.78f):0f;
-        float horizontalScale=(float)Math.cos(shotPitch);
-        float verticalScale=(float)Math.sin(shotPitch);
-        float spread=(weaponAimHeld?0.006f:0.022f)+weaponRecoil*(weaponAimHeld?0.0045f:0.009f);
-        spread*=WeaponSystem.SPREAD_MULTIPLIER[id];
-        if(id==3)spread*=2.8f;       // shotgun pellet cone
-        if(id==4)spread*=0.22f;      // precision rifle
+        float basePitch=weaponAimHeld?Game.clamp(0.38f-camPitch+aimPitchOffset+weaponRecoil*0.018f,-0.78f,0.78f):0f;
+        int pellets=Math.max(1,WeaponSystem.PELLETS[id]);
+        int pelletDamage=Math.max(1,(WeaponSystem.DAMAGE[id]+pellets-1)/pellets);
         long seed=now^(id*0x9E3779B97F4A7C15L);
         seed^=seed>>>12;seed^=seed<<25;seed^=seed>>>27;
-        float jitter=(((seed*2685821657736338717L)>>>40)/(float)(1L<<24)-0.5f)*2f*spread;
-        float shotYaw=baseYaw+jitter;
-        float fx=(float)Math.sin(shotYaw)*horizontalScale,fz=(float)Math.cos(shotYaw)*horizontalScale;
-        float range=WeaponSystem.RANGE[id];
-        Agent target=null;float best=range;
-        for(Agent a:agents)if(!a.knockedOut){
-            float dx=a.x-px,dz=a.z-pz;
-            float targetY=w.heightAt(a.x,a.z)+(a.car?0.85f:1.05f);
-            float dy=targetY-(py+jumpHeight+1.25f);
-            float d=(float)Math.sqrt(dx*dx+dy*dy+dz*dz);
-            if(d<0.65f||d>best)continue;
-            float facing=(dx*fx+dy*verticalScale+dz*fz)/(d+0.0001f);
-            float hitCone=weaponAimHeld?0.992f:0.965f;
-            if(id==3)hitCone=weaponAimHeld?0.975f:0.91f;
-            if(facing<=hitCone)continue;
-            boolean occluded=false;
-            if(w instanceof CityRenderer){
+        for(int pellet=0;pellet<pellets;pellet++){
+            seed^=seed>>>12;seed^=seed<<25;seed^=seed>>>27;
+            float randomA=(((seed*2685821657736338717L)>>>40)/(float)(1L<<24)-0.5f)*2f;
+            seed+=0x9E3779B97F4A7C15L;
+            float randomB=(((seed*2685821657736338717L)>>>40)/(float)(1L<<24)-0.5f)*2f;
+            float spread=(weaponAimHeld?0.006f:0.022f)+weaponRecoil*(weaponAimHeld?0.0045f:0.009f);
+            spread*=WeaponSystem.SPREAD_MULTIPLIER[id];
+            if(id==3)spread*=2.8f;
+            if(id==4)spread*=0.22f;
+            float shotYaw=baseYaw+randomA*spread;
+            float shotPitch=Game.clamp(basePitch+randomB*spread*.72f,-.85f,.85f);
+            float horizontalScale=(float)Math.cos(shotPitch),verticalScale=(float)Math.sin(shotPitch);
+            float fx=(float)Math.sin(shotYaw)*horizontalScale,fz=(float)Math.cos(shotYaw)*horizontalScale;
+            Agent target=null;float best=WeaponSystem.RANGE[id];
+            for(Agent a:agents)if(!a.knockedOut){
+                float dx=a.x-px,dz=a.z-pz;
+                float targetY=w.heightAt(a.x,a.z)+(a.car?0.85f:1.05f);
+                float dy=targetY-(py+jumpHeight+1.25f);
+                float d=(float)Math.sqrt(dx*dx+dy*dy+dz*dz);
+                if(d<0.65f||d>best)continue;
+                float facing=(dx*fx+dy*verticalScale+dz*fz)/(d+0.0001f);
+                float hitCone=id==3?(weaponAimHeld?0.975f:0.91f):(weaponAimHeld?0.992f:0.965f);
+                if(facing<=hitCone)continue;
+                boolean occluded=false;
                 int samples=Math.max(1,(int)(d/0.55f));
                 for(int n=1;n<samples;n++){
                     float t=n/(float)samples;
-                    if(((CityRenderer)w).blockedAtHeight(px+dx*t,pz+dz*t,0.16f,0.65f)){
-                        occluded=true;break;
-                    }
+                    boolean blocked=w instanceof CityRenderer
+                            ?((CityRenderer)w).blockedAtHeight(px+dx*t,pz+dz*t,0.16f,0.65f)
+                            :w.blocked(px+dx*t,pz+dz*t,0.16f);
+                    if(blocked){occluded=true;break;}
                 }
-            }else{
-                int samples=Math.max(1,(int)(d/0.55f));
-                for(int n=1;n<samples;n++){
-                    float t=n/(float)samples;
-                    if(w.blocked(px+dx*t,pz+dz*t,0.16f)){occluded=true;break;}
-                }
+                if(!occluded){best=d;target=a;}
             }
-            if(!occluded){best=d;target=a;}
-        }
-        if(target!=null){
-            int damage=WeaponSystem.DAMAGE[id];
-            if(id==3)damage=Math.max(12,damage-(int)(best*2.0f));
+            if(target==null)continue;
+            int damage=pelletDamage;
+            if(id==3)damage=Math.max(1,damage-(int)(best*.22f));
             int previousHealth=target.health;
             target.health=Math.max(0,target.health-damage);
             if(previousHealth>0&&target.health==0&&!target.car)dropLoot(target);
-            float hitDx=target.x-px, hitDz=target.z-pz, hitLen=Math.max(0.001f,(float)Math.hypot(hitDx,hitDz));
-            target.knockbackX += hitDx/hitLen*(id==3?2.2f:id==4?3.4f:1.25f);
-            target.knockbackZ += hitDz/hitLen*(id==3?2.2f:id==4?3.4f:1.25f);
-            target.hitFlash=0.28f;
+            float hitDx=target.x-px,hitDz=target.z-pz,hitLen=Math.max(.001f,(float)Math.hypot(hitDx,hitDz));
+            float knock=id==3?.30f:id==4?3.4f:1.25f;
+            target.knockbackX+=hitDx/hitLen*knock;
+            target.knockbackZ+=hitDz/hitLen*knock;
+            target.hitFlash=.28f;
             if(target.car){
-                // Vehicles are valid ballistic targets too; repeated hits disable them.
                 if(target.health==0){target.knockedOut=true;target.sp=0f;target.state=3;target.stateTime=0f;}
             }else{
                 target.hostile=true;target.state=1;target.stateTime=0f;
-                target.stunSeconds=id==4?0.85f:0.5f;
+                target.stunSeconds=id==4?.85f:.5f;
                 if(target.health==0){
                     target.knockedOut=true;target.hostile=false;target.state=3;
                     target.stateTime=0f;target.knockdownSeconds=22f;target.sp=0f;
@@ -943,9 +960,15 @@ final class Game {
     void reloadWeapon(){
         int id=equippedWeapon;
         if(weaponReloadSeconds>0f||id<0||id>=ownedWeapons.length||magazineAmmo>=WeaponSystem.MAGAZINE[id]||reserveAmmo[id]<=0)return;
-        int moved=Math.min(WeaponSystem.MAGAZINE[id]-magazineAmmo,reserveAmmo[id]);
-        reserveAmmo[id]-=moved;weaponReloadPendingAmmo=moved;weaponReloadWeaponId=id;
-        weaponReloadDuration=weaponReloadSeconds=WeaponSystem.RELOAD_SECONDS[id];weaponFireHeld=false;
+        weaponReloadWeaponId=id;weaponFireHeld=false;
+        if(id==3){
+            weaponReloadPendingAmmo=0;
+            weaponReloadDuration=weaponReloadSeconds=0.58f;
+        }else{
+            int moved=Math.min(WeaponSystem.MAGAZINE[id]-magazineAmmo,reserveAmmo[id]);
+            reserveAmmo[id]-=moved;weaponReloadPendingAmmo=moved;
+            weaponReloadDuration=weaponReloadSeconds=WeaponSystem.RELOAD_SECONDS[id];
+        }
     }
     boolean equipWeapon(int id){
         if(id<0||id>=ownedWeapons.length||!ownedWeapons[id])return false;
