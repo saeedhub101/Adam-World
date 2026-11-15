@@ -1,0 +1,81 @@
+name: Import Fortnite UI source icons
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/import-fortnite-ui-icons.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  import-icons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download and clean Fortnite.gg image exports
+        run: |
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          from urllib.request import Request, urlopen
+          from PIL import Image
+          from pathlib import Path
+          import io
+
+          out = Path("app/src/main/assets/ui/fortnite-icons")
+          out.mkdir(parents=True, exist_ok=True)
+          assets = {
+              "wood-material.png": ("https://fnggcdn.com/assets-s/w76Lgu.jpg", "color"),
+              "health-shield.png": ("https://fnggcdn.com/assets-s/wQwQlm.jpg", "white"),
+              "assault-rifle-icon.png": ("https://fnggcdn.com/assets-s/su86Nq.jpg", "white"),
+              "gun-pick-status.png": ("https://fnggcdn.com/assets-s/Nmpt3k.jpg", "white"),
+              "mobile-interact.png": ("https://fnggcdn.com/assets-s/ZhkdYO.jpg", "mono"),
+              "small-shield-potion.png": ("https://fnggcdn.com/assets-s/hvXoQa.jpg", "color"),
+          }
+
+          for filename, (url, mode) in assets.items():
+              req = Request(url, headers={"User-Agent": "Adam-World asset importer/1.0"})
+              with urlopen(req, timeout=30) as response:
+                  raw = response.read()
+              im = Image.open(io.BytesIO(raw)).convert("RGB")
+              px = im.load()
+              alpha = Image.new("L", im.size, 0)
+              ap = alpha.load()
+              for y in range(im.height):
+                  for x in range(im.width):
+                      r, g, b = px[x, y]
+                      hi, lo = max(r, g, b), min(r, g, b)
+                      sat = hi - lo
+                      lum = (299*r + 587*g + 114*b) // 1000
+                      if mode == "white":
+                          a = max(0, min(255, (lum - 150) * 6))
+                      elif mode == "mono":
+                          a = max(max(0, min(255, (lum - 150) * 6)),
+                                  max(0, min(255, (35 - lum) * 8)))
+                      else:
+                          a = 255 if sat >= 24 or lum >= 218 else 0
+                      ap[x, y] = a
+              rgba = im.convert("RGBA")
+              rgba.putalpha(alpha)
+              bbox = alpha.getbbox()
+              if bbox:
+                  rgba = rgba.crop(bbox)
+              rgba.save(out / filename, "PNG", optimize=True)
+          PY
+      - name: Commit downloaded icons to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/assets/ui/fortnite-icons/*.png
+          if git diff --cached --quiet; then
+            echo "No icon changes to commit."
+          else
+            git commit -m "Import Fortnite.gg weapon, material and mobile UI icons"
+            git push origin main
+          fi
