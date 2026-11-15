@@ -1023,15 +1023,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             fill(c,0xff55e38b);Path arrow=new Path();arrow.moveTo(mx,my-d(10));arrow.lineTo(mx-d(7),my+d(7));arrow.lineTo(mx,my+d(3));arrow.lineTo(mx+d(7),my+d(7));arrow.close();
             c.save();c.rotate((float)Math.toDegrees(g.driving?g.cyaw:g.pyaw),mx,my);c.drawPath(arrow,paint);c.restore();c.restore();
             // Health and shield are compact horizontal bars at the lower edge, not floating icons.
-            float barX=d(18), barY=h-d(64), barW=Math.min(w*.30f,d(190));
+            float barX=d(18), barY=h-d(55), barW=Math.min(w*.13f,d(58));
             rounded(c,barX,barY,barX+barW,barY+d(9),d(5),0xff263442);
             rounded(c,barX,barY,barX+barW*Math.max(0,Math.min(1,g.health/100f)),barY+d(9),d(5),0xff31d47b);
             rounded(c,barX,barY+d(13),barX+barW,barY+d(22),d(5),0xff263442);
             rounded(c,barX,barY+d(13),barX+barW*Math.max(0,Math.min(1,g.shield/100f)),barY+d(22),d(5),0xff35a8f5);
-            text(c,String.valueOf(g.health),barX+barW+d(8),barY+d(9),11,Color.WHITE,true);
-            text(c,String.valueOf(g.shield),barX+barW+d(8),barY+d(22),11,0xff8dd5ff,true);
             // Weapon quickbar, centered along the bottom.
-            float slot=d(43), gap=d(5), total=5*slot+4*gap, start=(w-total)/2f, slotY=h-d(57);
+            float slot=d(39), gap=d(4), total=5*slot+4*gap, start=(w-total)/2f, slotY=h-d(48);
             for(int i=0;i<5;i++){
                 quickX[i]=start+i*(slot+gap);
                 boolean selected=i==g.activeQuickbarSlot;
@@ -1094,7 +1092,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 if(inside(x,y,right-d(55),getHeight()-d(278),d(34))){jumpPointer=id;g.jumpRequested=true;invalidate();return true;}
                 if(inside(x,y,right-d(137),getHeight()-d(245),d(30))){reloadPointer=id;g.reloadRequested=true;invalidate();return true;}
                 if(inside(x,y,right-d(55),getHeight()-d(95),d(30))){interactPointer=id;g.lootInteractionRequested=true;invalidate();return true;}
-                float slot=d(43),gap=d(5),total=5*slot+4*gap,start=(getWidth()-total)/2f,sy=getHeight()-d(57);
+                float slot=d(39),gap=d(4),total=5*slot+4*gap,start=(getWidth()-total)/2f,sy=getHeight()-d(48);
                 if(y>=sy&&y<=sy+slot&&x>=start&&x<=start+total){
                     int chosen=Math.max(0,Math.min(4,(int)((x-start)/(slot+gap))));
                     if(g.selectQuickbarSlot(chosen))saveWeaponState();
