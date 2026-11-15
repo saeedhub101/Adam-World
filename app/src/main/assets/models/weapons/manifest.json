@@ -1,14 +1,14 @@
 {
-  "format": "glTF 2.0 binary (GLB)",
-  "source": "https://github.com/shorepine/kenney/tree/main/3d/weapon",
-  "license": "CC0-1.0",
-  "credit": "Kenney / https://kenney.nl",
+  "format": "glTF 2.0 binary source; AWM4 Android runtime meshes",
+  "source_repository": "https://github.com/cktang88/3d-fps",
+  "source_commit": "130ac2a5c856401ec36e7d35afcfefe40c5801f4",
+  "converter": "app/tools/build_weapon_meshes.py",
   "assets": [
-    {"id":"pistol","file":"pistol.glb","bytes":24546,"source":"3d/weapon/pistol.glb"},
-    {"id":"assault-rifle","file":"assault-rifle.glb","bytes":33242,"source":"3d/weapon/machinegun.glb"},
-    {"id":"submachine-gun","file":"submachine-gun.glb","bytes":44661,"source":"3d/weapon/uziLong.glb"},
-    {"id":"shotgun","file":"shotgun.glb","bytes":44930,"source":"3d/weapon/shotgun.glb"},
-    {"id":"sniper-rifle","file":"sniper-rifle.glb","bytes":102318,"source":"3d/weapon/sniper.glb"},
-    {"id":"rocket-launcher","file":"rocket-launcher.glb","bytes":73490,"source":"3d/weapon/rocketlauncherModern.glb"}
+    {"id":"pistol","file":"pistol.glb","runtime":"models/runtime/weapons/pistol.awmesh","source":"m1911.glb","creator":"egorbelous","license":"CC-BY-4.0"},
+    {"id":"submachine-gun","file":"submachine-gun.glb","runtime":"models/runtime/weapons/submachine-gun.awmesh","source":"mp5a5.glb","creator":"Rotuma","license":"CC-BY-4.0"},
+    {"id":"assault-rifle","file":"assault-rifle.glb","runtime":"models/runtime/weapons/assault-rifle.awmesh","source":"m4a1.glb","creator":"Firewarden","license":"CC-BY-4.0"},
+    {"id":"shotgun","file":"shotgun.glb","runtime":"models/runtime/weapons/shotgun.awmesh","source":"shotgun.glb","creator":"Harry_L / tris09","license":"CC-BY"},
+    {"id":"sniper-rifle","file":"sniper-rifle.glb","runtime":"models/runtime/weapons/sniper-rifle.awmesh","source":"awm.glb","creator":"erhanmatur","license":"CC-BY-4.0"},
+    {"id":"rocket-launcher","file":"rocket-launcher.glb","runtime":"models/runtime/weapons/rocket-launcher.awmesh","source":"Kenney rocketlauncherModern.glb","creator":"Kenney","license":"CC0-1.0"}
   ]
 }
