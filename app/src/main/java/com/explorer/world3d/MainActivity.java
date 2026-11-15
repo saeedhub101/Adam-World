@@ -31,6 +31,7 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.ImageView;
 import android.widget.Toast;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
@@ -685,149 +686,112 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
      * One purpose-built Battle Royale HUD. No Android Button/TextView widgets are used
      * for gameplay controls; all visual elements are drawn and hit-tested in this view.
      */
-    private final class BattleRoyaleHudView extends View {
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final float density = getResources().getDisplayMetrics().density;
+    private final class BattleRoyaleHudView extends FrameLayout {
+        private final float density=getResources().getDisplayMetrics().density;
         private int movePointer=-1,cameraPointer=-1,firePointer=-1,aimPointer=-1,sprintPointer=-1,crouchPointer=-1,jumpPointer=-1,reloadPointer=-1;
         private boolean pauseMenuOpen=false,fireHeld,aimHeld,sprintHeld,crouchHeld;
-        private float cameraLastX,cameraLastY,moveX,moveY,w,h;
-        private final float[] quickX=new float[5];
+        private float cameraLastX,cameraLastY,moveX,moveY;
         private int slidePointer=-1;
-        private final RectF mapRect=new RectF();
-        BattleRoyaleHudView(Context context){super(context);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setFocusable(false);}
+        private TextView healthValue,shieldValue,ammoValue;
+        private android.widget.ProgressBar healthBar,shieldBar;
+        private final TextView[] slotLabels=new TextView[5];
+        private final ImageView[] slotImages=new ImageView[5];
+        private final int[] weaponIcons={0,0,0,0,0};
         private float d(float v){return v*density;}
-        private void fill(Canvas c,int color){paint.setStyle(Paint.Style.FILL);paint.setColor(color);}
-        private void stroke(int color,float width){paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(d(width));paint.setStrokeCap(Paint.Cap.ROUND);paint.setStrokeJoin(Paint.Join.ROUND);paint.setColor(color);}
-        private void text(Canvas c,String s,float x,float y,float size,int color,boolean bold){fill(c,color);paint.setTextSize(d(size));paint.setTypeface(Typeface.create("sans-serif",bold?Typeface.BOLD:Typeface.NORMAL));c.drawText(s,x,y,paint);}
-        private void panel(Canvas c,float l,float t,float r,float b,float radius,int color){fill(c,color);c.drawRoundRect(l,t,r,b,d(radius),d(radius),paint);}
-        private void buttonBase(Canvas c,float x,float y,float r,boolean active){
-            fill(c,active?0x9cf5b942:0x66303b49);c.drawCircle(x,y,r,paint);
-            stroke(active?0xffffe5a8:0xddeaf2fa,1.5f);c.drawCircle(x,y,r,paint);paint.setStyle(Paint.Style.FILL);
-            stroke(0x55ffffff,.7f);c.drawCircle(x,y,r-d(4),paint);paint.setStyle(Paint.Style.FILL);
+        BattleRoyaleHudView(Context context){super(context);setClipChildren(false);setClipToPadding(false);setClickable(true);setFocusable(false);buildHud(context);}
+        private android.graphics.drawable.GradientDrawable shape(int color,int stroke){
+            android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable();
+            bg.setColor(color);bg.setCornerRadius(d(7));bg.setStroke((int)d(1.4f),stroke);return bg;
         }
-        private void line(Canvas c,float x1,float y1,float x2,float y2,float width){stroke(Color.WHITE,width);c.drawLine(x1,y1,x2,y2,paint);paint.setStyle(Paint.Style.FILL);}
-        private void icon(Canvas c,int type,float x,float y,float size){
-            c.save();c.translate(x,y);c.scale(size/48f,size/48f);stroke(Color.WHITE,2.8f);
-            Path p=new Path();
-            switch(type){
-                case 0: // crosshair
-                    c.drawCircle(0,0,14,paint);c.drawCircle(0,0,3,paint);
-                    c.drawLine(-23,0,-9,0,paint);c.drawLine(9,0,23,0,paint);c.drawLine(0,-23,0,-9,paint);c.drawLine(0,9,0,23,paint);break;
-                case 1: // fire / rifle
-                    p.moveTo(-19,5);p.lineTo(-5,-2);p.lineTo(9,-2);p.lineTo(19,-8);p.lineTo(22,-5);p.lineTo(11,3);p.lineTo(3,3);p.lineTo(-2,16);p.lineTo(-8,16);p.lineTo(-7,3);p.lineTo(-19,9);p.close();c.drawPath(p,paint);c.drawLine(8,-2,15,-13,paint);break;
-                case 2: // runner
-                    c.drawCircle(6,-16,4,paint);c.drawLine(3,-10,-4,0,paint);c.drawLine(-4,0,9,4,paint);c.drawLine(0,-6,-13,-3,paint);c.drawLine(0,-6,12,-2,paint);c.drawLine(8,4,17,15,paint);c.drawLine(8,4,-5,17,paint);c.drawLine(-5,17,-16,17,paint);c.drawLine(17,15,23,15,paint);break;
-                case 3: // jump
-                    c.drawLine(0,18,0,-13,paint);c.drawLine(0,-13,-10,-2,paint);c.drawLine(0,-13,10,-2,paint);c.drawLine(-15,18,15,18,paint);break;
-                case 4: // crouch
-                    c.drawCircle(5,-13,4,paint);c.drawLine(2,-8,-7,1,paint);c.drawLine(-7,1,8,6,paint);c.drawLine(8,6,17,14,paint);c.drawLine(-7,1,-14,14,paint);c.drawLine(-14,14,-22,14,paint);break;
-                case 5: // reload
-                    c.drawArc(-17,-17,17,17,35,285,false,paint);c.drawLine(13,-16,18,-5,paint);c.drawLine(13,-16,2,-17,paint);break;
-                case 6: // pickaxe
-                    c.drawLine(-15,18,15,-18,paint);c.drawLine(-21,-12,3,-21,paint);c.drawLine(-21,-12,-11,-2,paint);c.drawLine(3,-21,13,-13,paint);break;
-                case 7: // backpack
-                    c.drawRoundRect(-13,-15,13,17,5,5,paint);c.drawArc(-8,-22,8,-8,180,180,false,paint);c.drawRoundRect(-8,-3,8,8,2,2,paint);c.drawLine(-18,-8,-13,-4,paint);c.drawLine(18,-8,13,-4,paint);break;
-                case 8: // hand/interact
-                    c.drawRoundRect(-13,-4,13,17,5,5,paint);c.drawLine(-8,-4,-8,-17,paint);c.drawLine(-1,-4,-1,-21,paint);c.drawLine(6,-4,6,-17,paint);c.drawLine(13,1,19,-7,paint);break;
-                case 9: // vehicle
-                    c.drawRoundRect(-19,-10,19,11,4,4,paint);c.drawLine(-12,-10,-7,-17,paint);c.drawLine(-7,-17,10,-17,paint);c.drawLine(10,-17,15,-10,paint);c.drawCircle(-11,12,4,paint);c.drawCircle(11,12,4,paint);break;
-                case 10: // menu
-                    c.drawLine(-16,-12,16,-12,paint);c.drawLine(-16,0,16,0,paint);c.drawLine(-16,12,16,12,paint);break;
-                case 11: // shield
-                    p.moveTo(0,-20);p.lineTo(16,-13);p.lineTo(14,7);p.lineTo(0,20);p.lineTo(-14,7);p.lineTo(-16,-13);p.close();c.drawPath(p,paint);break;
-                case 12: // health cross
-                    c.drawLine(-17,0,17,0,paint);c.drawLine(0,-17,0,17,paint);break;
-                case 13: // Fortnite-style airborne jump silhouette
-                    c.drawCircle(0,-14,4,paint);c.drawLine(0,-9,0,7,paint);c.drawLine(0,-5,-13,-15,paint);c.drawLine(0,-5,13,-15,paint);c.drawLine(0,7,-12,19,paint);c.drawLine(0,7,12,19,paint);break;
-                case 14: // low sliding silhouette
-                    c.drawCircle(12,-8,4,paint);c.drawLine(8,-4,-4,5,paint);c.drawLine(-4,5,-20,5,paint);c.drawLine(-2,4,10,13,paint);c.drawLine(-12,5,-22,15,paint);c.drawLine(10,13,22,13,paint);break;
-            }
-            paint.setStyle(Paint.Style.FILL);c.restore();
+        private FrameLayout.LayoutParams lp(int w,int h,int gravity,int left,int top,int right,int bottom){
+            FrameLayout.LayoutParams p=new FrameLayout.LayoutParams(w<0?w:(int)d(w),h<0?h:(int)d(h),gravity);
+            p.setMargins((int)d(left),(int)d(top),(int)d(right),(int)d(bottom));return p;
         }
-        /** Distinct, original weapon silhouettes for the seven weapon archetypes. */
-        private void weaponIcon(Canvas c,int id,float x,float y,float size){
-            c.save();c.translate(x,y);c.scale(size/64f,size/64f);
-            stroke(0xfff4f6f8,3.2f);Path p=new Path();
-            switch(id){
-                case 0: // pistol
-                    p.moveTo(-23,-3);p.lineTo(8,-3);p.lineTo(17,-9);p.lineTo(25,-9);p.lineTo(25,1);p.lineTo(8,4);p.lineTo(5,20);p.lineTo(-5,20);p.lineTo(-9,4);p.lineTo(-23,4);p.close();c.drawPath(p,paint);break;
-                case 1: // SMG
-                    p.moveTo(-28,-5);p.lineTo(24,-5);p.lineTo(28,1);p.lineTo(8,5);p.lineTo(4,20);p.lineTo(-5,20);p.lineTo(-8,5);p.lineTo(-28,4);p.close();c.drawPath(p,paint);c.drawLine(5,-5,13,-17,paint);break;
-                case 2: // assault rifle
-                    p.moveTo(-30,-5);p.lineTo(19,-5);p.lineTo(29,-11);p.lineTo(32,-7);p.lineTo(21,1);p.lineTo(7,3);p.lineTo(3,19);p.lineTo(-6,19);p.lineTo(-10,3);p.lineTo(-30,5);p.close();c.drawPath(p,paint);c.drawLine(-3,3,-1,15,paint);c.drawLine(13,-5,18,-19,paint);break;
-                case 3: // shotgun
-                    c.drawLine(-29,-7,29,-7,paint);c.drawLine(-29,0,22,0,paint);c.drawLine(-18,0,-12,19,paint);c.drawLine(-12,19,-2,19,paint);c.drawLine(8,0,12,15,paint);c.drawLine(12,15,23,15,paint);break;
-                case 4: // sniper
-                    c.drawLine(-30,-2,31,-2,paint);c.drawLine(-23,-2,-18,17,paint);c.drawLine(-18,17,-7,17,paint);c.drawLine(5,-2,8,-17,paint);c.drawLine(8,-17,24,-17,paint);c.drawLine(13,-17,13,-24,paint);c.drawCircle(13,-24,3,paint);break;
-                case 5: // rocket launcher
-                    c.drawLine(-28,-5,23,-5,paint);c.drawLine(-28,5,23,5,paint);c.drawLine(-19,5,-12,18,paint);c.drawLine(-12,18,-3,18,paint);p.moveTo(23,-5);p.lineTo(31,0);p.lineTo(23,5);p.close();c.drawPath(p,paint);break;
-                default: // guided launcher
-                    c.drawRoundRect(-29,-8,23,8,4,4,paint);c.drawLine(-14,8,-9,20,paint);c.drawLine(-9,20,2,20,paint);c.drawLine(23,-8,31,0,paint);c.drawLine(31,0,23,8,paint);c.drawLine(-25,-13,-15,-13,paint);break;
-            }
-            paint.setStyle(Paint.Style.FILL);c.restore();
+        private ImageView image(String file,int size,int gravity,int left,int top,int right,int bottom){
+            ImageView v=new ImageView(getContext());
+            try(java.io.InputStream in=getContext().getAssets().open("ui/fortnite-icons/"+file)){
+                android.graphics.Bitmap bitmap=android.graphics.BitmapFactory.decodeStream(in);
+                v.setImageBitmap(bitmap);
+            }catch(Exception ignored){}
+            v.setScaleType(ImageView.ScaleType.FIT_CENTER);v.setBackground(shape(0x99303b49,0x99eaf1f7));
+            v.setPadding((int)d(5),(int)d(5),(int)d(5),(int)d(5));v.setClickable(false);v.setFocusable(false);
+            addView(v,lp(size,size,gravity,left,top,right,bottom));return v;
         }
-        private void action(Canvas c,float x,float y,float r,int type,boolean active){buttonBase(c,x,y,r,active);icon(c,type,x,y,r*.78f);}
-        private boolean inside(float x,float y,float cx,float cy,float r){float dx=x-cx,dy=y-cy;return dx*dx+dy*dy<=r*r;}
-        @Override protected void onDraw(Canvas c){
-            super.onDraw(c);w=getWidth();h=getHeight();if(w<=0||h<=0||renderer==null)return;
-            Game g=renderer.game;float s=density, left=d(16),right=w-d(16),top=d(14);
-            // Player identity and stacked shield/health meters (Fortnite-style top-left HUD).
-            panel(c,left,top,left+d(42),top+d(42),d(7),0x99202b39);
-            fill(c,0xffd7e0e9);c.drawCircle(left+d(21),top+d(14),d(7),paint);c.drawRoundRect(left+d(10),top+d(23),left+d(32),top+d(39),d(7),d(7),paint);
-            text(c,"ADAM WORLD",left+d(50),top+d(13),12,Color.WHITE,true);
-            panel(c,left+d(50),top+d(19),left+d(224),top+d(30),d(3),0xff263442);
-            panel(c,left+d(50),top+d(19),left+d(50)+d(174)*Math.max(0,Math.min(1,g.shield/100f)),top+d(30),d(3),0xff249be8);
-            icon(c,11,left+d(239),top+d(25),d(18));text(c,String.valueOf((int)g.shield),left+d(252),top+d(30),11,Color.WHITE,true);
-            panel(c,left+d(50),top+d(35),left+d(224),top+d(46),d(3),0xff263442);
-            panel(c,left+d(50),top+d(35),left+d(50)+d(174)*Math.max(0,Math.min(1,g.health/100f)),top+d(46),d(3),0xff35d477);
-            icon(c,12,left+d(239),top+d(41),d(18));text(c,String.valueOf((int)g.health),left+d(252),top+d(46),11,Color.WHITE,true);
-            // Compass strip at top centre.
-            String[] dirs={"W","NW","N","NE","E"};float cx=w*.5f;
-            for(int i=0;i<dirs.length;i++){float x=cx+(i-2)*d(72);text(c,dirs[i],x-d(8),top+d(21),i==2?17:13,i==2?Color.WHITE:0xffb9c8d8,true);fill(c,0xffdce6ef);c.drawCircle(x,top+d(31),d(1.5f),paint);}
-            // Minimap top-right.
-            float mr=Math.min(d(76),Math.min(w*.105f,h*.14f)),mx=right-mr-d(10),my=top+mr+d(8);
-            mapRect.set(mx-mr,my-mr,mx+mr,my+mr);
-            panel(c,mx-mr-d(3),my-mr-d(3),mx+mr+d(3),my+mr+d(3),d(8),0xe51b2632);
-            stroke(0xffe5edf5,1.6f);c.drawRoundRect(mx-mr,my-mr,mx+mr,my+mr,d(6),d(6),paint);
-            c.save();Path clip=new Path();clip.addRoundRect(mx-mr+d(2),my-mr+d(2),mx+mr-d(2),my+mr-d(2),d(5),d(5),Path.Direction.CW);c.clipPath(clip);
-            fill(c,0xff34434a);c.drawRect(mx-mr,my-mr,mx+mr,my+mr,paint);
-            float[] roads=renderer.miniMapRoads();float scale=mr/210f,px=g.driving?g.cx:g.px,pz=g.driving?g.cz:g.pz;
-            stroke(0xffe3e6d7,2.2f);for(int i=0;i+3<roads.length;i+=4)c.drawLine(mx+(roads[i]-px)*scale,my+(roads[i+1]-pz)*scale,mx+(roads[i+2]-px)*scale,my+(roads[i+3]-pz)*scale,paint);
-            fill(c,0xffffd34e);Path arrow=new Path();arrow.moveTo(mx,my-d(9));arrow.lineTo(mx-d(6),my+d(6));arrow.lineTo(mx,my+d(2));arrow.lineTo(mx+d(6),my+d(6));arrow.close();c.save();c.rotate((float)Math.toDegrees(g.driving?g.cyaw:g.pyaw),mx,my);c.drawPath(arrow,paint);c.restore();c.restore();
-            text(c,""+g.magazineAmmo+" / "+g.reserveAmmo[g.equippedWeapon],mx-mr,my+mr+d(17),11,Color.WHITE,true);
-            // Pause control sits BELOW the minimap, with a clear gap and its own hit target.
-            float pauseX=right-d(19), pauseY=my+mr+d(43);
-            action(c,pauseX,pauseY,d(15),10,false);
-            if(pauseMenuOpen){float pw=Math.min(w-d(36),d(330)),ph=d(226),pl=(w-pw)/2f,pt=(h-ph)/2f;panel(c,pl,pt,pl+pw,pt+ph,12,0xf018222e);stroke(0xffe8bd61,2);c.drawRoundRect(pl,pt,pl+pw,pt+ph,d(12),d(12),paint);paint.setStyle(Paint.Style.FILL);text(c,"BATTLE ROYALE",pl+d(22),pt+d(36),20,Color.WHITE,true);panel(c,pl+d(18),pt+d(83),pl+pw-d(18),pt+d(132),7,0xffb58a38);text(c,"RESUME",pl+d(34),pt+d(114),15,Color.WHITE,true);panel(c,pl+d(18),pt+d(145),pl+pw-d(18),pt+d(194),7,0xff344454);text(c,"MAP",pl+d(34),pt+d(176),15,Color.WHITE,true);return;}
-            // Left movement stick.
-            float jx=d(100),jy=h-d(105),jr=d(54);
-            fill(c,0x55303b49);c.drawCircle(jx,jy,jr,paint);stroke(0x99e8f0f7,1.5f);c.drawCircle(jx,jy,jr,paint);
-            for(int i=0;i<4;i++){double a=Math.PI*.5*i;float ax=jx+(float)Math.cos(a)*d(43),ay=jy+(float)Math.sin(a)*d(43);Path tri=new Path();tri.moveTo(ax,ay);tri.lineTo(ax+(float)Math.cos(a+2.5)*d(7),ay+(float)Math.sin(a+2.5)*d(7));tri.lineTo(ax+(float)Math.cos(a-2.5)*d(7),ay+(float)Math.sin(a-2.5)*d(7));tri.close();fill(c,0xffdce5ed);c.drawPath(tri,paint);}
-            fill(c,0x99e8edf2);c.drawCircle(jx+moveX*d(25),jy-moveY*d(25),d(21),paint);stroke(0xfff8fbff,1);c.drawCircle(jx+moveX*d(25),jy-moveY*d(25),d(21),paint);
-            // Sprint and crouch controls.
-            action(c,d(205),h-d(205),d(27),2,sprintHeld);
-            action(c,d(205),h-d(132),d(27),4,crouchHeld);
-            action(c,d(205),h-d(65),d(27),14,slidePointer!=-1);
-            // Combat controls are spaced vertically to avoid overlap.
-            action(c,right-d(154),h-d(205),d(35),0,aimHeld);
-            action(c,right-d(55),h-d(205),d(39),1,fireHeld);
-            action(c,right-d(55),h-d(294),d(31),13,false);
-            action(c,right-d(154),h-d(294),d(26),5,false);
-            action(c,right-d(252),h-d(108),d(25),6,false);
-            action(c,right-d(154),h-d(108),d(25),8,false);
-            action(c,right-d(55),h-d(108),d(27),9,false);
-            // Fortnite-like five-slot weapon bar anchored to the bottom safe area.
-            float slot=d(54),gap=d(5),total=5*slot+4*gap,start=(w-total)/2f,slotY=h-d(67);
+        private TextView label(String value,int size,int color,boolean bold,int gravity,int left,int top,int right,int bottom){
+            TextView t=new TextView(getContext());t.setText(value);t.setTextSize(size);t.setTextColor(color);
+            t.setTypeface(android.graphics.Typeface.create("sans-serif",bold?1:0));t.setGravity(Gravity.CENTER);
+            t.setShadowLayer(d(2),0,d(1),Color.BLACK);t.setClickable(false);
+            addView(t,lp(-2,-2,gravity,left,top,right,bottom));return t;
+        }
+        private android.widget.ProgressBar bar(int color,int gravity,int left,int top){
+            android.widget.ProgressBar p=new android.widget.ProgressBar(getContext(),null,android.R.attr.progressBarStyleHorizontal);
+            p.setMax(100);p.setProgressTintList(android.content.res.ColorStateList.valueOf(color));
+            p.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff283746));
+            addView(p,lp(154,7,gravity,left,top,0,0));return p;
+        }
+        private void addAction(String file,int size,int gravity,int left,int top,int right,int bottom){
+            image(file,size,gravity,left,top,right,bottom);
+        }
+        private void buildHud(Context c){
+            // Upper-left player status: native Android views and the repository's image assets.
+            healthBar=bar(0xff35d477,Gravity.TOP|Gravity.LEFT,58,43);
+            shieldBar=bar(0xff249be8,Gravity.TOP|Gravity.LEFT,58,28);
+            healthValue=label("100",10,Color.WHITE,true,Gravity.TOP|Gravity.LEFT,218,36,0,0);
+            shieldValue=label("100",10,Color.WHITE,true,Gravity.TOP|Gravity.LEFT,218,21,0,0);
+            image("health-shield.png",38,Gravity.TOP|Gravity.LEFT,14,14,0,0);
+            label("ADAM",11,Color.WHITE,true,Gravity.TOP|Gravity.LEFT,58,4,0,0);
+            // Compass and minimap.
+            label("W      NW          N          NE      E",12,Color.WHITE,true,Gravity.TOP|Gravity.CENTER_HORIZONTAL,0,15,0,0);
+            image("hud-minimap.png",76,Gravity.TOP|Gravity.RIGHT,0,12,16,0);
+            label("≡",22,Color.WHITE,true,Gravity.TOP|Gravity.RIGHT,0,91,25,0);
+            // Left movement zone and movement actions.
+            image("mobile-interact.png",92,Gravity.BOTTOM|Gravity.LEFT,52,0,0,56);
+            addAction("hud-stamina.png",43,Gravity.BOTTOM|Gravity.LEFT,166,0,0,177);
+            addAction("gameplay-category.png",40,Gravity.BOTTOM|Gravity.LEFT,166,0,0,112);
+            addAction("mobile-interact.png",38,Gravity.BOTTOM|Gravity.LEFT,166,0,0,48);
+            // Combat side: aim, fire, jump, reload, harvesting, interact and vehicle.
+            addAction("hud-crosshair.png",54,Gravity.BOTTOM|Gravity.RIGHT,0,0,128,178);
+            addAction("assault-rifle-icon.png",62,Gravity.BOTTOM|Gravity.RIGHT,0,0,20,178);
+            addAction("mobile-interact.png",43,Gravity.BOTTOM|Gravity.RIGHT,0,0,20,267);
+            addAction("hud-ammo.png",40,Gravity.BOTTOM|Gravity.RIGHT,0,0,128,267);
+            addAction("pickaxe.png",40,Gravity.BOTTOM|Gravity.RIGHT,0,0,226,72);
+            addAction("mobile-interact.png",40,Gravity.BOTTOM|Gravity.RIGHT,0,0,128,72);
+            addAction("hud-steering-wheel.png",42,Gravity.BOTTOM|Gravity.RIGHT,0,0,20,72);
+            // Five quickbar slots. Image assets are actual PNG/WebP files in assets/ui/fortnite-icons.
+            String[] icons={"pistol.png","assault-rifle-icon.png","shotgun.png","sniper-rifle.png","pickaxe.png"};
             for(int i=0;i<5;i++){
-                quickX[i]=start+i*(slot+gap);boolean selected=i==g.activeQuickbarSlot;
-                int weapon=i<g.quickbarWeapons.length?g.quickbarWeapons[i]:-1;
-                panel(c,quickX[i]-d(1),slotY-d(1),quickX[i]+slot+d(1),slotY+slot+d(1),d(5),selected?0xfff5c84b:0xb51a222c);
-                panel(c,quickX[i]+d(2),slotY+d(2),quickX[i]+slot-d(2),slotY+slot-d(2),d(4),selected?0xff426a87:0xe52c3947);
-                stroke(selected?0xffffe18a:0xff9aa9b8,selected?2.2f:1);c.drawRoundRect(quickX[i]+d(2),slotY+d(2),quickX[i]+slot-d(2),slotY+slot-d(2),d(4),d(4),paint);paint.setStyle(Paint.Style.FILL);
-                if(weapon>=0)weaponIcon(c,weapon,quickX[i]+slot/2,slotY+slot*.53f,slot*.84f);else icon(c,7,quickX[i]+slot/2,slotY+slot*.53f,slot*.55f);
-                text(c,String.valueOf(i+1),quickX[i]+d(5),slotY+d(12),9,Color.WHITE,true);
+                final int slot=i;
+                FrameLayout cell=new FrameLayout(c);cell.setBackground(shape(0xdd202a36,0xff9eabb8));
+                FrameLayout.LayoutParams cp=lp(52,52,Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL,0,0,0,12);
+                cp.leftMargin=(int)d(-142+i*58);addView(cell,cp);
+                ImageView iv=new ImageView(c);
+                try(java.io.InputStream in=c.getAssets().open("ui/fortnite-icons/"+icons[i])){
+                    iv.setImageBitmap(android.graphics.BitmapFactory.decodeStream(in));
+                }catch(Exception ignored){}
+                iv.setScaleType(ImageView.ScaleType.FIT_CENTER);iv.setPadding((int)d(5),(int)d(5),(int)d(5),(int)d(5));
+                cell.addView(iv,new FrameLayout.LayoutParams(-1,-1));
+                TextView number=new TextView(c);number.setText(String.valueOf(i+1));number.setTextColor(Color.WHITE);
+                number.setTextSize(9);number.setShadowLayer(d(2),0,d(1),Color.BLACK);
+                FrameLayout.LayoutParams np=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.LEFT);
+                cell.addView(number,np);slotImages[i]=iv;
             }
+            ammoValue=label("30 / 240",12,Color.WHITE,true,Gravity.BOTTOM|Gravity.RIGHT,0,0,20,84);
+            refreshHud();
         }
+        private void refreshHud(){
+            if(renderer!=null&&renderer.game!=null){
+                Game g=renderer.game;
+                if(healthBar!=null){healthBar.setProgress((int)Math.max(0,Math.min(100,g.health)));shieldBar.setProgress((int)Math.max(0,Math.min(100,g.shield)));
+                    healthValue.setText(String.valueOf((int)g.health));shieldValue.setText(String.valueOf((int)g.shield));
+                    ammoValue.setText(g.magazineAmmo+" / "+g.reserveAmmo[g.equippedWeapon]);}
+                int active=g.activeQuickbarSlot;
+                for(int i=0;i<5;i++)if(slotImages[i]!=null){
+                    slotImages[i].setBackground(i==active?shape(0x554c9ed8,0xffffd45a):null);
+                }
+            }
+            postDelayed(this::refreshHud,250);
+        }
+        private boolean inside(float x,float y,float cx,float cy,float r){float dx=x-cx,dy=y-cy;return dx*dx+dy*dy<=r*r;}
         private void clearPointer(int id){
             if(movePointer==id){movePointer=-1;moveX=moveY=0;renderer.game.sx=renderer.game.sy=0;}
             if(cameraPointer==id)cameraPointer=-1;
@@ -862,6 +826,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if(a==MotionEvent.ACTION_MOVE){for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==cameraPointer){float cx=e.getX(p),cy=e.getY(p);renderer.addLook(cx-cameraLastX,cy-cameraLastY);cameraLastX=cx;cameraLastY=cy;}for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==movePointer){float jx=d(100),jy=getHeight()-d(105);moveX=Math.max(-1,Math.min(1,(e.getX(p)-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-e.getY(p))/d(48)));renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();}return true;}
             if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_POINTER_UP||a==MotionEvent.ACTION_CANCEL){if(a==MotionEvent.ACTION_CANCEL){if(movePointer!=-1)clearPointer(movePointer);if(cameraPointer!=-1)clearPointer(cameraPointer);if(firePointer!=-1)clearPointer(firePointer);if(aimPointer!=-1)clearPointer(aimPointer);if(sprintPointer!=-1)clearPointer(sprintPointer);if(crouchPointer!=-1)clearPointer(crouchPointer);if(slidePointer!=-1)clearPointer(slidePointer);}else clearPointer(id);return true;}return true;
         }
+
     }
 
     @Override protected void onCreate(Bundle s) {
