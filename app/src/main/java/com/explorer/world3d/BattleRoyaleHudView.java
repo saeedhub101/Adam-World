@@ -157,8 +157,6 @@ final class BattleRoyaleHudView extends View {
             p.setStyle(Paint.Style.FILL);p.setColor(0xFFF4F8FC);p.setTextAlign(Paint.Align.CENTER);
             p.setTypeface(android.graphics.Typeface.create("sans-serif",android.graphics.Typeface.BOLD));
             p.setTextSize(d(primary?27:23));c.drawText(b.glyph,x,y+d(primary?9:8),p);
-            p.setTextSize(d(9));p.setTypeface(android.graphics.Typeface.create("sans-serif-medium",0));
-            p.setColor(0xFFEAF1F8);c.drawText(b.label,x,y+b.r+d(13),p);
         }
     }
 }
