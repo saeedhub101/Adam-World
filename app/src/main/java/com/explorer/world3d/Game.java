@@ -92,6 +92,7 @@ final class Game {
     int attackType;
     long lastPlayerAttackMs, lastComboMs;
     volatile boolean weaponFireHeld, weaponFireRequested, weaponAimHeld, reloadRequested;
+    boolean weaponTriggerLatched;
     // Horizontal offset of the movable on-screen aiming reticle, in radians.
     volatile float aimYawOffset, aimPitchOffset;
     int equippedWeapon=0, cash=100000, magazineAmmo=12;
@@ -148,7 +149,7 @@ final class Game {
         engineThrottle = 0f; landingGearDown = true; aircraftOnGround = true; aircraftStall = false;
         py = 0; px = pz = pyaw = 0; cx = 4; cz = 0; cyaw = 0; cv = 0; driving = false; vehicleType = ProceduralVehicleModels.SEDAN; altitude = 0; liftInput = throttleInput = rudderInput = 0; brakeRequested = false; camYaw = 0; health = 100; shield = 0; dead = false; buildMode=buildEditMode=buildRequested=editRequested=cycleBuildTypeRequested=removeBuildRequested=harvestRequested=false; selectedBuildPieceIndex=-1; selectedBuildType=0;
         paused = attackRequested = punchRequested = kickRequested = jumpRequested = handbrake = guardRequested = dodgeRequested = false; cameraLookOffset = 0f; cameraZoomInput = 0f;
-        weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;useMedkitRequested=useShieldPotionRequested=lootInteractionRequested=false;aimYawOffset=aimPitchOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
+        weaponFireHeld=weaponFireRequested=weaponAimHeld=reloadRequested=false;weaponTriggerLatched=false;useMedkitRequested=useShieldPotionRequested=lootInteractionRequested=false;aimYawOffset=aimPitchOffset=0f;weaponReloadSeconds=weaponReloadDuration=weaponRecoil=muzzleFlashSeconds=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
         stamina = 100f; dodgeSeconds = 0f; dodgeX = dodgeZ = 0f; lastDodgeMs = 0L;
         guardBlend=hurtFlash=playerPoseTime=playerFall=0f; playerPose=0;
         jumpVelocity = jumpHeight = attackSeconds = 0f; comboStep = 0;
@@ -618,7 +619,7 @@ final class Game {
                 weaponReloadDuration=0f;weaponReloadPendingAmmo=0;weaponReloadWeaponId=-1;
             }
         }
-        weaponRecoil=Math.max(0f,weaponRecoil-dt*5.8f);
+        weaponRecoil=Math.max(0f,weaponRecoil-dt*WeaponSystem.RECOIL_RECOVERY[Math.max(0,Math.min(WeaponSystem.RECOIL_RECOVERY.length-1,equippedWeapon))]);
         muzzleFlashSeconds=Math.max(0f,muzzleFlashSeconds-dt*8.5f);
         if(weaponAimHeld&&!driving)pyaw+=angDiff(pyaw,camYaw)*Math.min(1f,dt*10f);
         if(reloadRequested){reloadRequested=false;reloadWeapon();}
@@ -983,7 +984,7 @@ final class Game {
         float focusY = driving ? vehicleY : py;
         boolean aircraft = driving && (vehicleType == ProceduralVehicleModels.HELICOPTER || vehicleType == ProceduralVehicleModels.AIRPLANE);
         float modeScale = cameraMode == 0 ? 0.72f : cameraMode == 2 ? 1.55f : 1f;
-        float dist = camDistance * modeScale * (weaponAimHeld && !driving ? 0.82f : 1f) * (driving ? (aircraft ? 2.15f : 1.6f) : 1f), th = driving ? (aircraft ? 3.0f : 1.6f) : (weaponAimHeld ? 1.42f : 1.55f);
+        float dist = camDistance * modeScale * (weaponAimHeld && !driving ? WeaponSystem.ADS_CAMERA_SCALE[Math.max(0,Math.min(WeaponSystem.ADS_CAMERA_SCALE.length-1,equippedWeapon))] : 1f) * (driving ? (aircraft ? 2.15f : 1.6f) : 1f), th = driving ? (aircraft ? 3.0f : 1.6f) : (weaponAimHeld ? 1.42f : 1.55f);
         if (aircraft && altitude > 80f) dist = Math.max(dist, camDistance * modeScale * 2.8f);
         float cp = (float) Math.cos(camPitch), sp = (float) Math.sin(camPitch);
         float cinematicYaw = cinematicCamera ? (float)Math.sin(System.currentTimeMillis() * 0.00022f) * 0.48f : 0f;
