@@ -694,7 +694,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             else if(label.equals("بناء")){x=.72f;y=.82f;size=46;visible=!driving;}
             else if(label.equals("قطعة البناء")){x=.82f;y=.82f;size=46;visible=!driving&&build;}
             else if(label.equals("تأكيد البناء")){x=.92f;y=.82f;size=50;visible=!driving&&build;}
-            else if(label.contains("دخول / خروج")){x=.91f;y=.91f;size=48;visible=driving;}
+            else if(label.contains("دخول / خروج")){x=.92f;y=driving?.91f:.84f;size=48;visible=true;}
             else if(label.equals("تسارع")){x=.92f;y=.72f;size=60;visible=driving&&!aircraft;}
             else if(label.equals("فرامل")){x=.81f;y=.72f;size=50;visible=driving&&!aircraft;}
             else if(label.equals("زامور")){x=.72f;y=.83f;size=42;visible=driving&&!aircraft;}
@@ -1204,6 +1204,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         hud.setSingleLine(false);
         hud.setPadding(dp(9),dp(5),dp(9),dp(5));
         hud.setBackgroundColor(0x990d141c);
+        hud.setVisibility(View.GONE);
         makeHudElementEditable(hud,"hud_status_panel");
         FrameLayout.LayoutParams hp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.END);
         hp.setMargins(0, 0, dp(24), dp(190));
@@ -1266,6 +1267,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         credit.setText("© مساهمو OpenStreetMap · الارتفاعات: Mapzen/AWS Terrain Tiles");
         credit.setTextColor(0xc0ffffff);
         credit.setTextSize(10);
+        credit.setVisibility(View.GONE);
         FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
         cp.setMargins(0, 0, 0, dp(4));
         root.addView(credit, cp);
