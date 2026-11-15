@@ -67,6 +67,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private boolean padL2, padR2, padCameraModifier;
     private float padHatX, padHatY;
     private TextView healthHud, weaponHud;
+    private BattleRoyaleHudView battleRoyaleHud;
     private MiniMapView miniMap;
     private AimReticleView aimReticle;
     private WeaponWheelView weaponWheelView;
@@ -1153,15 +1154,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT,Gravity.FILL);
         root.addView(aimReticle,reticleParams);
 
-        TextView credit = new TextView(this);
-        credit.setText("© مساهمو OpenStreetMap · الارتفاعات: Mapzen/AWS Terrain Tiles");
-        credit.setTextColor(0xc0ffffff);
-        credit.setTextSize(10);
-        credit.setVisibility(View.GONE);
-        FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        cp.setMargins(0, 0, 0, dp(4));
-        root.addView(credit, cp);
-
         loading = new TextView(this);
         loading.setText("جاري تحميل المدينة…");
         loading.setTextColor(Color.WHITE);
@@ -1176,8 +1168,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         loadingParams.setMargins(dp(8), dp(104), dp(8), 0);
         root.addView(loading, loadingParams);
 
-        BattleRoyaleHudView battleHud = new BattleRoyaleHudView(this);
-        root.addView(battleHud,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
+        battleRoyaleHud = new BattleRoyaleHudView(this);
+        root.addView(battleRoyaleHud,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
         
         setContentView(root);
         glView.requestFocus();
@@ -1378,38 +1370,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     }
 
     @Override public void onHud(final String s) {
-        runOnUiThread(new Runnable() { @Override public void run() {
-            String lootHint = renderer == null ? "" : renderer.game.nearbyLootHint();
-            String displayHud = lootHint.isEmpty() ? s : s + "\n" + lootHint;
-            if (!displayHud.equals(hud.getText().toString())) hud.setText(displayHud);
-            updateTouchActionVisibility();
-            if (System.currentTimeMillis()-lastHudRefresh>250 && renderer!=null) {
-                lastHudRefresh=System.currentTimeMillis();
-                if(battleHudOverlay!=null && battleHudButtons!=null) layoutBattleHudControls(battleHudOverlay,battleHudButtons);
-                int hp=renderer.game.health;
-                healthHud.setText("♥ "+hp+"     🛡 "+renderer.game.shield);
-                Game game=renderer.game;
-                int weaponRarity=WeaponSystem.RARITY[game.equippedWeapon];
-                String weaponName=WeaponSystem.NAME[game.equippedWeapon]+" · "+WeaponSystem.RARITY_LABEL[weaponRarity];
-                String ammo=weaponName+"\n"+game.magazineAmmo+"   /   "+game.reserveAmmo[game.equippedWeapon];
-                if(weaponHud!=null&&!ammo.equals(weaponHud.getText().toString())){
-                    android.text.SpannableStringBuilder styled=new android.text.SpannableStringBuilder(ammo);
-                    int split=weaponName.length();
-                    styled.setSpan(new android.text.style.ForegroundColorSpan(0xffffc857),0,split,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    styled.setSpan(new android.text.style.RelativeSizeSpan(0.78f),0,split,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    styled.setSpan(new android.text.style.ForegroundColorSpan(0xfff4f7fb),split+1,styled.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    styled.setSpan(new android.text.style.RelativeSizeSpan(1.22f),split+1,styled.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    weaponHud.setText(styled);
-                }
-                for(int slot=0;slot<quickbarButtons.length;slot++){
-                    String label=(slot==game.activeQuickbarSlot?"● ":"")+(slot+1);
-                    if(quickbarButtons[slot]!=null&&!label.equals(quickbarButtons[slot].getText().toString()))quickbarButtons[slot].setText(label);
-                }
-                if(aimReticle!=null){aimReticle.setAiming(game.weaponAimHeld);aimReticle.invalidate();}
-                healthHud.setTextColor(hp>60?0xff65e58b:hp>25?0xffffc857:0xffff5555);
-                miniMap.invalidate();
+        runOnUiThread(() -> {
+            if (battleRoyaleHud != null) battleRoyaleHud.invalidate();
+            if (aimReticle != null && renderer != null) {
+                aimReticle.setAiming(renderer.game.weaponAimHeld);
+                aimReticle.invalidate();
             }
-        }});
+        });
     }
 
     @Override public void onToast(final String s) {
