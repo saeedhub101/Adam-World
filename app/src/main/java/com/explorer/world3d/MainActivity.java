@@ -10,6 +10,9 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -1143,282 +1146,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         FrameLayout.LayoutParams wheelParams = new FrameLayout.LayoutParams(dp(320), dp(320), Gravity.CENTER);
         root.addView(weaponWheelView, wheelParams);
 
-        // الشريط العلوي
-        LinearLayout top = new LinearLayout(this);
-        top.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        query = new EditText(this);
-        query.setHint("ابحث عن مدينة أو مكان…");
-        query.setSingleLine(true);
-        query.setTextSize(14);
-        query.setTextColor(Color.BLACK);
-        query.setHintTextColor(0xff777777);
-        query.setBackgroundColor(0xF2FFFFFF);
-        query.setPadding(dp(10), 0, dp(10), 0);
-        query.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
-        query.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override public boolean onEditorAction(TextView v, int a, android.view.KeyEvent e) { search(); return true; }
-        });
-        row.addView(query, new LinearLayout.LayoutParams(0, dp(40), 1f));
-        Button go = btn("بحث");
-        go.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { search(); } });
-        row.addView(go);
-        Button loc = btn("📍");
-        loc.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { requestLocation(); } });
-        row.addView(loc);
-        Button update = btn("تحديث");
-        update.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { UpdateManager.check(MainActivity.this, true); }
-        });
-        row.addView(update);
-        timeBtn = btn(TIME_ICONS[0]);
-        timeBtn.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) {
-                renderer.timeIdx = (renderer.timeIdx + 1) % TIME_ICONS.length;
-                timeBtn.setText(TIME_ICONS[renderer.timeIdx]);
-            }
-        });
-        row.addView(timeBtn);
-        top.addView(row);
-
-        HorizontalScrollView hs = new HorizontalScrollView(this);
-        hs.setHorizontalScrollBarEnabled(false);
-        LinearLayout chips = new LinearLayout(this);
-        Button garage = btn("المركبات");
-        garage.setOnClickListener(v -> showVehicleSelector());
-        chips.addView(garage);
-        flightSchoolButton = btn("المطارات");
-        flightSchoolButton.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("اختر المطار الحقيقي")
-                .setItems(new String[]{"مطار عمان المدني — ماركا","مطار الملكة علياء الدولي"},(dialog,which)->{
-                    if(which==0)runOnGl(()->renderer.enterAirport(31.9726,35.9916));
-                    else runOnGl(()->renderer.enterAirport(31.7226,35.9932));
-                }).show());
-        chips.addView(flightSchoolButton);
-        returnCityButton = btn("عودة للمدينة");
-        returnCityButton.setVisibility(View.GONE);
-        returnCityButton.setOnClickListener(v -> runOnGl(() -> renderer.leaveFlightSchool()));
-        chips.addView(returnCityButton);
-        Button localAmman = btn("عمّان محلي");
-        localAmman.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { teleportOfflineAmman(); }
-        });
-        chips.addView(localAmman);
-        Button localManila = btn("مانيلا محلي");
-        localManila.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { teleportOfflineManila(); }
-        });
-        chips.addView(localManila);
-        Button localHome = btn("البيت");
-        localHome.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { teleportOfflineTabarbour(); }
-        });
-        chips.addView(localHome);
-        for (final Object[] c : CITIES) {
-            Button b = btn((String) c[0]);
-            b.setOnClickListener(new View.OnClickListener() {
-                @Override public void onClick(View v) { teleport((Double) c[1], (Double) c[2]); }
-            });
-            chips.addView(b);
-        }
-        hs.addView(chips);
-        top.addView(hs);
-        FrameLayout.LayoutParams tp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP);
-        tp.setMargins(dp(8), dp(8), dp(8), 0);
-        // City selection and search are available from Pause / Settings, never over the driving view.
-
-        // Fortnite-style Battle Royale HUD: one joystick, one camera zone and one contextual action layer.
-        JoystickView js = new JoystickView(this);
-        touchMoveJoystick = js;
-        js.setListener(new JoystickView.Listener() {
-            @Override public void onMove(float x, float y) {
-                Game g = renderer.game;
-                if (g.driving) {
-                    g.vehicleSteeringInput = x;
-                    g.vehicleForwardInput = y;
-                    g.sx = g.sy = 0f;
-                } else {
-                    g.sx = x; g.sy = y;
-                    g.vehicleSteeringInput = g.vehicleForwardInput = 0f;
-                }
-            }
-        });
-        FrameLayout.LayoutParams jp = new FrameLayout.LayoutParams(dp(156), dp(156), Gravity.BOTTOM | Gravity.START);
-        jp.setMargins(dp(24), 0, 0, dp(28));
-        root.addView(js, jp);
-
-        tapFireMode = getSharedPreferences("adam_world_controls", MODE_PRIVATE).getBoolean("tap_fire", false);
-        touchHudLeft = false;
-        battleHudOverlay = new FrameLayout(this);
-        battleHudOverlay.setClipChildren(false);
-        battleHudOverlay.setClipToPadding(false);
-        battleHudOverlay.setBackgroundColor(Color.TRANSPARENT);
-        battleHudButtons = new java.util.ArrayList<>();
-        touchActionPad = battleHudOverlay;
-        touchActionScroll = null;
-        touchCombatRow = null;
-        touchGroundVehicleRow = null;
-        touchFlightRow = null;
-        touchFlightUtilityRow = null;
-
-        final java.util.ArrayList<Button> controls = battleHudButtons;
-        Button fire = touchAction("إطلاق", () -> runOnGl(() -> {
-            if (tapFireMode) renderer.game.weaponFireRequested = true;
-            else renderer.game.weaponFireHeld = true;
-        }), () -> { if (!tapFireMode) runOnGl(() -> renderer.game.weaponFireHeld = false); });
-        fire.setText("●"); fire.setTextSize(30);
-        controls.add(fire);
-
-        Button aim = touchAction("تصويب", () -> runOnGl(() -> renderer.game.weaponAimHeld = true),
-                () -> runOnGl(() -> renderer.game.weaponAimHeld = false));
-        aim.setText("◎"); controls.add(aim);
-
-        Button jump = touchAction("قفز", () -> runOnGl(() -> { if (!renderer.game.driving) renderer.game.jumpRequested = true; }), null);
-        jump.setText("↑"); controls.add(jump);
-
-        Button crouch = touchAction("انحناء", () -> runOnGl(() -> { if (!renderer.game.driving) renderer.game.crouching = true; }),
-                () -> runOnGl(() -> renderer.game.crouching = false));
-        crouch.setText("↓"); controls.add(crouch);
-
-        Button reload = touchAction("تلقيم", () -> runOnGl(() -> renderer.game.reloadRequested = true), null);
-        reload.setText("↻"); controls.add(reload);
-
-        touchSprintButton = touchAction("ركض", () -> runOnGl(() -> renderer.game.sprint = true),
-                () -> runOnGl(() -> renderer.game.sprint = false));
-        touchSprintButton.setText("⚡"); controls.add(touchSprintButton);
-
-        Button harvest = touchAction("جمع الموارد", () -> runOnGl(() -> renderer.game.harvestRequested = true), null);
-        harvest.setText("⛏"); controls.add(harvest);
-
-        Button pickup = touchAction("التقاط", () -> runOnGl(() -> renderer.game.lootInteractionRequested = true), null);
-        pickup.setText("⇧"); controls.add(pickup);
-
-        for (int slot = 0; slot < 5; slot++) {
-            final int quickSlot = slot;
-            Button quick = touchAction("خانة " + (slot + 1), () -> runOnGl(() -> {
-                if (renderer.game.selectQuickbarSlot(quickSlot)) runOnUiThread(this::saveWeaponState);
-            }), null);
-            quick.setText(slot == 0 ? "1" : String.valueOf(slot + 1));
-            quickbarButtons[slot] = quick;
-            controls.add(quick);
-        }
-
-        Button medkit = touchAction("علاج", () -> runOnGl(() -> renderer.game.useMedkitRequested = true), null);
-        medkit.setText("+"); controls.add(medkit);
-        Button shield = touchAction("درع", () -> runOnGl(() -> renderer.game.useShieldPotionRequested = true), null);
-        shield.setText("◇"); controls.add(shield);
-
-        Button buildMode = touchAction("بناء", () -> runOnGl(() -> {
-            renderer.game.buildMode = !renderer.game.buildMode;
-            renderer.game.buildEditMode = false;
-        }), null);
-        buildMode.setText("▦"); controls.add(buildMode);
-        Button buildPiece = touchAction("قطعة البناء", () -> runOnGl(() -> renderer.game.cycleBuildTypeRequested = true), null);
-        buildPiece.setText("▱"); controls.add(buildPiece);
-        Button buildPlace = touchAction("تأكيد البناء", () -> runOnGl(() -> renderer.game.buildRequested = true), null);
-        buildPlace.setText("✓"); controls.add(buildPlace);
-
-        touchVehicleButton = touchAction("دخول / خروج", () -> runOnGl(() -> renderer.toggleCar()), null);
-        touchVehicleButton.setText("🚗"); controls.add(touchVehicleButton);
-        Button gas = touchAction("تسارع", () -> { touchVehicleGasHeld = true; refreshTouchVehicleThrottle(); },
-                () -> { touchVehicleGasHeld = false; refreshTouchVehicleThrottle(); });
-        gas.setText("▲"); controls.add(gas);
-        Button brake = touchAction("فرامل", () -> { touchVehicleBrakeHeld = true; refreshTouchVehicleThrottle(); },
-                () -> { touchVehicleBrakeHeld = false; refreshTouchVehicleThrottle(); });
-        brake.setText("▼"); controls.add(brake);
-        Button horn = touchAction("زامور", () -> renderer.playHorn(), null);
-        horn.setText("♫"); controls.add(horn);
-
-        Button throttleUp = touchAction("زيادة الدفع", () -> runOnGl(() -> renderer.game.throttleInput = 1f),
-                () -> runOnGl(() -> renderer.game.throttleInput = 0f));
-        throttleUp.setText("▲"); controls.add(throttleUp);
-        Button throttleDown = touchAction("تقليل الدفع", () -> runOnGl(() -> renderer.game.throttleInput = -1f),
-                () -> runOnGl(() -> renderer.game.throttleInput = 0f));
-        throttleDown.setText("▼"); controls.add(throttleDown);
-        touchFlightUpButton = touchAction("رفع المقدمة", () -> runOnGl(() -> renderer.game.liftInput = 1f),
-                () -> runOnGl(() -> renderer.game.liftInput = 0f));
-        touchFlightUpButton.setText("↑"); controls.add(touchFlightUpButton);
-        touchFlightDownButton = touchAction("خفض المقدمة", () -> runOnGl(() -> renderer.game.liftInput = -1f),
-                () -> runOnGl(() -> renderer.game.liftInput = 0f));
-        touchFlightDownButton.setText("↓"); controls.add(touchFlightDownButton);
-        touchBrakeButton = touchAction("مكابح", () -> runOnGl(() -> renderer.game.brakeRequested = true),
-                () -> runOnGl(() -> renderer.game.brakeRequested = false));
-        touchBrakeButton.setText("■"); controls.add(touchBrakeButton);
-        touchGearButton = touchAction("العجلات", () -> runOnGl(() -> renderer.toggleAircraftGear()), null);
-        touchGearButton.setText("⚙"); controls.add(touchGearButton);
-
-        battleHudOverlay.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob) ->
-                layoutBattleHudControls(battleHudOverlay, controls));
-        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) {
-            js.setVisibility(View.GONE);
-            battleHudOverlay.setVisibility(View.GONE);
-        }
-
-        hud = new TextView(this);
-        hud.setTextColor(Color.WHITE);
-        hud.setTextSize(13);
-        hud.setShadowLayer(2, 0, 1, Color.BLACK);
-        hud.setSingleLine(false);
-        hud.setPadding(dp(9),dp(5),dp(9),dp(5));
-        hud.setBackgroundColor(0x990d141c);
-        hud.setVisibility(View.GONE);
-        makeHudElementEditable(hud,"hud_status_panel");
-        FrameLayout.LayoutParams hp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.END);
-        hp.setMargins(0, 0, dp(24), dp(190));
-        root.addView(hud, hp);
-
-        weaponHud = new TextView(this);
-        weaponHud.setTextColor(0xfff4f7fb);
-        weaponHud.setTextSize(13);
-        weaponHud.setTypeface(android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD));
-        weaponHud.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
-        weaponHud.setTextDirection(View.TEXT_DIRECTION_RTL);
-        weaponHud.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-        weaponHud.setIncludeFontPadding(false);
-        weaponHud.setLineSpacing(dp(3), 1.0f);
-        weaponHud.setShadowLayer(1.5f, 0, 1, 0x99000000);
-        weaponHud.setMinWidth(dp(154));
-        weaponHud.setPadding(dp(14),dp(10),dp(14),dp(10));
-        android.graphics.drawable.GradientDrawable weaponCard = new android.graphics.drawable.GradientDrawable();
-        weaponCard.setColor(0xe615202d);
-        weaponCard.setCornerRadius(dp(12));
-        weaponCard.setStroke(dp(1), 0xff53677d);
-        weaponHud.setBackground(weaponCard);
-        weaponHud.setElevation(dp(8));
-        weaponHud.setText("مسدس\n12   /   48");
-        makeHudElementEditable(weaponHud,"hud_weapon_panel");
-        FrameLayout.LayoutParams weaponParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT,Gravity.TOP|Gravity.END);
-        weaponParams.setMargins(0,dp(170),dp(16),0);
-        root.addView(weaponHud,weaponParams);
-
-        healthHud = new TextView(this);
-        healthHud.setTextColor(0xff65e58b);
-        healthHud.setTextSize(16);
-        healthHud.setShadowLayer(4,0,0,Color.BLACK);
-        healthHud.setText("♥ 100 / 100");
-        makeHudElementEditable(healthHud,"hud_health_panel");
-        FrameLayout.LayoutParams healthParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.START);
-        healthParams.setMargins(dp(18), 0, 0, dp(214));
-        root.addView(healthHud, healthParams);
-
-        miniMap = new MiniMapView(this);
-        miniMap.setOnClickListener(v -> showMapDialog(false));
-        makeHudElementEditable(miniMap,"hud_minimap");
-        FrameLayout.LayoutParams miniParams = new FrameLayout.LayoutParams(dp(142), dp(142), Gravity.TOP | Gravity.END);
-        miniParams.setMargins(0, dp(18), dp(14), 0);
-        root.addView(miniMap, miniParams);
-
+        // The old Android Button/Joystick/health/weapon/minimap HUD is intentionally not created.
         CameraLookSurface cameraLookSurface=new CameraLookSurface(this);
         root.addView(cameraLookSurface,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
         aimReticle = new AimReticleView(this);
         FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT,Gravity.FILL);
         root.addView(aimReticle,reticleParams);
-
-        Button settings = btn("⚙");
-        settings.setOnClickListener(v -> showGameSettings());
-        FrameLayout.LayoutParams settingsParams = new FrameLayout.LayoutParams(dp(48),dp(44),Gravity.TOP | Gravity.START);
-        settingsParams.setMargins(dp(8),dp(8),0,0);
-        root.addView(settings,settingsParams);
 
         TextView credit = new TextView(this);
         credit.setText("© مساهمو OpenStreetMap · الارتفاعات: Mapzen/AWS Terrain Tiles");
@@ -1442,8 +1175,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         loadingParams.setMargins(dp(8), dp(104), dp(8), 0);
         root.addView(loading, loadingParams);
-        root.addView(battleHudOverlay, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+        BattleRoyaleHudView battleHud = new BattleRoyaleHudView(this);
+        root.addView(battleHud,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
+        
         setContentView(root);
         glView.requestFocus();
         UpdateManager.check(this, false);
