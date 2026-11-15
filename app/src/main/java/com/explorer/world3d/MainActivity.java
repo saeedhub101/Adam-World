@@ -743,7 +743,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             // Compass and minimap.
             label("W      NW          N          NE      E",12,Color.WHITE,true,Gravity.TOP|Gravity.CENTER_HORIZONTAL,0,15,0,0);
             image("hud-minimap.png",76,Gravity.TOP|Gravity.RIGHT,0,12,16,0);
-            label("≡",22,Color.WHITE,true,Gravity.TOP|Gravity.RIGHT,0,91,25,0);
+            label("≡",22,Color.WHITE,true,Gravity.TOP|Gravity.RIGHT,0,201,25,0);
             // Left movement zone and movement actions.
             image("mobile-interact.png",92,Gravity.BOTTOM|Gravity.LEFT,52,0,0,56);
             addAction("hud-stamina.png",43,Gravity.BOTTOM|Gravity.LEFT,166,0,0,177);
