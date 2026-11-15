@@ -1,0 +1,14 @@
+{
+  "format": "glTF 2.0 binary (GLB)",
+  "source": "https://github.com/shorepine/kenney/tree/main/3d/weapon",
+  "license": "CC0-1.0",
+  "credit": "Kenney / https://kenney.nl",
+  "assets": [
+    {"id":"pistol","file":"pistol.glb","bytes":24546,"source":"3d/weapon/pistol.glb"},
+    {"id":"assault-rifle","file":"assault-rifle.glb","bytes":33242,"source":"3d/weapon/machinegun.glb"},
+    {"id":"submachine-gun","file":"submachine-gun.glb","bytes":44661,"source":"3d/weapon/uziLong.glb"},
+    {"id":"shotgun","file":"shotgun.glb","bytes":44930,"source":"3d/weapon/shotgun.glb"},
+    {"id":"sniper-rifle","file":"sniper-rifle.glb","bytes":102318,"source":"3d/weapon/sniper.glb"},
+    {"id":"rocket-launcher","file":"rocket-launcher.glb","bytes":73490,"source":"3d/weapon/rocketlauncherModern.glb"}
+  ]
+}
