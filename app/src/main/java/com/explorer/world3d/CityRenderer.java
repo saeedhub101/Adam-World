@@ -1671,6 +1671,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         float mantlePhase=Game.clamp(1f-game.mantleSeconds/Math.max(0.35f,game.mantleDuration),0f,1f);
         float walkBlend=Math.min(1f,movement)*((float)Math.sin(game.phase)*0.5f+0.5f);
         animator.setProceduralPose(crouchBlend,mantleBlend,mantlePhase,walkBlend);
+        animator.setRightArmLift(12f);
         // Combat and recovery take priority over locomotion; clip names are optional
         // so packs with a smaller animation set still degrade to a valid idle/walk cycle.
         if(game.mantleSeconds>0.02f) {
