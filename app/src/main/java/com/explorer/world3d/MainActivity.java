@@ -692,6 +692,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         private boolean pauseMenuOpen=false,fireHeld,aimHeld,sprintHeld,crouchHeld;
         private float cameraLastX,cameraLastY,moveX,moveY,w,h;
         private final float[] quickX=new float[5];
+        private int slidePointer=-1;
         private final RectF mapRect=new RectF();
         BattleRoyaleHudView(Context context){super(context);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setFocusable(false);}
         private float d(float v){return v*density;}
@@ -739,6 +740,28 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             }
             paint.setStyle(Paint.Style.FILL);c.restore();
         }
+        /** Distinct, original weapon silhouettes for the seven weapon archetypes. */
+        private void weaponIcon(Canvas c,int id,float x,float y,float size){
+            c.save();c.translate(x,y);c.scale(size/64f,size/64f);
+            stroke(0xfff4f6f8,3.2f);Path p=new Path();
+            switch(id){
+                case 0: // pistol
+                    p.moveTo(-23,-3);p.lineTo(8,-3);p.lineTo(17,-9);p.lineTo(25,-9);p.lineTo(25,1);p.lineTo(8,4);p.lineTo(5,20);p.lineTo(-5,20);p.lineTo(-9,4);p.lineTo(-23,4);p.close();c.drawPath(p,paint);break;
+                case 1: // SMG
+                    p.moveTo(-28,-5);p.lineTo(24,-5);p.lineTo(28,1);p.lineTo(8,5);p.lineTo(4,20);p.lineTo(-5,20);p.lineTo(-8,5);p.lineTo(-28,4);p.close();c.drawPath(p,paint);c.drawLine(5,-5,13,-17,paint);break;
+                case 2: // assault rifle
+                    p.moveTo(-30,-5);p.lineTo(19,-5);p.lineTo(29,-11);p.lineTo(32,-7);p.lineTo(21,1);p.lineTo(7,3);p.lineTo(3,19);p.lineTo(-6,19);p.lineTo(-10,3);p.lineTo(-30,5);p.close();c.drawPath(p,paint);c.drawLine(-3,3,-1,15,paint);c.drawLine(13,-5,18,-19,paint);break;
+                case 3: // shotgun
+                    c.drawLine(-29,-7,29,-7,paint);c.drawLine(-29,0,22,0,paint);c.drawLine(-18,0,-12,19,paint);c.drawLine(-12,19,-2,19,paint);c.drawLine(8,0,12,15,paint);c.drawLine(12,15,23,15,paint);break;
+                case 4: // sniper
+                    c.drawLine(-30,-2,31,-2,paint);c.drawLine(-23,-2,-18,17,paint);c.drawLine(-18,17,-7,17,paint);c.drawLine(5,-2,8,-17,paint);c.drawLine(8,-17,24,-17,paint);c.drawLine(13,-17,13,-24,paint);c.drawCircle(13,-24,3,paint);break;
+                case 5: // rocket launcher
+                    c.drawLine(-28,-5,23,-5,paint);c.drawLine(-28,5,23,5,paint);c.drawLine(-19,5,-12,18,paint);c.drawLine(-12,18,-3,18,paint);p.moveTo(23,-5);p.lineTo(31,0);p.lineTo(23,5);p.close();c.drawPath(p,paint);break;
+                default: // guided launcher
+                    c.drawRoundRect(-29,-8,23,8,4,4,paint);c.drawLine(-14,8,-9,20,paint);c.drawLine(-9,20,2,20,paint);c.drawLine(23,-8,31,0,paint);c.drawLine(31,0,23,8,paint);c.drawLine(-25,-13,-15,-13,paint);break;
+            }
+            paint.setStyle(Paint.Style.FILL);c.restore();
+        }
         private void action(Canvas c,float x,float y,float r,int type,boolean active){buttonBase(c,x,y,r,active);icon(c,type,x,y,r*.78f);}
         private boolean inside(float x,float y,float cx,float cy,float r){float dx=x-cx,dy=y-cy;return dx*dx+dy*dy<=r*r;}
         @Override protected void onDraw(Canvas c){
@@ -758,15 +781,19 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             String[] dirs={"W","NW","N","NE","E"};float cx=w*.5f;
             for(int i=0;i<dirs.length;i++){float x=cx+(i-2)*d(72);text(c,dirs[i],x-d(8),top+d(21),i==2?17:13,i==2?Color.WHITE:0xffb9c8d8,true);fill(c,0xffdce6ef);c.drawCircle(x,top+d(31),d(1.5f),paint);}
             // Minimap top-right.
-            float mr=Math.min(d(63),w*.075f),mx=right-mr-d(40),my=top+mr;
-            fill(c,0xe51b2632);c.drawCircle(mx,my,mr,paint);stroke(0xffe5edf5,2);c.drawCircle(mx,my,mr,paint);
-            c.save();Path clip=new Path();clip.addCircle(mx,my,mr-d(3),Path.Direction.CW);c.clipPath(clip);
-            float[] roads=renderer.miniMapRoads();float scale=mr/260f,px=g.driving?g.cx:g.px,pz=g.driving?g.cz:g.pz;
-            stroke(0xffc6d2dc,1.4f);for(int i=0;i+3<roads.length;i+=4)c.drawLine(mx+(roads[i]-px)*scale,my+(roads[i+1]-pz)*scale,mx+(roads[i+2]-px)*scale,my+(roads[i+3]-pz)*scale,paint);
-            fill(c,0xff65ec9b);Path arrow=new Path();arrow.moveTo(mx,my-d(10));arrow.lineTo(mx-d(7),my+d(7));arrow.lineTo(mx,my+d(3));arrow.lineTo(mx+d(7),my+d(7));arrow.close();c.save();c.rotate((float)Math.toDegrees(g.driving?g.cyaw:g.pyaw),mx,my);c.drawPath(arrow,paint);c.restore();c.restore();
-            text(c,""+g.magazineAmmo+" / "+g.reserveAmmo[g.equippedWeapon],right-d(105),my+mr+d(22),13,Color.WHITE,true);
-            // Pause/menu icon.
-            action(c,right-d(18),top+d(18),d(16),10,false);
+            float mr=Math.min(d(76),Math.min(w*.105f,h*.14f)),mx=right-mr-d(10),my=top+mr+d(8);
+            mapRect.set(mx-mr,my-mr,mx+mr,my+mr);
+            panel(c,mx-mr-d(3),my-mr-d(3),mx+mr+d(3),my+mr+d(3),d(8),0xe51b2632);
+            stroke(0xffe5edf5,1.6f);c.drawRoundRect(mx-mr,my-mr,mx+mr,my+mr,d(6),d(6),paint);
+            c.save();Path clip=new Path();clip.addRoundRect(mx-mr+d(2),my-mr+d(2),mx+mr-d(2),my+mr-d(2),d(5),d(5),Path.Direction.CW);c.clipPath(clip);
+            fill(c,0xff34434a);c.drawRect(mx-mr,my-mr,mx+mr,my+mr,paint);
+            float[] roads=renderer.miniMapRoads();float scale=mr/210f,px=g.driving?g.cx:g.px,pz=g.driving?g.cz:g.pz;
+            stroke(0xffe3e6d7,2.2f);for(int i=0;i+3<roads.length;i+=4)c.drawLine(mx+(roads[i]-px)*scale,my+(roads[i+1]-pz)*scale,mx+(roads[i+2]-px)*scale,my+(roads[i+3]-pz)*scale,paint);
+            stroke(0xff9cb7a1,1);c.drawLine(mx-mr,my,my+mr,mx+mr,my,paint);
+            fill(c,0xffffd34e);Path arrow=new Path();arrow.moveTo(mx,my-d(9));arrow.lineTo(mx-d(6),my+d(6));arrow.lineTo(mx,my+d(2));arrow.lineTo(mx+d(6),my+d(6));arrow.close();c.save();c.rotate((float)Math.toDegrees(g.driving?g.cyaw:g.pyaw),mx,my);c.drawPath(arrow,paint);c.restore();c.restore();
+            text(c,""+g.magazineAmmo+" / "+g.reserveAmmo[g.equippedWeapon],mx-mr,my+mr+d(17),11,Color.WHITE,true);
+            // Pause control is outside the minimap hit area, never layered over it.
+            action(c,right-d(18),top+d(18),d(15),10,false);
             if(pauseMenuOpen){float pw=Math.min(w-d(36),d(330)),ph=d(226),pl=(w-pw)/2f,pt=(h-ph)/2f;panel(c,pl,pt,pl+pw,pt+ph,12,0xf018222e);stroke(0xffe8bd61,2);c.drawRoundRect(pl,pt,pl+pw,pt+ph,d(12),d(12),paint);paint.setStyle(Paint.Style.FILL);text(c,"BATTLE ROYALE",pl+d(22),pt+d(36),20,Color.WHITE,true);panel(c,pl+d(18),pt+d(83),pl+pw-d(18),pt+d(132),7,0xffb58a38);text(c,"RESUME",pl+d(34),pt+d(114),15,Color.WHITE,true);panel(c,pl+d(18),pt+d(145),pl+pw-d(18),pt+d(194),7,0xff344454);text(c,"MAP",pl+d(34),pt+d(176),15,Color.WHITE,true);return;}
             // Left movement stick.
             float jx=d(100),jy=h-d(105),jr=d(54);
@@ -774,18 +801,28 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             for(int i=0;i<4;i++){double a=Math.PI*.5*i;float ax=jx+(float)Math.cos(a)*d(43),ay=jy+(float)Math.sin(a)*d(43);Path tri=new Path();tri.moveTo(ax,ay);tri.lineTo(ax+(float)Math.cos(a+2.5)*d(7),ay+(float)Math.sin(a+2.5)*d(7));tri.lineTo(ax+(float)Math.cos(a-2.5)*d(7),ay+(float)Math.sin(a-2.5)*d(7));tri.close();fill(c,0xffdce5ed);c.drawPath(tri,paint);}
             fill(c,0x99e8edf2);c.drawCircle(jx+moveX*d(25),jy-moveY*d(25),d(21),paint);stroke(0xfff8fbff,1);c.drawCircle(jx+moveX*d(25),jy-moveY*d(25),d(21),paint);
             // Sprint and crouch controls.
-            action(c,d(205),h-d(188),d(25),2,sprintHeld);action(c,d(205),h-d(119),d(25),4,crouchHeld);
-            // Right combat cluster: crosshair, fire, jump, reload and melee.
-            action(c,right-d(154),h-d(200),d(35),0,aimHeld);
-            action(c,right-d(55),h-d(200),d(38),1,fireHeld);
-            action(c,right-d(55),h-d(292),d(29),3,false);
-            action(c,right-d(154),h-d(285),d(25),5,false);
-            action(c,right-d(252),h-d(105),d(25),6,false);
-            action(c,right-d(154),h-d(105),d(25),8,false);
-            action(c,right-d(55),h-d(105),d(27),9,false);
-            // Five-slot hotbar with selected-slot highlight and clear item silhouettes.
-            float slot=d(42),gap=d(4),total=5*slot+4*gap,start=(w-total)/2f,slotY=h-d(54);
-            for(int i=0;i<5;i++){quickX[i]=start+i*(slot+gap);boolean selected=i==g.activeQuickbarSlot;panel(c,quickX[i],slotY,quickX[i]+slot,slotY+slot,5,selected?0xff1686dc:0xc51b2736);stroke(selected?Color.WHITE:0xff8293a5,selected?2:1);c.drawRoundRect(quickX[i],slotY,quickX[i]+slot,slotY+slot,d(5),d(5),paint);paint.setStyle(Paint.Style.FILL);int weapon=i<g.quickbarWeapons.length?g.quickbarWeapons[i]:-1;icon(c,weapon<0?7:weapon==0?6:1,quickX[i]+slot/2,slotY+slot*.48f,slot*.66f);text(c,String.valueOf(i+1),quickX[i]+d(4),slotY+d(10),8,0xffe4edf6,true);}
+            action(c,d(205),h-d(205),d(27),2,sprintHeld);
+            action(c,d(205),h-d(132),d(27),4,crouchHeld);
+            action(c,d(205),h-d(65),d(27),3,slidePointer!=-1);
+            // Combat controls are spaced vertically to avoid overlap.
+            action(c,right-d(154),h-d(205),d(35),0,aimHeld);
+            action(c,right-d(55),h-d(205),d(39),1,fireHeld);
+            action(c,right-d(55),h-d(294),d(31),3,false);
+            action(c,right-d(154),h-d(294),d(26),5,false);
+            action(c,right-d(252),h-d(108),d(25),6,false);
+            action(c,right-d(154),h-d(108),d(25),8,false);
+            action(c,right-d(55),h-d(108),d(27),9,false);
+            // Fortnite-like five-slot weapon bar anchored to the bottom safe area.
+            float slot=d(54),gap=d(5),total=5*slot+4*gap,start=(w-total)/2f,slotY=h-d(67);
+            for(int i=0;i<5;i++){
+                quickX[i]=start+i*(slot+gap);boolean selected=i==g.activeQuickbarSlot;
+                int weapon=i<g.quickbarWeapons.length?g.quickbarWeapons[i]:-1;
+                panel(c,quickX[i]-d(1),slotY-d(1),quickX[i]+slot+d(1),slotY+slot+d(1),d(5),selected?0xfff5c84b:0xb51a222c);
+                panel(c,quickX[i]+d(2),slotY+d(2),quickX[i]+slot-d(2),slotY+slot-d(2),d(4),selected?0xff426a87:0xe52c3947);
+                stroke(selected?0xffffe18a:0xff9aa9b8,selected?2.2f:1);c.drawRoundRect(quickX[i]+d(2),slotY+d(2),quickX[i]+slot-d(2),slotY+slot-d(2),d(4),d(4),paint);paint.setStyle(Paint.Style.FILL);
+                if(weapon>=0)weaponIcon(c,weapon,quickX[i]+slot/2,slotY+slot*.53f,slot*.84f);else icon(c,7,quickX[i]+slot/2,slotY+slot*.53f,slot*.55f);
+                text(c,String.valueOf(i+1),quickX[i]+d(5),slotY+d(12),9,Color.WHITE,true);
+            }
         }
         private void clearPointer(int id){
             if(movePointer==id){movePointer=-1;moveX=moveY=0;renderer.game.sx=renderer.game.sy=0;}
@@ -794,6 +831,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if(aimPointer==id){aimPointer=-1;aimHeld=false;renderer.game.weaponAimHeld=false;}
             if(sprintPointer==id){sprintPointer=-1;sprintHeld=false;renderer.game.sprint=false;}
             if(crouchPointer==id){crouchPointer=-1;crouchHeld=false;renderer.game.crouching=false;}
+            if(slidePointer==id){slidePointer=-1;renderer.game.crouching=false;renderer.game.sprint=false;}
             if(jumpPointer==id)jumpPointer=-1;if(reloadPointer==id)reloadPointer=-1;invalidate();
         }
         @Override public boolean onTouchEvent(MotionEvent e){
@@ -802,11 +840,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 float left=d(16),right=getWidth()-d(16);
                 if(pauseMenuOpen){float pw=Math.min(getWidth()-d(36),d(330)),ph=d(226),pl=(getWidth()-pw)/2f,pt=(getHeight()-ph)/2f;if(x>=pl&&x<=pl+pw&&y>=pt+d(83)&&y<=pt+d(132)){pauseMenuOpen=false;renderer.game.paused=false;invalidate();return true;}if(x>=pl&&x<=pl+pw&&y>=pt+d(145)&&y<=pt+d(194)){pauseMenuOpen=false;invalidate();showMapDialog(true);return true;}return true;}
                 if(x>getWidth()-d(48)&&y<d(50)){pauseMenuOpen=true;renderer.game.paused=true;invalidate();return true;}
-                float mr=Math.min(d(63),getWidth()*.075f),mx=right-mr-d(40),my=d(14)+mr;if(inside(x,y,mx,my,mr)){showMapDialog(false);return true;}
+                float mr=Math.min(d(76),Math.min(getWidth()*.105f,getHeight()*.14f)),mx=right-mr-d(10),my=d(14)+mr+d(8);if(x>=mx-mr&&x<=mx+mr&&y>=my-mr&&y<=my+mr){showMapDialog(false);return true;}
                 float jx=d(100),jy=getHeight()-d(105);if(x<d(170)&&y>getHeight()-d(190)){movePointer=id;moveX=Math.max(-1,Math.min(1,(x-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-y)/d(48)));renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();return true;}
                 Game g=renderer.game;
-                if(inside(x,y,d(205),getHeight()-d(188),d(31))){sprintPointer=id;sprintHeld=true;g.sprint=true;invalidate();return true;}
-                if(inside(x,y,d(205),getHeight()-d(119),d(31))){crouchPointer=id;crouchHeld=true;g.crouching=true;invalidate();return true;}
+                if(inside(x,y,d(205),getHeight()-d(205),d(33))){sprintPointer=id;sprintHeld=true;g.sprint=true;invalidate();return true;}
+                if(inside(x,y,d(205),getHeight()-d(132),d(33))){crouchPointer=id;crouchHeld=true;g.crouching=true;invalidate();return true;}
+                if(inside(x,y,d(205),getHeight()-d(65),d(33))){slidePointer=id;g.sprint=true;g.crouching=true;g.slideSeconds=Math.max(g.slideSeconds,.45f);invalidate();return true;}
                 if(inside(x,y,right-d(55),getHeight()-d(200),d(42))){firePointer=id;fireHeld=true;g.weaponFireHeld=true;invalidate();return true;}
                 if(inside(x,y,right-d(154),getHeight()-d(200),d(39))){aimPointer=id;aimHeld=true;g.weaponAimHeld=true;invalidate();return true;}
                 if(inside(x,y,right-d(55),getHeight()-d(292),d(33))){jumpPointer=id;g.jumpRequested=true;invalidate();return true;}
@@ -819,7 +858,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 if(x>getWidth()*.42f&&y<getHeight()*.82f){cameraPointer=id;cameraLastX=x;cameraLastY=y;return true;}return true;
             }
             if(a==MotionEvent.ACTION_MOVE){for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==cameraPointer){float cx=e.getX(p),cy=e.getY(p);renderer.addLook(cx-cameraLastX,cy-cameraLastY);cameraLastX=cx;cameraLastY=cy;}for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==movePointer){float jx=d(100),jy=getHeight()-d(105);moveX=Math.max(-1,Math.min(1,(e.getX(p)-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-e.getY(p))/d(48)));renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();}return true;}
-            if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_POINTER_UP||a==MotionEvent.ACTION_CANCEL){if(a==MotionEvent.ACTION_CANCEL){if(movePointer!=-1)clearPointer(movePointer);if(cameraPointer!=-1)clearPointer(cameraPointer);if(firePointer!=-1)clearPointer(firePointer);if(aimPointer!=-1)clearPointer(aimPointer);if(sprintPointer!=-1)clearPointer(sprintPointer);if(crouchPointer!=-1)clearPointer(crouchPointer);}else clearPointer(id);return true;}return true;
+            if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_POINTER_UP||a==MotionEvent.ACTION_CANCEL){if(a==MotionEvent.ACTION_CANCEL){if(movePointer!=-1)clearPointer(movePointer);if(cameraPointer!=-1)clearPointer(cameraPointer);if(firePointer!=-1)clearPointer(firePointer);if(aimPointer!=-1)clearPointer(aimPointer);if(sprintPointer!=-1)clearPointer(sprintPointer);if(crouchPointer!=-1)clearPointer(crouchPointer);if(slidePointer!=-1)clearPointer(slidePointer);}else clearPointer(id);return true;}return true;
         }
     }
 
