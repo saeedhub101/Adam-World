@@ -1230,8 +1230,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         weaponHud.setElevation(dp(8));
         weaponHud.setText("مسدس\n12   /   48");
         makeHudElementEditable(weaponHud,"hud_weapon_panel");
-        FrameLayout.LayoutParams weaponParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT,Gravity.TOP|Gravity.END);
-        weaponParams.setMargins(0,dp(112),dp(18),0);
+        FrameLayout.LayoutParams weaponParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT,Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);
+        weaponParams.setMargins(0,0,0,dp(14));
         root.addView(weaponHud,weaponParams);
 
         healthHud = new TextView(this);
@@ -1240,15 +1240,15 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         healthHud.setShadowLayer(4,0,0,Color.BLACK);
         healthHud.setText("♥ 100 / 100");
         makeHudElementEditable(healthHud,"hud_health_panel");
-        FrameLayout.LayoutParams healthParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
-        healthParams.setMargins(0, dp(62), dp(18), 0);
+        FrameLayout.LayoutParams healthParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.START);
+        healthParams.setMargins(dp(18), dp(58), 0, 0);
         root.addView(healthHud, healthParams);
 
         miniMap = new MiniMapView(this);
         miniMap.setOnClickListener(v -> showMapDialog(false));
         makeHudElementEditable(miniMap,"hud_minimap");
-        FrameLayout.LayoutParams miniParams = new FrameLayout.LayoutParams(dp(142), dp(142), Gravity.TOP | Gravity.START);
-        miniParams.setMargins(dp(14), dp(18), 0, 0);
+        FrameLayout.LayoutParams miniParams = new FrameLayout.LayoutParams(dp(142), dp(142), Gravity.TOP | Gravity.END);
+        miniParams.setMargins(0, dp(18), dp(14), 0);
         root.addView(miniMap, miniParams);
 
         CameraLookSurface cameraLookSurface=new CameraLookSurface(this);
@@ -1282,8 +1282,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
 
         Button settings = btn("⚙");
         settings.setOnClickListener(v -> showGameSettings());
-        FrameLayout.LayoutParams settingsParams = new FrameLayout.LayoutParams(dp(48),dp(44),Gravity.TOP | Gravity.END);
-        settingsParams.setMargins(0,dp(8),dp(8),0);
+        FrameLayout.LayoutParams settingsParams = new FrameLayout.LayoutParams(dp(44),dp(44),Gravity.TOP | Gravity.START);
+        settingsParams.setMargins(dp(8),dp(8),0,0);
         root.addView(settings,settingsParams);
 
         TextView credit = new TextView(this);
