@@ -1229,8 +1229,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         weaponHud.setElevation(dp(8));
         weaponHud.setText("مسدس\n12   /   48");
         makeHudElementEditable(weaponHud,"hud_weapon_panel");
-        FrameLayout.LayoutParams weaponParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT,Gravity.TOP|Gravity.START);
-        weaponParams.setMargins(dp(18),dp(170),0,0);
+        FrameLayout.LayoutParams weaponParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT,Gravity.TOP|Gravity.END);
+        weaponParams.setMargins(0,dp(170),dp(16),0);
         root.addView(weaponHud,weaponParams);
 
         healthHud = new TextView(this);
@@ -1471,41 +1471,16 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         boolean flightSchool = renderer.isFlightSchoolMode();
         if (flightSchoolButton != null) flightSchoolButton.setVisibility(flightSchool ? View.GONE : View.VISIBLE);
         if (returnCityButton != null) returnCityButton.setVisibility(flightSchool ? View.VISIBLE : View.GONE);
-        if (touchActionPad == null || !getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) return;
+        boolean touch = getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN);
+        if (touchMoveJoystick != null) touchMoveJoystick.setVisibility(touch ? View.VISIBLE : View.GONE);
+        if (battleHudOverlay != null) {
+            battleHudOverlay.setVisibility(touch ? View.VISIBLE : View.GONE);
+            if (touch && battleHudButtons != null) layoutBattleHudControls(battleHudOverlay, battleHudButtons);
+        }
         boolean driving = renderer.game.driving;
-        boolean aircraft = driving && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
-                || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE);
-        // Keep the movement stick mounted in both modes; its listener routes input
-        // to character movement on foot and steering/throttle while seated.
-        if (touchMoveJoystick != null) touchMoveJoystick.setVisibility(View.VISIBLE);
-        if (battleHudOverlay != null) battleHudOverlay.setVisibility(driving ? View.GONE : View.VISIBLE);
-        if (touchCombatRow != null) {
-            touchCombatRow.setVisibility(View.GONE);
-            for (int i = 0; i < touchCombatRow.getChildCount(); i++) {
-                View child = touchCombatRow.getChildAt(i);
-                if (child instanceof LinearLayout) {
-                    for (int j = 0; j < ((LinearLayout) child).getChildCount(); j++) {
-                        ((LinearLayout) child).getChildAt(j).setVisibility(driving ? View.GONE : View.VISIBLE);
-                    }
-                }
-            }
-        }
-        if (touchSprintButton != null) touchSprintButton.setVisibility(driving ? View.GONE : View.VISIBLE);
-        if (touchDodgeButton != null) touchDodgeButton.setVisibility(driving ? View.GONE : View.VISIBLE);
-        if (touchVehicleButton != null) touchVehicleButton.setText(driving ? "خروج من المركبة" : "دخول أقرب سيارة");
-        if (touchVehicleTypeButton != null) touchVehicleTypeButton.setVisibility(driving ? View.GONE : View.VISIBLE);
-        if (touchGroundVehicleRow != null) touchGroundVehicleRow.setVisibility(driving && !aircraft ? View.VISIBLE : View.GONE);
-        if (touchFlightRow != null) touchFlightRow.setVisibility(aircraft ? View.VISIBLE : View.GONE);
-        boolean airplane = aircraft && renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE;
-        if (touchGearButton != null) {
-            touchGearButton.setVisibility(airplane ? View.VISIBLE : View.GONE);
-            touchGearButton.setText(renderer.game.landingGearDown ? "العجلات: مفتوحة" : "العجلات: مطوية");
-        }
-        if (touchBrakeButton != null) touchBrakeButton.setVisibility(airplane ? View.VISIBLE : View.GONE);
-        if (touchFlightUtilityRow != null) touchFlightUtilityRow.setVisibility(airplane ? View.VISIBLE : View.GONE);
-        if (touchFlightUpButton != null) touchFlightUpButton.setText(airplane ? "رفع المقدمة ▲" : "صعود ▲");
-        if (touchFlightDownButton != null) touchFlightDownButton.setText(airplane ? "خفض المقدمة ▼" : "هبوط ▼");
-        if (touchActionPad != null) touchActionPad.setVisibility(View.VISIBLE);
+        if (touchVehicleButton != null) touchVehicleButton.setText(driving ? "خروج" : "🚗");
+        if (touchGearButton != null) touchGearButton.setVisibility(driving
+                && renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE ? View.VISIBLE : View.GONE);
     }
 
     @Override public void onHud(final String s) {
@@ -1518,7 +1493,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 lastHudRefresh=System.currentTimeMillis();
                 if(battleHudOverlay!=null && battleHudButtons!=null) layoutBattleHudControls(battleHudOverlay,battleHudButtons);
                 int hp=renderer.game.health;
-                healthHud.setText("♥ "+hp+" / 100     🛡 "+renderer.game.shield+" / 100     ⚡ "+(int)renderer.game.stamina+" / 100"+(renderer.game.buildMode?"     🪵 "+renderer.game.woodMaterials:"" )+(renderer.game.dead?"  — متوفى | عودة تلقائية قريباً":""));
+                healthHud.setText("♥ "+hp+"     🛡 "+renderer.game.shield);
                 Game game=renderer.game;
                 int weaponRarity=WeaponSystem.RARITY[game.equippedWeapon];
                 String weaponName=WeaponSystem.NAME[game.equippedWeapon]+" · "+WeaponSystem.RARITY_LABEL[weaponRarity];
