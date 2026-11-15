@@ -65,10 +65,10 @@ final class BattleRoyaleHudView extends View {
             new Control(Action.FIRE,.895f,.705f,d(49),"●","إطلاق"),
             new Control(Action.MELEE,.625f,.795f,d(25),"✦","ضرب"),
             new Control(Action.SPRINT,.295f,.725f,d(26),"»","ركض"),
-            new Control(Action.HEAL,.565f,.905f,d(21),"+","علاج"),
-            new Control(Action.SHIELD,.655f,.905f,d(21),"◇","درع"),
-            new Control(Action.INVENTORY,.745f,.905f,d(21),"▤","حقيبة"),
-            new Control(Action.SWAP,.835f,.905f,d(23),"⇄","تبديل")
+            new Control(Action.HEAL,.555f,.365f,d(21),"+","علاج"),
+            new Control(Action.SHIELD,.755f,.355f,d(21),"◇","درع"),
+            new Control(Action.INVENTORY,.545f,.515f,d(21),"▤","حقيبة"),
+            new Control(Action.SWAP,.655f,.365f,d(23),"⇄","تبديل")
         };
     }
     @Override protected void onSizeChanged(int w,int h,int oldw,int oldh){buildControls();}
