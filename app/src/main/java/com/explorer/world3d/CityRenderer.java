@@ -139,6 +139,7 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private AssetMeshLoader.Model[] importedVehicleModels;
     private AssetMeshLoader.Model[] importedWeaponModels;
     private boolean[] weaponModelAttempted;
+    private int activeWeaponModelIndex = -1;
     private final String[] weaponModelFiles = {
             "models/runtime/weapons/pistol.awmesh",
             "models/runtime/weapons/submachine-gun.awmesh",
@@ -1820,6 +1821,16 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         if(importedWeaponModels==null||weaponId<0||weaponId>=WeaponSystem.NAME.length)return;
         int modelIndex=weaponId==0?0:weaponId==1?1:weaponId==2?2:weaponId==3?3:weaponId==4?4:5;
         if(modelIndex>=importedWeaponModels.length)return;
+        if(activeWeaponModelIndex!=modelIndex){
+            for(int i=0;i<importedWeaponModels.length;i++){
+                if(i!=modelIndex&&importedWeaponModels[i]!=null){
+                    importedWeaponModels[i].release();
+                    importedWeaponModels[i]=null;
+                    weaponModelAttempted[i]=false;
+                }
+            }
+            activeWeaponModelIndex=modelIndex;
+        }
         if(!weaponModelAttempted[modelIndex]){
             weaponModelAttempted[modelIndex]=true;
             importedWeaponModels[modelIndex]=AssetMeshLoader.load(ctx,weaponModelFiles[modelIndex]);
