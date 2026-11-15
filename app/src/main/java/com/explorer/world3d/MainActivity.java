@@ -90,17 +90,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             renderer.game.vehicleSteeringInput = renderer.game.vehicleForwardInput = 0f;
         }
     }
-    private void refreshTouchVehicleSteering() {
-        if (renderer == null) return;
-        float value = (touchSteerRightHeld ? 1f : 0f) - (touchSteerLeftHeld ? 1f : 0f);
-        runOnGl(() -> renderer.game.vehicleSteeringInput = value);
-    }
-    private void refreshTouchVehicleThrottle() {
-        if (renderer == null) return;
-        float value = (touchVehicleGasHeld ? 1f : 0f) - (touchVehicleBrakeHeld ? 1f : 0f);
-        runOnGl(() -> renderer.game.vehicleForwardInput = value);
-    }
-
     private void runOnGl(final Runnable action) { if (glView != null) glView.queueEvent(action); }
     private void setGamePaused(final boolean paused) {
         runOnGl(new Runnable() { @Override public void run() { renderer.game.paused = paused; } });
