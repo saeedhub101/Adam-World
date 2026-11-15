@@ -1285,7 +1285,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         loadingParams.setMargins(dp(8), dp(104), dp(8), 0);
         root.addView(loading, loadingParams);
-        root.addView(battleHud, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.addView(battleHudOverlay, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         setContentView(root);
         glView.requestFocus();
