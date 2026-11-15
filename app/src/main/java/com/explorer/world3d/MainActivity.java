@@ -73,7 +73,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private FullMapView fullMapView;
     private long lastHudRefresh;
     private final Button[] quickbarButtons=new Button[5];
-    private LinearLayout touchActionPad, touchCombatRow, touchFlightRow, touchGroundVehicleRow;
+    private View touchActionPad;
+    private LinearLayout touchCombatRow, touchFlightRow, touchGroundVehicleRow;
     private View touchActionScroll;
     private FrameLayout battleHudOverlay;
     private java.util.ArrayList<Button> battleHudButtons;
