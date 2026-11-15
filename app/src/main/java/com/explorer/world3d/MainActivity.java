@@ -698,7 +698,28 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         private final ImageView[] slotImages=new ImageView[5];
         private final int[] weaponIcons={0,0,0,0,0};
         private float d(float v){return v*density;}
-        BattleRoyaleHudView(Context context){super(context);setClipChildren(false);setClipToPadding(false);setClickable(true);setFocusable(false);buildHud(context);}
+        BattleRoyaleHudView(Context context){super(context);setClipChildren(false);setClipToPadding(false);setClickable(true);setFocusable(false);setWillNotDraw(false);buildHud(context);}
+        @Override protected void onDraw(Canvas canvas){
+            super.onDraw(canvas);
+            Game g=renderer==null?null:renderer.game;
+            Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setStyle(Paint.Style.FILL);
+            float cx=d(100),cy=getHeight()-d(105),base=d(54);
+            p.setColor(0x88303b49);canvas.drawCircle(cx,cy,base,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(d(2));p.setColor(0xffe5edf5);canvas.drawCircle(cx,cy,base,p);
+            p.setStyle(Paint.Style.FILL);
+            float tx=cx+moveX*d(29),ty=cy-moveY*d(29);
+            p.setColor(0xccdce6ef);canvas.drawCircle(tx,ty,d(21),p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(d(1.5f));p.setColor(0xff263746);canvas.drawCircle(tx,ty,d(21),p);
+            if(g!=null&&!g.driving){
+                float jx=getWidth()-d(55),jy=getHeight()-d(292),jr=d(34);
+                p.setStyle(Paint.Style.FILL);p.setColor(jumpPointer!=-1?0xffd9a52e:0xcc263746);canvas.drawCircle(jx,jy,jr,p);
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(d(2));p.setColor(Color.WHITE);canvas.drawCircle(jx,jy,jr,p);
+                p.setStyle(Paint.Style.FILL);p.setColor(Color.WHITE);p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));p.setTextSize(d(13));canvas.drawText("قفز",jx,jy+d(5),p);
+            } else if(g!=null){
+                p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));p.setTextSize(d(13));p.setColor(Color.WHITE);
+                canvas.drawText("التوجيه + التسارع",d(105),getHeight()-d(24),p);
+            }
+        }
         private android.graphics.drawable.GradientDrawable shape(int color,int stroke){
             android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable();
             bg.setColor(color);bg.setCornerRadius(d(7));bg.setStroke((int)d(1.4f),stroke);return bg;
@@ -793,7 +814,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
         private boolean inside(float x,float y,float cx,float cy,float r){float dx=x-cx,dy=y-cy;return dx*dx+dy*dy<=r*r;}
         private void clearPointer(int id){
-            if(movePointer==id){movePointer=-1;moveX=moveY=0;renderer.game.sx=renderer.game.sy=0;}
+            if(movePointer==id){movePointer=-1;moveX=moveY=0;renderer.game.sx=renderer.game.sy=0;renderer.game.vehicleSteeringInput=renderer.game.vehicleForwardInput=0f;}
             if(cameraPointer==id)cameraPointer=-1;
             if(firePointer==id){firePointer=-1;fireHeld=false;renderer.game.weaponFireHeld=false;}
             if(aimPointer==id){aimPointer=-1;aimHeld=false;renderer.game.weaponAimHeld=false;}
@@ -811,14 +832,14 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 float pauseX=right-d(19),pauseY=my+mr+d(43);
                 if(inside(x,y,pauseX,pauseY,d(20))){pauseMenuOpen=true;renderer.game.paused=true;invalidate();return true;}
                 if(x>=mx-mr&&x<=mx+mr&&y>=my-mr&&y<=my+mr){showMapDialog(false);return true;}
-                float jx=d(100),jy=getHeight()-d(105);if(x<d(170)&&y>getHeight()-d(190)){movePointer=id;moveX=Math.max(-1,Math.min(1,(x-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-y)/d(48)));renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();return true;}
+                float jx=d(100),jy=getHeight()-d(105);if(x<d(170)&&y>getHeight()-d(190)){movePointer=id;moveX=Math.max(-1,Math.min(1,(x-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-y)/d(48)));if(renderer.game.driving){renderer.game.vehicleSteeringInput=moveX;renderer.game.vehicleForwardInput=moveY;renderer.game.sx=renderer.game.sy=0f;}else{renderer.game.sx=moveX;renderer.game.sy=moveY;renderer.game.vehicleSteeringInput=renderer.game.vehicleForwardInput=0f;}invalidate();return true;}
                 Game g=renderer.game;
                 if(inside(x,y,d(205),getHeight()-d(205),d(33))){sprintPointer=id;sprintHeld=true;g.sprint=true;invalidate();return true;}
                 if(inside(x,y,d(205),getHeight()-d(132),d(33))){crouchPointer=id;crouchHeld=true;g.crouching=true;invalidate();return true;}
                 if(inside(x,y,d(205),getHeight()-d(65),d(33))){slidePointer=id;g.sprint=true;g.crouching=true;g.slideSeconds=Math.max(g.slideSeconds,.45f);invalidate();return true;}
                 if(inside(x,y,right-d(55),getHeight()-d(200),d(42))){firePointer=id;fireHeld=true;g.weaponFireHeld=true;invalidate();return true;}
                 if(inside(x,y,right-d(154),getHeight()-d(200),d(39))){aimPointer=id;aimHeld=true;g.weaponAimHeld=true;invalidate();return true;}
-                if(inside(x,y,right-d(55),getHeight()-d(292),d(33))){jumpPointer=id;g.jumpRequested=true;invalidate();return true;}
+                if(!g.driving&&inside(x,y,right-d(55),getHeight()-d(292),d(38))){jumpPointer=id;g.jumpRequested=true;invalidate();return true;}
                 if(inside(x,y,right-d(154),getHeight()-d(285),d(29))){reloadPointer=id;g.reloadRequested=true;invalidate();return true;}
                 if(inside(x,y,right-d(252),getHeight()-d(105),d(30))){g.punchRequested=true;invalidate();return true;}
                 if(inside(x,y,right-d(154),getHeight()-d(105),d(30))){g.lootInteractionRequested=true;invalidate();return true;}
@@ -827,8 +848,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 if(y>=sy&&y<=sy+slot&&x>=start&&x<=start+total){int chosen=Math.max(0,Math.min(4,(int)((x-start)/(slot+gap))));if(g.selectQuickbarSlot(chosen))saveWeaponState();invalidate();return true;}
                 if(x>getWidth()*.42f&&y<getHeight()*.82f){cameraPointer=id;cameraLastX=x;cameraLastY=y;return true;}return true;
             }
-            if(a==MotionEvent.ACTION_MOVE){for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==cameraPointer){float cx=e.getX(p),cy=e.getY(p);renderer.addLook(cx-cameraLastX,cy-cameraLastY);cameraLastX=cx;cameraLastY=cy;}for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==movePointer){float jx=d(100),jy=getHeight()-d(105);moveX=Math.max(-1,Math.min(1,(e.getX(p)-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-e.getY(p))/d(48)));renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();}return true;}
-            if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_POINTER_UP||a==MotionEvent.ACTION_CANCEL){if(a==MotionEvent.ACTION_CANCEL){if(movePointer!=-1)clearPointer(movePointer);if(cameraPointer!=-1)clearPointer(cameraPointer);if(firePointer!=-1)clearPointer(firePointer);if(aimPointer!=-1)clearPointer(aimPointer);if(sprintPointer!=-1)clearPointer(sprintPointer);if(crouchPointer!=-1)clearPointer(crouchPointer);if(slidePointer!=-1)clearPointer(slidePointer);}else clearPointer(id);return true;}return true;
+            if(a==MotionEvent.ACTION_MOVE){for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==cameraPointer){float cx=e.getX(p),cy=e.getY(p);renderer.addLook(cx-cameraLastX,cy-cameraLastY);cameraLastX=cx;cameraLastY=cy;}for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==movePointer){float jx=d(100),jy=getHeight()-d(105);moveX=Math.max(-1,Math.min(1,(e.getX(p)-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-e.getY(p))/d(48)));Game g=renderer.game;if(g.driving){g.vehicleSteeringInput=moveX;g.vehicleForwardInput=moveY;g.sx=g.sy=0f;}else{g.sx=moveX;g.sy=moveY;g.vehicleSteeringInput=g.vehicleForwardInput=0f;}invalidate();}return true;}
+            if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_POINTER_UP||a==MotionEvent.ACTION_CANCEL){if(a==MotionEvent.ACTION_CANCEL){if(movePointer!=-1)clearPointer(movePointer);if(cameraPointer!=-1)clearPointer(cameraPointer);if(firePointer!=-1)clearPointer(firePointer);if(aimPointer!=-1)clearPointer(aimPointer);if(sprintPointer!=-1)clearPointer(sprintPointer);if(crouchPointer!=-1)clearPointer(crouchPointer);if(slidePointer!=-1)clearPointer(slidePointer);if(jumpPointer!=-1)clearPointer(jumpPointer);if(reloadPointer!=-1)clearPointer(reloadPointer);}else clearPointer(id);return true;}return true;
         }
 
     }
