@@ -692,7 +692,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             float x=.88f,y=.70f; int size=48; boolean visible=true;
             if(label.startsWith("خانة ")){
                 int slot=0; try{slot=Integer.parseInt(label.substring(5))-1;}catch(Exception ignored){}
-                x=.28f+slot*.11f; y=.945f; size=42;
+                x=.25f+slot*.095f; y=.945f; size=38;
                 visible=!driving;
             } else if(label.contains("إطلاق")){x=.925f;y=.775f;size=70;visible=!driving&&!build;}
             else if(label.contains("تصويب")){x=.77f;y=.855f;size=54;visible=!driving&&!build;}
@@ -702,12 +702,12 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             else if(label.equals("ركض")){x=.19f;y=.69f;size=46;visible=!driving&&!build;}
             else if(label.contains("جمع الموارد")){x=.70f;y=.65f;size=46;visible=!driving&&!build;}
             else if(label.contains("التقاط")){x=.72f;y=.46f;size=44;visible=!driving&&!build;}
-            else if(label.contains("علاج")){x=.70f;y=.925f;size=40;visible=!driving&&!build;}
-            else if(label.contains("درع")){x=.82f;y=.925f;size=40;visible=!driving&&!build;}
+            else if(label.contains("علاج")){x=.73f;y=.945f;size=38;visible=!driving&&!build;}
+            else if(label.contains("درع")){x=.82f;y=.945f;size=38;visible=!driving&&!build;}
             else if(label.equals("بناء")){x=.72f;y=.82f;size=46;visible=!driving;}
             else if(label.equals("قطعة البناء")){x=.82f;y=.82f;size=46;visible=!driving&&build;}
             else if(label.equals("تأكيد البناء")){x=.92f;y=.82f;size=50;visible=!driving&&build;}
-            else if(label.contains("دخول / خروج")){x=.92f;y=.91f;size=48;visible=driving;}
+            else if(label.contains("دخول / خروج")){x=.92f;y=.945f;size=44;visible=true;}
             else if(label.equals("تسارع")){x=.92f;y=.72f;size=60;visible=driving&&!aircraft;}
             else if(label.equals("فرامل")){x=.81f;y=.72f;size=50;visible=driving&&!aircraft;}
             else if(label.equals("زامور")){x=.72f;y=.83f;size=42;visible=driving&&!aircraft;}
