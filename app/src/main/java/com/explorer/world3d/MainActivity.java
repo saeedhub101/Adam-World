@@ -60,6 +60,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private CityRenderer renderer;
     private CityGLView glView;
     private TextView loading;
+    private EditText query;
 
     private boolean keyUp, keyDown, keyLeft, keyRight;
     private AlertDialog pauseDialog;
