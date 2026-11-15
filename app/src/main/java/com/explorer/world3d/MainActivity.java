@@ -537,81 +537,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     }
 
     /** GTA-like right-side camera look zone: drag to rotate view, never drag the reticle. */
-    private final class CameraLookSurface extends View {
-        private float lastX,lastY;
-        private boolean tracking;
-        CameraLookSurface(Context c){super(c);setBackgroundColor(Color.TRANSPARENT);setClickable(true);}
-        @Override public boolean onTouchEvent(MotionEvent e){
-            float x=e.getX(),y=e.getY();
-            switch(e.getActionMasked()){
-                case MotionEvent.ACTION_DOWN:
-                    if(x<getWidth()*0.48f || y>getHeight()*0.78f)return false;
-                    if(touchActionScroll!=null&&touchActionScroll.getVisibility()==View.VISIBLE){
-                        int[] pos=new int[2];touchActionScroll.getLocationOnScreen(pos);
-                        float rawX=e.getRawX(),rawY=e.getRawY();
-                        if(rawX>=pos[0]&&rawX<=pos[0]+touchActionScroll.getWidth()
-                                &&rawY>=pos[1]&&rawY<=pos[1]+touchActionScroll.getHeight())return false;
-                    }
-                    if(touchMoveJoystick!=null&&touchMoveJoystick.getVisibility()==View.VISIBLE){
-                        int[] pos=new int[2];touchMoveJoystick.getLocationOnScreen(pos);
-                        float rawX=e.getRawX(),rawY=e.getRawY();
-                        if(rawX>=pos[0]&&rawX<=pos[0]+touchMoveJoystick.getWidth()
-                                &&rawY>=pos[1]&&rawY<=pos[1]+touchMoveJoystick.getHeight())return false;
-                    }
-                    // The camera gesture surface sits above the HUD in the view stack.
-                    // Pass touches through whenever they land on a visible action button.
-                    if(battleHudOverlay!=null&&battleHudOverlay.getVisibility()==View.VISIBLE
-                            &&battleHudButtons!=null){
-                        float rawX=e.getRawX(),rawY=e.getRawY();
-                        for(Button control:battleHudButtons){
-                            if(control==null||control.getVisibility()!=View.VISIBLE)continue;
-                            int[] pos=new int[2];control.getLocationOnScreen(pos);
-                            if(rawX>=pos[0]&&rawX<=pos[0]+control.getWidth()
-                                    &&rawY>=pos[1]&&rawY<=pos[1]+control.getHeight())return false;
-                        }
-                    }
-                    tracking=true;lastX=x;lastY=y;return true;
-                case MotionEvent.ACTION_MOVE:
-                    if(!tracking)return false;
-                    float dx=x-lastX,dy=y-lastY;lastX=x;lastY=y;
-                    if(renderer!=null)renderer.addLook(dx,dy);
-                    return true;
-                case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_CANCEL:
-                    tracking=false;return true;
-            }
-            return tracking;
-        }
-    }
-
-    private final class MiniMapView extends View {
-        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        MiniMapView(Context c) { super(c); }
-        @Override protected void onDraw(Canvas c) {
-            super.onDraw(c);
-            float w=getWidth(), h=getHeight(), cx=w/2f, cy=h/2f, rad=Math.min(w,h)*.47f;
-            p.setColor(0xd91a2028); c.drawCircle(cx,cy,rad,p);
-            c.save(); android.graphics.Path clip=new android.graphics.Path(); clip.addCircle(cx,cy,rad,android.graphics.Path.Direction.CW); c.clipPath(clip);
-            p.setColor(0xffaeb9c4); p.setStrokeWidth(dp(2.2f)); p.setStrokeCap(Paint.Cap.ROUND); p.setStyle(Paint.Style.STROKE);
-            float playerX=renderer.game.driving?renderer.game.cx:renderer.game.px;
-            float playerZ=renderer.game.driving?renderer.game.cz:renderer.game.pz;
-            float mapScale=rad/260f;
-            float[] roads=renderer.miniMapRoads();
-            for(int i=0;i+3<roads.length;i+=4){
-                float x1=cx+(roads[i]-playerX)*mapScale, y1=cy+(roads[i+1]-playerZ)*mapScale;
-                float x2=cx+(roads[i+2]-playerX)*mapScale, y2=cy+(roads[i+3]-playerZ)*mapScale;
-                c.drawLine(x1,y1,x2,y2,p);
-            }
-            p.setColor(0xffd4d9df); p.setStrokeWidth(dp(1.4f)); c.drawLine(cx,cy-rad*.72f,cx,cy-rad*.9f,p); p.setStyle(Paint.Style.FILL);
-            p.setColor(Color.WHITE); p.setTextSize(dp(10)); c.drawText("N",cx-dp(3),cy-rad*.76f,p);
-            c.restore();
-            p.setColor(0xff38d978); android.graphics.Path arrow=new android.graphics.Path();
-            arrow.moveTo(cx,cy-dp(12)); arrow.lineTo(cx-dp(8),cy+dp(8)); arrow.lineTo(cx,cy+dp(4)); arrow.lineTo(cx+dp(8),cy+dp(8)); arrow.close();
-            c.save(); c.rotate((float)Math.toDegrees(renderer.game.driving?renderer.game.cyaw:renderer.game.pyaw),cx,cy); c.drawPath(arrow,p); c.restore();
-            p.setColor(Color.WHITE); p.setTextSize(dp(9)); c.drawText("MAP",cx-dp(11),h-dp(7),p);
-        }
-    }
-
     private final class FullMapView extends View {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final ScaleGestureDetector scaleDetector;
@@ -979,7 +904,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private final class BattleRoyaleHudView extends View {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final float density = getResources().getDisplayMetrics().density;
-        private int movePointer = -1;
+        private int movePointer = -1, cameraPointer = -1;
+        private float cameraLastX, cameraLastY;
         private float moveX, moveY;
         private int firePointer = -1, aimPointer = -1, sprintPointer = -1, crouchPointer = -1;
         private int jumpPointer = -1, reloadPointer = -1, interactPointer = -1;
@@ -1061,6 +987,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         private boolean inside(float x,float y,float cx,float cy,float r){float dx=x-cx,dy=y-cy;return dx*dx+dy*dy<=r*r;}
         private void clearPointer(int id){
             if(movePointer==id){movePointer=-1;moveX=moveY=0;renderer.game.sx=renderer.game.sy=0;}
+            if(cameraPointer==id)cameraPointer=-1;
             if(firePointer==id){firePointer=-1;fireHeld=false;renderer.game.weaponFireHeld=false;}
             if(aimPointer==id){aimPointer=-1;aimHeld=false;renderer.game.weaponAimHeld=false;}
             if(sprintPointer==id){sprintPointer=-1;sprintHeld=false;renderer.game.sprint=false;}
@@ -1098,15 +1025,19 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     if(g.selectQuickbarSlot(chosen))saveWeaponState();
                     invalidate();return true;
                 }
-                return false;
+                if(x>getWidth()*.42f && y<getHeight()*.82f){cameraPointer=id;cameraLastX=x;cameraLastY=y;return true;}
+                return true;
             }
             if(a==MotionEvent.ACTION_MOVE){
+                for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==cameraPointer){
+                    float cx=e.getX(p),cy=e.getY(p);renderer.addLook(cx-cameraLastX,cy-cameraLastY);cameraLastX=cx;cameraLastY=cy;
+                }
                 for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==movePointer){
                     float jx=d(91),jy=getHeight()-d(145);
                     moveX=Math.max(-1,Math.min(1,(e.getX(p)-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-e.getY(p))/d(48)));
                     renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();
                 }
-                return movePointer!=-1||firePointer!=-1||aimPointer!=-1||sprintPointer!=-1||crouchPointer!=-1;
+                return true;
             }
             if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_POINTER_UP||a==MotionEvent.ACTION_CANCEL){clearPointer(id);return true;}
             return true;
@@ -1146,8 +1077,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         root.addView(weaponWheelView, wheelParams);
 
         // The old Android Button/Joystick/health/weapon/minimap HUD is intentionally not created.
-        CameraLookSurface cameraLookSurface=new CameraLookSurface(this);
-        root.addView(cameraLookSurface,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
         aimReticle = new AimReticleView(this);
         FrameLayout.LayoutParams reticleParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT,Gravity.FILL);
         root.addView(aimReticle,reticleParams);
