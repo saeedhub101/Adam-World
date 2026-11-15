@@ -737,6 +737,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                     p.moveTo(0,-20);p.lineTo(16,-13);p.lineTo(14,7);p.lineTo(0,20);p.lineTo(-14,7);p.lineTo(-16,-13);p.close();c.drawPath(p,paint);break;
                 case 12: // health cross
                     c.drawLine(-17,0,17,0,paint);c.drawLine(0,-17,0,17,paint);break;
+                case 13: // Fortnite-style airborne jump silhouette
+                    c.drawCircle(0,-14,4,paint);c.drawLine(0,-9,0,7,paint);c.drawLine(0,-5,-13,-15,paint);c.drawLine(0,-5,13,-15,paint);c.drawLine(0,7,-12,19,paint);c.drawLine(0,7,12,19,paint);break;
+                case 14: // low sliding silhouette
+                    c.drawCircle(12,-8,4,paint);c.drawLine(8,-4,-4,5,paint);c.drawLine(-4,5,-20,5,paint);c.drawLine(-2,4,10,13,paint);c.drawLine(-12,5,-22,15,paint);c.drawLine(10,13,22,13,paint);break;
             }
             paint.setStyle(Paint.Style.FILL);c.restore();
         }
@@ -789,7 +793,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             fill(c,0xff34434a);c.drawRect(mx-mr,my-mr,mx+mr,my+mr,paint);
             float[] roads=renderer.miniMapRoads();float scale=mr/210f,px=g.driving?g.cx:g.px,pz=g.driving?g.cz:g.pz;
             stroke(0xffe3e6d7,2.2f);for(int i=0;i+3<roads.length;i+=4)c.drawLine(mx+(roads[i]-px)*scale,my+(roads[i+1]-pz)*scale,mx+(roads[i+2]-px)*scale,my+(roads[i+3]-pz)*scale,paint);
-            stroke(0xff9cb7a1,1);c.drawLine(mx-mr,my,my+mr,mx+mr,my,paint);
             fill(c,0xffffd34e);Path arrow=new Path();arrow.moveTo(mx,my-d(9));arrow.lineTo(mx-d(6),my+d(6));arrow.lineTo(mx,my+d(2));arrow.lineTo(mx+d(6),my+d(6));arrow.close();c.save();c.rotate((float)Math.toDegrees(g.driving?g.cyaw:g.pyaw),mx,my);c.drawPath(arrow,paint);c.restore();c.restore();
             text(c,""+g.magazineAmmo+" / "+g.reserveAmmo[g.equippedWeapon],mx-mr,my+mr+d(17),11,Color.WHITE,true);
             // Pause control is outside the minimap hit area, never layered over it.
@@ -803,11 +806,11 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             // Sprint and crouch controls.
             action(c,d(205),h-d(205),d(27),2,sprintHeld);
             action(c,d(205),h-d(132),d(27),4,crouchHeld);
-            action(c,d(205),h-d(65),d(27),3,slidePointer!=-1);
+            action(c,d(205),h-d(65),d(27),14,slidePointer!=-1);
             // Combat controls are spaced vertically to avoid overlap.
             action(c,right-d(154),h-d(205),d(35),0,aimHeld);
             action(c,right-d(55),h-d(205),d(39),1,fireHeld);
-            action(c,right-d(55),h-d(294),d(31),3,false);
+            action(c,right-d(55),h-d(294),d(31),13,false);
             action(c,right-d(154),h-d(294),d(26),5,false);
             action(c,right-d(252),h-d(108),d(25),6,false);
             action(c,right-d(154),h-d(108),d(25),8,false);
