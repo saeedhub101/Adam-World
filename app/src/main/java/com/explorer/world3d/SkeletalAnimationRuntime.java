@@ -203,6 +203,24 @@ final class SkeletalAnimationRuntime {
         }
 
         float[] skinMatrices() { return skin; }
+        int findRightHandBone() {
+            int fallback=-1;
+            for(int i=0;i<skeleton.count;i++){
+                String n=skeleton.names[i]==null?"":skeleton.names[i].toLowerCase(java.util.Locale.US)
+                        .replace("-","").replace("_","").replace(" ","").replace(".","").replace(":","");
+                if(n.isEmpty())continue;
+                if(n.contains("righthand")||n.contains("handright")||n.endsWith("handr"))return i;
+                if(fallback<0&&(n.contains("rightwrist")||n.contains("wristr")))fallback=i;
+            }
+            if(fallback>=0)return fallback;
+            for(int i=0;i<skeleton.count;i++){
+                String n=skeleton.names[i]==null?"":skeleton.names[i].toLowerCase(java.util.Locale.US)
+                        .replace("-","").replace("_","").replace(" ","").replace(".","").replace(":","");
+                if(n.contains("rightforearm")||n.contains("forearmr")||n.contains("lowerarmr"))return i;
+            }
+            return -1;
+        }
+
         int boneCount() { return skeleton.count; }
     }
 
