@@ -3,11 +3,8 @@ package com.explorer.world3d;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 
 /**
  * Purpose-built multi-touch Battle Royale HUD.
@@ -38,19 +35,16 @@ final class BattleRoyaleHudView extends View {
 
     private final Paint p = new Paint(3);
     private final float density;
-    private final int touchSlop;
     private Listener listener;
     private final int[] pointerActions = new int[16];
     private final boolean[] pointerUsed = new boolean[16];
     private boolean fireHeld, aimHeld, crouchHeld, sprintHeld;
-    private float downX, downY;
     private Control[] controls;
 
     BattleRoyaleHudView(Context context, Listener listener) {
         super(context);
         this.listener=listener;
         density=getResources().getDisplayMetrics().density;
-        touchSlop=ViewConfiguration.get(context).getScaledTouchSlop();
         setLayerType(View.LAYER_TYPE_HARDWARE,null);
         setClickable(true);
         setFocusable(false);
@@ -60,20 +54,21 @@ final class BattleRoyaleHudView extends View {
     private float cx(Control c){return c.x*getWidth();}
     private float cy(Control c){return c.y*getHeight();}
     private void buildControls(){
+        // Controls are anchored to the lower combat half; the centre stays clear for camera look.
         controls=new Control[]{
-            new Control(Action.SWAP,.875f,.205f,d(23),"⇄","تبديل"),
-            new Control(Action.HEAL,.665f,.205f,d(22),"+","علاج"),
-            new Control(Action.SHIELD,.745f,.205f,d(22),"◇","درع"),
-            new Control(Action.AIM,.735f,.485f,d(31),"⌖","تصويب"),
-            new Control(Action.FIRE,.885f,.635f,d(48),"●","إطلاق"),
-            new Control(Action.JUMP,.885f,.405f,d(31),"↑","قفز"),
-            new Control(Action.CROUCH,.735f,.705f,d(28),"↓","انحناء"),
-            new Control(Action.SPRINT,.625f,.835f,d(27),"»","ركض"),
-            new Control(Action.RELOAD,.885f,.835f,d(25),"↻","تلقيم"),
-            new Control(Action.INTERACT,.745f,.865f,d(25),"✋","تفاعل"),
-            new Control(Action.MELEE,.595f,.665f,d(25),"✦","ضرب"),
-            new Control(Action.VEHICLE,.965f,.49f,d(22),"🚘","مركبة"),
-            new Control(Action.INVENTORY,.535f,.205f,d(22),"▤","حقيبة")
+            new Control(Action.VEHICLE,.955f,.345f,d(22),"▣","مركبة"),
+            new Control(Action.JUMP,.895f,.475f,d(34),"↑","قفز"),
+            new Control(Action.RELOAD,.755f,.485f,d(25),"↻","تلقيم"),
+            new Control(Action.INTERACT,.645f,.525f,d(26),"✋","تفاعل"),
+            new Control(Action.CROUCH,.965f,.585f,d(28),"↓","انحناء"),
+            new Control(Action.AIM,.745f,.705f,d(30),"⌖","تصويب"),
+            new Control(Action.FIRE,.895f,.705f,d(49),"●","إطلاق"),
+            new Control(Action.MELEE,.625f,.795f,d(25),"✦","ضرب"),
+            new Control(Action.SPRINT,.295f,.725f,d(26),"»","ركض"),
+            new Control(Action.HEAL,.565f,.905f,d(21),"+","علاج"),
+            new Control(Action.SHIELD,.655f,.905f,d(21),"◇","درع"),
+            new Control(Action.INVENTORY,.745f,.905f,d(21),"▤","حقيبة"),
+            new Control(Action.SWAP,.835f,.905f,d(23),"⇄","تبديل")
         };
     }
     @Override protected void onSizeChanged(int w,int h,int oldw,int oldh){buildControls();}
@@ -131,7 +126,7 @@ final class BattleRoyaleHudView extends View {
             float x=e.getX(index),y=e.getY(index); int hit=hit(x,y);
             if(hit<0)return false;
             pointerUsed[slot]=true; pointerActions[slot]=hit;
-            downX=x;downY=y;invokeDown(controls[hit].action);return true;
+            invokeDown(controls[hit].action);return true;
         }
         if(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_POINTER_UP){
             int slot=slotFor(id);
@@ -147,9 +142,7 @@ final class BattleRoyaleHudView extends View {
     }
     @Override protected void onDraw(Canvas c){
         super.onDraw(c); if(controls==null)buildControls();
-        // Soft right-side combat vignette; transparent in the middle to preserve the world view.
-        p.setStyle(Paint.Style.FILL);p.setShader(null);p.setColor(0x16050A12);
-        c.drawRoundRect(new RectF(getWidth()*.55f,getHeight()*.15f,getWidth()*.995f,getHeight()*.96f),d(34),d(34),p);
+        // No opaque panel: the play field and right-side camera-look area remain unobstructed.
         for(Control b:controls){
             float x=cx(b),y=cy(b); boolean on=active(b.action);
             boolean primary=b.action==Action.FIRE;
