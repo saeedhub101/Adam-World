@@ -763,7 +763,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             action(c,right-d(137),h-d(145),d(28),"◎","",aimHeld,0);
             action(c,right-d(55),h-d(278),d(29),"↑","",false,0);
             action(c,right-d(137),h-d(245),d(25),"↻","",false,0);
-            action(c,right-d(55),h-d(95),d(25),"⇧","",false,0);
+            action(c,right-d(205),h-d(95),d(24),"▦","",g.buildMode,0);
+            action(c,right-d(137),h-d(95),d(24),g.buildMode?"▱":"＋","",false,0);
+            action(c,right-d(55),h-d(95),d(25),g.buildMode?"✓":"⇧","",false,0);
             // Weapon status and small contextual prompt.
             text(c,"BR",safe+d(54),safe+d(29),12,0xffe6edf5,true);
         }
@@ -801,7 +803,15 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 if(inside(x,y,right-d(137),getHeight()-d(145),d(34))){aimPointer=id;aimHeld=true;g.weaponAimHeld=true;invalidate();return true;}
                 if(inside(x,y,right-d(55),getHeight()-d(278),d(34))){jumpPointer=id;g.jumpRequested=true;invalidate();return true;}
                 if(inside(x,y,right-d(137),getHeight()-d(245),d(30))){reloadPointer=id;g.reloadRequested=true;invalidate();return true;}
-                if(inside(x,y,right-d(55),getHeight()-d(95),d(30))){interactPointer=id;g.lootInteractionRequested=true;invalidate();return true;}
+                if(inside(x,y,right-d(205),getHeight()-d(95),d(29))){g.buildMode=!g.buildMode;g.buildEditMode=false;invalidate();return true;}
+                if(inside(x,y,right-d(137),getHeight()-d(95),d(29))){
+                    if(g.buildMode)g.cycleBuildTypeRequested=true;else g.lootInteractionRequested=true;
+                    invalidate();return true;
+                }
+                if(inside(x,y,right-d(55),getHeight()-d(95),d(30))){
+                    if(g.buildMode)g.buildRequested=true;else g.lootInteractionRequested=true;
+                    invalidate();return true;
+                }
                 float slot=d(39),gap=d(4),total=5*slot+4*gap,start=(getWidth()-total)/2f,sy=getHeight()-d(48);
                 if(y>=sy&&y<=sy+slot&&x>=start&&x<=start+total){
                     int chosen=Math.max(0,Math.min(4,(int)((x-start)/(slot+gap))));
