@@ -16,6 +16,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
+          fetch-depth: 1
+          sparse-checkout: |
+            app/src/main/assets/ui/fortnite-icons
+            .github/workflows/import-fortnite-ui-icons.yml
+          sparse-checkout-cone-mode: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
