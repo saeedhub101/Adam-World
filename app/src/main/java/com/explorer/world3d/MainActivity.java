@@ -758,7 +758,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             String[] dirs={"W","NW","N","NE","E"};float cx=w*.5f;
             for(int i=0;i<dirs.length;i++){float x=cx+(i-2)*d(72);text(c,dirs[i],x-d(8),top+d(21),i==2?17:13,i==2?Color.WHITE:0xffb9c8d8,true);fill(c,0xffdce6ef);c.drawCircle(x,top+d(31),d(1.5f),paint);}
             // Minimap top-right.
-            float mr=Math.min(d(63),w*.075f),mx=right-mr,my=top+mr;
+            float mr=Math.min(d(63),w*.075f),mx=right-mr-d(40),my=top+mr;
             fill(c,0xe51b2632);c.drawCircle(mx,my,mr,paint);stroke(0xffe5edf5,2);c.drawCircle(mx,my,mr,paint);
             c.save();Path clip=new Path();clip.addCircle(mx,my,mr-d(3),Path.Direction.CW);c.clipPath(clip);
             float[] roads=renderer.miniMapRoads();float scale=mr/260f,px=g.driving?g.cx:g.px,pz=g.driving?g.cz:g.pz;
@@ -766,7 +766,7 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             fill(c,0xff65ec9b);Path arrow=new Path();arrow.moveTo(mx,my-d(10));arrow.lineTo(mx-d(7),my+d(7));arrow.lineTo(mx,my+d(3));arrow.lineTo(mx+d(7),my+d(7));arrow.close();c.save();c.rotate((float)Math.toDegrees(g.driving?g.cyaw:g.pyaw),mx,my);c.drawPath(arrow,paint);c.restore();c.restore();
             text(c,""+g.magazineAmmo+" / "+g.reserveAmmo[g.equippedWeapon],right-d(105),my+mr+d(22),13,Color.WHITE,true);
             // Pause/menu icon.
-            action(c,left+d(20),h-d(23),d(18),10,false);
+            action(c,right-d(18),top+d(18),d(16),10,false);
             if(pauseMenuOpen){float pw=Math.min(w-d(36),d(330)),ph=d(226),pl=(w-pw)/2f,pt=(h-ph)/2f;panel(c,pl,pt,pl+pw,pt+ph,12,0xf018222e);stroke(0xffe8bd61,2);c.drawRoundRect(pl,pt,pl+pw,pt+ph,d(12),d(12),paint);paint.setStyle(Paint.Style.FILL);text(c,"BATTLE ROYALE",pl+d(22),pt+d(36),20,Color.WHITE,true);panel(c,pl+d(18),pt+d(83),pl+pw-d(18),pt+d(132),7,0xffb58a38);text(c,"RESUME",pl+d(34),pt+d(114),15,Color.WHITE,true);panel(c,pl+d(18),pt+d(145),pl+pw-d(18),pt+d(194),7,0xff344454);text(c,"MAP",pl+d(34),pt+d(176),15,Color.WHITE,true);return;}
             // Left movement stick.
             float jx=d(100),jy=h-d(105),jr=d(54);
@@ -801,8 +801,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if(a==MotionEvent.ACTION_DOWN||a==MotionEvent.ACTION_POINTER_DOWN){
                 float left=d(16),right=getWidth()-d(16);
                 if(pauseMenuOpen){float pw=Math.min(getWidth()-d(36),d(330)),ph=d(226),pl=(getWidth()-pw)/2f,pt=(getHeight()-ph)/2f;if(x>=pl&&x<=pl+pw&&y>=pt+d(83)&&y<=pt+d(132)){pauseMenuOpen=false;renderer.game.paused=false;invalidate();return true;}if(x>=pl&&x<=pl+pw&&y>=pt+d(145)&&y<=pt+d(194)){pauseMenuOpen=false;invalidate();showMapDialog(true);return true;}return true;}
-                if(x<d(58)&&y<d(58)){pauseMenuOpen=true;renderer.game.paused=true;invalidate();return true;}
-                float mr=Math.min(d(63),getWidth()*.075f),mx=right-mr,my=d(14)+mr;if(inside(x,y,mx,my,mr)){showMapDialog(false);return true;}
+                if(x>getWidth()-d(48)&&y<d(50)){pauseMenuOpen=true;renderer.game.paused=true;invalidate();return true;}
+                float mr=Math.min(d(63),getWidth()*.075f),mx=right-mr-d(40),my=d(14)+mr;if(inside(x,y,mx,my,mr)){showMapDialog(false);return true;}
                 float jx=d(100),jy=getHeight()-d(105);if(x<d(170)&&y>getHeight()-d(190)){movePointer=id;moveX=Math.max(-1,Math.min(1,(x-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-y)/d(48)));renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();return true;}
                 Game g=renderer.game;
                 if(inside(x,y,d(205),getHeight()-d(188),d(31))){sprintPointer=id;sprintHeld=true;g.sprint=true;invalidate();return true;}
