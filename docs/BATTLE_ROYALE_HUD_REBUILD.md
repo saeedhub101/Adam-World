@@ -1,7 +1,7 @@
 # Battle Royale Mobile HUD Rebuild
 
 **Branch:** `main`  
-**Implementation commit:** `d7a232cdd8a2f4cd69cc6e987fd96179916439ad`  
+**Implementation commit:** `7fb4fcd8ea08553cb8168a5fde57c401d3da447f`  
 **Status:** Code committed; Android release workflow and in-device verification are pending.
 
 ## Rebuild decision
@@ -13,9 +13,9 @@ The rebuild uses original Adam World controls and artwork; it follows Fortnite B
 ## New mobile layout
 
 - One movement joystick at lower-left.
-- One unobstructed camera-look surface across the play area.
+- One camera-look surface across the play area; it explicitly passes touches through to HUD action buttons and the movement joystick.
 - One right-side contextual action cluster for fire, aim, jump, crouch and reload.
-- Five compact weapon quick slots along the lower center.
+- Five compact weapon quick slots, consumables and contextual vehicle interaction aligned in one lower control strip.
 - Pickup, healing and shield actions are compact secondary controls.
 - Build controls appear only while build mode is active.
 - Vehicle controls appear contextually while driving; aircraft throttle, pitch, brake and landing-gear controls appear only while piloting.
