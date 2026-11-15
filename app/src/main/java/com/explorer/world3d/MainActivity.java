@@ -554,6 +554,18 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                         if(rawX>=pos[0]&&rawX<=pos[0]+touchMoveJoystick.getWidth()
                                 &&rawY>=pos[1]&&rawY<=pos[1]+touchMoveJoystick.getHeight())return false;
                     }
+                    // The camera gesture surface sits above the HUD in the view stack.
+                    // Pass touches through whenever they land on a visible action button.
+                    if(battleHudOverlay!=null&&battleHudOverlay.getVisibility()==View.VISIBLE
+                            &&battleHudButtons!=null){
+                        float rawX=e.getRawX(),rawY=e.getRawY();
+                        for(Button control:battleHudButtons){
+                            if(control==null||control.getVisibility()!=View.VISIBLE)continue;
+                            int[] pos=new int[2];control.getLocationOnScreen(pos);
+                            if(rawX>=pos[0]&&rawX<=pos[0]+control.getWidth()
+                                    &&rawY>=pos[1]&&rawY<=pos[1]+control.getHeight())return false;
+                        }
+                    }
                     tracking=true;lastX=x;lastY=y;return true;
                 case MotionEvent.ACTION_MOVE:
                     if(!tracking)return false;
