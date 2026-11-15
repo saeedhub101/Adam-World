@@ -1,7 +1,8 @@
 package com.explorer.world3d;
 
-/** Original Adam World weapon archetypes and balance data. */
+/** Data-driven Battle Royale weapon archetypes and handling profiles. */
 final class WeaponSystem {
+ static final int SEMI_AUTO=0, FULL_AUTO=1, PUMP_ACTION=2, BOLT_ACTION=3, LAUNCHER=4;
  static final String[] NAME={"مسدس","رشاش خفيف","بندقية هجومية","Shotgun","قناصة","قاذف صواريخ","قاذف موجّه"};
  static final int[] PRICE={0,900,1800,1500,2600,4200,6800};
  static final int[] DAMAGE={24,13,19,42,90,125,150};
@@ -16,5 +17,10 @@ final class WeaponSystem {
  static final float[] SPREAD_MULTIPLIER={1.0f,1.28f,0.92f,1.0f,0.48f,1.4f,1.55f};
  static final int[] RARITY={0,1,2,2,3,4,4};
  static final String[] RARITY_LABEL={"شائع","غير شائع","نادر","ملحمي","أسطوري"};
+ static final int[] FIRE_MODE={SEMI_AUTO,FULL_AUTO,FULL_AUTO,PUMP_ACTION,BOLT_ACTION,LAUNCHER,LAUNCHER};
+ static final int[] PELLETS={1,1,1,9,1,1,1};
+ static final float[] ADS_CAMERA_SCALE={0.78f,0.82f,0.76f,0.88f,0.54f,0.94f,0.94f};
+ static final float[] RECOIL_RECOVERY={6.4f,5.1f,5.5f,4.1f,3.2f,2.8f,2.5f};
+ static boolean isAutomatic(int id){return id>=0&&id<FIRE_MODE.length&&FIRE_MODE[id]==FULL_AUTO;}
  private WeaponSystem(){}
 }
