@@ -807,7 +807,10 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             if(a==MotionEvent.ACTION_DOWN||a==MotionEvent.ACTION_POINTER_DOWN){
                 float left=d(16),right=getWidth()-d(16);
                 if(pauseMenuOpen){float pw=Math.min(getWidth()-d(36),d(330)),ph=d(226),pl=(getWidth()-pw)/2f,pt=(getHeight()-ph)/2f;if(x>=pl&&x<=pl+pw&&y>=pt+d(83)&&y<=pt+d(132)){pauseMenuOpen=false;renderer.game.paused=false;invalidate();return true;}if(x>=pl&&x<=pl+pw&&y>=pt+d(145)&&y<=pt+d(194)){pauseMenuOpen=false;invalidate();showMapDialog(true);return true;}return true;}
-                float mr=Math.min(d(76),Math.min(getWidth()*.105f,getHeight()*.14f)),mx=right-mr-d(10),my=d(14)+mr+d(8);\n                float pauseX=right-d(19),pauseY=my+mr+d(43);\n                if(inside(x,y,pauseX,pauseY,d(20))){pauseMenuOpen=true;renderer.game.paused=true;invalidate();return true;}\n                if(x>=mx-mr&&x<=mx+mr&&y>=my-mr&&y<=my+mr){showMapDialog(false);return true;}
+                float mr=Math.min(d(76),Math.min(getWidth()*.105f,getHeight()*.14f)),mx=right-mr-d(10),my=d(14)+mr+d(8);
+                float pauseX=right-d(19),pauseY=my+mr+d(43);
+                if(inside(x,y,pauseX,pauseY,d(20))){pauseMenuOpen=true;renderer.game.paused=true;invalidate();return true;}
+                if(x>=mx-mr&&x<=mx+mr&&y>=my-mr&&y<=my+mr){showMapDialog(false);return true;}
                 float jx=d(100),jy=getHeight()-d(105);if(x<d(170)&&y>getHeight()-d(190)){movePointer=id;moveX=Math.max(-1,Math.min(1,(x-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-y)/d(48)));renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();return true;}
                 Game g=renderer.game;
                 if(inside(x,y,d(205),getHeight()-d(205),d(33))){sprintPointer=id;sprintHeld=true;g.sprint=true;invalidate();return true;}
@@ -820,7 +823,8 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 if(inside(x,y,right-d(252),getHeight()-d(105),d(30))){g.punchRequested=true;invalidate();return true;}
                 if(inside(x,y,right-d(154),getHeight()-d(105),d(30))){g.lootInteractionRequested=true;invalidate();return true;}
                 if(inside(x,y,right-d(55),getHeight()-d(105),d(32))){renderer.toggleCar();invalidate();return true;}
-                float slot=d(54),gap=d(5),total=5*slot+4*gap,start=(getWidth()-total)/2f,sy=getHeight()-d(67);\n                if(y>=sy&&y<=sy+slot&&x>=start&&x<=start+total){int chosen=Math.max(0,Math.min(4,(int)((x-start)/(slot+gap))));if(g.selectQuickbarSlot(chosen))saveWeaponState();invalidate();return true;}
+                float slot=d(54),gap=d(5),total=5*slot+4*gap,start=(getWidth()-total)/2f,sy=getHeight()-d(67);
+                if(y>=sy&&y<=sy+slot&&x>=start&&x<=start+total){int chosen=Math.max(0,Math.min(4,(int)((x-start)/(slot+gap))));if(g.selectQuickbarSlot(chosen))saveWeaponState();invalidate();return true;}
                 if(x>getWidth()*.42f&&y<getHeight()*.82f){cameraPointer=id;cameraLastX=x;cameraLastY=y;return true;}return true;
             }
             if(a==MotionEvent.ACTION_MOVE){for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==cameraPointer){float cx=e.getX(p),cy=e.getY(p);renderer.addLook(cx-cameraLastX,cy-cameraLastY);cameraLastX=cx;cameraLastY=cy;}for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==movePointer){float jx=d(100),jy=getHeight()-d(105);moveX=Math.max(-1,Math.min(1,(e.getX(p)-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-e.getY(p))/d(48)));renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();}return true;}
