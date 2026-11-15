@@ -59,16 +59,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
 
     private CityRenderer renderer;
     private CityGLView glView;
-    private TextView loading, hud;
-    private EditText query;
-    private Button timeBtn;
+    private TextView loading;
+
     private boolean keyUp, keyDown, keyLeft, keyRight;
     private AlertDialog pauseDialog;
     private boolean padL2, padR2, padCameraModifier;
     private float padHatX, padHatY;
-    private TextView healthHud, weaponHud;
     private BattleRoyaleHudView battleRoyaleHud;
-    private MiniMapView miniMap;
     private AimReticleView aimReticle;
     private WeaponWheelView weaponWheelView;
     private boolean weaponWheelOpen;
@@ -76,19 +73,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private AlertDialog mapDialog;
     private FullMapView fullMapView;
     private long lastHudRefresh;
-    private final Button[] quickbarButtons=new Button[5];
-    private View touchActionPad;
-    private LinearLayout touchCombatRow, touchFlightRow, touchGroundVehicleRow;
-    private View touchActionScroll;
-    private FrameLayout battleHudOverlay;
-    private java.util.ArrayList<Button> battleHudButtons;
-    private FrameLayout.LayoutParams touchActionScrollParams;
-    private boolean tapFireMode, touchHudLeft, hudEditMode;
-    private View touchMoveJoystick;
-    private boolean touchSteerLeftHeld, touchSteerRightHeld, touchVehicleGasHeld, touchVehicleBrakeHeld;
-    private Button touchVehicleButton, touchVehicleTypeButton, touchSprintButton, touchDodgeButton;
-    private Button flightSchoolButton, returnCityButton, touchGearButton, touchFlightUpButton, touchFlightDownButton, touchBrakeButton;
-    private LinearLayout touchFlightUtilityRow;
 
 
     private int dp(int v) { return dp((float) v); }
@@ -608,54 +592,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
     }
 
-    /** Single contextual Battle Royale layout. Coordinates are normalized and clamped to the safe screen. */
-    private void layoutBattleHudControls(FrameLayout panel, java.util.ArrayList<Button> controls) {
-        int w=panel.getWidth(), h=panel.getHeight();
-        if(w<=0 || h<=0) return;
-        boolean driving=renderer!=null && renderer.game.driving;
-        boolean aircraft=driving && (renderer.game.vehicleType==ProceduralVehicleModels.HELICOPTER
-                || renderer.game.vehicleType==ProceduralVehicleModels.AIRPLANE);
-        boolean build=renderer!=null && renderer.game.buildMode;
-        for(Button button:controls){
-            String label=String.valueOf(button.getContentDescription());
-            float x=.88f,y=.70f; int size=48; boolean visible=true;
-            if(label.startsWith("خانة ")){
-                int slot=0; try{slot=Integer.parseInt(label.substring(5))-1;}catch(Exception ignored){}
-                x=.25f+slot*.095f; y=.945f; size=38;
-                visible=!driving;
-            } else if(label.contains("إطلاق")){x=.925f;y=.775f;size=70;visible=!driving&&!build;}
-            else if(label.contains("تصويب")){x=.77f;y=.855f;size=54;visible=!driving&&!build;}
-            else if(label.contains("قفز")){x=.925f;y=.575f;size=54;visible=!driving&&!build;}
-            else if(label.contains("انحناء")){x=.82f;y=.68f;size=46;visible=!driving&&!build;}
-            else if(label.contains("تلقيم")){x=.90f;y=.455f;size=42;visible=!driving&&!build;}
-            else if(label.equals("ركض")){x=.19f;y=.69f;size=46;visible=!driving&&!build;}
-            else if(label.contains("جمع الموارد")){x=.70f;y=.65f;size=46;visible=!driving&&!build;}
-            else if(label.contains("التقاط")){x=.72f;y=.46f;size=44;visible=!driving&&!build;}
-            else if(label.contains("علاج")){x=.73f;y=.945f;size=38;visible=!driving&&!build;}
-            else if(label.contains("درع")){x=.82f;y=.945f;size=38;visible=!driving&&!build;}
-            else if(label.equals("بناء")){x=.72f;y=.82f;size=46;visible=!driving;}
-            else if(label.equals("قطعة البناء")){x=.82f;y=.82f;size=46;visible=!driving&&build;}
-            else if(label.equals("تأكيد البناء")){x=.92f;y=.82f;size=50;visible=!driving&&build;}
-            else if(label.contains("دخول / خروج")){x=.92f;y=.945f;size=44;visible=true;}
-            else if(label.equals("تسارع")){x=.92f;y=.72f;size=60;visible=driving&&!aircraft;}
-            else if(label.equals("فرامل")){x=.81f;y=.72f;size=50;visible=driving&&!aircraft;}
-            else if(label.equals("زامور")){x=.72f;y=.83f;size=42;visible=driving&&!aircraft;}
-            else if(label.equals("زيادة الدفع")){x=.92f;y=.72f;size=54;visible=aircraft;}
-            else if(label.equals("تقليل الدفع")){x=.81f;y=.72f;size=48;visible=aircraft;}
-            else if(label.equals("رفع المقدمة")){x=.92f;y=.55f;size=52;visible=aircraft;}
-            else if(label.equals("خفض المقدمة")){x=.81f;y=.55f;size=48;visible=aircraft;}
-            else if(label.equals("مكابح")){x=.72f;y=.84f;size=44;visible=aircraft&&renderer.game.vehicleType==ProceduralVehicleModels.AIRPLANE;}
-            else if(label.equals("العجلات")){x=.82f;y=.84f;size=44;visible=aircraft&&renderer.game.vehicleType==ProceduralVehicleModels.AIRPLANE;}
-            if(!visible){button.setVisibility(View.GONE);continue;}
-            button.setVisibility(View.VISIBLE);
-            int px=dp(size),cx=Math.round(w*x),cy=Math.round(h*y);
-            FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(px,px,Gravity.TOP|Gravity.START);
-            lp.leftMargin=Math.max(dp(4),Math.min(Math.max(dp(4),w-px-dp(4)),cx-px/2));
-            lp.topMargin=Math.max(dp(4),Math.min(Math.max(dp(4),h-px-dp(4)),cy-px/2));
-            button.setLayoutParams(lp);
-            button.setElevation(dp(label.contains("إطلاق")?12:7));
-        }
-    }
     private void loadWeaponState(){
         SharedPreferences p=getSharedPreferences("adam_world_weapons",MODE_PRIVATE);Game g=renderer.game;g.cash=p.getInt("cash",g.cash);g.medkits=Math.max(0,Math.min(5,p.getInt("medkits",g.medkits)));g.shieldPotions=Math.max(0,Math.min(5,p.getInt("shield_potions",g.shieldPotions)));g.woodMaterials=Math.max(0,Math.min(999,p.getInt("wood_materials",g.woodMaterials)));if(!p.getBoolean("weapon_cash_boost_v1",false)){g.cash=Math.max(g.cash,100000);p.edit().putBoolean("weapon_cash_boost_v1",true).putInt("cash",g.cash).apply();}
         for(int i=0;i<WeaponSystem.NAME.length;i++){g.ownedWeapons[i]=p.getBoolean("owned_"+i,g.ownedWeapons[i]);g.reserveAmmo[i]=p.getInt("reserve_"+i,g.reserveAmmo[i]);g.weaponMagazines[i]=p.getInt("magazine_"+i,g.weaponMagazines[i]);}
@@ -754,148 +690,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         dialog.setOnDismissListener(d -> setGamePaused(false));
         dialog.show();
     }
-
-    private void showHudButtonEditor(final View target) {
-        final String key=String.valueOf(target.getTag());
-        final SharedPreferences prefs=getSharedPreferences("adam_world_hud",MODE_PRIVATE);
-        final SeekBar size=new SeekBar(this),opacity=new SeekBar(this);
-        size.setMax(80);size.setProgress(Math.max(0,Math.min(80,Math.round((target.getScaleX()-0.7f)*100f))));
-        opacity.setMax(70);opacity.setProgress(Math.max(0,Math.min(70,Math.round((target.getAlpha()-0.3f)*100f))));
-        LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(18),dp(8),dp(18),dp(8));
-        TextView sizeLabel=new TextView(this);sizeLabel.setText("حجم الزر");panel.addView(sizeLabel);panel.addView(size);
-        TextView opacityLabel=new TextView(this);opacityLabel.setText("شفافية الزر");panel.addView(opacityLabel);panel.addView(opacity);
-        final float oldScale=target.getScaleX(),oldAlpha=target.getAlpha();
-        size.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
-            public void onProgressChanged(SeekBar bar,int value,boolean user){float s=0.7f+value/100f;target.setScaleX(s);target.setScaleY(s);}
-            public void onStartTrackingTouch(SeekBar bar){} public void onStopTrackingTouch(SeekBar bar){}
-        });
-        opacity.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
-            public void onProgressChanged(SeekBar bar,int value,boolean user){target.setAlpha(0.3f+value/100f);}
-            public void onStartTrackingTouch(SeekBar bar){} public void onStopTrackingTouch(SeekBar bar){}
-        });
-        new AlertDialog.Builder(this).setTitle("تخصيص: "+((target instanceof Button)?((Button)target).getText():"زر التحكم"))
-                .setView(panel).setPositiveButton("حفظ",(d,w)->prefs.edit()
-                        .putFloat(key+"_scale",target.getScaleX()).putFloat(key+"_alpha",target.getAlpha()).apply())
-                .setNegativeButton("إلغاء",(d,w)->{target.setScaleX(oldScale);target.setScaleY(oldScale);target.setAlpha(oldAlpha);}).show();
-    }
-
-    private String touchControlIcon(String label) {
-        if (label.contains("قفز")) return "↟";
-        if (label.contains("لكم")) return "✊";
-        if (label.contains("ركل")) return "🦶";
-        if (label.contains("حراسة") || label.contains("دفاع")) return "🛡";
-        if (label.contains("ركض") || label.contains("جري")) return "⚡";
-        if (label.contains("مراوغة") || label.contains("انزلاق")) return "➤";
-        if (label.contains("تصويب") || label.contains("هدف")) return "⌖";
-        if (label.contains("إطلاق") || label.contains("نار")) return "●";
-        if (label.contains("مركبة") || label.contains("دخول") || label.contains("خروج")) return "🚙";
-        if (label.contains("مكابح") || label.contains("فرامل")) return "▣";
-        if (label.contains("تسارع")) return "▲";
-        if (label.contains("صعود") || label.contains("رفع")) return "⬆";
-        if (label.contains("هبوط") || label.contains("خفض")) return "⬇";
-        if (label.contains("تلقيم")) return "↻";
-        if (label.contains("سلاح")) return "⚔";
-        if (label.contains("التقاط") || label.contains("تبديل")) return "＋";
-        if (label.contains("علاج")) return "✚";
-        if (label.contains("درع")) return "⬡";
-        if (label.contains("الحقيبة")) return "▤";
-        if (label.contains("خانة 1")) return "1";
-        if (label.contains("خانة 2")) return "2";
-        if (label.contains("خانة 3")) return "3";
-        if (label.contains("خانة 4")) return "4";
-        if (label.contains("خانة 5")) return "5";
-        if (label.equals("◀") || label.equals("▶")) return label;
-        if (label.contains("زامور")) return "♫";
-        return "•";
-    }
-
-    private Button touchAction(String label, final Runnable press, final Runnable release) {
-        Button b=btn(label);
-        String icon=touchControlIcon(label);
-        b.setText(icon);
-        b.setTextSize(label.contains("إطلاق")?30:22);
-        b.setContentDescription(label);
-        b.setTextColor(Color.WHITE);
-        android.graphics.drawable.GradientDrawable face=new android.graphics.drawable.GradientDrawable();
-        face.setShape(android.graphics.drawable.GradientDrawable.OVAL);
-        face.setColor(label.contains("إطلاق")?0xD9B83A32:0xA9233448);
-        face.setStroke(dp(1.5f),label.contains("إطلاق")?0xFFFFD7C9:0xB8D6E8F5);
-        b.setBackground(face);
-        b.setPadding(dp(2),0,dp(2),0);
-        b.setMinHeight(dp(48));b.setMinimumHeight(dp(48));
-        b.setClickable(true);b.setFocusable(false);
-        final String key="hud_"+Integer.toHexString(label.hashCode());b.setTag(key);
-        SharedPreferences hp=getSharedPreferences("adam_world_hud",MODE_PRIVATE);
-        b.setScaleX(hp.getFloat(key+"_scale",1f));b.setScaleY(hp.getFloat(key+"_scale",1f));
-        b.setAlpha(hp.getFloat(key+"_alpha",1f));b.setTranslationX(hp.getFloat(key+"_x",0f));b.setTranslationY(hp.getFloat(key+"_y",0f));
-        b.setOnTouchListener(new View.OnTouchListener(){
-            private int activePointerId=MotionEvent.INVALID_POINTER_ID;
-            private boolean held,moved;private float downX,downY,startX,startY;
-            private void finishPress(View view){if(!held)return;held=false;activePointerId=MotionEvent.INVALID_POINTER_ID;if(release!=null)release.run();view.setAlpha(getSharedPreferences("adam_world_hud",MODE_PRIVATE).getFloat(key+"_alpha",1f));}
-            @Override public boolean onTouch(View v,MotionEvent e){
-                int action=e.getActionMasked();
-                if(hudEditMode){
-                    if(action==MotionEvent.ACTION_DOWN){downX=e.getRawX();downY=e.getRawY();startX=v.getTranslationX();startY=v.getTranslationY();moved=false;return true;}
-                    if(action==MotionEvent.ACTION_MOVE){float dx=e.getRawX()-downX,dy=e.getRawY()-downY;if(Math.abs(dx)+Math.abs(dy)>5f)moved=true;if(moved){v.setTranslationX(startX+dx);v.setTranslationY(startY+dy);}return true;}
-                    if(action==MotionEvent.ACTION_UP){if(moved)getSharedPreferences("adam_world_hud",MODE_PRIVATE).edit().putFloat(key+"_x",v.getTranslationX()).putFloat(key+"_y",v.getTranslationY()).apply();else showHudButtonEditor(v);return true;}
-                    return true;
-                }
-                if(action==MotionEvent.ACTION_DOWN){activePointerId=e.getPointerId(e.getActionIndex());held=true;if(press!=null)press.run();v.setAlpha(0.72f);return true;}
-                if(action==MotionEvent.ACTION_POINTER_UP&&e.getPointerId(e.getActionIndex())==activePointerId){finishPress(v);return true;}
-                if(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_CANCEL){finishPress(v);return true;}
-                if(action==MotionEvent.ACTION_MOVE&&held&&e.findPointerIndex(activePointerId)<0)finishPress(v);
-                return true;
-            }
-        });
-        return b;
-    }
-
-    private void makeHudElementEditable(final View view,String key){
-        final SharedPreferences prefs=getSharedPreferences("adam_world_hud",MODE_PRIVATE);
-        view.setTag(key);
-        view.setScaleX(prefs.getFloat(key+"_scale",1f));view.setScaleY(prefs.getFloat(key+"_scale",1f));
-        view.setAlpha(prefs.getFloat(key+"_alpha",1f));
-        view.setTranslationX(prefs.getFloat(key+"_x",0f));view.setTranslationY(prefs.getFloat(key+"_y",0f));
-        view.setClickable(true);
-        view.setOnTouchListener(new View.OnTouchListener(){
-            float downX,downY,startX,startY;boolean moved;
-            @Override public boolean onTouch(View v,MotionEvent e){
-                if(!hudEditMode)return false;
-                int action=e.getActionMasked();
-                if(action==MotionEvent.ACTION_DOWN){
-                    downX=e.getRawX();downY=e.getRawY();startX=v.getTranslationX();startY=v.getTranslationY();moved=false;return true;
-                }
-                if(action==MotionEvent.ACTION_MOVE){
-                    float dx=e.getRawX()-downX,dy=e.getRawY()-downY;
-                    if(Math.abs(dx)+Math.abs(dy)>5f)moved=true;
-                    if(moved){v.setTranslationX(startX+dx);v.setTranslationY(startY+dy);}return true;
-                }
-                if(action==MotionEvent.ACTION_UP){
-                    if(moved)prefs.edit().putFloat(key+"_x",v.getTranslationX()).putFloat(key+"_y",v.getTranslationY()).apply();
-                    else showHudButtonEditor(v);
-                    return true;
-                }
-                return true;
-            }
-        });
-    }
-
-    private Button btn(String t) {
-        Button b = new Button(this);
-        b.setText(t);
-        b.setTextColor(Color.WHITE);
-        b.setTextSize(14);
-        b.setAllCaps(false);
-        b.setBackgroundColor(0xC70F0F19);
-        b.setPadding(dp(10), 0, dp(10), 0);
-        b.setMinWidth(0);
-        b.setMinimumWidth(0);
-        b.setMinHeight(dp(40));
-        b.setMinimumHeight(dp(40));
-        makeHudElementEditable(b,"admin_"+Integer.toHexString(t.hashCode()));
-        return b;
-    }
-
 
     /**
      * One purpose-built Battle Royale HUD. No Android Button/TextView widgets are used
@@ -1271,29 +1065,6 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 loading.setVisibility(show ? View.VISIBLE : View.GONE);
             }
         });
-    }
-
-    private boolean isAircraftDriven() {
-        return renderer != null && renderer.game.driving
-                && (renderer.game.vehicleType == ProceduralVehicleModels.HELICOPTER
-                || renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE);
-    }
-
-    private void updateTouchActionVisibility() {
-        if (renderer == null) return;
-        boolean flightSchool = renderer.isFlightSchoolMode();
-        if (flightSchoolButton != null) flightSchoolButton.setVisibility(flightSchool ? View.GONE : View.VISIBLE);
-        if (returnCityButton != null) returnCityButton.setVisibility(flightSchool ? View.VISIBLE : View.GONE);
-        boolean touch = getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN);
-        if (touchMoveJoystick != null) touchMoveJoystick.setVisibility(touch ? View.VISIBLE : View.GONE);
-        if (battleHudOverlay != null) {
-            battleHudOverlay.setVisibility(touch ? View.VISIBLE : View.GONE);
-            if (touch && battleHudButtons != null) layoutBattleHudControls(battleHudOverlay, battleHudButtons);
-        }
-        boolean driving = renderer.game.driving;
-        if (touchVehicleButton != null) touchVehicleButton.setText(driving ? "خروج" : "🚗");
-        if (touchGearButton != null) touchGearButton.setVisibility(driving
-                && renderer.game.vehicleType == ProceduralVehicleModels.AIRPLANE ? View.VISIBLE : View.GONE);
     }
 
     @Override public void onHud(final String s) {
