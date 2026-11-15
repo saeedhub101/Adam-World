@@ -688,170 +688,138 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
     private final class BattleRoyaleHudView extends View {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final float density = getResources().getDisplayMetrics().density;
-        private int movePointer = -1, cameraPointer = -1;
-        private boolean pauseMenuOpen = false;
-        private float cameraLastX, cameraLastY;
-        private float moveX, moveY;
-        private int firePointer = -1, aimPointer = -1, sprintPointer = -1, crouchPointer = -1;
-        private int jumpPointer = -1, reloadPointer = -1, interactPointer = -1;
-        private boolean fireHeld, aimHeld, sprintHeld, crouchHeld;
-        private float w, h;
-        private final float[] quickX = new float[5];
-        private final RectF mapRect = new RectF();
-        BattleRoyaleHudView(Context context) { super(context); setLayerType(View.LAYER_TYPE_SOFTWARE,null); setFocusable(false); }
-
+        private int movePointer=-1,cameraPointer=-1,firePointer=-1,aimPointer=-1,sprintPointer=-1,crouchPointer=-1,jumpPointer=-1,reloadPointer=-1;
+        private boolean pauseMenuOpen=false,fireHeld,aimHeld,sprintHeld,crouchHeld;
+        private float cameraLastX,cameraLastY,moveX,moveY,w,h;
+        private final float[] quickX=new float[5];
+        private final RectF mapRect=new RectF();
+        BattleRoyaleHudView(Context context){super(context);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setFocusable(false);}
         private float d(float v){return v*density;}
-        private void fill(Canvas c,int color){paint.setColor(color);paint.setStyle(Paint.Style.FILL);}
-        private void stroke(Canvas c,int color,float width){paint.setColor(color);paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(d(width));}
-        private void circle(Canvas c,float x,float y,float r,int color){fill(c,color);c.drawCircle(x,y,r,paint);}
-        private void ring(Canvas c,float x,float y,float r,int color,float sw){stroke(c,color,sw);c.drawCircle(x,y,r,paint);paint.setStyle(Paint.Style.FILL);}
-        private void text(Canvas c,String value,float x,float y,float size,int color,boolean bold){
-            fill(c,color);paint.setTextSize(d(size));paint.setTypeface(Typeface.create("sans-serif",bold?Typeface.BOLD:Typeface.NORMAL));c.drawText(value,x,y,paint);
+        private void fill(Canvas c,int color){paint.setStyle(Paint.Style.FILL);paint.setColor(color);}
+        private void stroke(int color,float width){paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(d(width));paint.setStrokeCap(Paint.Cap.ROUND);paint.setStrokeJoin(Paint.Join.ROUND);paint.setColor(color);}
+        private void text(Canvas c,String s,float x,float y,float size,int color,boolean bold){fill(c,color);paint.setTextSize(d(size));paint.setTypeface(Typeface.create("sans-serif",bold?Typeface.BOLD:Typeface.NORMAL));c.drawText(s,x,y,paint);}
+        private void panel(Canvas c,float l,float t,float r,float b,float radius,int color){fill(c,color);c.drawRoundRect(l,t,r,b,d(radius),d(radius),paint);}
+        private void buttonBase(Canvas c,float x,float y,float r,boolean active){
+            fill(c,active?0x9cf5b942:0x66303b49);c.drawCircle(x,y,r,paint);
+            stroke(active?0xffffe5a8:0xddeaf2fa,1.5f);c.drawCircle(x,y,r,paint);paint.setStyle(Paint.Style.FILL);
+            stroke(0x55ffffff,.7f);c.drawCircle(x,y,r-d(4),paint);paint.setStyle(Paint.Style.FILL);
         }
-        private void rounded(Canvas c,float l,float t,float r,float b,float radius,int color){
-            fill(c,color);c.drawRoundRect(l,t,r,b,d(radius),d(radius),paint);
-        }
-        private void action(Canvas c,float x,float y,float radius,String glyph,String caption,boolean active,int color){
-            circle(c,x,y,radius,active?0xfff4b942:0xb91b2736);
-            ring(c,x,y,radius,active?0xffffe0a0:0xffd5e0eb,1.4f);
-            text(c,glyph,x-d(13),y+d(8),radius>30?27:22,Color.WHITE,true);
-            if(caption!=null&&!caption.isEmpty())text(c,caption,x-d(18),y+radius+d(13),10,0xffe8edf4,true);
-        }
-        @Override protected void onDraw(Canvas c){
-            super.onDraw(c); w=getWidth();h=getHeight(); if(w<=0||h<=0||renderer==null)return;
-            Game g=renderer.game;
-            float safe=d(12), right=w-safe, bottom=h-safe;
-            // Battle Royale pause/menu control.
-            rounded(c,safe,safe,safe+d(44),safe+d(44),d(13),0xb91b2736);
-            text(c,"≡",safe+d(11),safe+d(31),25,Color.WHITE,true);
-            if(pauseMenuOpen){
-                float pw=Math.min(w-d(36),d(330)), ph=d(226), pl=(w-pw)/2f, pt=(h-ph)/2f;
-                rounded(c,pl,pt,pl+pw,pt+ph,d(12),0xf018222e);
-                stroke(c,0xffd5a84b,2);c.drawRoundRect(pl,pt,pl+pw,pt+ph,d(12),d(12),paint);paint.setStyle(Paint.Style.FILL);
-                text(c,"BATTLE ROYALE",pl+d(22),pt+d(36),20,Color.WHITE,true);
-                text(c,"PAUSED",pl+d(22),pt+d(61),11,0xffb7c4d2,true);
-                rounded(c,pl+d(18),pt+d(83),pl+pw-d(18),pt+d(132),d(7),0xffb58a38);
-                text(c,"RESUME",pl+d(34),pt+d(114),15,Color.WHITE,true);
-                rounded(c,pl+d(18),pt+d(145),pl+pw-d(18),pt+d(194),d(7),0xff344454);
-                text(c,"MAP",pl+d(34),pt+d(176),15,Color.WHITE,true);
-                return;
+        private void line(Canvas c,float x1,float y1,float x2,float y2,float width){stroke(Color.WHITE,width);c.drawLine(x1,y1,x2,y2,paint);paint.setStyle(Paint.Style.FILL);}
+        private void icon(Canvas c,int type,float x,float y,float size){
+            c.save();c.translate(x,y);c.scale(size/48f,size/48f);stroke(Color.WHITE,2.8f);
+            Path p=new Path();
+            switch(type){
+                case 0: // crosshair
+                    c.drawCircle(0,0,14,paint);c.drawCircle(0,0,3,paint);
+                    c.drawLine(-23,0,-9,0,paint);c.drawLine(9,0,23,0,paint);c.drawLine(0,-23,0,-9,paint);c.drawLine(0,9,0,23,paint);break;
+                case 1: // fire / rifle
+                    p.moveTo(-19,5);p.lineTo(-5,-2);p.lineTo(9,-2);p.lineTo(19,-8);p.lineTo(22,-5);p.lineTo(11,3);p.lineTo(3,3);p.lineTo(-2,16);p.lineTo(-8,16);p.lineTo(-7,3);p.lineTo(-19,9);p.close();c.drawPath(p,paint);c.drawLine(8,-2,15,-13,paint);break;
+                case 2: // runner
+                    c.drawCircle(6,-16,4,paint);c.drawLine(3,-10,-4,0,paint);c.drawLine(-4,0,9,4,paint);c.drawLine(0,-6,-13,-3,paint);c.drawLine(0,-6,12,-2,paint);c.drawLine(8,4,17,15,paint);c.drawLine(8,4,-5,17,paint);c.drawLine(-5,17,-16,17,paint);c.drawLine(17,15,23,15,paint);break;
+                case 3: // jump
+                    c.drawLine(0,18,0,-13,paint);c.drawLine(0,-13,-10,-2,paint);c.drawLine(0,-13,10,-2,paint);c.drawLine(-15,18,15,18,paint);break;
+                case 4: // crouch
+                    c.drawCircle(5,-13,4,paint);c.drawLine(2,-8,-7,1,paint);c.drawLine(-7,1,8,6,paint);c.drawLine(8,6,17,14,paint);c.drawLine(-7,1,-14,14,paint);c.drawLine(-14,14,-22,14,paint);break;
+                case 5: // reload
+                    c.drawArc(-17,-17,17,17,35,285,false,paint);c.drawLine(13,-16,18,-5,paint);c.drawLine(13,-16,2,-17,paint);break;
+                case 6: // pickaxe
+                    c.drawLine(-15,18,15,-18,paint);c.drawLine(-21,-12,3,-21,paint);c.drawLine(-21,-12,-11,-2,paint);c.drawLine(3,-21,13,-13,paint);break;
+                case 7: // backpack
+                    c.drawRoundRect(-13,-15,13,17,5,5,paint);c.drawArc(-8,-22,8,-8,180,180,false,paint);c.drawRoundRect(-8,-3,8,8,2,2,paint);c.drawLine(-18,-8,-13,-4,paint);c.drawLine(18,-8,13,-4,paint);break;
+                case 8: // hand/interact
+                    c.drawRoundRect(-13,-4,13,17,5,5,paint);c.drawLine(-8,-4,-8,-17,paint);c.drawLine(-1,-4,-1,-21,paint);c.drawLine(6,-4,6,-17,paint);c.drawLine(13,1,19,-7,paint);break;
+                case 9: // vehicle
+                    c.drawRoundRect(-19,-10,19,11,4,4,paint);c.drawLine(-12,-10,-7,-17,paint);c.drawLine(-7,-17,10,-17,paint);c.drawLine(10,-17,15,-10,paint);c.drawCircle(-11,12,4,paint);c.drawCircle(11,12,4,paint);break;
+                case 10: // menu
+                    c.drawLine(-16,-12,16,-12,paint);c.drawLine(-16,0,16,0,paint);c.drawLine(-16,12,16,12,paint);break;
+                case 11: // shield
+                    p.moveTo(0,-20);p.lineTo(16,-13);p.lineTo(14,7);p.lineTo(0,20);p.lineTo(-14,7);p.lineTo(-16,-13);p.close();c.drawPath(p,paint);break;
+                case 12: // health cross
+                    c.drawLine(-17,0,17,0,paint);c.drawLine(0,-17,0,17,paint);break;
             }
-            float mr=d(61), mx=right-mr, my=safe+mr;
-            circle(c,mx,my,mr,0xe516202b);ring(c,mx,my,mr,0xffe5edf5,2);
-            c.save();Path clip=new Path();clip.addCircle(mx,my,mr-d(3),Path.Direction.CW);c.clipPath(clip);
-            float scale=mr/260f;float[] roads=renderer.miniMapRoads();
-            stroke(c,0xffaab7c5,1.5f);
-            float px=g.driving?g.cx:g.px,pz=g.driving?g.cz:g.pz;
-            for(int i=0;i+3<roads.length;i+=4)c.drawLine(mx+(roads[i]-px)*scale,my+(roads[i+1]-pz)*scale,mx+(roads[i+2]-px)*scale,my+(roads[i+3]-pz)*scale,paint);
-            fill(c,0xff55e38b);Path arrow=new Path();arrow.moveTo(mx,my-d(10));arrow.lineTo(mx-d(7),my+d(7));arrow.lineTo(mx,my+d(3));arrow.lineTo(mx+d(7),my+d(7));arrow.close();
-            c.save();c.rotate((float)Math.toDegrees(g.driving?g.cyaw:g.pyaw),mx,my);c.drawPath(arrow,paint);c.restore();c.restore();
-            // Health and shield are compact horizontal bars at the lower edge, not floating icons.
-            float barX=d(18), barY=h-d(55), barW=Math.min(w*.13f,d(58));
-            rounded(c,barX,barY,barX+barW,barY+d(9),d(5),0xff263442);
-            rounded(c,barX,barY,barX+barW*Math.max(0,Math.min(1,g.health/100f)),barY+d(9),d(5),0xff31d47b);
-            rounded(c,barX,barY+d(13),barX+barW,barY+d(22),d(5),0xff263442);
-            rounded(c,barX,barY+d(13),barX+barW*Math.max(0,Math.min(1,g.shield/100f)),barY+d(22),d(5),0xff35a8f5);
-            // Weapon quickbar, centered along the bottom.
-            float slot=d(39), gap=d(4), total=5*slot+4*gap, start=(w-total)/2f, slotY=h-d(48);
-            for(int i=0;i<5;i++){
-                quickX[i]=start+i*(slot+gap);
-                boolean selected=i==g.activeQuickbarSlot;
-                rounded(c,quickX[i],slotY,quickX[i]+slot,slotY+slot,d(7),selected?0xffd9a63b:0xc51b2736);
-                stroke(c,selected?0xffffe1a0:0xff8394a7,selected?2:1);
-                c.drawRoundRect(quickX[i],slotY,quickX[i]+slot,slotY+slot,d(7),d(7),paint);paint.setStyle(Paint.Style.FILL);
-                int weapon=i<g.quickbarWeapons.length?g.quickbarWeapons[i]:-1;
-                String glyph=weapon<0?"＋":(weapon==0?"╱":weapon==1?"▰":weapon==2?"▱":"✚");
-                text(c,glyph,quickX[i]+d(12),slotY+d(27),20,Color.WHITE,true);
-                text(c,String.valueOf(i+1),quickX[i]+d(4),slotY+d(11),9,0xffdce5ef,true);
-            }
-            // Ammo is numeric and compact; no invented weapon-name label.
-            text(c,g.magazineAmmo+" / "+g.reserveAmmo[g.equippedWeapon],right-d(105),h-d(70),15,Color.WHITE,true);
-            // Movement joystick, left; right side is dedicated to combat actions.
-            float jx=d(91), jy=h-d(145), jr=d(53);
-            circle(c,jx,jy,jr,0x55212e3c);ring(c,jx,jy,jr,0x99e2eaf2,2);
-            circle(c,jx+moveX*d(25),jy-moveY*d(25),d(22),0x99eaf1f7);ring(c,jx+moveX*d(25),jy-moveY*d(25),d(22),0xfff7fbff,1);
-            // Dedicated sprint and slide, plus core combat actions.
-            action(c,d(205),h-d(226),d(25),"⚡","",sprintHeld,0);
-            action(c,d(205),h-d(151),d(25),"⇣","",crouchHeld,0);
-            action(c,right-d(55),h-d(185),d(39),"●","",fireHeld,0);
-            action(c,right-d(137),h-d(145),d(29),"◎","",aimHeld,0);
-            action(c,right-d(55),h-d(278),d(31),"↑","",false,0);
-            action(c,right-d(137),h-d(245),d(26),"↻","",false,0);
-            action(c,right-d(205),h-d(95),d(25),"✦","",false,0);
-            action(c,right-d(137),h-d(95),d(25),"✋","",false,0);
-            action(c,right-d(55),h-d(95),d(27),"▣","",false,0);
-            // Weapon status and small contextual prompt.
-            text(c,"BR",safe+d(54),safe+d(29),12,0xffe6edf5,true);
+            paint.setStyle(Paint.Style.FILL);c.restore();
         }
+        private void action(Canvas c,float x,float y,float r,int type,boolean active){buttonBase(c,x,y,r,active);icon(c,type,x,y,r*.78f);}
         private boolean inside(float x,float y,float cx,float cy,float r){float dx=x-cx,dy=y-cy;return dx*dx+dy*dy<=r*r;}
+        @Override protected void onDraw(Canvas c){
+            super.onDraw(c);w=getWidth();h=getHeight();if(w<=0||h<=0||renderer==null)return;
+            Game g=renderer.game;float s=density, left=d(16),right=w-d(16),top=d(14);
+            // Player identity and stacked shield/health meters (Fortnite-style top-left HUD).
+            panel(c,left,top,left+d(42),top+d(42),d(7),0x99202b39);
+            fill(c,0xffd7e0e9);c.drawCircle(left+d(21),top+d(14),d(7),paint);c.drawRoundRect(left+d(10),top+d(23),left+d(32),top+d(39),d(7),d(7),paint);
+            text(c,"ADAM WORLD",left+d(50),top+d(13),12,Color.WHITE,true);
+            panel(c,left+d(50),top+d(19),left+d(224),top+d(30),d(3),0xff263442);
+            panel(c,left+d(50),top+d(19),left+d(50)+d(174)*Math.max(0,Math.min(1,g.shield/100f)),top+d(30),d(3),0xff249be8);
+            icon(c,11,left+d(239),top+d(25),d(18));text(c,String.valueOf((int)g.shield),left+d(252),top+d(30),11,Color.WHITE,true);
+            panel(c,left+d(50),top+d(35),left+d(224),top+d(46),d(3),0xff263442);
+            panel(c,left+d(50),top+d(35),left+d(50)+d(174)*Math.max(0,Math.min(1,g.health/100f)),top+d(46),d(3),0xff35d477);
+            icon(c,12,left+d(239),top+d(41),d(18));text(c,String.valueOf((int)g.health),left+d(252),top+d(46),11,Color.WHITE,true);
+            // Compass strip at top centre.
+            String[] dirs={"W","NW","N","NE","E"};float cx=w*.5f;
+            for(int i=0;i<dirs.length;i++){float x=cx+(i-2)*d(72);text(c,dirs[i],x-d(8),top+d(21),i==2?17:13,i==2?Color.WHITE:0xffb9c8d8,true);fill(c,0xffdce6ef);c.drawCircle(x,top+d(31),d(1.5f),paint);}
+            // Minimap top-right.
+            float mr=Math.min(d(63),w*.075f),mx=right-mr,my=top+mr;
+            fill(c,0xe51b2632);c.drawCircle(mx,my,mr,paint);stroke(0xffe5edf5,2);c.drawCircle(mx,my,mr,paint);
+            c.save();Path clip=new Path();clip.addCircle(mx,my,mr-d(3),Path.Direction.CW);c.clipPath(clip);
+            float[] roads=renderer.miniMapRoads();float scale=mr/260f,px=g.driving?g.cx:g.px,pz=g.driving?g.cz:g.pz;
+            stroke(0xffc6d2dc,1.4f);for(int i=0;i+3<roads.length;i+=4)c.drawLine(mx+(roads[i]-px)*scale,my+(roads[i+1]-pz)*scale,mx+(roads[i+2]-px)*scale,my+(roads[i+3]-pz)*scale,paint);
+            fill(c,0xff65ec9b);Path arrow=new Path();arrow.moveTo(mx,my-d(10));arrow.lineTo(mx-d(7),my+d(7));arrow.lineTo(mx,my+d(3));arrow.lineTo(mx+d(7),my+d(7));arrow.close();c.save();c.rotate((float)Math.toDegrees(g.driving?g.cyaw:g.pyaw),mx,my);c.drawPath(arrow,paint);c.restore();c.restore();
+            text(c,""+g.magazineAmmo+" / "+g.reserveAmmo[g.equippedWeapon],right-d(105),my+mr+d(22),13,Color.WHITE,true);
+            // Pause/menu icon.
+            action(c,left+d(20),h-d(23),d(18),10,false);
+            if(pauseMenuOpen){float pw=Math.min(w-d(36),d(330)),ph=d(226),pl=(w-pw)/2f,pt=(h-ph)/2f;panel(c,pl,pt,pl+pw,pt+ph,12,0xf018222e);stroke(0xffe8bd61,2);c.drawRoundRect(pl,pt,pl+pw,pt+ph,d(12),d(12),paint);paint.setStyle(Paint.Style.FILL);text(c,"BATTLE ROYALE",pl+d(22),pt+d(36),20,Color.WHITE,true);panel(c,pl+d(18),pt+d(83),pl+pw-d(18),pt+d(132),7,0xffb58a38);text(c,"RESUME",pl+d(34),pt+d(114),15,Color.WHITE,true);panel(c,pl+d(18),pt+d(145),pl+pw-d(18),pt+d(194),7,0xff344454);text(c,"MAP",pl+d(34),pt+d(176),15,Color.WHITE,true);return;}
+            // Left movement stick.
+            float jx=d(100),jy=h-d(105),jr=d(54);
+            fill(c,0x55303b49);c.drawCircle(jx,jy,jr,paint);stroke(0x99e8f0f7,1.5f);c.drawCircle(jx,jy,jr,paint);
+            for(int i=0;i<4;i++){double a=Math.PI*.5*i;float ax=jx+(float)Math.cos(a)*d(43),ay=jy+(float)Math.sin(a)*d(43);Path tri=new Path();tri.moveTo(ax,ay);tri.lineTo(ax+(float)Math.cos(a+2.5)*d(7),ay+(float)Math.sin(a+2.5)*d(7));tri.lineTo(ax+(float)Math.cos(a-2.5)*d(7),ay+(float)Math.sin(a-2.5)*d(7));tri.close();fill(c,0xffdce5ed);c.drawPath(tri,paint);}
+            fill(c,0x99e8edf2);c.drawCircle(jx+moveX*d(25),jy-moveY*d(25),d(21),paint);stroke(0xfff8fbff,1);c.drawCircle(jx+moveX*d(25),jy-moveY*d(25),d(21),paint);
+            // Sprint and crouch controls.
+            action(c,d(205),h-d(188),d(25),2,sprintHeld);action(c,d(205),h-d(119),d(25),4,crouchHeld);
+            // Right combat cluster: crosshair, fire, jump, reload and melee.
+            action(c,right-d(154),h-d(200),d(35),0,aimHeld);
+            action(c,right-d(55),h-d(200),d(38),1,fireHeld);
+            action(c,right-d(55),h-d(292),d(29),3,false);
+            action(c,right-d(154),h-d(285),d(25),5,false);
+            action(c,right-d(252),h-d(105),d(25),6,false);
+            action(c,right-d(154),h-d(105),d(25),8,false);
+            action(c,right-d(55),h-d(105),d(27),9,false);
+            // Five-slot hotbar with selected-slot highlight and clear item silhouettes.
+            float slot=d(42),gap=d(4),total=5*slot+4*gap,start=(w-total)/2f,slotY=h-d(54);
+            for(int i=0;i<5;i++){quickX[i]=start+i*(slot+gap);boolean selected=i==g.activeQuickbarSlot;panel(c,quickX[i],slotY,quickX[i]+slot,slotY+slot,5,selected?0xff1686dc:0xc51b2736);stroke(selected?Color.WHITE:0xff8293a5,selected?2:1);c.drawRoundRect(quickX[i],slotY,quickX[i]+slot,slotY+slot,d(5),d(5),paint);paint.setStyle(Paint.Style.FILL);int weapon=i<g.quickbarWeapons.length?g.quickbarWeapons[i]:-1;icon(c,weapon<0?7:weapon==0?6:1,quickX[i]+slot/2,slotY+slot*.48f,slot*.66f);text(c,String.valueOf(i+1),quickX[i]+d(4),slotY+d(10),8,0xffe4edf6,true);}
+        }
         private void clearPointer(int id){
             if(movePointer==id){movePointer=-1;moveX=moveY=0;renderer.game.sx=renderer.game.sy=0;}
             if(cameraPointer==id)cameraPointer=-1;
             if(firePointer==id){firePointer=-1;fireHeld=false;renderer.game.weaponFireHeld=false;}
             if(aimPointer==id){aimPointer=-1;aimHeld=false;renderer.game.weaponAimHeld=false;}
             if(sprintPointer==id){sprintPointer=-1;sprintHeld=false;renderer.game.sprint=false;}
-            if(crouchPointer==id){crouchPointer=-1;crouchHeld=false;renderer.game.crouching=false;renderer.game.sprint=sprintPointer!=-1;}
-            if(jumpPointer==id){jumpPointer=-1;}
-            if(reloadPointer==id)reloadPointer=-1;
-            if(interactPointer==id)interactPointer=-1;
-            invalidate();
+            if(crouchPointer==id){crouchPointer=-1;crouchHeld=false;renderer.game.crouching=false;}
+            if(jumpPointer==id)jumpPointer=-1;if(reloadPointer==id)reloadPointer=-1;invalidate();
         }
         @Override public boolean onTouchEvent(MotionEvent e){
-            if(renderer==null)return false;
-            int a=e.getActionMasked(), index=e.getActionIndex(), id=e.getPointerId(index);
-            float x=e.getX(index),y=e.getY(index);
+            if(renderer==null)return false;int a=e.getActionMasked(),index=e.getActionIndex(),id=e.getPointerId(index);float x=e.getX(index),y=e.getY(index);
             if(a==MotionEvent.ACTION_DOWN||a==MotionEvent.ACTION_POINTER_DOWN){
-                float right=getWidth()-d(12);
-                if(pauseMenuOpen){
-                    float pw=Math.min(getWidth()-d(36),d(330)),ph=d(226),pl=(getWidth()-pw)/2f,pt=(getHeight()-ph)/2f;
-                    if(x>=pl&&x<=pl+pw&&y>=pt+d(83)&&y<=pt+d(132)){
-                        pauseMenuOpen=false;renderer.game.paused=false;invalidate();return true;
-                    }
-                    if(x>=pl&&x<=pl+pw&&y>=pt+d(145)&&y<=pt+d(194)){
-                        pauseMenuOpen=false;invalidate();showMapDialog(true);return true;
-                    }
-                    return true;
-                }
+                float left=d(16),right=getWidth()-d(16);
+                if(pauseMenuOpen){float pw=Math.min(getWidth()-d(36),d(330)),ph=d(226),pl=(getWidth()-pw)/2f,pt=(getHeight()-ph)/2f;if(x>=pl&&x<=pl+pw&&y>=pt+d(83)&&y<=pt+d(132)){pauseMenuOpen=false;renderer.game.paused=false;invalidate();return true;}if(x>=pl&&x<=pl+pw&&y>=pt+d(145)&&y<=pt+d(194)){pauseMenuOpen=false;invalidate();showMapDialog(true);return true;}return true;}
                 if(x<d(58)&&y<d(58)){pauseMenuOpen=true;renderer.game.paused=true;invalidate();return true;}
-                float mapX=right-d(61),mapY=d(73);
-                if(inside(x,y,mapX,mapY,d(61))){showMapDialog(false);return true;}
-                float jx=d(91),jy=getHeight()-d(145);
-                if(x<d(155)&&y>getHeight()-d(225)){
-                    movePointer=id;moveX=Math.max(-1,Math.min(1,(x-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-y)/d(48)));
-                    renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();return true;
-                }
+                float mr=Math.min(d(63),getWidth()*.075f),mx=right-mr,my=d(14)+mr;if(inside(x,y,mx,my,mr)){showMapDialog(false);return true;}
+                float jx=d(100),jy=getHeight()-d(105);if(x<d(170)&&y>getHeight()-d(190)){movePointer=id;moveX=Math.max(-1,Math.min(1,(x-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-y)/d(48)));renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();return true;}
                 Game g=renderer.game;
-                if(inside(x,y,d(205),getHeight()-d(226),d(31))){sprintPointer=id;sprintHeld=true;g.sprint=true;invalidate();return true;}
-                if(inside(x,y,d(205),getHeight()-d(151),d(31))){crouchPointer=id;crouchHeld=true;g.crouching=true;g.sprint=true;invalidate();return true;}
-                if(inside(x,y,right-d(55),getHeight()-d(185),d(42))){firePointer=id;fireHeld=true;g.weaponFireHeld=true;invalidate();return true;}
-                if(inside(x,y,right-d(137),getHeight()-d(145),d(34))){aimPointer=id;aimHeld=true;g.weaponAimHeld=true;invalidate();return true;}
-                if(inside(x,y,right-d(55),getHeight()-d(278),d(34))){jumpPointer=id;g.jumpRequested=true;invalidate();return true;}
-                if(inside(x,y,right-d(137),getHeight()-d(245),d(30))){reloadPointer=id;g.reloadRequested=true;invalidate();return true;}
-                if(inside(x,y,right-d(205),getHeight()-d(95),d(30))){g.punchRequested=true;invalidate();return true;}
-                if(inside(x,y,right-d(137),getHeight()-d(95),d(30))){g.lootInteractionRequested=true;invalidate();return true;}
-                if(inside(x,y,right-d(55),getHeight()-d(95),d(31))){renderer.toggleCar();invalidate();return true;}
-                float slot=d(39),gap=d(4),total=5*slot+4*gap,start=(getWidth()-total)/2f,sy=getHeight()-d(48);
-                if(y>=sy&&y<=sy+slot&&x>=start&&x<=start+total){
-                    int chosen=Math.max(0,Math.min(4,(int)((x-start)/(slot+gap))));
-                    if(g.selectQuickbarSlot(chosen))saveWeaponState();
-                    invalidate();return true;
-                }
-                if(x>getWidth()*.42f && y<getHeight()*.82f){cameraPointer=id;cameraLastX=x;cameraLastY=y;return true;}
-                return true;
+                if(inside(x,y,d(205),getHeight()-d(188),d(31))){sprintPointer=id;sprintHeld=true;g.sprint=true;invalidate();return true;}
+                if(inside(x,y,d(205),getHeight()-d(119),d(31))){crouchPointer=id;crouchHeld=true;g.crouching=true;invalidate();return true;}
+                if(inside(x,y,right-d(55),getHeight()-d(200),d(42))){firePointer=id;fireHeld=true;g.weaponFireHeld=true;invalidate();return true;}
+                if(inside(x,y,right-d(154),getHeight()-d(200),d(39))){aimPointer=id;aimHeld=true;g.weaponAimHeld=true;invalidate();return true;}
+                if(inside(x,y,right-d(55),getHeight()-d(292),d(33))){jumpPointer=id;g.jumpRequested=true;invalidate();return true;}
+                if(inside(x,y,right-d(154),getHeight()-d(285),d(29))){reloadPointer=id;g.reloadRequested=true;invalidate();return true;}
+                if(inside(x,y,right-d(252),getHeight()-d(105),d(30))){g.punchRequested=true;invalidate();return true;}
+                if(inside(x,y,right-d(154),getHeight()-d(105),d(30))){g.lootInteractionRequested=true;invalidate();return true;}
+                if(inside(x,y,right-d(55),getHeight()-d(105),d(32))){renderer.toggleCar();invalidate();return true;}
+                float slot=d(42),gap=d(4),total=5*slot+4*gap,start=(getWidth()-total)/2f,sy=getHeight()-d(54);
+                if(y>=sy&&y<=sy+slot&&x>=start&&x<=start+total){int chosen=Math.max(0,Math.min(4,(int)((x-start)/(slot+gap))));if(g.selectQuickbarSlot(chosen))saveWeaponState();invalidate();return true;}
+                if(x>getWidth()*.42f&&y<getHeight()*.82f){cameraPointer=id;cameraLastX=x;cameraLastY=y;return true;}return true;
             }
-            if(a==MotionEvent.ACTION_MOVE){
-                for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==cameraPointer){
-                    float cx=e.getX(p),cy=e.getY(p);renderer.addLook(cx-cameraLastX,cy-cameraLastY);cameraLastX=cx;cameraLastY=cy;
-                }
-                for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==movePointer){
-                    float jx=d(91),jy=getHeight()-d(145);
-                    moveX=Math.max(-1,Math.min(1,(e.getX(p)-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-e.getY(p))/d(48)));
-                    renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();
-                }
-                return true;
-            }
-            if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_POINTER_UP||a==MotionEvent.ACTION_CANCEL){clearPointer(id);return true;}
-            return true;
+            if(a==MotionEvent.ACTION_MOVE){for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==cameraPointer){float cx=e.getX(p),cy=e.getY(p);renderer.addLook(cx-cameraLastX,cy-cameraLastY);cameraLastX=cx;cameraLastY=cy;}for(int p=0;p<e.getPointerCount();p++)if(e.getPointerId(p)==movePointer){float jx=d(100),jy=getHeight()-d(105);moveX=Math.max(-1,Math.min(1,(e.getX(p)-jx)/d(48)));moveY=Math.max(-1,Math.min(1,(jy-e.getY(p))/d(48)));renderer.game.sx=moveX;renderer.game.sy=moveY;invalidate();}return true;}
+            if(a==MotionEvent.ACTION_UP||a==MotionEvent.ACTION_POINTER_UP||a==MotionEvent.ACTION_CANCEL){if(a==MotionEvent.ACTION_CANCEL){if(movePointer!=-1)clearPointer(movePointer);if(cameraPointer!=-1)clearPointer(cameraPointer);if(firePointer!=-1)clearPointer(firePointer);if(aimPointer!=-1)clearPointer(aimPointer);if(sprintPointer!=-1)clearPointer(sprintPointer);if(crouchPointer!=-1)clearPointer(crouchPointer);}else clearPointer(id);return true;}return true;
         }
     }
 
