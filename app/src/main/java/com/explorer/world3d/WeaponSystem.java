@@ -21,6 +21,7 @@ final class WeaponSystem {
  static final int[] PELLETS={1,1,1,9,1,1,1};
  static final float[] ADS_CAMERA_SCALE={0.78f,0.82f,0.76f,0.88f,0.54f,0.94f,0.94f};
  static final float[] RECOIL_RECOVERY={6.4f,5.1f,5.5f,4.1f,3.2f,2.8f,2.5f};
+ static final float[] MODEL_LENGTH={0.30f,0.58f,0.72f,0.68f,0.88f,0.82f,0.82f};
  static boolean isAutomatic(int id){return id>=0&&id<FIRE_MODE.length&&FIRE_MODE[id]==FULL_AUTO;}
  private WeaponSystem(){}
 }
