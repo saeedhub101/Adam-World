@@ -137,6 +137,8 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
     private double savedCityLat, savedCityLon;
     private Mesh[] vehicleModels;
     private AssetMeshLoader.Model[] importedVehicleModels;
+    private AssetMeshLoader.Model[] importedWeaponModels;
+    private final float[] weaponMatrix = new float[16];
     private Mesh[] vehicleGlassModels;
     private Mesh wheelMesh;
     private final float[] wheelMatrix = new float[16];
@@ -395,6 +397,19 @@ public class CityRenderer implements GLSurfaceView.Renderer, Game.World {
         vehicleModels = ProceduralVehicleModels.buildAll();
         // Prefer build-time converted real meshes; procedural meshes remain a safe fallback.
         importedVehicleModels = new AssetMeshLoader.Model[ProceduralVehicleModels.COUNT];
+        importedWeaponModels = new AssetMeshLoader.Model[6];
+        String[] weaponModelFiles = {
+                "models/runtime/weapons/pistol.awmesh",
+                "models/runtime/weapons/submachine-gun.awmesh",
+                "models/runtime/weapons/assault-rifle.awmesh",
+                "models/runtime/weapons/shotgun.awmesh",
+                "models/runtime/weapons/sniper-rifle.awmesh",
+                "models/runtime/weapons/rocket-launcher.awmesh"
+        };
+        for (int i=0;i<weaponModelFiles.length;i++) {
+            importedWeaponModels[i] = AssetMeshLoader.load(ctx,weaponModelFiles[i]);
+            if(importedWeaponModels[i]==null) Log.e("AdamWorldWeapon","Failed to load imported weapon mesh: "+weaponModelFiles[i]);
+        }
         // The user VRM is the playable character; preserve its authored upright forward pose.
         playerCharacterAsset = SkinnedAssetLoader.load(ctx, "models/runtime/characters/pedestrian-saeed-vrm.awmesh5");
         String[] pedestrianFiles = {
@@ -1737,6 +1752,7 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
         bindTex(tex.white,tex.black);
         playerCharacterAsset.mesh.draw();
         GLES20.glUniform1f(uSkinning,0f);
+        drawWeaponModel(weaponId,aiming,recoil,muzzleFlash,reloadSeconds,reloadDuration,1.0f);
     }
 
     /** اللاعب: نسخة طفولية من الشخصية الإجرائية نفسها مع مفاصل ووجه وملابس مولّدة. */
@@ -1793,35 +1809,37 @@ importedVehicleModels[ProceduralVehicleModels.SUV] = AssetMeshLoader.load(ctx, "
             drawHumanPart(rig[8],side*.052f,1.645f,.127f,0,0,0,0,1,1,1);
             drawHumanPart(rig[12],side*.052f,1.667f,.137f,0,0,0,0,1,1,1);
             drawHumanPart(rig[15],side*.43f,.78f,.02f,arm*.42f,0,0,0,1,1,1);
-            if(side>0&&weaponId>=0&&weaponId<WeaponSystem.NAME.length){
-                float gunRot=arm*.42f + recoil*10f + reloadMotion*34f;
-                if(weaponId==0){
-                    // Pistol: slide, muzzle and grip are separate solid parts held in the palm.
-                    drawHumanPartY(cube,.40f,.92f,.19f,gunRot,-90f,0,0,0,.25f,.075f,.060f);
-                    drawHumanPartY(cube,.53f,.93f,.19f,gunRot,-90f,0,0,0,.13f,.035f,.038f);
-                    drawHumanPartY(cube,.34f,.82f,.20f,gunRot,-90f,0,0,0,.075f,.15f,.060f);
-                    if(muzzleFlash>0.02f) drawHumanPartY(cube,.70f,.93f,.19f,gunRot,-90f,0,0,0,.10f*muzzleFlash,.10f*muzzleFlash,.10f*muzzleFlash);
-                }else if(weaponId>=5){
-                    // Shoulder-fired launcher: long reinforced tube, muzzle ring, rear cap and stabilizing fins.
-                    drawHumanPartY(cube,.48f,1.00f,.18f,gunRot,-90f,0,0,0,.62f,.125f,.125f);
-                    drawHumanPartY(cube,.91f,1.00f,.18f,gunRot,-90f,0,0,0,.095f,.17f,.17f);
-                    drawHumanPartY(cube,.02f,1.00f,.18f,gunRot,-90f,0,0,0,.12f,.15f,.15f);
-                    drawHumanPartY(cube,.36f,.85f,.20f,gunRot,-90f,0,0,0,.12f,.20f,.075f);
-                    drawHumanPartY(cube,.74f,.88f,.18f,gunRot,-90f,0,0,0,.10f,.08f,.24f);
-                    if(muzzleFlash>0.02f)drawHumanPartY(cube,1.04f,1.00f,.18f,gunRot,-90f,0,0,0,.18f*muzzleFlash,.18f*muzzleFlash,.18f*muzzleFlash);
-                }else{
-                    // Long guns: receiver, barrel, stock, foregrip and magazine create a readable silhouette.
-                    drawHumanPartY(cube,.43f,.94f,.19f,gunRot,-90f,0,0,0,.30f,.085f,.070f);
-                    drawHumanPartY(cube,.68f,.96f,.19f,gunRot,-90f,0,0,0,.34f,.035f,.035f);
-                    drawHumanPartY(cube,.22f,.94f,.19f,gunRot,-90f,0,0,0,.20f,.070f,.065f);
-                    drawHumanPartY(cube,.39f,.82f-reloadMotion*.075f,.20f,gunRot,-90f,0,0,0,.10f,.18f,.060f);
-                    if(weaponId==4)drawHumanPartY(cube,.75f,.96f,.19f,gunRot,-90f,0,0,0,.12f,.07f,.06f);
-                    if(weaponId==3)drawHumanPartY(cube,.48f,.80f,.20f,gunRot,-90f,0,0,0,.11f,.18f,.065f);
-                    if(muzzleFlash>0.02f) drawHumanPartY(cube,1.02f,.96f,.19f,gunRot,-90f,0,0,0,.13f*muzzleFlash,.11f*muzzleFlash,.11f*muzzleFlash);
-                }
-            }
+
         }
         drawHumanPart(rig[9],0,1.555f,.137f,0,0,0,0,1,1,1);
+        drawWeaponModel(weaponId,aiming,recoil,muzzleFlash,reloadSeconds,reloadDuration,.40f);
+    }
+
+    /** Draws the imported CC0 GLB-derived mesh at the right-hand grip. */
+    private void drawWeaponModel(int weaponId,boolean aiming,float recoil,float muzzleFlash,
+                                 float reloadSeconds,float reloadDuration,float modelScale) {
+        if(importedWeaponModels==null||weaponId<0||weaponId>=WeaponSystem.NAME.length)return;
+        int modelIndex=weaponId==0?0:weaponId==1?1:weaponId==2?2:weaponId==3?3:weaponId==4?4:5;
+        if(modelIndex>=importedWeaponModels.length)return;
+        AssetMeshLoader.Model model=importedWeaponModels[modelIndex];
+        if(model==null)return;
+        float reloadProgress=reloadDuration>0f?Math.max(0f,Math.min(1f,1f-reloadSeconds/reloadDuration)):0f;
+        float reloadMotion=reloadSeconds>0f?(float)Math.sin(reloadProgress*Math.PI):0f;
+        System.arraycopy(base,0,weaponMatrix,0,16);
+        Matrix.translateM(weaponMatrix,0,.39f,.91f,.18f);
+        Matrix.rotateM(weaponMatrix,0,-(aiming?3f:0f)-recoil*7f-reloadMotion*24f,1f,0f,0f);
+        Matrix.rotateM(weaponMatrix,0,reloadMotion*8f,0f,0f,1f);
+        Matrix.scaleM(weaponMatrix,0,modelScale,modelScale,modelScale);
+        GLES20.glUniformMatrix4fv(uModel,1,false,weaponMatrix,0);
+        GLES20.glUniform1f(uSkinning,0f);
+        GLES20.glUniform1f(uPbr,0f);
+        GLES20.glUniform1f(uGlass,0f);
+        GLES20.glUniform1f(uWater,0f);
+        GLES20.glUniform3f(uTint,1f,1f,1f);
+        GLES20.glUniform1f(uEmisK,muzzleFlash>0.02f?Math.min(.8f,muzzleFlash*.45f):0f);
+        model.draw(uMatParams,tex.white);
+        GLES20.glUniform1f(uEmisK,0f);
+        GLES20.glUniform3f(uTint,1f,1f,1f);
     }
 
     private void drawHumanPartY(Mesh mesh,float px,float py,float pz,float rz,float ry,

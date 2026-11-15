@@ -61,6 +61,7 @@ jobs:
           python -m pip install --disable-pip-version-check --no-input numpy trimesh pillow scipy fast-simplification
           python -m py_compile app/tools/build_adam_skinned_mesh.py
           python app/tools/build_runtime_meshes.py
+          python app/tools/build_weapon_meshes.py
           python app/tools/build_adam_skinned_mesh.py
           test -s app/src/main/assets/models/runtime/characters/adam.awmesh5
           echo "Legacy Adam pedestrian asset ready: $(stat -c%s app/src/main/assets/models/runtime/characters/adam.awmesh5) bytes"
