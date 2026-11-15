@@ -666,38 +666,52 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         }
     }
 
-    /** Responsive, clamped placement for all mobile Battle Royale touch controls. */
+    /** Single contextual Battle Royale layout. Coordinates are normalized and clamped to the safe screen. */
     private void layoutBattleHudControls(FrameLayout panel, java.util.ArrayList<Button> controls) {
         int w=panel.getWidth(), h=panel.getHeight();
         if(w<=0 || h<=0) return;
+        boolean driving=renderer!=null && renderer.game.driving;
+        boolean aircraft=driving && (renderer.game.vehicleType==ProceduralVehicleModels.HELICOPTER
+                || renderer.game.vehicleType==ProceduralVehicleModels.AIRPLANE);
+        boolean build=renderer!=null && renderer.game.buildMode;
         for(Button button:controls){
             String label=String.valueOf(button.getContentDescription());
-            float x=.88f,y=.72f; int size=46; boolean visible=true;
-            if(label.startsWith("خانة ")){ int slot=0; try{slot=Integer.parseInt(label.substring(5))-1;}catch(Exception ignored){} x=.31f+slot*.095f; y=.925f; size=34; }
-            else if(label.contains("إطلاق")){x=.93f;y=.76f;size=68;}
-            else if(label.contains("تصويب")){x=.775f;y=.80f;size=48;}
-            else if(label.contains("قفز")){x=.925f;y=.585f;size=52;}
-            else if(label.contains("انحناء")){x=.835f;y=.665f;size=46;}
-            else if(label.contains("تلقيم")){x=.895f;y=.475f;size=42;}
-            else if(label.equals("ركض")){x=.225f;y=.44f;size=44;}
-            else if(label.contains("انزلاق سريع")){x=.315f;y=.44f;size=42;}
-            else if(label.contains("لكم")){x=.755f;y=.585f;size=44;}
-            else if(label.contains("التقاط")){x=.755f;y=.475f;size=44;}
-            else if(label.contains("علاج")){x=.575f;y=.875f;size=38;}
-            else if(label.contains("درع")){x=.655f;y=.875f;size=38;}
-            else if(label.contains("جمع الموارد")){x=.875f;y=.385f;size=44;}
-            else if(label.equals("بناء")){x=.77f;y=.855f;size=38;}
-            else if(label.equals("قطعة البناء")){x=.85f;y=.855f;size=38;}
-            else if(label.equals("تأكيد البناء")){x=.93f;y=.855f;size=40;}
-            else visible=false;
-            if(label.equals("قطعة البناء") || label.equals("تأكيد البناء")) visible = visible && renderer != null && renderer.game.buildMode;
+            float x=.88f,y=.70f; int size=48; boolean visible=true;
+            if(label.startsWith("خانة ")){
+                int slot=0; try{slot=Integer.parseInt(label.substring(5))-1;}catch(Exception ignored){}
+                x=.39f+slot*.055f; y=.945f; size=42;
+                visible=!driving;
+            } else if(label.contains("إطلاق")){x=.925f;y=.755f;size=70;visible=!driving&&!build;}
+            else if(label.contains("تصويب")){x=.805f;y=.805f;size=54;visible=!driving&&!build;}
+            else if(label.contains("قفز")){x=.925f;y=.565f;size=54;visible=!driving&&!build;}
+            else if(label.contains("انحناء")){x=.825f;y=.655f;size=46;visible=!driving&&!build;}
+            else if(label.contains("تلقيم")){x=.895f;y=.455f;size=42;visible=!driving&&!build;}
+            else if(label.equals("ركض")){x=.19f;y=.69f;size=46;visible=!driving&&!build;}
+            else if(label.contains("جمع الموارد")){x=.72f;y=.66f;size=48;visible=!driving&&!build;}
+            else if(label.contains("التقاط")){x=.72f;y=.47f;size=46;visible=!driving&&!build;}
+            else if(label.contains("علاج")){x=.72f;y=.92f;size=40;visible=!driving&&!build;}
+            else if(label.contains("درع")){x=.80f;y=.92f;size=40;visible=!driving&&!build;}
+            else if(label.equals("بناء")){x=.72f;y=.82f;size=46;visible=!driving;}
+            else if(label.equals("قطعة البناء")){x=.82f;y=.82f;size=46;visible=!driving&&build;}
+            else if(label.equals("تأكيد البناء")){x=.92f;y=.82f;size=50;visible=!driving&&build;}
+            else if(label.contains("دخول / خروج")){x=.91f;y=.91f;size=48;visible=driving;}
+            else if(label.equals("تسارع")){x=.92f;y=.72f;size=60;visible=driving&&!aircraft;}
+            else if(label.equals("فرامل")){x=.81f;y=.72f;size=50;visible=driving&&!aircraft;}
+            else if(label.equals("زامور")){x=.72f;y=.83f;size=42;visible=driving&&!aircraft;}
+            else if(label.equals("زيادة الدفع")){x=.92f;y=.72f;size=54;visible=aircraft;}
+            else if(label.equals("تقليل الدفع")){x=.81f;y=.72f;size=48;visible=aircraft;}
+            else if(label.equals("رفع المقدمة")){x=.92f;y=.55f;size=52;visible=aircraft;}
+            else if(label.equals("خفض المقدمة")){x=.81f;y=.55f;size=48;visible=aircraft;}
+            else if(label.equals("مكابح")){x=.72f;y=.84f;size=44;visible=aircraft&&renderer.game.vehicleType==ProceduralVehicleModels.AIRPLANE;}
+            else if(label.equals("العجلات")){x=.82f;y=.84f;size=44;visible=aircraft&&renderer.game.vehicleType==ProceduralVehicleModels.AIRPLANE;}
             if(!visible){button.setVisibility(View.GONE);continue;}
             button.setVisibility(View.VISIBLE);
-            int px=dp(size), py=dp(size), cx=Math.round(w*x), cy=Math.round(h*y);
-            FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(px,py,Gravity.TOP|Gravity.START);
+            int px=dp(size),cx=Math.round(w*x),cy=Math.round(h*y);
+            FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(px,px,Gravity.TOP|Gravity.START);
             lp.leftMargin=Math.max(dp(4),Math.min(Math.max(dp(4),w-px-dp(4)),cx-px/2));
-            lp.topMargin=Math.max(dp(4),Math.min(Math.max(dp(4),h-py-dp(4)),cy-py/2));
+            lp.topMargin=Math.max(dp(4),Math.min(Math.max(dp(4),h-px-dp(4)),cy-px/2));
             button.setLayoutParams(lp);
+            button.setElevation(dp(label.contains("إطلاق")?12:7));
         }
     }
     private void loadWeaponState(){
