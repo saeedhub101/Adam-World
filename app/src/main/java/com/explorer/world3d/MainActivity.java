@@ -1056,14 +1056,13 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
         tp.setMargins(dp(8), dp(8), dp(8), 0);
         // City selection and search are available from Pause / Settings, never over the driving view.
 
-        // العصا
+        // Fortnite-style Battle Royale HUD: one joystick, one camera zone and one contextual action layer.
         JoystickView js = new JoystickView(this);
         touchMoveJoystick = js;
         js.setListener(new JoystickView.Listener() {
             @Override public void onMove(float x, float y) {
                 Game g = renderer.game;
                 if (g.driving) {
-                    // The same persistent left touch stick steers and drives the vehicle.
                     g.vehicleSteeringInput = x;
                     g.vehicleForwardInput = y;
                     g.sx = g.sy = 0f;
@@ -1073,257 +1072,116 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
                 }
             }
         });
-        makeHudElementEditable(js,"hud_movement_joystick");
-        FrameLayout.LayoutParams jp = new FrameLayout.LayoutParams(dp(168), dp(168), Gravity.BOTTOM | Gravity.START);
-        jp.setMargins(dp(28), 0, 0, dp(34));
+        FrameLayout.LayoutParams jp = new FrameLayout.LayoutParams(dp(156), dp(156), Gravity.BOTTOM | Gravity.START);
+        jp.setMargins(dp(24), 0, 0, dp(28));
         root.addView(js, jp);
 
-        // Mobile action pad: actions reuse the exact Game requests used by the gamepad.
-        LinearLayout actionPad = new LinearLayout(this);
-        actionPad.setOrientation(LinearLayout.VERTICAL);
-        actionPad.setGravity(Gravity.CENTER);
-        actionPad.setPadding(dp(4), dp(4), dp(4), dp(4));
-        actionPad.setBackgroundColor(Color.TRANSPARENT);
-        // Keep the action HUD inside the visible safe area on small phones.
-        // A scroll container prevents the lower controls from being clipped off-screen.
-        ScrollView actionScroll = new ScrollView(this);
-        actionScroll.setFillViewport(false);
-        actionScroll.setVerticalScrollBarEnabled(false);
-        actionScroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        actionScroll.addView(actionPad, new ScrollView.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         tapFireMode = getSharedPreferences("adam_world_controls", MODE_PRIVATE).getBoolean("tap_fire", false);
-        touchHudLeft = getSharedPreferences("adam_world_controls", MODE_PRIVATE).getBoolean("hud_left", false);
-        FrameLayout.LayoutParams actionParams = new FrameLayout.LayoutParams(
-                dp(248), dp(430), Gravity.BOTTOM | (touchHudLeft ? Gravity.START : Gravity.END));
-        actionParams.setMargins(touchHudLeft ? dp(8) : 0, 0, touchHudLeft ? 0 : dp(8), dp(16));
-        touchActionScrollParams = actionParams;
-        touchActionPad = actionPad;
-        touchActionScroll = actionScroll;
-        makeHudElementEditable(actionScroll,"hud_action_controls_panel");
-        if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) {
-            root.addView(actionScroll, actionParams);
-        } else {
-            actionScroll.setVisibility(View.GONE);
-        }
+        touchHudLeft = false;
+        battleHudOverlay = new FrameLayout(this);
+        battleHudOverlay.setClipChildren(false);
+        battleHudOverlay.setClipToPadding(false);
+        battleHudOverlay.setBackgroundColor(Color.TRANSPARENT);
+        battleHudButtons = new java.util.ArrayList<>();
+        touchActionPad = battleHudOverlay;
+        touchActionScroll = null;
+        touchCombatRow = null;
+        touchGroundVehicleRow = null;
+        touchFlightRow = null;
+        touchFlightUtilityRow = null;
 
-        LinearLayout combatControls = new LinearLayout(this);
-        combatControls.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout combatRow = new LinearLayout(this);
-        combatRow.setGravity(Gravity.CENTER);
-        Button jumpTouch = touchAction("قفز", () -> runOnGl(() -> {
-            if (!renderer.game.driving) renderer.game.jumpRequested = true;
-        }), null);
-        Button punchTouch = touchAction("لكم", () -> runOnGl(() -> {
-            if (!renderer.game.driving) renderer.game.punchRequested = true;
-        }), null);
-        combatRow.addView(jumpTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        combatRow.addView(punchTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        combatControls.addView(combatRow);
+        final java.util.ArrayList<Button> controls = battleHudButtons;
+        Button fire = touchAction("إطلاق", () -> runOnGl(() -> {
+            if (tapFireMode) renderer.game.weaponFireRequested = true;
+            else renderer.game.weaponFireHeld = true;
+        }), () -> { if (!tapFireMode) runOnGl(() -> renderer.game.weaponFireHeld = false); });
+        fire.setText("●"); fire.setTextSize(30);
+        controls.add(fire);
 
-        LinearLayout combatRow2 = new LinearLayout(this);
-        combatRow2.setGravity(Gravity.CENTER);
-        Button crouchTouch = touchAction("انحناء / انزلاق", () -> runOnGl(() -> {
-            if (!renderer.game.driving) renderer.game.crouching = true;
-        }), () -> runOnGl(() -> renderer.game.crouching = false));
-        Button reloadQuickTouch = touchAction("تلقيم", () -> runOnGl(() -> renderer.game.reloadRequested = true), null);
-        combatRow2.addView(crouchTouch, new LinearLayout.LayoutParams(0, dp(46), 1.2f));
-        combatRow2.addView(reloadQuickTouch, new LinearLayout.LayoutParams(0, dp(46), 0.8f));
-        combatControls.addView(combatRow2);
-        LinearLayout harvestRow=new LinearLayout(this);harvestRow.setGravity(Gravity.CENTER);
-        Button harvestTouch=touchAction("جمع الموارد / تحطيم",()->runOnGl(()->renderer.game.harvestRequested=true),null);
-        harvestRow.addView(harvestTouch,new LinearLayout.LayoutParams(0,dp(44),1f));
-        combatControls.addView(harvestRow);
+        Button aim = touchAction("تصويب", () -> runOnGl(() -> renderer.game.weaponAimHeld = true),
+                () -> runOnGl(() -> renderer.game.weaponAimHeld = false));
+        aim.setText("◎"); controls.add(aim);
 
-        LinearLayout runRow = new LinearLayout(this);
-        runRow.setGravity(Gravity.CENTER);
+        Button jump = touchAction("قفز", () -> runOnGl(() -> { if (!renderer.game.driving) renderer.game.jumpRequested = true; }), null);
+        jump.setText("↑"); controls.add(jump);
+
+        Button crouch = touchAction("انحناء", () -> runOnGl(() -> { if (!renderer.game.driving) renderer.game.crouching = true; }),
+                () -> runOnGl(() -> renderer.game.crouching = false));
+        crouch.setText("↓"); controls.add(crouch);
+
+        Button reload = touchAction("تلقيم", () -> runOnGl(() -> renderer.game.reloadRequested = true), null);
+        reload.setText("↻"); controls.add(reload);
+
         touchSprintButton = touchAction("ركض", () -> runOnGl(() -> renderer.game.sprint = true),
                 () -> runOnGl(() -> renderer.game.sprint = false));
-        touchDodgeButton = touchAction("انزلاق سريع", () -> runOnGl(() -> {
-            if (!renderer.game.driving) { renderer.game.crouching = true; renderer.game.sprint = true; }
-        }), () -> runOnGl(() -> { renderer.game.crouching = false; renderer.game.sprint = false; }));
-        runRow.addView(touchSprintButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        runRow.addView(touchDodgeButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        combatControls.addView(runRow);
-        LinearLayout weaponRow=new LinearLayout(this); weaponRow.setGravity(Gravity.CENTER);
-        Button aimTouch=touchAction("تصويب",()->runOnGl(()->renderer.game.weaponAimHeld=true),()->runOnGl(()->renderer.game.weaponAimHeld=false));
-        Button fireTouch=touchAction("إطلاق",()->runOnGl(()->{if(tapFireMode)renderer.game.weaponFireRequested=true;else renderer.game.weaponFireHeld=true;}),()->{if(!tapFireMode)runOnGl(()->renderer.game.weaponFireHeld=false);});
-        weaponRow.addView(aimTouch,new LinearLayout.LayoutParams(0,dp(58),1f)); weaponRow.addView(fireTouch,new LinearLayout.LayoutParams(dp(68),dp(68))); combatControls.addView(weaponRow);
-        LinearLayout quickbarRow=new LinearLayout(this);quickbarRow.setGravity(Gravity.CENTER);
-        for(int slot=0;slot<5;slot++){
-            final int quickSlot=slot;
-            Button quick=touchAction("خانة "+(slot+1),()->runOnGl(()->{
-                if(renderer.game.selectQuickbarSlot(quickSlot))runOnUiThread(this::saveWeaponState);
-            }),null);
-            quickbarButtons[slot]=quick;
-            quickbarRow.addView(quick,new LinearLayout.LayoutParams(0,dp(40),1f));
-        }
-        combatControls.addView(quickbarRow);
-        Button lootInteractButton=touchAction("التقاط / تبديل السلاح",()->runOnGl(()->renderer.game.lootInteractionRequested=true),null);
-        combatControls.addView(lootInteractButton,new LinearLayout.LayoutParams(-1,dp(40)));
-        LinearLayout consumableRow=new LinearLayout(this);consumableRow.setGravity(Gravity.CENTER);
-        consumableRow.addView(touchAction("علاج +50",()->runOnGl(()->renderer.game.useMedkitRequested=true),null),new LinearLayout.LayoutParams(0,dp(40),1f));
-        consumableRow.addView(touchAction("درع +25",()->runOnGl(()->renderer.game.useShieldPotionRequested=true),null),new LinearLayout.LayoutParams(0,dp(40),1f));
-        combatControls.addView(consumableRow);
-        LinearLayout weaponRow2=new LinearLayout(this); weaponRow2.setGravity(Gravity.CENTER);
-        weaponRow2.addView(touchAction("الحقيبة",()->showInventory(),null),new LinearLayout.LayoutParams(0,dp(44),0.9f));
-        weaponRow2.addView(touchAction("عجلة السلاح",()->{weaponWheelOpen=true;weaponWheelView.showWheel();},null),new LinearLayout.LayoutParams(0,dp(44),1f));
-        weaponRow2.addView(touchAction("متجر الأسلحة",()->showWeaponShop(),null),new LinearLayout.LayoutParams(0,dp(44),1.1f)); combatControls.addView(weaponRow2);
-        LinearLayout hudRow=new LinearLayout(this);hudRow.setGravity(Gravity.CENTER);
-        Button fireModeButton=btn("إطلاق: "+(tapFireMode?"نقرة":"مستمر"));
-        fireModeButton.setTextSize(11);fireModeButton.setMinHeight(dp(44));
-        fireModeButton.setOnClickListener(v->{tapFireMode=!tapFireMode;getSharedPreferences("adam_world_controls",MODE_PRIVATE).edit().putBoolean("tap_fire",tapFireMode).apply();fireModeButton.setText("إطلاق: "+(tapFireMode?"نقرة":"مستمر"));});
-        Button buildModeButton=btn("بناء: متوقف");buildModeButton.setTextSize(11);buildModeButton.setMinHeight(dp(44));
-        buildModeButton.setOnClickListener(v->{final boolean enabled=!renderer.game.buildMode;runOnGl(()->{renderer.game.buildMode=enabled;renderer.game.buildEditMode=false;});buildModeButton.setText(enabled?"بناء: نشط":"بناء: متوقف");});
-        Button buildTypeButton=btn("قطعة: جدار");buildTypeButton.setTextSize(11);buildTypeButton.setMinHeight(dp(44));
-        buildTypeButton.setOnClickListener(v->{runOnGl(()->renderer.game.cycleBuildTypeRequested=true);String[] types={"جدار","أرضية","منحدر"};int next=(buildTypeButton.getTag() instanceof Integer?(Integer)buildTypeButton.getTag()+1:1)%3;buildTypeButton.setTag(next);buildTypeButton.setText("قطعة: "+types[next]);});
-        LinearLayout buildRow=new LinearLayout(this);buildRow.setGravity(Gravity.CENTER);
-        Button placeBuildButton=btn("بناء / تأكيد التعديل");placeBuildButton.setTextSize(11);placeBuildButton.setMinHeight(dp(44));placeBuildButton.setOnClickListener(v->runOnGl(()->renderer.game.buildRequested=true));
-        Button editBuildButton=btn("تشغيل / إيقاف التحرير");editBuildButton.setTextSize(11);editBuildButton.setMinHeight(dp(44));editBuildButton.setOnClickListener(v->runOnGl(()->renderer.game.editRequested=true));
-        buildRow.addView(buildModeButton,new LinearLayout.LayoutParams(0,dp(44),1f));buildRow.addView(buildTypeButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(buildRow);
-        LinearLayout buildRow2=new LinearLayout(this);buildRow2.setGravity(Gravity.CENTER);
-        buildRow2.addView(placeBuildButton,new LinearLayout.LayoutParams(0,dp(44),1f));buildRow2.addView(editBuildButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(buildRow2);
-        Button deleteBuildButton=btn("حذف القطعة المحددة");deleteBuildButton.setTextSize(11);deleteBuildButton.setMinHeight(dp(42));
-        deleteBuildButton.setOnClickListener(v->runOnGl(()->renderer.game.removeBuildRequested=true));
-        LinearLayout buildRow3=new LinearLayout(this);buildRow3.setGravity(Gravity.CENTER);
-        buildRow3.addView(deleteBuildButton,new LinearLayout.LayoutParams(0,dp(42),1f));combatControls.addView(buildRow3);
-        Button hudSideButton=btn("مكان الأزرار: "+(touchHudLeft?"يسار":"يمين"));
-        hudSideButton.setTextSize(11);hudSideButton.setMinHeight(dp(44));
-        Button hudEditButton=btn("تخصيص HUD");hudEditButton.setTextSize(11);hudEditButton.setMinHeight(dp(44));
-        hudEditButton.setOnClickListener(v->{hudEditMode=true;hudEditButton.setText("إنهاء التخصيص");Toast.makeText(this,"اسحب الأزرار والعناصر لتغيير أماكنها، واضغط العنصر لتغيير الحجم والشفافية",Toast.LENGTH_SHORT).show();});
-        hudEditButton.setOnTouchListener((v,e)->{
-            if(!hudEditMode)return false;
-            if(e.getActionMasked()==MotionEvent.ACTION_DOWN)return true;
-            if(e.getActionMasked()==MotionEvent.ACTION_UP){
-                hudEditMode=false;hudEditButton.setText("تخصيص HUD");
-                Toast.makeText(this,"تم حفظ تخصيص HUD",Toast.LENGTH_SHORT).show();return true;
-            }
-            return true;
-        });
-        hudSideButton.setOnClickListener(v->{touchHudLeft=!touchHudLeft;getSharedPreferences("adam_world_controls",MODE_PRIVATE).edit().putBoolean("hud_left",touchHudLeft).apply();touchActionScrollParams.gravity=Gravity.BOTTOM|(touchHudLeft?Gravity.START:Gravity.END);touchActionScrollParams.setMargins(touchHudLeft?dp(8):0,0,touchHudLeft?0:dp(8),dp(16));touchActionScroll.setLayoutParams(touchActionScrollParams);hudSideButton.setText("مكان الأزرار: "+(touchHudLeft?"يسار":"يمين"));});
-        hudRow.addView(fireModeButton,new LinearLayout.LayoutParams(0,dp(44),1f));hudRow.addView(hudSideButton,new LinearLayout.LayoutParams(0,dp(44),1f));combatControls.addView(hudRow);
-        LinearLayout hudEditRow=new LinearLayout(this);hudEditRow.setGravity(Gravity.CENTER);
-        hudEditRow.addView(hudEditButton,new LinearLayout.LayoutParams(0,dp(42),1f));combatControls.addView(hudEditRow);
-        // Responsive Battle Royale HUD: controls use normalized display coordinates.
-        FrameLayout battleHud = new FrameLayout(this);
-        battleHudOverlay = battleHud;
-        battleHud.setClipChildren(false);
-        battleHud.setClipToPadding(false);
-        battleHud.setBackgroundColor(Color.TRANSPARENT);
-        java.util.ArrayList<Button> actionButtons = new java.util.ArrayList<>();
-        battleHudButtons = actionButtons;
-        for (int ri=0; ri<combatControls.getChildCount(); ri++) {
-            View sourceRow=combatControls.getChildAt(ri);
-            if (sourceRow instanceof ViewGroup) {
-                ViewGroup group=(ViewGroup)sourceRow;
-                for (int bi=group.getChildCount()-1; bi>=0; bi--) {
-                    View child=group.getChildAt(bi);
-                    if (child instanceof Button && child.getContentDescription()!=null) {
-                        actionButtons.add((Button)child);
-                        group.removeViewAt(bi);
-                    }
-                }
-            }
-        }
-        combatControls.removeAllViews();
-        Button buildModeTouch=touchAction("بناء",()->runOnGl(()->{ renderer.game.buildMode=!renderer.game.buildMode; renderer.game.buildEditMode=false; }),null);
-        Button buildPieceTouch=touchAction("قطعة البناء",()->runOnGl(()->renderer.game.cycleBuildTypeRequested=true),null);
-        Button buildPlaceTouch=touchAction("تأكيد البناء",()->runOnGl(()->renderer.game.buildRequested=true),null);
-        actionButtons.add(buildModeTouch); actionButtons.add(buildPieceTouch); actionButtons.add(buildPlaceTouch);
-        for (Button control : actionButtons) {
-            String label=String.valueOf(control.getContentDescription());
-            boolean supported = label.contains("إطلاق") || label.contains("تصويب") || label.contains("قفز")
-                    || label.contains("انحناء") || label.contains("تلقيم") || label.equals("ركض")
-                    || label.contains("انزلاق سريع") || label.contains("لكم") || label.startsWith("خانة ")
-                    || label.contains("التقاط") || label.contains("علاج") || label.contains("درع")
-                    || label.contains("جمع الموارد") || label.equals("بناء")
-                    || label.equals("قطعة البناء") || label.equals("تأكيد البناء");
-            if (supported) battleHud.addView(control,new FrameLayout.LayoutParams(dp(48),dp(48)));
-        }
-        battleHud.addOnLayoutChangeListener((v,l,t,r,b,oldL,oldT,oldR,oldB) -> layoutBattleHudControls(battleHud,actionButtons));
-        touchCombatRow = combatControls; touchCombatRow.setVisibility(View.GONE);
-        touchActionPad = actionPad; actionScroll.setVisibility(View.GONE);
+        touchSprintButton.setText("⚡"); controls.add(touchSprintButton);
 
+        Button harvest = touchAction("جمع الموارد", () -> runOnGl(() -> renderer.game.harvestRequested = true), null);
+        harvest.setText("⛏"); controls.add(harvest);
 
-        LinearLayout vehicleRow = new LinearLayout(this);
-        vehicleRow.setGravity(Gravity.CENTER);
-        Button vehicleTouch = touchAction("دخول / خروج", () -> runOnGl(() -> renderer.toggleCar()), null);
-        Button vehicleTypeTouch = touchAction("اختيار مركبة", () -> showVehicleSelector(), null);
-        touchVehicleButton = vehicleTouch;
-        touchVehicleTypeButton = vehicleTypeTouch;
-        vehicleRow.addView(vehicleTouch, new LinearLayout.LayoutParams(0, dp(46), 1.45f));
-        vehicleRow.addView(vehicleTypeTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        actionPad.addView(vehicleRow);
+        Button pickup = touchAction("التقاط", () -> runOnGl(() -> renderer.game.lootInteractionRequested = true), null);
+        pickup.setText("⇧"); controls.add(pickup);
 
-        LinearLayout groundVehicleRow = new LinearLayout(this);
-        groundVehicleRow.setOrientation(LinearLayout.VERTICAL);
-        groundVehicleRow.setGravity(Gravity.CENTER);
-        LinearLayout steeringRow = new LinearLayout(this);
-        steeringRow.setGravity(Gravity.CENTER);
-        Button steerLeftTouch = touchAction("◀", () -> { touchSteerLeftHeld = true; refreshTouchVehicleSteering(); },
-                () -> { touchSteerLeftHeld = false; refreshTouchVehicleSteering(); });
-        Button steerRightTouch = touchAction("▶", () -> { touchSteerRightHeld = true; refreshTouchVehicleSteering(); },
-                () -> { touchSteerRightHeld = false; refreshTouchVehicleSteering(); });
-        steeringRow.addView(steerLeftTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        steeringRow.addView(steerRightTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        groundVehicleRow.addView(steeringRow);
-        LinearLayout pedalRow = new LinearLayout(this);
-        pedalRow.setGravity(Gravity.CENTER);
-        Button gasTouch = touchAction("تسارع", () -> { touchVehicleGasHeld = true; refreshTouchVehicleThrottle(); },
+        for (int slot = 0; slot < 5; slot++) {
+            final int quickSlot = slot;
+            Button quick = touchAction("خانة " + (slot + 1), () -> runOnGl(() -> {
+                if (renderer.game.selectQuickbarSlot(quickSlot)) runOnUiThread(this::saveWeaponState);
+            }), null);
+            quick.setText(slot == 0 ? "1" : String.valueOf(slot + 1));
+            quickbarButtons[slot] = quick;
+            controls.add(quick);
+        }
+
+        Button medkit = touchAction("علاج", () -> runOnGl(() -> renderer.game.useMedkitRequested = true), null);
+        medkit.setText("+"); controls.add(medkit);
+        Button shield = touchAction("درع", () -> runOnGl(() -> renderer.game.useShieldPotionRequested = true), null);
+        shield.setText("◇"); controls.add(shield);
+
+        Button buildMode = touchAction("بناء", () -> runOnGl(() -> {
+            renderer.game.buildMode = !renderer.game.buildMode;
+            renderer.game.buildEditMode = false;
+        }), null);
+        buildMode.setText("▦"); controls.add(buildMode);
+        Button buildPiece = touchAction("قطعة البناء", () -> runOnGl(() -> renderer.game.cycleBuildTypeRequested = true), null);
+        buildPiece.setText("▱"); controls.add(buildPiece);
+        Button buildPlace = touchAction("تأكيد البناء", () -> runOnGl(() -> renderer.game.buildRequested = true), null);
+        buildPlace.setText("✓"); controls.add(buildPlace);
+
+        touchVehicleButton = touchAction("دخول / خروج", () -> runOnGl(() -> renderer.toggleCar()), null);
+        touchVehicleButton.setText("🚗"); controls.add(touchVehicleButton);
+        Button gas = touchAction("تسارع", () -> { touchVehicleGasHeld = true; refreshTouchVehicleThrottle(); },
                 () -> { touchVehicleGasHeld = false; refreshTouchVehicleThrottle(); });
-        Button brakeTouch = touchAction("فرامل / رجوع", () -> { touchVehicleBrakeHeld = true; refreshTouchVehicleThrottle(); },
+        gas.setText("▲"); controls.add(gas);
+        Button brake = touchAction("فرامل", () -> { touchVehicleBrakeHeld = true; refreshTouchVehicleThrottle(); },
                 () -> { touchVehicleBrakeHeld = false; refreshTouchVehicleThrottle(); });
-        pedalRow.addView(gasTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        pedalRow.addView(brakeTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        groundVehicleRow.addView(pedalRow);
-        LinearLayout utilityRow = new LinearLayout(this);
-        utilityRow.setGravity(Gravity.CENTER);
-        Button handbrakeTouch = touchAction("فرامل يد", () -> runOnGl(() -> renderer.game.handbrake = true),
-                () -> runOnGl(() -> renderer.game.handbrake = false));
-        Button hornTouch = touchAction("زامور", () -> renderer.playHorn(), null);
-        utilityRow.addView(handbrakeTouch, new LinearLayout.LayoutParams(0, dp(44), 1f));
-        utilityRow.addView(hornTouch, new LinearLayout.LayoutParams(0, dp(44), 1f));
-        groundVehicleRow.addView(utilityRow);
-        touchGroundVehicleRow = groundVehicleRow;
-        actionPad.addView(groundVehicleRow);
+        brake.setText("▼"); controls.add(brake);
+        Button horn = touchAction("زامور", () -> renderer.playHorn(), null);
+        horn.setText("♫"); controls.add(horn);
 
-        LinearLayout flightRow = new LinearLayout(this);
-        flightRow.setOrientation(LinearLayout.VERTICAL);
-        flightRow.setGravity(Gravity.CENTER);
-        LinearLayout flightThrottleRow = new LinearLayout(this);
-        flightThrottleRow.setGravity(Gravity.CENTER);
-        Button throttleUpTouch = touchAction("زيادة الدفع ▲", () -> runOnGl(() -> {
-            if (isAircraftDriven()) renderer.game.throttleInput = 1f;
-        }), () -> runOnGl(() -> renderer.game.throttleInput = 0f));
-        Button throttleDownTouch = touchAction("تقليل الدفع ▼", () -> runOnGl(() -> {
-            if (isAircraftDriven()) renderer.game.throttleInput = -1f;
-        }), () -> runOnGl(() -> renderer.game.throttleInput = 0f));
-        flightThrottleRow.addView(throttleUpTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        flightThrottleRow.addView(throttleDownTouch, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        flightRow.addView(flightThrottleRow);
-        LinearLayout flightPitchRow = new LinearLayout(this);
-        flightPitchRow.setGravity(Gravity.CENTER);
-        touchFlightUpButton = touchAction("رفع المقدمة ▲", () -> runOnGl(() -> {
-            if (isAircraftDriven()) renderer.game.liftInput = 1f;
-        }), () -> runOnGl(() -> renderer.game.liftInput = 0f));
-        touchFlightDownButton = touchAction("خفض المقدمة ▼", () -> runOnGl(() -> {
-            if (isAircraftDriven()) renderer.game.liftInput = -1f;
-        }), () -> runOnGl(() -> renderer.game.liftInput = 0f));
-        flightPitchRow.addView(touchFlightUpButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        flightPitchRow.addView(touchFlightDownButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        flightRow.addView(flightPitchRow);
-        touchFlightUtilityRow = new LinearLayout(this);
-        touchFlightUtilityRow.setGravity(Gravity.CENTER);
+        Button throttleUp = touchAction("زيادة الدفع", () -> runOnGl(() -> renderer.game.throttleInput = 1f),
+                () -> runOnGl(() -> renderer.game.throttleInput = 0f));
+        throttleUp.setText("▲"); controls.add(throttleUp);
+        Button throttleDown = touchAction("تقليل الدفع", () -> runOnGl(() -> renderer.game.throttleInput = -1f),
+                () -> runOnGl(() -> renderer.game.throttleInput = 0f));
+        throttleDown.setText("▼"); controls.add(throttleDown);
+        touchFlightUpButton = touchAction("رفع المقدمة", () -> runOnGl(() -> renderer.game.liftInput = 1f),
+                () -> runOnGl(() -> renderer.game.liftInput = 0f));
+        touchFlightUpButton.setText("↑"); controls.add(touchFlightUpButton);
+        touchFlightDownButton = touchAction("خفض المقدمة", () -> runOnGl(() -> renderer.game.liftInput = -1f),
+                () -> runOnGl(() -> renderer.game.liftInput = 0f));
+        touchFlightDownButton.setText("↓"); controls.add(touchFlightDownButton);
         touchBrakeButton = touchAction("مكابح", () -> runOnGl(() -> renderer.game.brakeRequested = true),
                 () -> runOnGl(() -> renderer.game.brakeRequested = false));
-        touchGearButton = btn("العجلات: مفتوحة");
-        touchGearButton.setTextSize(12);
-        touchGearButton.setOnClickListener(v -> runOnGl(() -> renderer.toggleAircraftGear()));
-        touchFlightUtilityRow.addView(touchBrakeButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        touchFlightUtilityRow.addView(touchGearButton, new LinearLayout.LayoutParams(0, dp(46), 1f));
-        flightRow.addView(touchFlightUtilityRow);
-        actionPad.addView(flightRow);
-        touchFlightRow = flightRow;
+        touchBrakeButton.setText("■"); controls.add(touchBrakeButton);
+        touchGearButton = touchAction("العجلات", () -> runOnGl(() -> renderer.toggleAircraftGear()), null);
+        touchGearButton.setText("⚙"); controls.add(touchGearButton);
+
+        battleHudOverlay.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob) ->
+                layoutBattleHudControls(battleHudOverlay, controls));
+        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) {
+            js.setVisibility(View.GONE);
+            battleHudOverlay.setVisibility(View.GONE);
+        }
 
         hud = new TextView(this);
         hud.setTextColor(Color.WHITE);
