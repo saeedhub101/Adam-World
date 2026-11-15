@@ -767,9 +767,9 @@ public class MainActivity extends Activity implements CityRenderer.Listener {
             label("≡",22,Color.WHITE,true,Gravity.TOP|Gravity.RIGHT,0,201,25,0);
             // Left movement zone and movement actions.
             // Movement joystick is drawn by onDraw and receives multi-touch in this parent view.
-            addAction("hud-stamina.png",43,Gravity.BOTTOM|Gravity.LEFT,166,0,0,177);
-            addAction("gameplay-category.png",40,Gravity.BOTTOM|Gravity.LEFT,166,0,0,112);
-            addAction("mobile-interact.png",38,Gravity.BOTTOM|Gravity.LEFT,166,0,0,48);
+            addAction("hud-stamina.png",43,Gravity.BOTTOM|Gravity.LEFT,166,0,0,155);
+            addAction("gameplay-category.png",40,Gravity.BOTTOM|Gravity.LEFT,166,0,0,105);
+            addAction("mobile-interact.png",38,Gravity.BOTTOM|Gravity.LEFT,166,0,0,55);
             // Combat side: aim, fire, jump, reload, harvesting, interact and vehicle.
             addAction("hud-crosshair.png",54,Gravity.BOTTOM|Gravity.RIGHT,0,0,128,178);
             addAction("assault-rifle-icon.png",62,Gravity.BOTTOM|Gravity.RIGHT,0,0,20,178);
