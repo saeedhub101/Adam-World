@@ -61,7 +61,22 @@ jobs:
           python -m pip install --disable-pip-version-check --no-input numpy trimesh pillow scipy fast-simplification
           python -m py_compile app/tools/build_adam_skinned_mesh.py
           python app/tools/build_runtime_meshes.py
+          # Detailed, pinned weapon source meshes; see the adjacent license and manifest files.
+          WEAPON_SOURCE="https://raw.githubusercontent.com/cktang88/3d-fps/130ac2a5c856401ec36e7d35afcfefe40c5801f4/public/assets/models/weapons"
+          curl -fL --retry 3 --retry-delay 2 "$WEAPON_SOURCE/m1911.glb" -o app/src/main/assets/models/weapons/pistol.glb
+          curl -fL --retry 3 --retry-delay 2 "$WEAPON_SOURCE/mp5a5.glb" -o app/src/main/assets/models/weapons/submachine-gun.glb
+          curl -fL --retry 3 --retry-delay 2 "$WEAPON_SOURCE/m4a1.glb" -o app/src/main/assets/models/weapons/assault-rifle.glb
+          curl -fL --retry 3 --retry-delay 2 "$WEAPON_SOURCE/shotgun.glb" -o app/src/main/assets/models/weapons/shotgun.glb
+          curl -fL --retry 3 --retry-delay 2 "$WEAPON_SOURCE/awm.glb" -o app/src/main/assets/models/weapons/sniper-rifle.glb
           python app/tools/build_weapon_meshes.py
+          # Store original detailed GLBs and converted Android runtime meshes on main.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f app/src/main/assets/models/weapons/*.glb app/src/main/assets/models/runtime/weapons/*.awmesh
+          if ! git diff --cached --quiet; then
+            git commit -m "Import detailed weapon models and runtime meshes [skip ci]"
+            git push origin HEAD:main
+          fi
           python app/tools/build_adam_skinned_mesh.py
           test -s app/src/main/assets/models/runtime/characters/adam.awmesh5
           echo "Legacy Adam pedestrian asset ready: $(stat -c%s app/src/main/assets/models/runtime/characters/adam.awmesh5) bytes"
